@@ -18,13 +18,13 @@ configs/assets/assets.local.yaml
 configs/assets/smoke_samples.local.yaml
 
 # Local ML/data roots and outputs
-external_data/
-datasets/
-models/
-checkpoints/
-outputs/
-wandb/
-.cache/
+/external_data/
+/datasets/
+/models/
+/checkpoints/
+/outputs/
+/wandb/
+/.cache/
 
 # Run-local large outputs
 runs/**/raw_audio/
