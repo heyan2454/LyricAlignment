@@ -1,0 +1,21 @@
+[project]
+name = "lyricalign"
+version = "0.0.2"
+description = "Singing lyric transcription and audio-text alignment experiment scaffold."
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26,<3",
+  "PyYAML>=6,<7",
+]
+
+[project.optional-dependencies]
+qwen-smoke = [
+  "huggingface_hub>=1.24,<2",
+  "soundfile>=0.14,<1",
+]
+test = [
+  "pytest>=8,<9",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

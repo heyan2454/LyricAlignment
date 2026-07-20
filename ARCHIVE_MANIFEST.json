@@ -1,0 +1,545 @@
+{
+  "archive_date": "2026-07-20",
+  "source_archive": "LyricAlignment_202607191737_after_qwen_smoke.zip",
+  "output_archive": "LyricAlignment_20260720_smoke_infra_fix.zip",
+  "stable_extracted_root": "LyricAlignment",
+  "file_count_excluding_manifest": 107,
+  "total_bytes_excluding_manifest": 142107,
+  "files": [
+    {
+      "path": ".gitignore",
+      "size_bytes": 550,
+      "sha256": "1234dfba43d20c770f9696609187efdffc4b04b902a51a319fed8ce79c05de6c"
+    },
+    {
+      "path": "AI_SESSION_ENTRY.md",
+      "size_bytes": 2054,
+      "sha256": "017adf725e4e5de4942318e7851956b669856abf32ec37bdd538ff192c45ceab"
+    },
+    {
+      "path": "ARCHIVE_REPORT.md",
+      "size_bytes": 2708,
+      "sha256": "8c908099ceadaeaf4c9f8df5b2df25852f7f508a0d8106de4c8f7bf348712b6c"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 2807,
+      "sha256": "018b518b9b8df88f0becadb4f26c6c8e5245f009489ab8931a478b204cbe5590"
+    },
+    {
+      "path": "configs/README.md",
+      "size_bytes": 598,
+      "sha256": "f3f8ec0c2910389e64404cc2d7123a256a8e3006db4adda0b901282629ff8150"
+    },
+    {
+      "path": "configs/assets/README.md",
+      "size_bytes": 442,
+      "sha256": "e5b6b049ad8b4aafc053ea44e33a3f9609d70da431725c82b45f630d98d4c1b3"
+    },
+    {
+      "path": "configs/assets/assets.example.yaml",
+      "size_bytes": 1750,
+      "sha256": "361c2e681ac046a6d6e17a14cff802c395e4b85d052534b0bbf32ebad9bae229"
+    },
+    {
+      "path": "configs/assets/smoke_samples.example.yaml",
+      "size_bytes": 1459,
+      "sha256": "31faf88d58b564fdb512ac544fd368f645b79a09d80808746be62c0e5f262bd5"
+    },
+    {
+      "path": "configs/curation/README.md",
+      "size_bytes": 174,
+      "sha256": "926cb9d7d93a0eb738a914b5ee8cc0344362e3d041c21f4ef745d6b80dc3b064"
+    },
+    {
+      "path": "configs/curation/curation_v1.example.yaml",
+      "size_bytes": 575,
+      "sha256": "550aa0589d68de5279105531d3cab6425f8da466d3c4b7870e8337666e9a2efa"
+    },
+    {
+      "path": "configs/experiments/README.md",
+      "size_bytes": 371,
+      "sha256": "9b6aa22b4c5254fff397fedbe05a43f5318e28dae2ca9c037c32496bbf7c3714"
+    },
+    {
+      "path": "configs/experiments/exp_character_alignment_smoke.yaml",
+      "size_bytes": 992,
+      "sha256": "3f638fc28e620500e0f6d5f105592b08df1f9dc2729e646041cd730ed4cd4f77"
+    },
+    {
+      "path": "configs/experiments/exp_transcription_baseline.yaml",
+      "size_bytes": 474,
+      "sha256": "0a0ca84c3c1341be194b02dfe960f326b66027eaa8def5436dbd97ad6705aafa"
+    },
+    {
+      "path": "configs/metrics/README.md",
+      "size_bytes": 230,
+      "sha256": "cbf512a72e32981b515f55ad4174a9a274138f9df020eebb23f7f7f266222f9b"
+    },
+    {
+      "path": "configs/metrics/token_alignment_metrics.yaml",
+      "size_bytes": 882,
+      "sha256": "9e2b07e1983ede4acc4e6050808476eb2cae7728d92cacfaf718f6d239914e28"
+    },
+    {
+      "path": "configs/metrics/transcription_metrics.yaml",
+      "size_bytes": 244,
+      "sha256": "6dcb84f5a0ba60f47245a2fb60ce0c63bc8b3913b2941a21caf3778fe46037ac"
+    },
+    {
+      "path": "configs/models/README.md",
+      "size_bytes": 344,
+      "sha256": "dcdee14f2bfd6ede94bc1ab9e6f1360552996ae48650a2d85a35fa8a4108fe07"
+    },
+    {
+      "path": "configs/models/qwen_forced_aligner.yaml",
+      "size_bytes": 604,
+      "sha256": "7c6823749379dbe426d957896226d5ea4314e6e8d5b4d773c1c2a61fbcdab2a9"
+    },
+    {
+      "path": "configs/paths/README.md",
+      "size_bytes": 159,
+      "sha256": "018a081bacd4414e56e4d2bf39171798c26a2ed0b624f4ce5e3be8eb7dc2e284"
+    },
+    {
+      "path": "configs/paths/local_paths.example.yaml",
+      "size_bytes": 641,
+      "sha256": "0c3e8c1efe44102c721b6723cda1565235765e8887910e11c9db9bc88e3fafc5"
+    },
+    {
+      "path": "configs/training/README.md",
+      "size_bytes": 403,
+      "sha256": "1761692dea073fe5d708934f7e226c63acd601f2f5c70001bbc84c9a4085ed6d"
+    },
+    {
+      "path": "configs/training/qwen_fa_chinese_adaptation_plan.yaml",
+      "size_bytes": 850,
+      "sha256": "2fa91e11299e0db666281939f31d390287529d0e33a053b9bd7798c5fe43414a"
+    },
+    {
+      "path": "data/README.md",
+      "size_bytes": 469,
+      "sha256": "bfc92c2d99705186a7827ee70f5e14f8179736b5f01f25fd06955bca23059773"
+    },
+    {
+      "path": "data/datasets_registry.md",
+      "size_bytes": 1865,
+      "sha256": "88d7eb466d49c264cb72d01c80f064c13a1f8808dd496c83684b3ef17a3f82a2"
+    },
+    {
+      "path": "data/manifests/README.md",
+      "size_bytes": 478,
+      "sha256": "0bd159fc5a27e60a012e5afb9f4239b4722c12541fbc92a61b35c908596c0b77"
+    },
+    {
+      "path": "data/manifests/manifest_alignment.template.csv",
+      "size_bytes": 340,
+      "sha256": "da48ea2dd3a8ecfc37e4241bf49924bba1f77cbaebeda7f7ed52a10ad2c6bc58"
+    },
+    {
+      "path": "data/manifests/manifest_asr_baseline.template.csv",
+      "size_bytes": 211,
+      "sha256": "51aaa9e0540fdf924df9f7f0c60a1b81f622a04103ef8456874303454d9bcd15"
+    },
+    {
+      "path": "data/schemas/README.md",
+      "size_bytes": 256,
+      "sha256": "1019115e9a36abd9fe7870ec56f9f930bd28d93f74b3eb5812f6ce8763a63ab8"
+    },
+    {
+      "path": "docs/README.md",
+      "size_bytes": 552,
+      "sha256": "20057c7768099b0036e0a0be05325f5a865b09ebabf0d1b7419472a64ad92374"
+    },
+    {
+      "path": "docs/manual/README.md",
+      "size_bytes": 844,
+      "sha256": "3529da7839d57e85ef77a4cf258c5f019f47043e670a11f358553a2e654df88d"
+    },
+    {
+      "path": "docs/manual/annotation_schema.md",
+      "size_bytes": 820,
+      "sha256": "c53895912348899d479a065242a1590391e0e828dbb5ee9eede8e80f2a799d6d"
+    },
+    {
+      "path": "docs/manual/data_curation.md",
+      "size_bytes": 2042,
+      "sha256": "92537f56c2318711334a3fb33613395e93d7fb17125a068bf545df5538d9239e"
+    },
+    {
+      "path": "docs/manual/data_preparation.md",
+      "size_bytes": 3199,
+      "sha256": "e7201e4dfef85ef1c6cc9e73d9384e66e4489339bb2a8ee035e61613e4634650"
+    },
+    {
+      "path": "docs/manual/dataset_split_and_leakage.md",
+      "size_bytes": 1861,
+      "sha256": "c6900dd9f51337ebd3429971eb818654d001a8f0cc397fbdb81b48989b6b4f7d"
+    },
+    {
+      "path": "docs/manual/experiment_protocol.md",
+      "size_bytes": 2473,
+      "sha256": "51e5939120232a318dc1564c040d6e6ee7e52c7478642a7cdd21827c99d64536"
+    },
+    {
+      "path": "docs/manual/git_workflow.md",
+      "size_bytes": 1114,
+      "sha256": "afe014552f5b4c8c88656c8a06f1f11ed7faf7dea7a0aba9fb326d6a56ddb93d"
+    },
+    {
+      "path": "docs/manual/metric_definitions.md",
+      "size_bytes": 1597,
+      "sha256": "bfa9dada0087eab529b21c01feb5fd414954ce7c7655787b417c271dd7eecbe4"
+    },
+    {
+      "path": "docs/manual/model_usage.md",
+      "size_bytes": 921,
+      "sha256": "dbcfbb51151550d7f8e6894a6bb66d1bb0fe789ec26ff1ee8c4e701be1901d46"
+    },
+    {
+      "path": "docs/manual/text_normalization.md",
+      "size_bytes": 589,
+      "sha256": "d19cd34476d47000160bdd00e3aed8debbbba0d82c30915aec89d472bf2f145e"
+    },
+    {
+      "path": "docs/principles.md",
+      "size_bytes": 2492,
+      "sha256": "44540e9b316c301bbf86cf8dddbf51492c88d1c85852e2db3eab9d936190c555"
+    },
+    {
+      "path": "docs/sessions/20260719_asset_preparation_and_raw_smoke_scope.md",
+      "size_bytes": 3652,
+      "sha256": "660896bc1364f19919a59fac17916ee46d88b9a9b78810444badea8bac2f6aa5"
+    },
+    {
+      "path": "docs/sessions/20260719_chinese_dataset_training_route.md",
+      "size_bytes": 2618,
+      "sha256": "76c69ea2e120fa2290f33291f93cdf2d44ff26f8b3a0211192ba4cacf7c117b6"
+    },
+    {
+      "path": "docs/sessions/20260719_structure_and_data_curation_revision.md",
+      "size_bytes": 2000,
+      "sha256": "01d8a22bceaa20db7b5e64bf04b1e79d80150ce16e4065eaf738eca4adac5012"
+    },
+    {
+      "path": "docs/sessions/20260720_smoke_infrastructure_archive.md",
+      "size_bytes": 3035,
+      "sha256": "9d64aaef031d120d36287a1132a578831b9465ae0f479ed84bd4ee15f167ef4b"
+    },
+    {
+      "path": "docs/sessions/README.md",
+      "size_bytes": 739,
+      "sha256": "d057c1eb69588abfa00fde6f54ab4502d961f5a580747f14203b9f9117802590"
+    },
+    {
+      "path": "docs/sessions/SESSION_INDEX.md",
+      "size_bytes": 999,
+      "sha256": "23a1f3129a2b8151c732c92721c88cf35e69a04812a35759a59dc1d5b7a970f6"
+    },
+    {
+      "path": "docs/sessions/_templates/NEXT_PROMPT_TEMPLATE.md",
+      "size_bytes": 177,
+      "sha256": "23150e4d723a3aecadee94ad09050311ff6c00b2813bc12bd00d427904696ff2"
+    },
+    {
+      "path": "docs/sessions/_templates/README.md",
+      "size_bytes": 135,
+      "sha256": "997c88c95fc3352767f630c81c43e37a2e6ffed52eb5adca5f8be41be624d297"
+    },
+    {
+      "path": "docs/sessions/_templates/SESSION_FULL_RECORD_TEMPLATE.md",
+      "size_bytes": 146,
+      "sha256": "5a11a6b3e47487b5c5355f75bbe1877e058ac3937635a7d2b654bf9cf514433e"
+    },
+    {
+      "path": "docs/sessions/_templates/session_template.md",
+      "size_bytes": 239,
+      "sha256": "4aad40984a145020fb7116ae4f5ab7c5bb618e13f5f6ff7a84b8e0cdedd373e7"
+    },
+    {
+      "path": "docs/status/README.md",
+      "size_bytes": 432,
+      "sha256": "98cca0fbcc304af4053b587db860fb3125ffc543baeec116af173fba9ca69186"
+    },
+    {
+      "path": "docs/status/next_execution_plan.md",
+      "size_bytes": 3421,
+      "sha256": "be1e51c4e0cc4e46fcee57bfa00785620fa14d414ae543a1bcd6699dd08c5e23"
+    },
+    {
+      "path": "docs/status/project_current.md",
+      "size_bytes": 3472,
+      "sha256": "a117b7ac628d7db2509a1071063a0b69dd482db6c30ec10cebfbffc60641e0c4"
+    },
+    {
+      "path": "pyproject.toml",
+      "size_bytes": 404,
+      "sha256": "6b8b8021b692042aed14b7dc8af2e9aec0f5d24ace10101c2c4f84be887ac560"
+    },
+    {
+      "path": "reports/README.md",
+      "size_bytes": 610,
+      "sha256": "f1b10f3ee4063b82aab9b0517299b3d6ca287f189f670b8ad352f92510bedc53"
+    },
+    {
+      "path": "reports/assets/README.md",
+      "size_bytes": 338,
+      "sha256": "4bdca04ca3c63184aae06cfb4e5d2f9e4e4531bc86241978a8e2c6904758398c"
+    },
+    {
+      "path": "reports/assets/asset_inventory.md",
+      "size_bytes": 1888,
+      "sha256": "18c2e96e0ac50f9e09dda896ad06dc266d520c875b6a5251e0ded63a93c273ea"
+    },
+    {
+      "path": "reports/assets/ast_dataset_reuse_audit.md",
+      "size_bytes": 2368,
+      "sha256": "f88f3b396a3d34f0cd522934cb466883c7a24e253f108fdad6624c6cd679c52d"
+    },
+    {
+      "path": "reports/progress/README.md",
+      "size_bytes": 165,
+      "sha256": "95154d5af54ca93908e9023ef94553df8836ce977edeaf11509bc624ae3e3cfd"
+    },
+    {
+      "path": "reports/progress/project_plan_7_10_days.md",
+      "size_bytes": 1528,
+      "sha256": "99f6079632cb2023f562a5e34da581befb031c52b007a2b6113fd5eb5df3c7b3"
+    },
+    {
+      "path": "reports/research/README.md",
+      "size_bytes": 141,
+      "sha256": "ac217618307d0ba86380ae02d00dfb349752e466502f057a17a01ae892461b4d"
+    },
+    {
+      "path": "reports/research/literature_survey_initial.md",
+      "size_bytes": 8923,
+      "sha256": "d53c0719a859c88aa95d198d9442fcb565c48704c05aba96d4833b1423c5160e"
+    },
+    {
+      "path": "reports/resume/README.md",
+      "size_bytes": 144,
+      "sha256": "3b590d3a66b342eade3f9175ed56ade81f0582b6a4cda1a7139f4673b9b864b6"
+    },
+    {
+      "path": "reports/resume/resume_project_bullets.md",
+      "size_bytes": 1196,
+      "sha256": "791c121344126b805f8f20cbbbac0a93dcb2c423925698ae56cd116c9e24c5da"
+    },
+    {
+      "path": "reports/review/README.md",
+      "size_bytes": 157,
+      "sha256": "b1d242f61db363dddcf558b6b04058a5ac9dea767c4694da859496313cb07a50"
+    },
+    {
+      "path": "reports/review/archive_validation.md",
+      "size_bytes": 821,
+      "sha256": "a3df332b0503fe70fc04f46160295f7cc258c57e22c6ebdb0d9f83035066ccb2"
+    },
+    {
+      "path": "reports/review/collaborator_docs_review.md",
+      "size_bytes": 3898,
+      "sha256": "c13e0777db6876bfa1ba8f97a295a34cfc1a5ac28b91cec8a7c7ff496a0ce4cb"
+    },
+    {
+      "path": "reports/review/environment_and_dependency_audit.md",
+      "size_bytes": 1943,
+      "sha256": "4fb91201fb60e49b7a45b40d0dff655e97c2bfd871fe2167c8e0300b062e015a"
+    },
+    {
+      "path": "reports/smoke/README.md",
+      "size_bytes": 270,
+      "sha256": "f3b469bcd1312b20c728f87d6d42e9560e4af531c493ccf6fbbcb10eb9421625"
+    },
+    {
+      "path": "reports/smoke/qwen_forced_aligner_smoke.md",
+      "size_bytes": 2664,
+      "sha256": "273d64729d9d8c68fdf803cd64546dfd2ca909f8ac20361811797d98c180ad03"
+    },
+    {
+      "path": "requirements/README.md",
+      "size_bytes": 976,
+      "sha256": "3bc10cd1f105b42ce38b98bd1f454844c343c376ab9d20549e640c07dda76c15"
+    },
+    {
+      "path": "requirements/qwen_smoke_server_known.txt",
+      "size_bytes": 413,
+      "sha256": "cd05fd20559736dff64ae170d4a2b6a288622bd2f34afbe387953e48be2040ff"
+    },
+    {
+      "path": "results/README.md",
+      "size_bytes": 265,
+      "sha256": "41d1a9afe6274458d8ce8398dcea75dc05f2d969411baf3831f730c307837f60"
+    },
+    {
+      "path": "results/by_run/.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "results/by_run/README.md",
+      "size_bytes": 175,
+      "sha256": "45f57ed6ac169500fec4b0977f4c62ab386c6426b23c4b9f0d27fd9515997dcb"
+    },
+    {
+      "path": "results/comparisons/.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "results/comparisons/README.md",
+      "size_bytes": 179,
+      "sha256": "dc15b1c5b58c3eeed06c1c7af5d7eccf1ea4f3feb75f2adf2d5388d7131afa60"
+    },
+    {
+      "path": "runs/README.md",
+      "size_bytes": 519,
+      "sha256": "8aa28d667798dd04c4e3ff11d5981780355ee08ed5ebc38db31ce76061a68020"
+    },
+    {
+      "path": "runs/smoke/.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/smoke/20260719_m4singer_short_legacy/README.md",
+      "size_bytes": 434,
+      "sha256": "077ccb15420acd69cf91e716359b87135a744ff800c02e60d5ef85ec5eb0eebe"
+    },
+    {
+      "path": "runs/smoke/20260719_m4singer_short_legacy/run_summary.json",
+      "size_bytes": 1406,
+      "sha256": "f52b4b1f9629b88b1bbbfdd6a3d42998d5902429046c377fd54ab656d01fadff"
+    },
+    {
+      "path": "runs/smoke/README.md",
+      "size_bytes": 528,
+      "sha256": "60b030f0fb07103f6897d6ea182cbbf17bba9a811527aad5340d353945bf03ac"
+    },
+    {
+      "path": "scripts/README.md",
+      "size_bytes": 474,
+      "sha256": "0285ffcb17b35460069063d7ec6f0f61fe60149e263d32a455994e971e95bb23"
+    },
+    {
+      "path": "scripts/assets/README.md",
+      "size_bytes": 797,
+      "sha256": "2f0a537ed0bdf6288b962d239dbf2afdf7cf0b92fe179f0a4609d856a2245ad3"
+    },
+    {
+      "path": "scripts/assets/discover_ast_datasets.py",
+      "size_bytes": 2229,
+      "sha256": "8ffd321a58090df2b77db30938314a0e23c3d17edf4202beed3f27297835ba4a"
+    },
+    {
+      "path": "scripts/assets/download_opencpop.py",
+      "size_bytes": 4847,
+      "sha256": "0b19dc6e192d07f206683f3c3a60574222bfc8b3ccc92199a237193c58609008"
+    },
+    {
+      "path": "scripts/assets/download_qwen_model.py",
+      "size_bytes": 1925,
+      "sha256": "6ff4bd9c4d2a398e71a269868d2da18d009f0c2ef852a756114f034c66d8399b"
+    },
+    {
+      "path": "scripts/assets/monitor_qwen_download.sh",
+      "size_bytes": 1006,
+      "sha256": "24a5e8f1e22425f54ebfab21f18b5633ef0cbf3ce36ea80f568c9d8492de5c49"
+    },
+    {
+      "path": "scripts/assets/verify_assets.py",
+      "size_bytes": 2581,
+      "sha256": "bd97d73347f6cdac5e3c81c414f6de2581c9dc210e1010771fd25e47d8904f5f"
+    },
+    {
+      "path": "scripts/environment/README.md",
+      "size_bytes": 287,
+      "sha256": "8aca355f2c76d64077e55dfb4116f54ae1c0f632f95d877f44afcde5af39bb37"
+    },
+    {
+      "path": "scripts/environment/capture_environment.py",
+      "size_bytes": 2498,
+      "sha256": "4f4f4635ee6be8fe7082e9f40dc9dbd90f56fe2fba548c99a440fd8c0631e0c7"
+    },
+    {
+      "path": "scripts/smoke/README.md",
+      "size_bytes": 923,
+      "sha256": "3c229cc489d4c316029b08607b2e9da6a34a66ffe699ea1da43c60beea43c6ac"
+    },
+    {
+      "path": "scripts/smoke/run_qwen_forced_aligner_smoke.py",
+      "size_bytes": 15778,
+      "sha256": "ff8a28288f5824e2eaf2c969a3132b538c2bf1a3d3557f2e1b878cbd8f528e94"
+    },
+    {
+      "path": "src/README.md",
+      "size_bytes": 208,
+      "sha256": "9de1f77146b1f4c8417af7774cfe3f5502cf2b46a5f35527baf207453c4c9c02"
+    },
+    {
+      "path": "src/lyricalign/README.md",
+      "size_bytes": 529,
+      "sha256": "47987eef00b17331accf0df4a39ff0f78421f658bc6535557554e6cf5b6cf2d4"
+    },
+    {
+      "path": "src/lyricalign/alignment/README.md",
+      "size_bytes": 140,
+      "sha256": "5af52079d9b9b98b4ad2e64dd15bdefb85f3041ae25b9726ddabfb7aa731a432"
+    },
+    {
+      "path": "src/lyricalign/assets/README.md",
+      "size_bytes": 431,
+      "sha256": "a3548435127927620c90d88d4dfce123c5a97e8b426991bd30a7bf642d9e1a46"
+    },
+    {
+      "path": "src/lyricalign/curation/README.md",
+      "size_bytes": 158,
+      "sha256": "ef7658405048c8249303cfe3e00d14d7b36bf7264821c14cc9aac6eab7e714ef"
+    },
+    {
+      "path": "src/lyricalign/datasets/README.md",
+      "size_bytes": 423,
+      "sha256": "cec8afb5b4de61516cf4fea702a2593d95eca63ecc435c9d01a04b7feb845adf"
+    },
+    {
+      "path": "src/lyricalign/inference/README.md",
+      "size_bytes": 546,
+      "sha256": "ee0379b2aef3fb2ef771157f344b9d6d850a9079314d78d49199f48e05fe463a"
+    },
+    {
+      "path": "src/lyricalign/inference/qwen_forced_aligner.py",
+      "size_bytes": 6135,
+      "sha256": "94c477401d96c281c60f1c13fb4e45c9d0cb73ca27ffac5e84a1baa7895f3719"
+    },
+    {
+      "path": "src/lyricalign/metrics/README.md",
+      "size_bytes": 123,
+      "sha256": "2033a5ab1703c9d615897f7864e797205916ab18dfaea79d59ca7ec40c012e87"
+    },
+    {
+      "path": "src/lyricalign/pipelines/README.md",
+      "size_bytes": 142,
+      "sha256": "e51dfe045f7549d57d295fa51c101527ff4430380adf1df7a2bf83cb0c9e5d91"
+    },
+    {
+      "path": "src/lyricalign/transcription/README.md",
+      "size_bytes": 124,
+      "sha256": "c186f4e1cbd1b540e1eb261bd7fa9d6718ca101549fa9a50cf8f160d0e582f1a"
+    },
+    {
+      "path": "tests/README.md",
+      "size_bytes": 490,
+      "sha256": "b84225e9a39c4e3cee8399a50f382b7c6d869926e0960cdec9332c9937f225d9"
+    },
+    {
+      "path": "tests/test_asset_scripts.py",
+      "size_bytes": 2143,
+      "sha256": "6ce63b00dd0c75932f736ae16405a5faa6237c6a2f013e2c95d78fe39ebfeabd"
+    },
+    {
+      "path": "tests/test_smoke_helpers.py",
+      "size_bytes": 2318,
+      "sha256": "b1ea3693012f1916309a8d8fbef1dff4f91cec6484e5eb4ed2c3e55d4e8652f8"
+    }
+  ]
+}

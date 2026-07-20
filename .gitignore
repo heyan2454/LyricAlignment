@@ -1,0 +1,42 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Python/build/test caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Local path and asset configs
+local_paths.yaml
+configs/paths/local_paths.yaml
+configs/assets/assets.local.yaml
+configs/assets/smoke_samples.local.yaml
+
+# Local ML/data roots and outputs
+external_data/
+datasets/
+models/
+checkpoints/
+outputs/
+wandb/
+.cache/
+
+# Run-local large outputs
+runs/**/raw_audio/
+runs/**/large_outputs/
+
+# Audio/video and model artifacts
+*.wav
+*.mp3
+*.mp4
+*.m4a
+*.flac
+*.ckpt
+*.safetensors
+*.pt
+*.pth
