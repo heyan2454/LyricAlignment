@@ -1,4 +1,11 @@
-# M4Singer Audit v1
+# M4Singer Audit v1 (Superseded for A-tier Counts)
+
+> **Superseded:** this report records the original audit taxonomy.  Its `66`
+> accepted-character figure came from the withdrawn requirement that the final
+> lyric character end at the WAV boundary.  Current A-tier source of truth is
+> `m4singer_character_v2`: 6,051 accepted rule-based records and 14,845 B-tier
+> review records.  Trailing pause/breath phonemes are non-lyric audio and do
+> not require a lyric boundary at file end.
 
 **Date:** 2026-07-22  
 **Command:** `python scripts/datasets/audit_m4singer.py --m4singer-root /home/hyan/Data/datasets/m4singer/raw/extracted/m4singer --out-dir /home/hyan/Data/lyricalign/derived/m4singer_audit_v1`
