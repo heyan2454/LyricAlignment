@@ -1,7 +1,7 @@
 # MIR-1K 原始数据获取与 OOD 准备记录
 
-**Date:** 2026-07-21  
-**Status:** completed and verified  
+**Date:** 2026-07-21
+**Status:** completed and verified
 **Scope:** 原始 MIR-1K 外部资产获取、完整性验证、17 首字符级标注的 test-only/OOD 接入
 
 ## 目标
