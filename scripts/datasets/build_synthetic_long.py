@@ -54,7 +54,12 @@ def main() -> None:
         duration = concat_wavs([args.audio_root / row["audio_relpath"] for row in chosen], args.out_dir / relpath)
         manifest = build_synthetic_manifest(chosen, duration, relpath)
         manifests.append(manifest)
-        chars.extend(shifted_annotations([annotation for row in chosen for annotation in annotations[row["item_id"]]], manifest["cumulative_offsets"]))
+        shifted = shifted_annotations([annotation for row in chosen for annotation in annotations[row["item_id"]]], manifest["cumulative_offsets"])
+        for character_index, annotation in enumerate(shifted):
+            annotation["item_id"] = manifest["item_id"]
+            annotation["character_index"] = character_index
+            annotation["length_source"] = "synthetic_concat"
+        chars.extend(shifted)
     for name, payload in (("synthetic_manifest.jsonl", manifests), ("synthetic_characters.jsonl", chars)):
         (args.out_dir / name).write_text("".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in payload), encoding="utf-8")
     summary = {"status": "passed" if manifests else "external_or_data_limited", "bucket_sec": args.bucket_sec, "synthetic_count": len(manifests), "failure_reason": None if manifests else "no_adjacent_same_song_same_singer_A_tier_sequence_reaches_bucket"}
