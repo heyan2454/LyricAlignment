@@ -45,6 +45,19 @@ def test_prepare_item_keeps_relative_audio_path_and_no_timestamps(tmp_path: Path
     assert all(x["start_sec"] is None and x["end_sec"] is None for x in annotations)
 
 
+def test_trailing_pause_does_not_invalidate_character_boundaries(tmp_path: Path) -> None:
+    audio_dir = tmp_path / "Alto-1#demo"
+    audio_dir.mkdir()
+    with wave.open(str(audio_dir / "0001.wav"), "wb") as handle:
+        handle.setnchannels(1); handle.setsampwidth(2); handle.setframerate(16000)
+        handle.writeframes(b"\x00\x00" * 16000)
+    manifest, annotations = prepare_item(
+        {"item_name": "Alto-1#demo#0001", "txt": "好", "phs": ["h", "ao", "<SP>"], "ph_dur": [0.4, 0.4, 0.2]}, tmp_path
+    )
+    assert manifest["status"] == "accepted"
+    assert annotations[0]["end_sec"] == 0.8
+
+
 def test_audit_taxonomy_is_conserved_and_exact_mapping_is_not_a_mismatch(tmp_path: Path) -> None:
     audio_dir = tmp_path / "Alto-1#demo"
     audio_dir.mkdir()

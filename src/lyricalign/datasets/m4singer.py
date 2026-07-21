@@ -177,12 +177,15 @@ def prepare_item(raw: dict[str, Any], audio_root: Path, *, include_audio_hash: b
     mapping, mapping_status, special_indices = character_phoneme_mapping(normalized.text, phonemes)
     metadata = audio_metadata(audio_path)
     character_intervals = mapped_character_intervals(mapping, list(raw.get("ph_dur", [])))
-    duration_metadata_ok = (
-        all(interval is not None for interval in character_intervals)
+    # The final character is allowed to precede the WAV end: M4Singer commonly
+    # carries a trailing pause/breath token.  Requiring a lyric character to end
+    # at the file boundary wrongly rejects valid phoneme-derived boundaries.
+    duration_metadata_ok = bool(
+        character_intervals
+        and all(interval is not None for interval in character_intervals)
         and metadata.get("duration_sec") is not None
-        and abs(character_intervals[-1][1] - float(metadata["duration_sec"])) <= 0.10
-        if character_intervals
-        else False
+        and character_intervals[0][0] >= 0.0
+        and character_intervals[-1][1] <= float(metadata["duration_sec"]) + 0.10
     )
     if metadata["audio_status"] != "ok":
         status = "rejected"

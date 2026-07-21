@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
 import wave
 from pathlib import Path
 from typing import Any
@@ -39,13 +40,27 @@ def concat_wavs(sources: list[Path], output: Path) -> float:
         params = first.getparams()
         frames = [first.readframes(first.getnframes())]
         total_frames = first.getnframes()
+        compatible = True
     for path in sources[1:]:
         with wave.open(str(path), "rb") as handle:
-            if handle.getparams()[:4] != params[:4]:
-                raise ValueError(f"incompatible WAV format: {path}")
+            if (handle.getnchannels(), handle.getsampwidth(), handle.getframerate(), handle.getcomptype()) != (params.nchannels, params.sampwidth, params.framerate, params.comptype):
+                compatible = False
             frames.append(handle.readframes(handle.getnframes()))
             total_frames += handle.getnframes()
-    temporary = output.with_suffix(output.suffix + ".tmp")
+    temporary = output.with_suffix(".tmp.wav")
+    if not compatible:
+        filters = []
+        for index in range(len(sources)):
+            filters.append(f"[{index}:a]aresample=16000,aformat=sample_fmts=s16:channel_layouts=mono[a{index}]")
+        filters.append("".join(f"[a{index}]" for index in range(len(sources))) + f"concat=n={len(sources)}:v=0:a=1[out]")
+        subprocess.run(
+            ["ffmpeg", "-nostdin", "-y", *sum((["-i", str(path)] for path in sources), []), "-filter_complex", ";".join(filters), "-map", "[out]", "-c:a", "pcm_s16le", str(temporary)],
+            check=True, capture_output=True, text=True,
+        )
+        with wave.open(str(temporary), "rb") as handle:
+            duration = handle.getnframes() / handle.getframerate()
+        temporary.replace(output)
+        return duration
     with wave.open(str(temporary), "wb") as handle:
         handle.setparams(params)
         for payload in frames:

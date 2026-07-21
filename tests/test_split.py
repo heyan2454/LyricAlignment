@@ -23,3 +23,10 @@ def test_leakage_audit_detects_song_cross_split() -> None:
         {"item_id": "two", "song_id": "same", "lyrics_normalized": "乙", "split": "validation"},
     ]
     assert leakage_audit(rows)["song_cross_split"] == ["same"]
+
+
+def test_exact_lyrics_components_stay_on_one_side() -> None:
+    rows = [{"item_id": "one", "song_id": "a", "lyrics_normalized": "重复"}, {"item_id": "two", "song_id": "b", "lyrics_normalized": "重复"}]
+    frozen = freeze_m4singer_split(rows, "fixed-seed")
+    assert frozen[0]["split"] == frozen[1]["split"]
+    assert leakage_audit(frozen)["exact_lyrics_cross_split_hashes"] == []

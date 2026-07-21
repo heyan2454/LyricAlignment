@@ -20,10 +20,32 @@ def stable_song_split(song_id: str, seed: str, validation_percent: int = 10) -> 
 
 
 def freeze_m4singer_split(records: list[dict[str, Any]], seed: str, validation_percent: int = 10) -> list[dict[str, Any]]:
+    # Exact normalized lyrics across songs are leakage candidates.  Keep every
+    # connected song component on one side of the split rather than merely
+    # reporting the conflict.
+    parent = {str(row["song_id"]): str(row["song_id"]) for row in records}
+    def find(value: str) -> str:
+        while parent[value] != value:
+            parent[value] = parent[parent[value]]
+            value = parent[value]
+        return value
+    def union(left: str, right: str) -> None:
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+    lyric_owner: dict[str, str] = {}
+    for row in records:
+        lyric = str(row.get("lyrics_normalized", ""))
+        if lyric:
+            digest = hashlib.sha256(lyric.encode("utf-8")).hexdigest()
+            if digest in lyric_owner:
+                union(str(row["song_id"]), lyric_owner[digest])
+            else:
+                lyric_owner[digest] = str(row["song_id"])
     result = []
     for record in records:
         item = dict(record)
-        item["split"] = stable_song_split(str(item["song_id"]), seed, validation_percent)
+        item["split"] = stable_song_split(find(str(item["song_id"])), seed, validation_percent)
         item["split_version"] = SPLIT_VERSION
         item["split_seed"] = seed
         result.append(item)
