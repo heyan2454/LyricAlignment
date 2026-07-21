@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from lyricalign.audio.contract import inventory_record
 from lyricalign.datasets.m4singer import audio_metadata, normalize_lyrics
 
 
@@ -24,7 +25,8 @@ def prepare_partial_align_item(raw: dict[str, Any], audio_root: Path) -> tuple[d
     if len(on_offset) != len(lyric):
         raise ValueError(f"{song_id}: {len(on_offset)} intervals for {len(lyric)} characters")
     audio_relpath = f"UndividedWavfile/{song_id}"
-    audio = audio_metadata(audio_root / audio_relpath)
+    audio_path = audio_root / audio_relpath
+    audio = audio_metadata(audio_path)
     if audio["audio_status"] != "ok":
         raise ValueError(f"{song_id}: source audio is not decodable: {audio.get('audio_error')}")
     duration = float(audio["duration_sec"])
@@ -70,6 +72,8 @@ def prepare_partial_align_item(raw: dict[str, Any], audio_root: Path) -> tuple[d
         "language": "zh",
         "duration_sec": duration,
         "audio": audio,
+        "vocal_source_type": "official_vocal_channel",
+        "audio_contract": inventory_record(audio_path, "official_vocal_channel", include_hash=True),
         "split": "test",
         "usage": "ood_test_only",
         "annotation_level": "character",
