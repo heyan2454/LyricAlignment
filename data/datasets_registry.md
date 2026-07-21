@@ -8,7 +8,7 @@
 |---|---|---|---|
 | M4Singer | primary train + custom validation | 用户报告已本地下载，AST 也有副本；待核验路径、版本和完整性 | 优先只读复用；仅用现有 audio+lyrics 做 raw smoke，不做字符转换 |
 | Opencpop official train/test | train/validation source + final in-domain test | pending official download | 本轮只下载、登记和可选 raw smoke，不划 split、不评测 |
-| MIR-1K | future OOD test | 用户报告 AST 已有；待核验音频与歌词映射 | 若有可靠 audio+lyrics 可做 raw smoke；不接入 17 首字符 annotation |
+| MIR-1K | OOD test-only | 原始集已在外部数据盘验证：110 首整曲、1,000 条短片段、歌词与 pitch 标签；另有公开 17 首人工字符级标注 | 仅 17 首人工标注歌曲进入 character-level OOD test；不用于训练或 validation |
 | MIR-MLPop Mandarin | later evaluation candidate | deferred | 当前不下载 |
 | DALI | English training candidate | deferred | 当前不推进 |
 | JamendoLyrics | English evaluation candidate | deferred | 当前不推进 |
