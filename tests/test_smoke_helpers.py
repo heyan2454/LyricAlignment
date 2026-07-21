@@ -75,3 +75,12 @@ def test_resume_requires_matching_success_identity() -> None:
         audio_sha256="audio",
         text_sha256="text",
     )
+
+
+def test_zero_and_near_zero_durations_are_explicit_diagnostics() -> None:
+    result = MODULE.validate_alignment(
+        [{"start_time": 0.0, "end_time": 0.0}, {"start_time": 0.1, "end_time": 0.11}],
+        1.0,
+    )
+    assert "zero_duration" in result["warnings"]
+    assert "near_zero_duration" in result["warnings"]

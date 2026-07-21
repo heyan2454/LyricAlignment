@@ -86,6 +86,10 @@ def validate_alignment(
         end = float(end)
         if start > end:
             warn("negative_duration")
+        elif start == end:
+            warn("zero_duration")
+        elif end - start <= 0.02:
+            warn("near_zero_duration")
         if start < -0.25:
             warn("start_before_audio")
         if end > audio_duration + 0.5:
