@@ -247,3 +247,21 @@ derivative, not a claim that the original stereo mixture itself is vocal-only.
 ### Archive boundary
 
 This archive records the current code/document snapshot and the supplied external-run identities.  Large external manifests and audio are not copied into the repository.  The archive does not claim to have rerun the 20,896-item server audit locally.
+
+### Incremental overlay and slur-time pass
+
+The parser now maps ordinary `wang` only to `uang`.  The confirmed exceptional
+source row `Alto-1#空空#0019` is corrected non-destructively by the approved,
+hash-anchored token overlay in
+`configs/curation/m4singer_annotation_overlays_v1.jsonl`: source token index
+11 is required to be `van` and is replaced by `uang` only when the source-row
+SHA-256 is exactly `92c7c8a86912cf9f939a5640bcec9b3359d2da7fed0ef0e425d86cc0a5b90f1a`.
+
+`m4singer_slur_time_allocation_v1` is strictly incremental.  It is evaluated
+only after the legacy pinyin/held-vowel rules leave a slur record in review,
+and it only partitions the legacy phoneme groups.  It requires complete,
+independent character-time anchors and agreement with both phoneme and
+collapsed MIDI boundaries within 30 ms; it does not infer lyrics from MIDI.
+The initial full pass has no independent character-time-anchor JSONL, so it
+promotes zero slur records.  Its purpose is to establish the 20,299 accepted /
+597 review overlay baseline and retain the old result path for comparison.

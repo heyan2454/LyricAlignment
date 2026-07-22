@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from lyricalign.datasets.audit import classify_item, summarize
-from lyricalign.datasets.m4singer import character_phoneme_mapping, normalize_lyrics, prepare_item
+from lyricalign.datasets.m4singer import apply_token_overlays, character_phoneme_mapping, normalize_lyrics, prepare_item, source_row_sha256
 
 
 def test_normalization_preserves_raw_positions_and_removes_spacing_punctuation() -> None:
@@ -58,6 +58,33 @@ def test_pinyin_parse_maps_qu_to_m4singer_v_and_held_only_fallback() -> None:
     mapping, status, _ = character_phoneme_mapping("好", ["h", "ai"], is_slur=[False, True])
     assert mapping == [[0, 1]]
     assert status == "accepted_rule_validated_held_vowel"
+
+
+def test_wang_is_normal_uang_and_overlay_is_single_record_hash_anchored() -> None:
+    mapping, status, _ = character_phoneme_mapping("忘", ["uang"])
+    assert mapping == [[0]]
+    assert status == "accepted_rule_based_pinyin_validated"
+    raw = {"item_name": "Alto-1#空空#0019", "phs": ["van"]}
+    overlay = {"item_id": raw["item_name"], "source_row_sha256": source_row_sha256(raw), "operation": "replace_token", "target": "phs", "token_index": 0, "expected_value": "van", "replacement_value": "uang", "reviewer_decision": "approved"}
+    corrected, applied = apply_token_overlays(raw, [overlay])
+    assert raw["phs"] == ["van"]
+    assert corrected["phs"] == ["uang"]
+    assert applied == [overlay]
+
+
+def test_slur_time_stage_only_extends_a_legacy_repeat_candidate_with_three_axis_agreement(tmp_path: Path) -> None:
+    raw = {"item_name": "Alto-1#demo#0004", "txt": "啊啊", "phs": ["a", "a", "a"], "ph_dur": [0.5, 0.5, 0.5], "notes": [60, 62, 62], "notes_dur": [0.5, 1.0, 1.0], "is_slur": [1, 1, 1]}
+    audio_dir = tmp_path / "Alto-1#demo"; audio_dir.mkdir()
+    with wave.open(str(audio_dir / "0004.wav"), "wb") as handle:
+        handle.setnchannels(1); handle.setsampwidth(2); handle.setframerate(16000); handle.writeframes(b"\x00\x00" * 24000)
+    # The pure mapping is ambiguous; the independent anchors select the legacy split.
+    mapping, status, _ = character_phoneme_mapping(raw["txt"], raw["phs"], is_slur=raw["is_slur"])
+    assert mapping == [None, None]
+    assert status == "review_required_pinyin_parse_ambiguous"
+    manifest, annotations = prepare_item(raw, tmp_path, character_time_anchors=[{"character_index": 0, "start_sec": 0.0, "end_sec": 0.5}, {"character_index": 1, "start_sec": 0.5, "end_sec": 1.5}])
+    assert manifest["status"] == "accepted"
+    assert manifest["mapping_status"] == "accepted_rule_based_slur_time_allocation"
+    assert [row["source_phoneme_indices"] for row in annotations] == [[0], [1, 2]]
 
 
 def test_prepare_item_keeps_relative_audio_path_and_no_timestamps(tmp_path: Path) -> None:

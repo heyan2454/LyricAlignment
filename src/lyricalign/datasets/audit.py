@@ -7,6 +7,7 @@ from typing import Any
 
 from lyricalign.datasets.m4singer import (
     SPECIAL_PHONEMES,
+    apply_token_overlays,
     PINYIN_INITIALS,
     audio_metadata,
     character_phoneme_mapping,
@@ -70,8 +71,9 @@ def _b_tier_reason(raw: dict[str, Any], normalized_text: str, phonemes: list[str
     return "unclassified_mapping_failure", tags, details
 
 
-def classify_item(raw: dict[str, Any], root: str) -> dict[str, Any]:
+def classify_item(raw: dict[str, Any], root: str, *, overlays: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Return one complete audit record; malformed input is an explicit failure."""
+    raw, applied_overlays = apply_token_overlays(raw, overlays)
     item_id = str(raw.get("item_name", ""))
     required = ("item_name", "txt", "phs", "ph_dur", "notes", "notes_dur")
     missing = [field for field in required if field not in raw]
@@ -107,7 +109,7 @@ def classify_item(raw: dict[str, Any], root: str) -> dict[str, Any]:
         "error_code": None, "taxonomy": category, "primary_reason": primary_reason, "secondary_tags": secondary_tags, "reason_details": reason_details, "classification_version": CLASSIFICATION_VERSION, "mapping_status": mapping_status,
         "normalized_character_count": len(normalized.text), "phoneme_count": len(phonemes),
         "syllable_group_count": len([entry for entry in mapping if entry]), "special_phoneme_count": len(special), "contains_special_non_lyric_token": bool(special), "special_token_types": special_types,
-        "normalization_flags": normalized.flags, "audio": audio,
+        "normalization_flags": normalized.flags, "audio": audio, "applied_overlays": applied_overlays,
         "duration_sum_sec": durations[-1][1] if durations else None,
     }
 
