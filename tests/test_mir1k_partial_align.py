@@ -6,7 +6,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from lyricalign.datasets.mir1k import prepare_partial_align_item
+from lyricalign.datasets.mir1k import extract_vocal_channel, prepare_partial_align_item
 
 
 def make_audio(root: Path) -> None:
@@ -36,3 +36,13 @@ def test_prepare_partial_align_rejects_non_monotonic_intervals(tmp_path: Path) -
         prepare_partial_align_item(
             {"song_id": "singer_1.wav", "lyric": "你好", "on_offset": [[0.5, 0.8], [0.4, 1.0]]}, tmp_path
         )
+
+
+def test_extract_vocal_channel_selects_channel_not_average(tmp_path: Path) -> None:
+    source = tmp_path / "stereo.wav"
+    with wave.open(str(source), "wb") as handle:
+        handle.setnchannels(2); handle.setsampwidth(2); handle.setframerate(16000); handle.writeframes(b"\x01\x00\x03\x00" * 4)
+    result = extract_vocal_channel(source, tmp_path / "vocal.wav", vocal_channel_index=1)
+    with wave.open(str(tmp_path / "vocal.wav"), "rb") as handle:
+        assert handle.getnchannels() == 1 and handle.readframes(1) == b"\x03\x00"
+    assert len(result["output_sha256"]) == 64

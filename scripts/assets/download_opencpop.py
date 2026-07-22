@@ -9,6 +9,7 @@ import json
 import re
 import urllib.error
 import urllib.request
+import urllib.parse
 from pathlib import Path
 
 CONTENT_RANGE_RE = re.compile(r"bytes\s+(\d+)-(\d+)/(\d+|\*)", re.IGNORECASE)
@@ -47,7 +48,10 @@ def main() -> None:
     request = urllib.request.Request(args.url, headers=headers)
 
     try:
-        with urllib.request.urlopen(request) as response:
+        # Test/local servers must not be sent through an ambient corporate proxy.
+        parsed = urllib.parse.urlparse(args.url)
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({})) if parsed.hostname in {"127.0.0.1", "localhost", "::1"} else urllib.request.build_opener()
+        with opener.open(request) as response:
             status = getattr(response, "status", response.getcode())
             content_type = response.headers.get("Content-Type", "").lower()
             if "text/html" in content_type:

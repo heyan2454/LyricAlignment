@@ -4,11 +4,41 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
+import wave
 from pathlib import Path
 from typing import Any
 
 from lyricalign.audio.contract import inventory_record
 from lyricalign.datasets.m4singer import audio_metadata, normalize_lyrics
+
+MIR1K_VOCAL_CHANNEL_EVIDENCE_REQUIRED = "MIR-1K vocal channel must be established by retained dataset documentation"
+
+
+def extract_vocal_channel(source: Path, destination: Path, *, vocal_channel_index: int, overwrite: bool = False) -> dict[str, Any]:
+    """Copy one declared PCM channel; never average a mixture into a pseudo-vocal."""
+    if destination.exists() and not overwrite:
+        raise FileExistsError(destination)
+    with wave.open(str(source), "rb") as input_handle:
+        if input_handle.getnchannels() <= vocal_channel_index:
+            raise ValueError(f"{source}: requested channel {vocal_channel_index} unavailable")
+        if input_handle.getsampwidth() != 2:
+            raise ValueError("only PCM s16le channel extraction is supported")
+        frames = input_handle.readframes(input_handle.getnframes())
+        import array
+        samples = array.array("h"); samples.frombytes(frames)
+        selected = array.array("h", samples[vocal_channel_index::input_handle.getnchannels()])
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(suffix=".wav", dir=destination.parent, delete=False) as temp:
+            tmp = Path(temp.name)
+        try:
+            with wave.open(str(tmp), "wb") as out:
+                out.setnchannels(1); out.setsampwidth(2); out.setframerate(input_handle.getframerate()); out.writeframes(selected.tobytes())
+            os.replace(tmp, destination)
+        except Exception:
+            tmp.unlink(missing_ok=True); raise
+    return {"source_path": str(source.resolve()), "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(), "vocal_channel_index": vocal_channel_index, "output_path": str(destination.resolve()), "output_sha256": hashlib.sha256(destination.read_bytes()).hexdigest()}
 
 
 def prepare_partial_align_item(raw: dict[str, Any], audio_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
