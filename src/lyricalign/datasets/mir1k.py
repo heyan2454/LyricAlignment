@@ -41,7 +41,7 @@ def extract_vocal_channel(source: Path, destination: Path, *, vocal_channel_inde
     return {"source_path": str(source.resolve()), "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(), "vocal_channel_index": vocal_channel_index, "output_path": str(destination.resolve()), "output_sha256": hashlib.sha256(destination.read_bytes()).hexdigest()}
 
 
-def prepare_partial_align_item(raw: dict[str, Any], audio_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def prepare_partial_align_item(raw: dict[str, Any], audio_root: Path, *, audio_relpath_prefix: str = "UndividedWavfile", channel_extraction: dict[str, Any] | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Prepare one manually aligned MIR-1K song as a strict OOD test-only record."""
 
     song_id = str(raw["song_id"])
@@ -54,7 +54,7 @@ def prepare_partial_align_item(raw: dict[str, Any], audio_root: Path) -> tuple[d
         raise ValueError(f"{song_id}: aligned lyrics must not change under normalization")
     if len(on_offset) != len(lyric):
         raise ValueError(f"{song_id}: {len(on_offset)} intervals for {len(lyric)} characters")
-    audio_relpath = f"UndividedWavfile/{song_id}"
+    audio_relpath = f"{audio_relpath_prefix}/{song_id}"
     audio_path = audio_root / audio_relpath
     audio = audio_metadata(audio_path)
     if audio["audio_status"] != "ok":
@@ -103,6 +103,7 @@ def prepare_partial_align_item(raw: dict[str, Any], audio_root: Path) -> tuple[d
         "duration_sec": duration,
         "audio": audio,
         "vocal_source_type": "official_vocal_channel",
+        "channel_extraction": channel_extraction,
         "audio_contract": inventory_record(audio_path, "official_vocal_channel", include_hash=True),
         "split": "test",
         "usage": "ood_test_only",

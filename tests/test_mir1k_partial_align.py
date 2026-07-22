@@ -46,3 +46,12 @@ def test_extract_vocal_channel_selects_channel_not_average(tmp_path: Path) -> No
     with wave.open(str(tmp_path / "vocal.wav"), "rb") as handle:
         assert handle.getnchannels() == 1 and handle.readframes(1) == b"\x03\x00"
     assert len(result["output_sha256"]) == 64
+
+
+def test_prepare_partial_align_supports_extracted_vocal_path(tmp_path: Path) -> None:
+    directory = tmp_path / "vocal_wavs"; directory.mkdir()
+    with wave.open(str(directory / "singer_1.wav"), "wb") as handle:
+        handle.setnchannels(1); handle.setsampwidth(2); handle.setframerate(16000); handle.writeframes(b"\x00\x00" * 32000)
+    manifest, _ = prepare_partial_align_item({"song_id": "singer_1.wav", "lyric": "你", "on_offset": [[0.1, 0.5]]}, tmp_path, audio_relpath_prefix="vocal_wavs", channel_extraction={"vocal_channel_index": 1})
+    assert manifest["audio_relpath"] == "vocal_wavs/singer_1.wav"
+    assert manifest["channel_extraction"]["vocal_channel_index"] == 1

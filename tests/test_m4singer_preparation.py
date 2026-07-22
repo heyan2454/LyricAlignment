@@ -27,6 +27,15 @@ def test_mapping_only_exposes_source_indices_for_exact_group_count() -> None:
     assert status == "review_required_group_count_mismatch"
 
 
+def test_changed_vowel_starts_zero_initial_group_but_repeated_vowel_is_held() -> None:
+    mapping, status, _ = character_phoneme_mapping("好我", ["h", "ao", "uo"])
+    assert mapping == [[0, 1], [2]]
+    assert status == "review_required_auto_phoneme_grouping"
+    mapping, status, _ = character_phoneme_mapping("好", ["h", "ao", "ao"])
+    assert mapping == [[0, 1, 2]]
+    assert status == "review_required_auto_phoneme_grouping"
+
+
 def test_prepare_item_keeps_relative_audio_path_and_no_timestamps(tmp_path: Path) -> None:
     audio_dir = tmp_path / "Alto-1#demo"
     audio_dir.mkdir()
@@ -79,6 +88,6 @@ def test_special_token_is_attribute_not_primary_reason(tmp_path: Path) -> None:
     audio_dir = tmp_path / "Alto-1#demo"; audio_dir.mkdir()
     with wave.open(str(audio_dir / "0002.wav"), "wb") as handle:
         handle.setnchannels(1); handle.setsampwidth(2); handle.setframerate(16000); handle.writeframes(b"\x00\x00" * 16000)
-    record = classify_item({"item_name": "Alto-1#demo#0002", "txt": "好", "phs": ["h", "ao", "d", "e", "<SP>"], "ph_dur": [0.2, 0.2, 0.2, 0.2, 0.0], "notes": [], "notes_dur": [], "is_slur": [True]}, str(tmp_path))
+    record = classify_item({"item_name": "Alto-1#demo#0002", "txt": "好", "phs": ["h", "ao", "d", "e", "<SP>"], "ph_dur": [0.2, 0.2, 0.2, 0.2, 0.2], "notes": [], "notes_dur": [], "is_slur": [True]}, str(tmp_path))
     assert record["taxonomy"] == "slur_or_repeated_vowel"
     assert record["contains_special_non_lyric_token"]

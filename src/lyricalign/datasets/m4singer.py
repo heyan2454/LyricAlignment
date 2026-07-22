@@ -17,7 +17,7 @@ PINYIN_INITIALS = {
     "zh", "ch", "sh", "r", "z", "c", "s", "y", "w",
 }
 NORMALIZATION_VERSION = "m4singer_text_v1"
-MAPPING_VERSION = "m4singer_phoneme_grouping_v1"
+MAPPING_VERSION = "m4singer_phoneme_grouping_v2_initial_or_vowel_change"
 
 
 @dataclass(frozen=True)
@@ -68,25 +68,40 @@ def normalize_lyrics(text: str) -> NormalizedLyrics:
 
 
 def group_phonemes(phonemes: list[str]) -> tuple[list[list[int]], list[int]]:
-    """Group M4Singer phonemes into conservative pinyin-like syllable candidates.
+    """Group phonemes by initial or a changed vowel/final token.
 
-    The dataset stores initials/finals as separate tokens. A group begins at an
-    initial token; special pause/breath tokens are excluded and returned for audit.
-    This is an auditable candidate mapping, not character-level ground truth.
+    M4Singer uses repeated identical finals for held/slurred vowels.  A changed
+    final without an intervening initial is therefore a new zero-initial syllable
+    candidate, rather than being incorrectly absorbed into the previous character.
+    Special pause/breath tokens end the current candidate and remain audit-only.
     """
 
     groups: list[list[int]] = []
     special_indices: list[int] = []
+    previous_vowel: str | None = None
+    initial_pending_vowel = False
     for index, token in enumerate(phonemes):
         if token in SPECIAL_PHONEMES:
             special_indices.append(index)
+            previous_vowel = None
+            initial_pending_vowel = False
             continue
-        if token.lower() in PINYIN_INITIALS and groups:
+        if token.lower() in PINYIN_INITIALS:
             groups.append([index])
-        elif groups:
+            previous_vowel = None
+            initial_pending_vowel = True
+        elif initial_pending_vowel:
+            groups[-1].append(index)
+            previous_vowel = token.lower()
+            initial_pending_vowel = False
+        elif not groups or previous_vowel is None:
+            groups.append([index])
+            previous_vowel = token.lower()
+        elif token.lower() == previous_vowel:
             groups[-1].append(index)
         else:
             groups.append([index])
+            previous_vowel = token.lower()
     return groups, special_indices
 
 
