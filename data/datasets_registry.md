@@ -7,9 +7,9 @@
 
 | 名称 | 长期角色 | 当前资产状态 | 当前使用边界 |
 |---|---|---|---|
-| M4Singer | primary train + custom validation | 外部原始资产可用；已审计 20,896 items、193,666 character records；6,051 自动音素分组候选，14,845 group-count mismatch；尚无 accepted 子集 | 当前完成 mismatch taxonomy、text normalization、character mapping、vocal contract、song split 和 synthetic-long；不提前训练 |
+| M4Singer | primary train + custom validation | 当前 operational canonical：20,896 items、193,666 character records；20,298 `rule_validated` candidates、598 review、0 rejected/failed | `rule_validated` 不等同于人工确认高置信；当前 manifest 身份见 `docs/status/project_current.md` |
 | OpenCpop official train/test | train/validation source + final in-domain test | pending official authorization/download | 外部阻塞；不得绕过授权；不阻止完成 M4Singer/MIR-1K 自动化 |
-| MIR-1K | OOD test-only | 原始集校验完成：110 首整曲、1,000 条短片段；17 首人工字符级标注、2,035 字符已准备 | 17 首官方 vocal channel 固定为 natural-long OOD test-only；不训练、不 validation、不调参 |
+| MIR-1K | OOD test-only | 用户已确认 zero-based channel index 1 为人声；17 首 vocal-only、2,035 字符派生 manifest 已固定 | natural-long OOD test-only；不训练、不 validation、不调参 |
 | MIR-MLPop Mandarin | later evaluation candidate | deferred | 当前不下载 |
 | DALI | English training candidate | deferred | 当前不推进 |
 | JamendoLyrics | English evaluation candidate | deferred | 当前不推进 |
@@ -30,7 +30,7 @@ model_separated_vocal
 - M4Singer raw 和已生成的 preparation 结果位于服务器外部数据盘；
 - MIR-1K 原始归档、解压数据、公开字符标注和派生 manifest 位于服务器外部数据盘；
 - 仓库只保留轻量 run summary、规则、schema 和报告；
-- 本归档源 ZIP 漏收数据集代码，服务器工作树已有实现，下一次完整归档必须纳入。
+- 当前归档已包含数据集代码与准备脚本；大型 manifest 和音频继续保留在外部数据盘。
 
 ## 进入正式训练前必须冻结
 

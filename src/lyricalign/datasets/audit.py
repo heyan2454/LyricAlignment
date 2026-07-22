@@ -51,8 +51,16 @@ def _b_tier_reason(raw: dict[str, Any], normalized_text: str, phonemes: list[str
         return "multiple_slur_or_repeated_vowel_markers", tags, details
     if slur_count == 1:
         return "single_slur_or_repeated_vowel_marker", tags, details
-    if zero_initial_groups:
-        return "zero_initial_or_special_syllable_case", tags, details
+    # Zero-initial groups (for example ``wo -> uo``) are normal M4Singer
+    # syllables, and AP/SP/SIL are audit-only boundaries.  Neither is a
+    # mapping failure by itself.  If the pinyin allocation still failed, make
+    # that failure explicit instead of blaming the normal zero-initial form.
+    if mapping_status in {
+        "review_required_pinyin_parse_failure",
+        "review_required_pinyin_parse_no_match",
+        "review_required_pinyin_parse_ambiguous",
+    }:
+        return "mandarin_syllable_parse_failure", tags, details
     if multi_note_groups:
         return "multiple_note_groups_per_character", tags, details
     if mapping_status != "review_required_auto_phoneme_grouping" and group_delta > 0:
@@ -72,7 +80,7 @@ def classify_item(raw: dict[str, Any], root: str) -> dict[str, Any]:
     singer_id, song_id, segment_id = item_id.split("#", 2)
     normalized = normalize_lyrics(str(raw["txt"]))
     phonemes = [str(value) for value in raw["phs"]]
-    mapping, mapping_status, special = character_phoneme_mapping(normalized.text, phonemes)
+    mapping, mapping_status, special = character_phoneme_mapping(normalized.text, phonemes, is_slur=list(raw.get("is_slur", [])))
     audio = audio_metadata(__import__("pathlib").Path(root) / f"{singer_id}#{song_id}" / f"{segment_id}.wav")
     durations = phoneme_intervals(list(raw["ph_dur"]), len(phonemes))
     special_types = sorted({phonemes[index] for index in special})
@@ -84,7 +92,7 @@ def classify_item(raw: dict[str, Any], root: str) -> dict[str, Any]:
     secondary_tags: list[str] = []
     reason_details: dict[str, int] = {}
     character_intervals = mapped_character_intervals(mapping, list(raw["ph_dur"]))
-    if durations is not None and audio["audio_status"] == "ok" and mapping_status == "review_required_auto_phoneme_grouping" and character_intervals and all(interval is not None for interval in character_intervals) and character_intervals[-1][1] <= float(audio["duration_sec"]) + 0.10:
+    if durations is not None and audio["audio_status"] == "ok" and mapping_status in {"review_required_auto_phoneme_grouping", "accepted_rule_based_repeated_vowel_split", "accepted_rule_based_pinyin_validated", "accepted_rule_validated_held_vowel"} and character_intervals and all(interval is not None for interval in character_intervals) and character_intervals[-1][1] <= float(audio["duration_sec"]) + 0.10:
         category = "accepted_rule_based"
     else:
         primary_reason, secondary_tags, reason_details = _b_tier_reason(raw, normalized.text, phonemes, mapping_status, durations, audio)

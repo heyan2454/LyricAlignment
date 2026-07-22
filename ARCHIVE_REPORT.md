@@ -1,54 +1,59 @@
+# Archive Report: M4Singer Rule Review
 
-# Archive Report: Dataset Cleaning Execution Handoff
-
-**Archive date:** 2026-07-22  
-**Output archive:** `LyricAlignment_20260722_dataset_cleaning_execution_archive.zip`  
+**Archive date:** 2026-07-23
+**Output archive:** `LyricAlignment_20260723_m4singer_rule_review_archive.zip`
 **Stable extracted root:** `LyricAlignment/`  
-**Source:** `LyricAlignment_202607211613_datasetok.zip`
+**Source archive:** `LyricAlignment_202607221709_manual2beforeslur.zip`
 
 ## Purpose
 
-将已完成的 schema-v2 smoke、M4Singer preparation、MIR-1K OOD 准备和当前 review，归档为下一阶段可直接交给 Codex 的数据清洗自动化执行包。当前包冻结逐阶段硬 gate、vocal-only 输入原则、长音频口径、自动 metric/raw baseline 和 Git/证据闭环要求。
+整理当前 M4Singer 规则映射与 MIR-1K vocal-only OOD 状态，清除顶层文档中的旧 canonical 口径，并保留旧结果作为明确标注的历史记录。此次归档不重新运行服务器上的 20,896 条全量数据处理，也不开展训练、评测或新的数据规则实现。
 
-## Key updates
+## Current canonical recorded
 
-- 状态从“server smoke pending”更新为“dataset cleaning automation”；
-- 记录 5/5 M4Singer schema-v2 smoke、Transformers commit 和零时长诊断缺口；
-- 记录 M4Singer 20,896 items、6,051 自动候选与 14,845 mismatch；
-- 记录 MIR-1K 17 首/2,035 字符 vocal-only OOD test-only；
-- 主输入冻结为原生/官方/模型分离 vocal-only，并要求 separator identity；
-- 建立 Stage 0–11 自动化执行合同和 Gate S0–S11；
-- 同音伪歌词推迟为鲁棒性/低标准标注副实验；
-- 增加直接可交给 Codex 的完整执行 prompt；
-- 更新 AI 协作、negative results、依赖与 session 温度。
+### M4Singer
 
-## Important merge constraint
+- source records: 20,896;
+- accepted `rule_validated` candidates: 20,298;
+- review required: 598;
+- rejected/failed: 0;
+- character annotations: 193,666;
+- manifest SHA-256: `22828f809e60cfaeb44f0fec973d7ce5b026fd024d0740b9120725f012d6053a`;
+- character annotation SHA-256: `ba28f0e0c5f5d6c850b47632808ccc60052f3be397f3316ee95bc95678ca613d`.
 
-源 ZIP 漏收服务器已有的：
+The accepted records are rule-validated candidates, not a claim of full manual high-confidence confirmation.
 
-```text
-src/lyricalign/datasets/
-scripts/datasets/
-```
+### MIR-1K
 
-本归档不得覆盖式替换服务器仓库。Codex 必须保留服务器实现、合并文档、先完成 Stage S0，然后在下一次完整归档中纳入这些文件。
+- zero-based channel index 1 manually confirmed as vocal on 2026-07-22;
+- 17 vocal-only songs / 2,035 character annotations;
+- fixed usage: `test` / `ood_test_only`;
+- manifest SHA-256: `bd8109d608247b78407c1d63e9f648b83f697a00c5c0b05b3fe93c87b42c884f`.
 
-## Local validation
+## Key document updates
 
-- `python -m compileall -q src scripts tests`: passed
-- `python -m pytest -q`: collection failed with two missing `lyricalign.datasets` module errors caused by the source ZIP omission
+- rewrote `README.md`, `AI_SESSION_ENTRY.md` and `docs/status/project_current.md` around the 20,298/598 canonical;
+- added `docs/sessions/20260723_m4singer_rule_review.md`;
+- added `reports/progress/20260723_dataset_mapping_progress.md`;
+- added lightweight machine-readable inventory at `runs/data_preparation/20260723_canonical_inventory/run_summary.json`;
+- updated dataset registry and 20/30/60/180-second long-audio terminology;
+- marked 6,051/14,845, 66 items and 18,057/2,839 as historical, invalid or superseded according to the supplied record;
+- retained dated historical reports, adding a superseded-status notice where they could otherwise be mistaken for current state.
 
-没有伪造 `10 passed` 或服务器测试事实。完整测试结果留给服务器 Stage S0。
+## Evidence boundary
 
-## Scope intentionally not executed during archive
+The archive keeps only the information needed to identify and reproduce the current external artifacts: paths, counts, role, key processing identity and SHA-256 values. It does not duplicate large JSONL manifests, audio, per-item review images or full logs.
 
-- 未修改或伪造服务器数据集实现；
-- 未运行 M4Singer 全量清洗；
-- 未生成 synthetic-long；
-- 未执行 metric/raw baseline；
-- 未启动 LoRA/training；
-- 未绕过 OpenCpop 授权。
+The current canonical facts were supplied from the server-side Codex record. They were not independently regenerated in this local archive environment because the external datasets are not present here.
 
-## Next entry
+## Local archive validation
 
-`docs/sessions/20260722_codex_dataset_cleaning_prompt.md`
+- project root remains `LyricAlignment/`;
+- dataset source modules and scripts are present;
+- Python source compilation was checked during archive construction;
+- generated archive manifest verifies every included file by size and SHA-256;
+- full dataset processing and full test execution were intentionally not required as archive evidence.
+
+## Current entry
+
+`docs/sessions/20260723_m4singer_rule_review.md`

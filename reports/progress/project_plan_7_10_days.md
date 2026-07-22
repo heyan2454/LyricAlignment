@@ -28,7 +28,7 @@
 - 字符 schema 与 phoneme/syllable/note 映射；
 - 异常样本和人工复核状态；
 - `native_short`、`synthetic_concat`、`natural_long` 类型；
-- 同曲相邻片段构造 20/30/60/120 秒 bucket；
+- 同曲相邻片段构造 20/30/60/180 秒 bucket；
 - song-level split 与切片包含泄漏审计。
 
 ## 后续周期

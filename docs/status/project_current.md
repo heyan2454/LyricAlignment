@@ -1,91 +1,116 @@
-
 # Project Current
 
-**Snapshot date:** 2026-07-22  
-**Stage:** dataset processing and cleaning automation
+**Snapshot date:** 2026-07-23
+**Stage:** M4Singer rule mapping review and MIR-1K vocal-only OOD preparation
 
 ## 当前定位
 
 ```text
 known Mandarin lyrics + vocal-only singing audio
--> character-level timestamp dataset
--> automatic raw Qwen baseline
+-> rule-validated character-level timestamp candidates
+-> explicit review/reject states
+-> song-level split and derived data products
+-> automatic raw baseline and evaluation
 -> staged domain adaptation
--> frozen in-domain and OOD evaluation
 ```
 
-## 已完成基础
+## M4Singer current operational canonical
 
-### Qwen Forced Aligner
-
-- model ID：`Qwen/Qwen3-ForcedAligner-0.6B-hf`
-- resolved revision：`c07281df297b9905d24a508279258cccf987a064`
-- Transformers source commit：`7ea2320c76117e6742364808a666ef6f2fb40a67`
-- schema-v2 M4Singer smoke：5/5 success；
-- 模型、配置、输入 hash、外部输出 hash、分阶段 runtime 均已记录；
-- smoke 预览可见若干零时长字符，说明结构诊断仍需增加 near-zero/zero-duration 统计；
-- raw smoke 无 GT，不构成准确率结论。
-
-### M4Singer
-
-- 外部只读资产已可访问；
-- preparation 结果：20,896 items、193,666 character records；
-- 6,051 条为 `review_required_auto_phoneme_grouping`；
-- 14,845 条为 `review_required_group_count_mismatch`；
-- 当前没有 accepted 训练子集；
-- 下一步必须将 mismatch 拆成可解释 taxonomy，并实现 phoneme -> syllable -> character 映射和质量分层。
-
-### MIR-1K
-
-- 原始归档 MD5 与发布值一致；
-- 110 首整曲和 1,000 条短片段均可读；
-- 17 首人工字符级对齐整曲、2,035 字符已准备；
-- 固定为 vocal-only OOD test-only；不用于训练、validation、规则选择或 checkpoint 选择。
-
-### OpenCpop
-
-- 尚未获取；
-- 受官方授权/获取流程阻塞；
-- 该外部阻塞不应阻止完成 M4Singer + MIR-1K 的所有自动化基础设施。
-
-## 当前输入合同方向
-
-正式主输入统一为 vocal-only：
+当前规则轮次的 operational canonical manifest：
 
 ```text
-vocal_source_type = native_vocal | official_vocal_channel | model_separated_vocal
+/home/hyan/Data/lyricalign/derived/
+20260722_m4singer_pinyin_validated_v4/prepare/m4singer_manifest.jsonl
 ```
 
-模型分离人声必须记录 separator 名称、版本/权重 hash、配置、输入输出 hash。原生人声与模型分离人声分别统计。
+### 身份
 
-## 当前归档缺口
+| Item | Value |
+|---|---|
+| source `meta.json` SHA-256 | `50030a56d4529bb460f3088534655e27b75b4e538fcbe4f2ea2a4b968935d433` |
+| manifest rows | 20,896 |
+| manifest SHA-256 | `22828f809e60cfaeb44f0fec973d7ce5b026fd024d0740b9120725f012d6053a` |
+| character annotation rows | 193,666 |
+| character annotation SHA-256 | `ba28f0e0c5f5d6c850b47632808ccc60052f3be397f3316ee95bc95678ca613d` |
 
-本轮源 ZIP 漏收：
+### 状态守恒
 
-```text
-src/lyricalign/datasets/
-scripts/datasets/
-```
+| Status | Count | Meaning |
+|---|---:|---|
+| accepted | 20,298 | `rule_validated` character-to-phoneme candidate mapping |
+| review_required | 598 | 当前规则下未自动接受 |
+| rejected / failed | 0 | 全量审计中没有 schema、timing 或 audio hard rejection |
+| total | 20,896 | 与源记录数守恒 |
 
-服务器上已有这些实现。当前包只能合并，不能覆盖服务器工作树。归档本地验证为 compile 通过、pytest 因上述模块缺失在 collection 阶段报 2 个错误；这不是服务器执行结论。
+`accepted` 是规则验证候选，不等同于已经人工确认的高置信训练集。
 
-## 当前目标
+### 598 条 review
 
-本阶段必须形成：
+Primary reason：
 
-1. 可解释的 M4Singer mismatch taxonomy；
-2. `text_normalization_v1`；
-3. `character_mapping_v1` 与高置信训练子集；
-4. vocal audio contract 和可恢复规范化管线；
-5. song-level split 与跨数据集泄漏审计；
-6. synthetic-long 20/30/60/120 秒数据；
-7. MIR-1K vocal-only OOD frozen manifest；
-8. 自动 metric fixture、评测执行和 raw baseline；
-9. 测试、运行证据、状态文档、Git commit/push 闭环。
+| Reason | Count |
+|---|---:|
+| complex/multiple slur cases | 487 |
+| single-slur one-group deficits | 74 |
+| Mandarin pinyin parse failures | 36 |
+| Latin/digit | 1 |
 
-## 推迟事项
+Mapping status：
 
-- 同音同调随机字副实验：用于鲁棒性和低标准标注可接受性，不作为当前主清洗输入；
-- projector/score 全量训练、audio tower LoRA、language model LoRA；
-- 英文 word-level；
-- OpenCpop 依赖的正式 in-domain test。
+| Status | Count |
+|---|---:|
+| ambiguous allocations | 531 |
+| no-match allocations | 67 |
+
+当前 audit 是 primary reason breakdown 的事实来源；prepare manifest 是 canonical mapping artifact。
+
+## MIR-1K vocal-only OOD
+
+用户已于 2026-07-22 人工确认 `UndividedWavfile` 的第二个交错 PCM 声道，即 zero-based channel index 1，为人声。实现通过按声道步进抽取 PCM，不调用 `ffmpeg -ac 1`，也不平均两个声道。
+
+| Item | Value |
+|---|---|
+| output root | `/home/hyan/Data/lyricalign/derived/20260722_mir1k_vocal_channel1_ood` |
+| vocal-only songs | 17 |
+| character annotations | 2,035 |
+| split / use | `test` / `ood_test_only` |
+| extraction manifest SHA-256 | `5ed24d2a616af5764ab036876ccba919595728a31586d3b593a39bdb4fb2a9da` |
+| manifest SHA-256 | `bd8109d608247b78407c1d63e9f648b83f697a00c5c0b05b3fe93c87b42c884f` |
+| character JSONL SHA-256 | `78d7054ada0a3fb5ec3cd916174d094d78ab5d96f67d0112408de30dc24469c9` |
+
+该结果是显式 vocal-only 派生物，不代表原始 stereo mixture 本身是 vocal-only。
+
+## Historical validity
+
+| Version / count | Validity now | Reason |
+|---|---|---|
+| 6,051 accepted / 14,845 review | historical v2 only; not canonical | 早期固定 gate，早于当前 pinyin/held-vowel 规则 |
+| 66-item result | invalid / superseded | 历史计数错误 |
+| 18,057 / 2,839 | superseded intermediate | 早于独立字符 heteronym 处理和 `q+v` 等 M4Singer 转换修正 |
+| 20,298 / 598 | current operational canonical | 与当前 manifest、audit 和总数守恒一致 |
+
+历史 run 和报告可以保留用于追溯，但不得与当前 manifest 混合或继续作为当前状态源。
+
+## Qwen Forced Aligner
+
+- model ID：`Qwen/Qwen3-ForcedAligner-0.6B-hf`；
+- resolved revision：`c07281df297b9905d24a508279258cccf987a064`；
+- Transformers source commit：`7ea2320c76117e6742364808a666ef6f2fb40a67`；
+- 已有短片段和旧版本数据的 raw inference 记录；
+- 旧 inference 与旧 manifest 绑定，不能直接当作当前 canonical 数据的正式 baseline；
+- raw smoke 只证明调用链，不构成准确率结论。
+
+## 当前包与外部数据的关系
+
+- 仓库保存代码、规则、命令/配置、轻量数量与 hash；
+- 大型 M4Singer/MIR-1K manifest、音频和逐样本结果位于外部数据盘；
+- 本归档没有重新执行外部全量数据处理；上述 canonical 数量和 hash 来自已提供的服务器 run 记录；
+- 后续规则变化必须生成新目录和新 manifest，不得静默修改当前 canonical。
+
+## 尚未形成的正式结论
+
+- 20,298 条尚未被表述为人工确认高置信训练集；
+- 剩余 598 条仍保持 review；
+- 基于当前 canonical 的最终 song split、20/30/60/180 秒派生集和 raw baseline 尚未在本快照中固定；
+- OpenCpop 仍受官方授权/获取流程阻塞；
+- LoRA 或其他正式适配尚未开始。

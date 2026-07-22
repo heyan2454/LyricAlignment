@@ -20,20 +20,44 @@ def test_normalization_preserves_raw_positions_and_removes_spacing_punctuation()
 def test_mapping_only_exposes_source_indices_for_exact_group_count() -> None:
     mapping, status, special = character_phoneme_mapping("好的", ["h", "ao", "<SP>", "d", "e"])
     assert mapping == [[0, 1], [3, 4]]
-    assert status == "review_required_auto_phoneme_grouping"
+    assert status == "accepted_rule_based_pinyin_validated"
     assert special == [2]
     mapping, status, _ = character_phoneme_mapping("好的", ["h", "ao"])
     assert mapping == [None, None]
-    assert status == "review_required_group_count_mismatch"
+    assert status == "review_required_pinyin_parse_no_match"
 
 
 def test_changed_vowel_starts_zero_initial_group_but_repeated_vowel_is_held() -> None:
     mapping, status, _ = character_phoneme_mapping("好我", ["h", "ao", "uo"])
     assert mapping == [[0, 1], [2]]
-    assert status == "review_required_auto_phoneme_grouping"
+    assert status == "accepted_rule_based_pinyin_validated"
+
+
+def test_unique_pinyin_parse_recovers_zero_initial_and_rejects_ambiguous_repeats() -> None:
+    mapping, status, _ = character_phoneme_mapping("题一啊", ["t", "i", "i", "a"])
+    assert mapping == [[0, 1], [2], [3]]
+    assert status == "accepted_rule_based_pinyin_validated"
+    mapping, status, _ = character_phoneme_mapping("啊啊", ["a", "a", "a"])
+    assert mapping == [None, None]
+    assert status == "review_required_pinyin_parse_ambiguous"
     mapping, status, _ = character_phoneme_mapping("好", ["h", "ao", "ao"])
     assert mapping == [[0, 1, 2]]
-    assert status == "review_required_auto_phoneme_grouping"
+    assert status == "accepted_rule_based_pinyin_validated"
+
+
+def test_pinyin_parse_keeps_zero_initial_reading_of_polyphonic_character() -> None:
+    mapping, status, _ = character_phoneme_mapping("走入无边人海里", ["z", "ou", "r", "u", "u", "b", "ian", "r", "en", "h", "ai", "l", "i"])
+    assert mapping == [[0, 1], [2, 3], [4], [5, 6], [7, 8], [9, 10], [11, 12]]
+    assert status == "accepted_rule_based_pinyin_validated"
+
+
+def test_pinyin_parse_maps_qu_to_m4singer_v_and_held_only_fallback() -> None:
+    mapping, status, _ = character_phoneme_mapping("去哪啊", ["q", "v", "n", "a", "a"])
+    assert mapping == [[0, 1], [2, 3], [4]]
+    assert status == "accepted_rule_based_pinyin_validated"
+    mapping, status, _ = character_phoneme_mapping("好", ["h", "ai"], is_slur=[False, True])
+    assert mapping == [[0, 1]]
+    assert status == "accepted_rule_validated_held_vowel"
 
 
 def test_prepare_item_keeps_relative_audio_path_and_no_timestamps(tmp_path: Path) -> None:
@@ -90,4 +114,21 @@ def test_special_token_is_attribute_not_primary_reason(tmp_path: Path) -> None:
         handle.setnchannels(1); handle.setsampwidth(2); handle.setframerate(16000); handle.writeframes(b"\x00\x00" * 16000)
     record = classify_item({"item_name": "Alto-1#demo#0002", "txt": "好", "phs": ["h", "ao", "d", "e", "<SP>"], "ph_dur": [0.2, 0.2, 0.2, 0.2, 0.2], "notes": [], "notes_dur": [], "is_slur": [True]}, str(tmp_path))
     assert record["taxonomy"] == "slur_or_repeated_vowel"
+    assert record["contains_special_non_lyric_token"]
+
+
+def test_zero_initial_and_special_token_do_not_mask_pinyin_parse_failure(tmp_path: Path) -> None:
+    audio_dir = tmp_path / "Alto-1#demo"; audio_dir.mkdir()
+    with wave.open(str(audio_dir / "0003.wav"), "wb") as handle:
+        handle.setnchannels(1); handle.setsampwidth(2); handle.setframerate(16000); handle.writeframes(b"\x00\x00" * 16000)
+    record = classify_item(
+        {
+            "item_name": "Alto-1#demo#0003", "txt": "我好", "phs": ["uo", "<SP>"],
+            "ph_dur": [0.5, 0.5], "notes": [], "notes_dur": [],
+        },
+        str(tmp_path),
+    )
+    assert record["mapping_status"] == "review_required_pinyin_parse_no_match"
+    assert record["taxonomy"] == "mandarin_syllable_parse_failure"
+    assert "zero_initial_group" in record["secondary_tags"]
     assert record["contains_special_non_lyric_token"]

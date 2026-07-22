@@ -3,6 +3,8 @@
 
 **Date:** 2026-07-22
 
+> **Historical snapshot:** 本报告记录 2026-07-22 转入数据清洗阶段时的判断。当前数据口径已由 `docs/status/project_current.md` 和 `docs/sessions/20260723_m4singer_rule_review.md` 替代；其中 6,051/14,845 不再是 canonical。
+
 ## 结论
 
 研究进度已从“smoke 基础设施待执行”进入“数据处理与清洗自动化”。Qwen schema-v2 smoke、M4Singer 元数据准备和 MIR-1K OOD 资产均已有执行证据。当前主要风险不再是模型能否调用，而是字符映射可靠性、数据来源一致性、长音频口径、自动评测和归档完整性。

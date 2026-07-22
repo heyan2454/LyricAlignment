@@ -29,10 +29,22 @@ def cumulative(values: list[object]) -> list[tuple[float, float]]:
     return result
 
 
+def note_events(notes: list[object], durations: list[object]) -> list[tuple[int, float, float]]:
+    """Collapse duplicated per-phoneme note metadata into note events."""
+    events: list[tuple[int, float]] = []
+    previous: tuple[int, float] | None = None
+    for note, duration in zip(notes, durations, strict=True):
+        key = (int(note), float(duration))
+        if key != previous:
+            events.append(key); previous = key
+    intervals = cumulative([duration for _, duration in events])
+    return [(note, start, end) for (note, _), (start, end) in zip(events, intervals, strict=True)]
+
+
 def draw_item(record: dict, raw: dict, output: Path, cjk_font: FontProperties | None) -> None:
     phonemes = [str(x) for x in raw["phs"]]
     ph_intervals = cumulative(raw["ph_dur"])
-    note_intervals = cumulative(raw["notes_dur"])
+    events = note_events(raw["notes"], raw["notes_dur"])
     groups, special = group_phonemes(phonemes)
     normalized = normalize_lyrics(raw["txt"]).text
     fig, axes = plt.subplots(3, 1, figsize=(16, 10), constrained_layout=True)
@@ -49,28 +61,34 @@ def draw_item(record: dict, raw: dict, output: Path, cjk_font: FontProperties | 
         axes[0].add_patch(Rectangle((index, .08), .9, .32, color="#ffd6a5"))
         axes[0].text(index + .45, .24, f"G{index}: {tokens}", ha="center", va="center", fontsize=7)
     axes[0].set(title=f"Cardinality diagnosis: characters C={len(normalized)}; candidate syllable groups G={len(groups)}; delta=G-C={len(groups)-len(normalized)}. No link is drawn when unequal.", xlim=(0, max_count), ylim=(0, 1), yticks=[], xticks=[])
-    for index, ((start, end), token) in enumerate(zip(ph_intervals, phonemes, strict=True)):
+    first_ph = next((start for (start, _), token in zip(ph_intervals, phonemes, strict=True) if token not in SPECIAL_PHONEMES), 0.0)
+    first_note = next((start for note, start, _ in events if note != 0), 0.0)
+    ph_shift = first_note - first_ph
+    shifted_ph = [(start + ph_shift, end + ph_shift) for start, end in ph_intervals]
+    for index, ((start, end), token) in enumerate(zip(shifted_ph, phonemes, strict=True)):
         color = COLORS.get(token, "#457b9d")
         axes[1].add_patch(Rectangle((start, 0.25), end - start, .5, color=color, alpha=.82))
         axes[1].text((start + end) / 2, .5, token, ha="center", va="center", fontsize=7, rotation=45)
         if index < len(raw["is_slur"]) and raw["is_slur"][index]:
             axes[1].plot((start + end) / 2, .91, marker="*", color="#d62828", markersize=9)
     for number, group in enumerate(groups):
-        start, end = ph_intervals[group[0]][0], ph_intervals[group[-1]][1]
+        start, end = shifted_ph[group[0]][0], shifted_ph[group[-1]][1]
         axes[1].plot([start, end], [1.05, 1.05], color="#1d3557", linewidth=2)
         axes[1].text((start + end) / 2, 1.12, f"syllable {number}", ha="center", fontsize=7)
-    axes[1].set(title=f"Phoneme timeline from ph_dur (star = is_slur; total={ph_intervals[-1][1]:.3f}s)", ylim=(0, 1.28), yticks=[])
-    for note_index, ((start, end), note) in enumerate(zip(note_intervals, raw["notes"], strict=True)):
+    axes[1].set(title=f"Phoneme timeline from ph_dur (star = is_slur; shifted {ph_shift:+.3f}s to align first lexical phoneme with first pitched note; total={ph_intervals[-1][1]:.3f}s)", ylim=(0, 1.28), yticks=[])
+    for note_index, (note, start, end) in enumerate(events):
         if note:
             axes[2].add_patch(Rectangle((start, float(note) - .35), end - start, .7, color="#2a9d8f", alpha=.82))
             axes[2].text((start + end) / 2, float(note), f"N{note_index}={note}", ha="center", va="center", fontsize=7)
         else:
             axes[2].add_patch(Rectangle((start, 0), end - start, 1, color="#adb5bd", alpha=.45))
-    pitched = [int(note) for note in raw["notes"] if note]
-    axes[2].set(title=f"Note events from notes_dur (independent time axis; total={note_intervals[-1][1]:.3f}s; labels are token index/MIDI)", xlabel="seconds", ylabel="MIDI", ylim=((min(pitched) - 2 if pitched else -1), (max(pitched) + 2 if pitched else 2)))
+    pitched = [note for note, _, _ in events if note]
+    axes[2].set(title=f"Collapsed note events from notes_dur (same seconds scale; total={events[-1][2]:.3f}s; labels are event index/MIDI)", xlabel="seconds", ylabel="MIDI", ylim=((min(pitched) - 2 if pitched else -1), (max(pitched) + 2 if pitched else 2)))
     for axis in axes:
         axis.grid(axis="x", alpha=.25)
-    axes[1].set_xlim(0, ph_intervals[-1][1]); axes[2].set_xlim(0, note_intervals[-1][1])
+    timeline_start = min(0.0, shifted_ph[0][0], events[0][1])
+    timeline_end = max(shifted_ph[-1][1], events[-1][2])
+    axes[1].set_xlim(timeline_start, timeline_end); axes[2].set_xlim(timeline_start, timeline_end)
     details = record["reason_details"]
     fig.text(.01, .01, f"RULE EVIDENCE: tags={', '.join(record['secondary_tags']) or 'none'} | slur={details['slur_marker_count']} | syllable_delta={details['syllable_group_delta']} | zero_initial_groups={details['zero_initial_group_count']} | multi_note_groups={details['multiple_note_group_count']} | special={record['special_token_types']}", fontsize=8)
     output.parent.mkdir(parents=True, exist_ok=True)

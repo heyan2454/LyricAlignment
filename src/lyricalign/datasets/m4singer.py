@@ -9,6 +9,7 @@ import wave
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from pypinyin import Style, pinyin
 
 
 SPECIAL_PHONEMES = {"<AP>", "<SP>", "<SIL>"}
@@ -17,7 +18,8 @@ PINYIN_INITIALS = {
     "zh", "ch", "sh", "r", "z", "c", "s", "y", "w",
 }
 NORMALIZATION_VERSION = "m4singer_text_v1"
-MAPPING_VERSION = "m4singer_phoneme_grouping_v2_initial_or_vowel_change"
+MAPPING_VERSION = "m4singer_phoneme_grouping_v3_exact_repeated_vowel_split"
+PINYIN_PARSE_VERSION = "m4singer_unique_pinyin_phoneme_parse_v1"
 
 
 @dataclass(frozen=True)
@@ -105,15 +107,109 @@ def group_phonemes(phonemes: list[str]) -> tuple[list[list[int]], list[int]]:
     return groups, special_indices
 
 
+def split_repeated_vowels_exactly(groups: list[list[int]], phonemes: list[str]) -> tuple[list[list[int]], int]:
+    """Expose repeated equal vowels as zero-initial groups, preserving indices.
+
+    This helper does not decide whether the split is warranted.  Its returned
+    ``repeat_count`` is the number of extra same-vowel tokens that can become
+    separate character candidates without changing token order.
+    """
+    result: list[list[int]] = []
+    repeat_count = 0
+    for group in groups:
+        if not group:
+            continue
+        first = 1 if phonemes[group[0]].lower() in PINYIN_INITIALS else 0
+        head = group[: first + 1]
+        result.append(head)
+        for index in group[first + 1 :]:
+            result.append([index])
+            repeat_count += 1
+    return result, repeat_count
+
+
+def unique_pinyin_phoneme_mapping(text: str, phonemes: list[str]) -> tuple[list[list[int] | None] | None, str]:
+    """Return only a unique monotonic pinyin-to-phoneme character parse.
+
+    Heteronyms are retained as alternatives. Repeated finals may be consumed by
+    one character, but a second complete allocation makes the result ambiguous.
+    """
+    # Query each character independently. Phrase-level pypinyin disambiguation
+    # can suppress a valid heteronym (for example ``了 -> le``), whereas the
+    # phoneme sequence is the evidence that must select the pronunciation.
+    readings = [pinyin(char, style=Style.NORMAL, heteronym=True, errors=lambda x: [x])[0] for char in text]
+    def tokens_for_reading(reading: str) -> list[tuple[str, ...]]:
+        value = reading.lower()
+        # Orthographic y/w initials encode zero-initial Mandarin syllables in
+        # M4Singer. Convert them before the ordinary initial/final split.
+        zero_initial = {"yi": "i", "ya": "ia", "yao": "iao", "ye": "ie", "you": "iou", "yan": "ian", "yin": "in", "yang": "iang", "ying": "ing", "yong": "iong", "yu": "v", "yue": "ve", "yuan": "van", "yun": "vn", "wu": "u", "wo": "uo", "wai": "uai", "wei": "uei", "wan": "uan", "wen": "uen", "wang": "uang"}
+        if value in zero_initial: return [(zero_initial[value],)]
+        initial = next((candidate for candidate in sorted(PINYIN_INITIALS, key=len, reverse=True) if value.startswith(candidate)), "")
+        final = value[len(initial):] if initial else value
+        final = {"ui": "uei", "iu": "iou", "un": "vn" if initial in {"j", "q", "x"} else "uen", "ue": "ve", "uan": "van" if initial in {"j", "q", "x"} else "uan", "u": "v" if initial in {"j", "q", "x"} else "u"}.get(final, final)
+        if not final or not final.isalpha(): return []
+        normal = tuple(([initial] if initial else []) + [final])
+        # Observed M4Singer exceptional spelling: one verified 忘 instance
+        # uses zero-initial ``van`` where ordinary Mandarin ``wang`` is uang.
+        return [normal, ("van",)] if value == "wang" else [normal]
+    candidates: list[list[tuple[str, ...]]] = []
+    for index, char in enumerate(text):
+        choices = set()
+        for reading in readings[index]:
+            choices.update(tokens_for_reading(reading))
+        if not choices:
+            return None, "review_required_pinyin_parse_failure"
+        candidates.append(sorted(choices))
+    solutions: list[list[list[int]]] = []
+    def walk(char_index: int, phoneme_index: int, mapped: list[list[int]]) -> None:
+        if len(solutions) >= 2: return
+        while phoneme_index < len(phonemes) and phonemes[phoneme_index] in SPECIAL_PHONEMES: phoneme_index += 1
+        if char_index == len(candidates):
+            if all(token in SPECIAL_PHONEMES for token in phonemes[phoneme_index:]): solutions.append(mapped)
+            return
+        for expected in candidates[char_index]:
+            cursor = phoneme_index; indices: list[int] = []
+            if len(expected) == 2:
+                if cursor >= len(phonemes) or phonemes[cursor].lower() != expected[0]: continue
+                indices.append(cursor); cursor += 1
+            if cursor >= len(phonemes) or phonemes[cursor].lower() != expected[-1]: continue
+            indices.append(cursor); cursor += 1
+            # Identical repeated finals are a possible hold. Explore every
+            # positive length; multiple complete paths remain deliberately ambiguous.
+            while True:
+                walk(char_index + 1, cursor, mapped + [indices.copy()])
+                if cursor >= len(phonemes) or phonemes[cursor].lower() != expected[-1]: break
+                indices.append(cursor); cursor += 1
+    walk(0, 0, [])
+    if not solutions: return None, "review_required_pinyin_parse_no_match"
+    if len(solutions) != 1: return None, "review_required_pinyin_parse_ambiguous"
+    return solutions[0], "accepted_rule_based_pinyin_validated"
+
+
 def character_phoneme_mapping(
-    normalized_lyrics: str, phonemes: list[str]
+    normalized_lyrics: str, phonemes: list[str], *, is_slur: list[object] | None = None
 ) -> tuple[list[list[int] | None], str, list[int]]:
     """Return explicit source indices only when sequence cardinality is exact."""
 
     groups, special_indices = group_phonemes(phonemes)
     if not normalized_lyrics:
         return [], "rejected_empty_normalized_lyrics", special_indices
+    pinyin_mapping, pinyin_status = unique_pinyin_phoneme_mapping(normalized_lyrics, phonemes)
+    if pinyin_mapping is not None:
+        return pinyin_mapping, pinyin_status, special_indices
+    # A complete structural mapping with no cardinality defect and only held-
+    # vowel/slur evidence is rule-validated as a held-vowel case. Complex
+    # slur-plus-deficit cases remain review-only.
+    if len(groups) == len(normalized_lyrics) and is_slur and any(bool(value) for value in is_slur):
+        return groups, "accepted_rule_validated_held_vowel", special_indices
+    # A failed/ambiguous pinyin validation is intentionally review-only, even
+    # where a simpler cardinality grouping happened to match.
+    return [None] * len(normalized_lyrics), pinyin_status, special_indices
     if len(groups) != len(normalized_lyrics):
+        split_groups, repeat_count = split_repeated_vowels_exactly(groups, phonemes)
+        missing_groups = len(normalized_lyrics) - len(groups)
+        if missing_groups > 0 and repeat_count == missing_groups and len(split_groups) == len(normalized_lyrics):
+            return split_groups, "accepted_rule_based_repeated_vowel_split", special_indices
         return [None] * len(normalized_lyrics), "review_required_group_count_mismatch", special_indices
     return groups, "review_required_auto_phoneme_grouping", special_indices
 
@@ -189,7 +285,7 @@ def prepare_item(raw: dict[str, Any], audio_root: Path, *, include_audio_hash: b
     lyrics_raw = str(raw.get("txt", ""))
     normalized = normalize_lyrics(lyrics_raw)
     phonemes = [str(value) for value in raw.get("phs", [])]
-    mapping, mapping_status, special_indices = character_phoneme_mapping(normalized.text, phonemes)
+    mapping, mapping_status, special_indices = character_phoneme_mapping(normalized.text, phonemes, is_slur=list(raw.get("is_slur", [])))
     metadata = audio_metadata(audio_path)
     character_intervals = mapped_character_intervals(mapping, list(raw.get("ph_dur", [])))
     # The final character is allowed to precede the WAV end: M4Singer commonly
@@ -208,7 +304,7 @@ def prepare_item(raw: dict[str, Any], audio_root: Path, *, include_audio_hash: b
     elif mapping_status.startswith("rejected"):
         status = "rejected"
         status_reason = "empty_lyrics"
-    elif mapping_status == "review_required_auto_phoneme_grouping" and duration_metadata_ok:
+    elif mapping_status in {"review_required_auto_phoneme_grouping", "accepted_rule_based_repeated_vowel_split", "accepted_rule_based_pinyin_validated", "accepted_rule_validated_held_vowel"} and duration_metadata_ok:
         status = "accepted"
         status_reason = "accepted_rule_based"
     else:
@@ -241,7 +337,7 @@ def prepare_item(raw: dict[str, Any], audio_root: Path, *, include_audio_hash: b
         "split": "unassigned",
         "annotation_level": "character",
         "annotation_source": "m4singer_meta_json_phoneme_grouping",
-        "mapping_status": "accepted_rule_based" if status == "accepted" else mapping_status,
+        "mapping_status": "accepted_rule_based" if mapping_status == "review_required_auto_phoneme_grouping" and status == "accepted" else mapping_status,
         "mapping_version": MAPPING_VERSION,
         "length_source": "native_short",
         "source_item_ids": [item_name],
@@ -251,6 +347,7 @@ def prepare_item(raw: dict[str, Any], audio_root: Path, *, include_audio_hash: b
         ).hexdigest(),
         "status": status,
         "status_reason": status_reason,
+        "validation_basis": "rule_validated" if status == "accepted" else "review_required",
         "normalization_version": NORMALIZATION_VERSION,
     }
     if include_audio_hash and metadata["audio_status"] == "ok":
@@ -268,9 +365,9 @@ def prepare_item(raw: dict[str, Any], audio_root: Path, *, include_audio_hash: b
             "end_sec": character_intervals[index][1] if status == "accepted" else None,
             "source_phoneme_indices": source_indices,
             "source_syllable_or_note_indices": None,
-            "mapping_status": "accepted_rule_based" if status == "accepted" else mapping_status,
+            "mapping_status": "accepted_rule_based" if mapping_status == "review_required_auto_phoneme_grouping" and status == "accepted" else mapping_status,
             "mapping_method": "phoneme_duration_cumulative_v1" if status == "accepted" else "none",
-            "mapping_confidence": "high" if status == "accepted" else "review",
+            "mapping_confidence": "rule_validated" if status == "accepted" else "review",
             "quality_flags": [] if status == "accepted" else [status_reason],
             "mapping_notes": {
                 "special_phoneme_indices": special_indices,

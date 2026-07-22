@@ -115,12 +115,12 @@ notes
 - 保存 source item IDs、拼接顺序、接缝和可选静音；
 - 字符时间戳按累计时长平移；
 - 保留 seam mask，不能把接缝异常解释为自然歌声问题；
-- 目标 bucket：20/30/60/120 秒；
+- 目标 bucket：20/30/60/180 秒；
 - 同曲原片段、拼接样本必须继承同一 split。
 
 ### Natural long
 
-真实连续长歌声优先作为 test-only，覆盖长间奏、拖音、重复歌词和歌词版本差异。MIR-1K 的 17 首人工字符标注整曲固定为 vocal-only OOD test。
+真实连续长歌声优先作为 test-only，覆盖长间奏、拖音、重复歌词和歌词版本差异。MIR-1K 的 17 首人工字符标注整曲已使用用户确认的 zero-based channel index 1 派生为 vocal-only OOD test。
 
 ## 6. 可恢复与覆盖策略
 

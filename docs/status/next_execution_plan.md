@@ -1,22 +1,21 @@
-
 # Next Execution Plan: Dataset Cleaning Automation Contract
+
+> **Current checkpoint — 2026-07-23:** archive completeness has been repaired; M4Singer currently has 20,298 `rule_validated` candidates and 598 review records out of 20,896; MIR-1K channel index 1 has been manually confirmed and its 17-song vocal-only OOD derivative has been produced. Earlier count sets are historical only. The stages below remain an implementation contract; current facts are defined by `docs/status/project_current.md`.
 
 本计划是当前 Codex 的执行合同。目标不是只产出分析报告，而是完成所有不依赖外部授权的自动化代码、测试、运行与证据。不得在首个错误处停止，不得使用 placeholder、空实现、静默跳过或降低验收标准来宣称完成。
 
 ## 通用执行规则
 
-每个阶段必须同时具备：
+每个正式阶段至少具备：
 
-1. 核心库实现位于 `src/lyricalign/`；
-2. 可复现薄入口位于 `scripts/`；
-3. 配置/规则版本明确；
-4. 单元测试与最小 fixture；
-5. 外部输出目录不覆盖原始数据；
-6. 原子写入、可恢复、显式覆盖策略；
-7. 机器可读 run summary；
-8. 人类可读轻量报告；
-9. 验收命令和返回码；
-10. Git commit、dirty 状态和阶段结论。
+1. 核心实现与可复现薄入口；
+2. 明确的规则/配置版本和输入身份；
+3. 必要的单元测试或最小 fixture，用于保护关键逻辑；
+4. 外部输出不覆盖原始数据，并有可恢复、显式覆盖策略；
+5. 轻量机器可读摘要，保存关键数量、输出路径/hash、失败摘要和必要命令；
+6. 阶段关闭时记录 Git commit 或说明尚未提交的状态。
+
+不强制为每个阶段归档完整日志、完整环境导出、逐样本副本或单独的人类报告。只有它们对复现或解释关键结果确有必要时才保存。
 
 阶段失败时：先定位并修复根因；仍可独立推进的阶段继续完成。只有外部授权、数据资产确实不可得或硬件不可用时，才能标为 external blocker。不得把实现困难标成 blocker。
 
@@ -63,7 +62,7 @@ python -m pytest -q
 - WAV 可读性、采样率、声道、编码、时长；
 - 特殊 token、标点、空格、数字、英文、儿化、衬词；
 - song/singer/item 序号与相邻关系；
-- 当前 14,845 条 mismatch 的可解释 taxonomy。
+- 当前 canonical 中 598 条 `review_required` 的可解释 taxonomy，并保留 20,298 条 `rule_validated` 候选的来源状态。
 
 至少区分：
 
@@ -241,7 +240,7 @@ model_separated_vocal
 
 ### 实现
 
-仅拼接同歌曲、顺序可验证的相邻片段，目标 bucket：20/30/60/120 秒。保存：
+仅拼接同歌曲、顺序可验证的相邻片段，目标 bucket：20/30/60/180 秒。保存：
 
 ```text
 source_item_ids
@@ -269,7 +268,7 @@ output_hash
 
 ---
 
-## Stage 8：MIR-1K vocal-only OOD 冻结
+## Stage 8：MIR-1K vocal-only OOD 固定与复用
 
 ### 实现
 
