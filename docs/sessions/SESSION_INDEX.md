@@ -8,6 +8,8 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-07-23 | `20260723_qwen_fa_lora_full_r2_archive.md` | hot | LoRA pilot/full R2 结果、sealed test、缺失的 final MIR-1K OOD 与安全手动入口。 |
+| 2026-07-23 | `20260723_qwen_fa_lora_codex_plan.md` | warm | 首轮 Qwen FA LoRA 原始执行计划、数据/标签/训练/评测和完成定义。 |
 | 2026-07-23 | `20260723_m4singer_rule_review.md` | hot | 当前 canonical inventory、20,298/598 口径、MIR-1K channel 1 派生、历史版本有效性与归档边界。 |
 | 2026-07-22 | `20260722_dataset_prepare_repair_and_long_audio.md` | warm | 数据准备修复、v2/v3/v4 规则演进和长音频尝试；其中数量口径已被 2026-07-23 session 替代。 |
 | 2026-07-22 | `20260722_codex_dataset_cleaning_prompt.md` | warm | 数据清洗自动化总体执行合同；当前事实应以 project_current 和 2026-07-23 session 为准。 |
