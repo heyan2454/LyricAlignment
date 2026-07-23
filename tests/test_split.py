@@ -3,7 +3,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from lyricalign.datasets.split import freeze_m4singer_split, leakage_audit
+from lyricalign.datasets.split import freeze_m4singer_split, freeze_m4singer_three_way_split, leakage_audit
 
 
 def test_song_split_is_deterministic_and_never_splits_a_song() -> None:
@@ -45,3 +45,17 @@ def test_audit_fails_exact_lyrics_and_source_leakage() -> None:
     audit = leakage_audit(rows)
     assert not audit["passed"]
     assert audit["exact_lyrics_cross_split_hashes"] and audit["source_item_cross_split"] == ["raw"]
+
+
+def test_three_way_split_is_song_level_and_exposes_test() -> None:
+    rows = [
+        {"item_id": f"same#{index}", "song_id": "same", "lyrics_normalized": f"甲{index}"}
+        for index in range(2)
+    ] + [
+        {"item_id": f"song{index}", "song_id": f"song{index}", "lyrics_normalized": f"乙{index}"}
+        for index in range(100)
+    ]
+    frozen = freeze_m4singer_three_way_split(rows, "fixed-seed")
+    assert frozen[0]["split"] == frozen[1]["split"]
+    assert {row["split"] for row in frozen} == {"train", "validation", "test"}
+    assert leakage_audit(frozen)["passed"]

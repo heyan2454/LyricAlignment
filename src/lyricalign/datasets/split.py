@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from typing import Any
 
 
-SPLIT_VERSION = "song_hash_split_v2"
+SPLIT_VERSION = "song_hash_split_v3_train_validation_test"
 
 
 def stable_song_split(song_id: str, seed: str, validation_percent: int = 10) -> str:
@@ -17,6 +17,25 @@ def stable_song_split(song_id: str, seed: str, validation_percent: int = 10) -> 
         raise ValueError("validation_percent must be in [1, 99]")
     digest = hashlib.sha256(f"{seed}:{song_id}".encode("utf-8")).digest()
     return "validation" if int.from_bytes(digest[:4], "big") % 100 < validation_percent else "train"
+
+
+def stable_song_split_three_way(
+    song_id: str, seed: str, *, validation_percent: int = 5, test_percent: int = 5
+) -> str:
+    """Assign a song to a deterministic train/validation/test split.
+
+    The hash is applied to a song (or a connected leakage component), never to
+    individual segments.  ``validation_percent`` and ``test_percent`` are exact
+    hash-bucket budgets, so realised row counts may vary slightly by song length.
+    """
+    if validation_percent < 1 or test_percent < 1 or validation_percent + test_percent >= 100:
+        raise ValueError("validation_percent and test_percent must be positive and sum to < 100")
+    bucket = int.from_bytes(hashlib.sha256(f"{seed}:{song_id}".encode("utf-8")).digest()[:4], "big") % 100
+    if bucket < validation_percent:
+        return "validation"
+    if bucket < validation_percent + test_percent:
+        return "test"
+    return "train"
 
 
 def freeze_m4singer_split(records: list[dict[str, Any]], seed: str, validation_percent: int = 10) -> list[dict[str, Any]]:
@@ -48,6 +67,45 @@ def freeze_m4singer_split(records: list[dict[str, Any]], seed: str, validation_p
     for record in sorted(records, key=lambda row: (str(row.get("song_id", "")), str(row.get("item_id", "")))):
         item = dict(record)
         item["split"] = stable_song_split(find(str(item["song_id"])), seed, validation_percent)
+        item["split_version"] = SPLIT_VERSION
+        item["split_seed"] = seed
+        result.append(item)
+    return result
+
+
+def freeze_m4singer_three_way_split(
+    records: list[dict[str, Any]], seed: str, *, validation_percent: int = 5, test_percent: int = 5
+) -> list[dict[str, Any]]:
+    """Freeze a song-level 90/5/5-style split while retaining leakage closure."""
+    parent = {str(row["song_id"]): str(row["song_id"]) for row in records}
+
+    def find(value: str) -> str:
+        while parent[value] != value:
+            parent[value] = parent[parent[value]]
+            value = parent[value]
+        return value
+
+    def union(left: str, right: str) -> None:
+        left, right = find(left), find(right)
+        if left != right:
+            parent[max(left, right)] = min(left, right)
+
+    lyric_owner: dict[str, str] = {}
+    for row in records:
+        lyric = str(row.get("lyrics_normalized", ""))
+        if lyric:
+            digest = hashlib.sha256(lyric.encode("utf-8")).hexdigest()
+            if digest in lyric_owner:
+                union(str(row["song_id"]), lyric_owner[digest])
+            else:
+                lyric_owner[digest] = str(row["song_id"])
+    result = []
+    for record in sorted(records, key=lambda row: (str(row.get("song_id", "")), str(row.get("item_id", "")))):
+        item = dict(record)
+        item["split"] = stable_song_split_three_way(
+            find(str(item["song_id"])), seed,
+            validation_percent=validation_percent, test_percent=test_percent,
+        )
         item["split_version"] = SPLIT_VERSION
         item["split_seed"] = seed
         result.append(item)

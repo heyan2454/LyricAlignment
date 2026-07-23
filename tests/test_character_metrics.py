@@ -5,7 +5,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from lyricalign.metrics.character import evaluate
+from lyricalign.metrics.character import evaluate, evaluate_tolerant
 
 
 def rows() -> list[dict]:
@@ -43,3 +43,13 @@ def test_overlap_is_reported_but_not_misclassified_as_reverse_order() -> None:
     overlapping[1]["start_sec"] = 0.5
     result = evaluate(overlapping, overlapping)
     assert result["reference_adjacent_overlap_count"] == 1
+
+
+def test_tolerant_metrics_penalize_invalid_prediction_without_hiding_it() -> None:
+    invalid = [dict(rows()[0], end_sec=0.0), rows()[1]]
+    result = evaluate_tolerant(rows(), invalid)
+    assert result["invalid_prediction_rate"] == 0.5
+    assert result["zero_duration_rate"] == 1 / 2
+    assert result["negative_duration_rate"] == 0
+    assert "onset_p90_sec" in result and "offset_p90_sec" in result
+    assert result["song_macro_boundary_mae_sec"] > 0

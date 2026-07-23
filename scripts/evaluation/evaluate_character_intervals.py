@@ -11,7 +11,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
-from lyricalign.metrics.character import evaluate
+from lyricalign.metrics.character import evaluate, evaluate_tolerant
 
 
 def rows(path: Path) -> list[dict]:
@@ -23,8 +23,9 @@ def main() -> None:
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--prediction", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
+    parser.add_argument("--tolerate-invalid", action="store_true", help="Penalize invalid model predictions instead of aborting evaluation.")
     args = parser.parse_args()
-    result = evaluate(rows(args.reference), rows(args.prediction))
+    result = (evaluate_tolerant if args.tolerate_invalid else evaluate)(rows(args.reference), rows(args.prediction))
     args.out_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=args.out_dir, delete=False) as handle:
         json.dump(result, handle, ensure_ascii=False, indent=2)
