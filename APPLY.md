@@ -1,35 +1,46 @@
-# Apply the repaired archive
+# Immediate Qwen FA diagnostics patch
 
-This archive is rooted at `LyricAlignment/`. Apply it over the repository root
-only after preserving local modifications.
+## Added files
+
+```text
+scripts/evaluation/collect_qwen_fa_immediate_diagnostics.py
+scripts/evaluation/collect_qwen_fa_immediate_suite.py
+scripts/evaluation/analyze_qwen_fa_time_coverage.py
+scripts/evaluation/summarize_qwen_fa_immediate_diagnostics.py
+scripts/training/run_qwen_fa_immediate_diagnostics.sh
+tests/test_qwen_fa_immediate_diagnostics.py
+docs/sessions/20260725_qwen_fa_long_diagnostic_plan.md
+```
+
+## Apply
+
+Copy the files into the same relative paths under `/home/hyan/LyricAlignment`.
+
+## Verify before server inference
 
 ```bash
 cd /home/hyan/LyricAlignment
-git status --short
-
-# Extract/copy the archive over this directory while preserving relative paths.
-
-conda activate lyricalign-qwen
-python -m compileall -q src scripts tests
-pytest -q \
-  tests/test_character_metrics.py \
-  tests/test_recompute_character_metrics.py \
-  tests/test_qwen_fa_training_entrypoint.py \
-  tests/test_qwen_fa_followup_entrypoint.py \
-  tests/test_qwen_fa_finalize_entrypoint.py \
-  tests/test_qwen_fa_labels.py \
-  tests/test_qwen_fa_model.py \
-  tests/test_smoke_helpers.py
-
-bash -n scripts/training/run_full_r2_mir1k_ood_fixed_once.sh
-bash -n scripts/training/run_qwen_fa_r2_missing_evaluations.sh
-bash -n scripts/training/collect_qwen_fa_followup_supplement.sh
+python -m compileall -q \
+  scripts/evaluation/collect_qwen_fa_immediate_diagnostics.py \
+  scripts/evaluation/collect_qwen_fa_immediate_suite.py \
+  scripts/evaluation/analyze_qwen_fa_time_coverage.py \
+  scripts/evaluation/summarize_qwen_fa_immediate_diagnostics.py
+bash -n scripts/training/run_qwen_fa_immediate_diagnostics.sh
+pytest -q tests/test_qwen_fa_immediate_diagnostics.py
 ```
 
-Do not rerun completed test/OOD evaluations merely to apply this archive.
+## Smoke
 
-The next planned experiment is described in:
-
-```text
-docs/status/next_execution_plan.md
+```bash
+MIR_MAX_ITEMS=8 LONG_MAX_ITEMS=3 \
+OUT_ROOT=/home/hyan/Data/lyricalign/runs/20260725_qwen_fa_immediate_diagnostics_smoke \
+bash scripts/training/run_qwen_fa_immediate_diagnostics.sh
 ```
+
+## Formal diagnostic
+
+```bash
+bash scripts/training/run_qwen_fa_immediate_diagnostics.sh
+```
+
+The script performs no training. Reruns skip task directories that already contain all four required outputs.
