@@ -10,7 +10,6 @@ import tempfile
 import wave
 from pathlib import Path
 from typing import Any
-from lyricalign.datasets.m4singer import sha256_file
 
 
 SYNTHETIC_VERSION = "synthetic_long_v2"
@@ -70,18 +69,18 @@ def concat_wavs(sources: list[Path], output: Path) -> tuple[float, list[tuple[fl
             total_frames += handle.getnframes()
     temporary = output.with_suffix(".tmp.wav")
     if not compatible:
-        filters = []
-        for index in range(len(sources)):
-            filters.append(f"[{index}:a]aresample=16000,aformat=sample_fmts=s16:channel_layouts=mono[a{index}]")
-        filters.append("".join(f"[a{index}]" for index in range(len(sources))) + f"concat=n={len(sources)}:v=0:a=1[out]")
-        subprocess.run(
-            ["ffmpeg", "-nostdin", "-y", *sum((["-i", str(path)] for path in sources), []), "-filter_complex", ";".join(filters), "-map", "[out]", "-c:a", "pcm_s16le", str(temporary)],
-            check=True, capture_output=True, text=True,
-        )
-        with wave.open(str(temporary), "rb") as handle:
-            duration = handle.getnframes() / handle.getframerate()
-        temporary.replace(output)
-        return duration, []
+        # Normalize each source independently first.  This preserves exact
+        # per-source frame ranges, which are required to shift character GT.
+        with tempfile.TemporaryDirectory(prefix="lyricalign_concat_") as directory:
+            normalized: list[Path] = []
+            for index, source in enumerate(sources):
+                target = Path(directory) / f"{index:04d}.wav"
+                subprocess.run(
+                    ["ffmpeg", "-nostdin", "-y", "-v", "error", "-i", str(source), "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(target)],
+                    check=True, capture_output=True, text=True,
+                )
+                normalized.append(target)
+            return concat_wavs(normalized, output)
     with wave.open(str(temporary), "wb") as handle:
         handle.setparams(params)
         for payload in frames:
@@ -119,6 +118,7 @@ def build_synthetic_manifest(source_rows: list[dict[str, Any]], duration_sec: fl
         "schema_version": 1, "dataset_id": "m4singer_synthetic_long", "item_id": item_id,
         "song_id": ordered[0]["song_id"], "singer_id": ordered[0]["singer_id"], "audio_relpath": output_relpath,
         "duration_sec": duration_sec, "split": ordered[0]["split"], "length_source": "synthetic_concat",
+        "lyrics_normalized": "".join(str(row.get("lyrics_normalized", "")) for row in ordered),
         "source_item_ids": [row["item_id"] for row in ordered], "source_order": orders,
         "cumulative_offsets": offsets, "join_points_sec": [offsets[row["item_id"]] for row in ordered[1:]],
         "target_duration_sec": None, "actual_duration_sec": duration_sec,

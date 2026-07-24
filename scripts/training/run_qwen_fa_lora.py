@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import argparse, hashlib, json, random, shutil, time
+import argparse, hashlib, json, os, random, shutil, time
 from pathlib import Path
 import sys
 from typing import Any
@@ -59,32 +59,39 @@ def run_identity(cfg: dict) -> dict[str, Any]:
     }
 
 
-def verify_resume_identity(run_dir: Path, cfg: dict) -> None:
-    """Reject a resume when its frozen configuration or data changed."""
+def verify_resume_identity(run_dir: Path, cfg: dict, execution_identity: dict[str, Any] | None = None) -> None:
+    """Reject a resume when its frozen configuration, data, or run arguments changed."""
+    execution_identity = execution_identity or {}
     expected = run_identity(cfg)
     config_path = run_dir / "config.yaml"
     source_path = run_dir / "source_manifest_identity.json"
     split_path = run_dir / "split_manifest_identity.json"
-    if not all(path.exists() for path in (config_path, source_path, split_path)):
+    execution_path = run_dir / "execution_identity.json"
+    if not all(path.exists() for path in (config_path, source_path, split_path, execution_path)):
         raise RuntimeError(f"cannot resume without complete run identity: {run_dir}")
     observed_config = yaml.safe_dump(yaml.safe_load(config_path.read_text(encoding="utf-8")), allow_unicode=True, sort_keys=True)
     observed_source = json.loads(source_path.read_text(encoding="utf-8"))
     observed_split = json.loads(split_path.read_text(encoding="utf-8"))
+    observed_execution = json.loads(execution_path.read_text(encoding="utf-8"))
     if observed_config != expected["config"]:
         raise RuntimeError("resume configuration differs from frozen run configuration")
     if observed_source != {"labels": expected["labels"], "labels_sha256": expected["labels_sha256"]}:
         raise RuntimeError("resume labels identity differs from frozen run identity")
     if observed_split != {"split_manifest": expected["split_manifest"], "split_manifest_sha256": expected["split_manifest_sha256"]}:
         raise RuntimeError("resume split identity differs from frozen run identity")
+    if observed_execution != execution_identity:
+        raise RuntimeError("resume execution identity differs from frozen run identity")
 
 
-def write_run_identity(run_dir: Path, cfg: dict, args: Any) -> None:
+def write_run_identity(run_dir: Path, cfg: dict, args: Any, execution_identity: dict[str, Any] | None = None) -> None:
+    execution_identity = execution_identity or {}
     run_dir.mkdir(parents=True, exist_ok=True)
     identity = run_identity(cfg)
     if not (run_dir / "config.yaml").exists():
         (run_dir / "config.yaml").write_text(identity["config"], encoding="utf-8")
         atomic_json(run_dir / "source_manifest_identity.json", {"labels": identity["labels"], "labels_sha256": identity["labels_sha256"]})
         atomic_json(run_dir / "split_manifest_identity.json", {"split_manifest": identity["split_manifest"], "split_manifest_sha256": identity["split_manifest_sha256"]})
+        atomic_json(run_dir / "execution_identity.json", execution_identity)
     command = " ".join(sys.argv) + "\n"
     with (run_dir / "commands.log").open("a", encoding="utf-8") as handle:
         handle.write(command)
@@ -140,20 +147,39 @@ def main() -> None:
     parser.add_argument("--config", type=Path, required=True); parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--stage", choices=["overfit", "r0", "r1", "r2", "r3"], required=True)
     parser.add_argument("--resume", type=Path); parser.add_argument("--overwrite", action="store_true"); parser.add_argument("--max-steps", type=int); parser.add_argument("--device", default="cuda"); parser.add_argument("--seed", type=int)
+    parser.add_argument("--train-items", type=int); parser.add_argument("--validation-items", type=int)
+    parser.add_argument("--stop-after-step", type=int, help="Planned resumability smoke stop; scheduler still uses configured max steps.")
+    parser.add_argument("--cache-dir", type=Path); parser.add_argument("--local-files-only", action="store_true")
     args = parser.parse_args(); cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")); run_dir = args.run_dir
+    stage_cfg = cfg["stages"][args.stage]
+    seed = args.seed if args.seed is not None else int(cfg["training"]["seed"])
+    configured_max_steps = 0 if args.stage == "r0" else int(args.max_steps or stage_cfg["max_steps"])
+    train_limit = int(args.train_items if args.train_items is not None else stage_cfg.get("train_items", 0))
+    validation_limit = int(args.validation_items if args.validation_items is not None else stage_cfg.get("validation_items", 0))
+    execution_identity = {
+        "stage": args.stage,
+        "seed": seed,
+        "configured_max_steps": configured_max_steps,
+        "train_items": train_limit,
+        "validation_items": validation_limit,
+    }
     if run_dir.exists() and any(run_dir.iterdir()) and not args.resume and not args.overwrite: raise SystemExit(f"run exists; use --resume or --overwrite: {run_dir}")
     if args.overwrite and run_dir.exists(): shutil.rmtree(run_dir)
     if args.resume:
         if args.resume.parent.parent != run_dir:
             raise RuntimeError("resume checkpoint must belong to --run-dir")
-        verify_resume_identity(run_dir, cfg)
-    write_run_identity(run_dir, cfg, args)
+        verify_resume_identity(run_dir, cfg, execution_identity)
+    write_run_identity(run_dir, cfg, args, execution_identity)
     import torch
     from transformers import AutoModelForTokenClassification, AutoProcessor, get_cosine_schedule_with_warmup
-    seed = args.seed if args.seed is not None else int(cfg["training"]["seed"]); random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
+    random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
     dtype = getattr(torch, cfg["training"].get("dtype", "bfloat16")); model_cfg = cfg["model"]
-    processor = AutoProcessor.from_pretrained(model_cfg["id"], revision=model_cfg["revision"])
-    model = AutoModelForTokenClassification.from_pretrained(model_cfg["id"], revision=model_cfg["revision"], dtype=cfg["training"].get("dtype", "bfloat16")).to(args.device)
+    cache_dir = args.cache_dir or (Path(os.environ["HF_HUB_CACHE"]) if os.environ.get("HF_HUB_CACHE") else None)
+    local_files_only = args.local_files_only or os.environ.get("HF_HUB_OFFLINE", "").lower() in {"1", "true", "yes", "on"}
+    load_kwargs = {"revision": model_cfg["revision"], "local_files_only": local_files_only}
+    if cache_dir is not None: load_kwargs["cache_dir"] = str(cache_dir)
+    processor = AutoProcessor.from_pretrained(model_cfg["id"], **load_kwargs)
+    model = AutoModelForTokenClassification.from_pretrained(model_cfg["id"], dtype=cfg["training"].get("dtype", "bfloat16"), **load_kwargs).to(args.device)
     freeze_all(model)
     if args.stage == "overfit": unfreeze_projector(model); unfreeze_classifier(model)
     elif args.stage in {"r1", "r2", "r3"}: unfreeze_projector(model)
@@ -170,10 +196,11 @@ def main() -> None:
     labels = read_jsonl(Path(cfg["data"]["labels"])); chars = read_jsonl(Path(cfg["data"]["characters"])); references: dict[str, list[dict]] = {}
     for row in chars: references.setdefault(row["item_id"], []).append(row)
     train = [row for row in labels if row["split"] == "train"]; valid = [row for row in labels if row["split"] == "validation"]
-    limit = int(cfg["stages"][args.stage].get("train_items", 0)); train = song_sample(train, limit, seed)
+    train = song_sample(train, train_limit, seed)
     if args.stage == "overfit":
-        train = item_sample([row for row in labels if row["split"] == "train"], limit, seed)
-        valid = item_sample(valid, int(cfg["stages"][args.stage]["validation_items"]), seed)
+        train = item_sample([row for row in labels if row["split"] == "train"], train_limit, seed)
+    if validation_limit:
+        valid = item_sample(valid, validation_limit, seed)
     collator = QwenFABatchCollator(processor, audio_root=Path(cfg["data"]["audio_root"]), language=cfg["data"]["language"], timestamp_token_id=model.config.timestamp_token_id)
     evaluation_batch = int(cfg["training"].get("evaluation_micro_batch_size", cfg["training"]["micro_batch_size"]))
     if args.stage == "r0":
@@ -190,12 +217,16 @@ def main() -> None:
         ], weight_decay=float(cfg["training"]["weight_decay"]))
     else:
         optimizer = torch.optim.AdamW(trainable, lr=float(cfg["training"]["projector_lr"]), weight_decay=float(cfg["training"]["weight_decay"]))
-    max_steps = args.max_steps or int(cfg["stages"][args.stage]["max_steps"]); scheduler = get_cosine_schedule_with_warmup(optimizer, int(max_steps * float(cfg["training"]["warmup_ratio"])), max_steps)
+    max_steps = configured_max_steps
+    run_until_step = min(max_steps, int(args.stop_after_step)) if args.stop_after_step is not None else max_steps
+    if run_until_step < 1: raise ValueError("run target must be positive")
+    scheduler = get_cosine_schedule_with_warmup(optimizer, int(max_steps * float(cfg["training"]["warmup_ratio"])), max_steps)
     step, epoch, resume_offset = (0, 0, 0) if not args.resume else restore(args.resume, model, optimizer, scheduler)
     micro = int(cfg["training"]["micro_batch_size"]); accum = int(cfg["training"]["gradient_accumulation"]); metrics_path = run_dir / "metrics.jsonl"; started = time.time(); model.train()
     best_path = run_dir / "best_checkpoint.json"
     best_metric = json.loads(best_path.read_text(encoding="utf-8"))["song_macro_boundary_mae_sec"] if best_path.exists() else float("inf")
-    while step < max_steps:
+    last_validation = None
+    while step < run_until_step:
         accumulated_loss = 0.0
         ordered = sorted(train, key=lambda row: hashlib.sha256(f"{seed}:{epoch}:{row['item_id']}".encode()).hexdigest())
         for offset in range(resume_offset, len(ordered), micro):
@@ -206,10 +237,11 @@ def main() -> None:
             with metrics_path.open("a", encoding="utf-8") as f: f.write(json.dumps(line) + "\n")
             accumulated_loss = 0.0
             next_offset = offset + micro
-            if step % int(cfg["training"]["save_steps"]) == 0 or step == max_steps:
+            if step % int(cfg["training"]["save_steps"]) == 0 or step == max_steps or step == run_until_step:
                 checkpoint(run_dir, model, optimizer, scheduler, step, epoch, next_offset)
             if step % int(cfg["training"]["eval_steps"]) == 0:
                 validation = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
+                last_validation = validation
                 atomic_json(run_dir / f"validation_step_{step:06d}.json", validation)
                 candidate = validation["metric"]["song_macro_boundary_mae_sec"]
                 with metrics_path.open("a", encoding="utf-8") as f: f.write(json.dumps({"step": step, "validation": validation}) + "\n")
@@ -217,14 +249,16 @@ def main() -> None:
                     best_metric = candidate
                     atomic_json(best_path, {"step": step, "checkpoint": str(run_dir / "checkpoints" / f"step-{step:06d}"), "song_macro_boundary_mae_sec": candidate})
                 model.train()
-            if step >= max_steps: break
+            if step >= run_until_step: break
         epoch += 1
         resume_offset = 0
-    result = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
+    if last_validation is None and (run_dir / f"validation_step_{step:06d}.json").exists():
+        last_validation = json.loads((run_dir / f"validation_step_{step:06d}.json").read_text(encoding="utf-8"))
+    result = last_validation or evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
     atomic_json(run_dir / "evaluation.json", result)
     if args.stage == "overfit":
         atomic_json(run_dir / "training_evaluation.json", evaluate(model, processor, collator, train, references, device=args.device, dtype=dtype, batch_size=evaluation_batch))
-    atomic_json(run_dir / "runtime_summary.json", {"stage": args.stage, "steps": step, "epochs": epoch, "wall_sec": time.time() - started, "train_items": len(train), "validation_items": len(valid)})
+    atomic_json(run_dir / "runtime_summary.json", {"stage": args.stage, "steps": step, "configured_max_steps": max_steps, "completed": step >= max_steps, "planned_stop": args.stop_after_step, "epochs": epoch, "wall_sec": time.time() - started, "train_items": len(train), "validation_items": len(valid), "seed": seed})
     print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == "__main__": main()

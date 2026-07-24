@@ -12,8 +12,11 @@ def test_synthetic_requires_adjacent_same_song_and_shifts_character_timeline(tmp
         {"item_id": "A#song#0000", "song_id": "song", "singer_id": "A", "duration_sec": 1.0, "split": "train"},
         {"item_id": "A#song#0001", "song_id": "song", "singer_id": "A", "duration_sec": 1.0, "split": "train"},
     ]
+    rows[0]["lyrics_normalized"] = "甲"
+    rows[1]["lyrics_normalized"] = "乙"
     manifest = build_synthetic_manifest(rows, 2.0, "out.wav")
     assert manifest["join_points_sec"] == [1.0]
+    assert manifest["lyrics_normalized"] == "甲乙"
     shifted = shifted_annotations([{"item_id": "A#song#0001", "start_sec": 0.1, "end_sec": 0.2}], manifest["cumulative_offsets"])
     assert shifted[0]["start_sec"] == 1.1
     for index in range(2):

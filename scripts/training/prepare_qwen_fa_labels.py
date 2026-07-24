@@ -43,12 +43,13 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)
     parser.add_argument("--num-labels", type=int, default=5000)
+    parser.add_argument("--output-name", default="m4singer_qwen_fa_labels.jsonl")
     args = parser.parse_args()
     manifest = read_jsonl(args.split_manifest)
     chars = collect_character_rows(args.characters)
     records = [build_label_record(row, chars[str(row["item_id"])], segment_sec=args.timestamp_segment_sec, num_labels=args.num_labels) for row in manifest]
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    labels_path = args.out_dir / "m4singer_qwen_fa_labels.jsonl"
+    labels_path = args.out_dir / args.output_name
     atomic_jsonl(labels_path, records)
     summary = label_summary(records) | {
         "source_split_manifest": str(args.split_manifest), "source_split_manifest_sha256": sha256(args.split_manifest),

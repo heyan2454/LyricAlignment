@@ -27,6 +27,8 @@ def main() -> None:
     parser.add_argument("--audio-root", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--bucket-sec", type=float, choices=(20, 30, 60, 180), required=True)
+    parser.add_argument("--split", default=None, help="Restrict sources to one frozen split, for example test.")
+    parser.add_argument("--max-candidates", type=int, default=0, help="Deterministic cap for smoke; 0 means all.")
     args = parser.parse_args()
     rows = jsonl(args.manifest)
     annotations = defaultdict(list)
@@ -34,7 +36,7 @@ def main() -> None:
         annotations[str(row["item_id"])].append(row)
     by_song_singer = defaultdict(list)
     for row in rows:
-        if row.get("status") == "accepted":
+        if row.get("status") == "accepted" and (args.split is None or row.get("split") == args.split):
             by_song_singer[(row["song_id"], row["singer_id"])].append(row)
     candidates, failures = [], []
     for key, group in sorted(by_song_singer.items()):
@@ -54,6 +56,9 @@ def main() -> None:
                 # Training window augmentation is a separate, explicitly opted-in
                 # workflow rather than an accidental all-start expansion.
                 break
+        if args.max_candidates and len(candidates) >= args.max_candidates:
+            candidates = candidates[: args.max_candidates]
+            break
     args.out_dir.mkdir(parents=True, exist_ok=True)
     manifests, chars = [], []
     for index, chosen in enumerate(candidates):
@@ -65,7 +70,7 @@ def main() -> None:
             continue
         duration, ranges = concat_wavs([args.audio_root / row["audio_relpath"] for row in chosen], args.out_dir / relpath)
         audio_path = args.out_dir / relpath
-        shifted = shifted_annotations([annotation for row in chosen for annotation in annotations[row["item_id"]]], {row["item_id"]: start for row, (start, _) in zip(sorted(chosen, key=lambda r: segment_order(str(r["item_id"]))), ranges, strict=True)})
+        shifted = shifted_annotations([annotation for row in chosen for annotation in sorted(annotations[row["item_id"]], key=lambda item: int(item["character_index"]))], {row["item_id"]: start for row, (start, _) in zip(sorted(chosen, key=lambda r: segment_order(str(r["item_id"]))), ranges, strict=True)})
         annotation_hash = hashlib.sha256("".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in shifted).encode()).hexdigest()
         manifest = build_synthetic_manifest(chosen, duration, relpath, source_ranges=ranges, output_audio_sha256=hashlib.sha256(audio_path.read_bytes()).hexdigest(), annotation_sha256=annotation_hash)
         manifest["target_duration_sec"] = args.bucket_sec
@@ -79,7 +84,8 @@ def main() -> None:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=args.out_dir, delete=False) as handle:
             handle.write("".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in payload)); temporary = Path(handle.name)
         temporary.replace(args.out_dir / name)
-    summary = {"status": "passed" if manifests else "external_or_data_limited", "bucket_sec": args.bucket_sec, "synthetic_count": len(manifests), "failed_candidate_count": len(failures), "failure_reason": None if manifests else "no_adjacent_same_song_same_singer_A_tier_sequence_reaches_bucket_or_annotation_validation"}
+    durations = [float(row["duration_sec"]) for row in manifests]
+    summary = {"status": "passed" if manifests else "external_or_data_limited", "bucket_sec": args.bucket_sec, "split": args.split, "synthetic_count": len(manifests), "character_count": len(chars), "failed_candidate_count": len(failures), "minimum_duration_sec": min(durations) if durations else None, "maximum_duration_sec": max(durations) if durations else None, "mean_duration_sec": sum(durations) / len(durations) if durations else None, "failure_reason": None if manifests else "no_adjacent_same_song_same_singer_accepted_sequence_reaches_bucket_or_annotation_validation"}
     (args.out_dir / "run_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False))
 
