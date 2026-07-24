@@ -1,119 +1,115 @@
 # Project Current
 
-**Snapshot date:** 2026-07-23  
-**Stage:** Qwen Forced Aligner LoRA first-round full R2 finalization
+**Snapshot date:** 2026-07-24  
+**Stage:** first Qwen Forced Aligner LoRA experiment cycle archived; targeted long-context diagnosis next
 
-## 当前定位
+## Completed experiment chain
 
 ```text
-known Mandarin lyrics + vocal-only singing audio
--> character-level timestamp weak supervision
--> raw / projector-only / audio-LoRA comparison
--> full R2 training
--> validation-only checkpoint selection
+M4Singer weak-supervision preparation
+-> Qwen FA R0 raw
+-> matched-budget R1 projector-only
+-> R2 projector + top-half audio-attention LoRA
+-> M4Singer validation-only checkpoint selection
 -> sealed M4Singer test
 -> MIR-1K vocal-only OOD
+-> approximately 22/33/48/152-second synthetic diagnostics
+-> second full R2 seed
+-> missing evaluation completion
+-> metric/identity repair and archive
 ```
 
-## 数据身份
+All required follow-up evaluations now have return code `0`:
 
-### M4Singer
+- seed3407 R2 MIR-1K OOD;
+- seed20260724 terminal step1110 validation;
+- seed20260724 M4Singer sealed test;
+- seed20260724 MIR-1K OOD.
 
-| Item | Value |
-|---|---|
-| accepted train/val/test candidates | 20,298 |
-| excluded review records | 598 |
-| interpretation | `rule_validated weak supervision` |
-| canonical manifest SHA-256 | `22828f809e60cfaeb44f0fec973d7ce5b026fd024d0740b9120725f012d6053a` |
-| character annotation SHA-256 | `ba28f0e0c5f5d6c850b47632808ccc60052f3be397f3316ee95bc95678ca613d` |
+## Primary results
 
-split 单位为 song；test 在配置和 checkpoint 冻结后使用。
+Primary metric: `song_macro_boundary_mae_sec`, lower is better.
 
-### MIR-1K vocal-only OOD
+| Configuration | Validation | M4Singer test | MIR-1K OOD |
+|---|---:|---:|---:|
+| R0 raw | — | 251.391 ms | 97.108 ms |
+| R1 projector-only, seed3407 | 55.649 ms | 90.775 ms | 44.007 ms |
+| R2 audio LoRA, seed3407 | 46.734 ms | 79.590 ms | 42.557 ms |
+| R2 audio LoRA, seed20260724 | 47.160 ms | 80.920 ms | 40.459 ms |
 
-| Item | Value |
-|---|---|
-| songs / characters | 17 / 2,035 |
-| role | `test` / `ood_test_only` |
-| audio | user-confirmed zero-based channel index 1 extraction |
-| output root | `/home/hyan/Data/lyricalign/derived/20260722_mir1k_vocal_channel1_ood` |
-| manifest SHA-256 | `bd8109d608247b78407c1d63e9f648b83f697a00c5c0b05b3fe93c87b42c884f` |
-| characters SHA-256 | `78d7054ada0a3fb5ec3cd916174d094d78ab5d96f67d0112408de30dc24469c9` |
+The second seed selected step 750 using M4Singer validation only. Terminal step1110 was explicitly evaluated at 48.412 ms and did not replace step750.
 
-MIR-1K 不参与训练、early stopping、checkpoint 选择或超参数选择。
+## Metric repair status
 
-## 模型与配置
+`character_interval_metrics_v3_tolerant` is now canonical.
 
-- model ID：`Qwen/Qwen3-ForcedAligner-0.6B-hf`；
-- revision：`c07281df297b9905d24a508279258cccf987a064`；
-- R1：projector full train；
-- R2：projector full train + audio tower top-half attention LoRA；
-- R3：projector full train + audio tower all-attention LoRA；
-- 正式配置冻结 language model 和 timestamp classifier；
-- full R2 config：`configs/training/qwen_fa_lora_full_r2_v1.yaml`。
+Fixed:
 
-## Pilot validation
+- valid-only numerator and denominator use the same valid set;
+- invalid and missing prediction states are disjoint;
+- non-finite and negative-start intervals are invalid;
+- `character_coverage` is explicit;
+- `song_coverage` means at least one valid character;
+- `complete_song_coverage` measures full-song validity.
 
-| 配置 | Step | Song-macro boundary MAE |
-|---|---:|---:|
-| R0 raw | 0 | 169.925 ms |
-| R1 projector-only | 100 | 90.823 ms |
-| R1 projector-only | 200 | 65.699 ms |
-| R2 top-half LoRA | 100 | **55.247 ms** |
-| R3 all-layer LoRA | 100 | 61.078 ms |
+Nineteen result sets were recomputed from preserved prediction/reference rows. The primary song-macro metric remained unchanged in every recomputation. Historical metric files are preserved and corrected files are stored separately.
 
-R2 相对等 step R1 降低 35.576 ms（39.2%）。R3 在当前统一 pilot 预算下没有带来增益。
+Seed2 terminal-validation auxiliary fields were not recomputed because the supplied recomputation bundle did not include its validation reference rows. Its primary metric and checkpoint-selection role are verified.
 
-## Full R2
+## Identity and execution repair
 
-- train items：17,748；
-- optimizer steps：1,110；
-- training wall：5,620.47 s；
-- final validation：46.634 ms song-macro boundary MAE；
-- invalid rate：0.802%；
-- joint within 80 ms：88.924%；
-- mean IoU：84.248%。
+Future training runs now:
 
-周期 validation 的程序最佳为 step 1000（46.734 ms）。最终 step 1110 为 46.634 ms，但没有进入每 250 step 的 selector。自动后处理被报告为使用 validation-best，因此当前 finalization 入口默认 step 1000。
+- distinguish requested item limits from resolved sample counts;
+- write `resolved_dataset_identity.json`;
+- accept legacy execution identities during resume;
+- automatically evaluate a terminal checkpoint that is not on an evaluation interval;
+- record evaluation step and trigger;
+- include terminal validation in validation-only best-checkpoint selection.
 
-## Sealed M4Singer test
-
-已有：
+Historical seed2 identity is preserved and reconciled as:
 
 ```text
-/home/hyan/Data/lyricalign/runs/20260723_qwen_fa_r2_full_m4singer_sealed_test/metrics.json
+requested limit 0 = full frozen split
+resolved train items = 17,748
+resolved validation items = 1,711
 ```
 
-结果：
+## Long-context negative result
 
-- song-macro boundary MAE：79.590 ms；
-- onset/offset MAE：41.854/51.249 ms；
-- joint within 80 ms：89.755%；
-- mean IoU：84.579%；
-- invalid rate：0.959%。
+R2 remains better than R1 on approximately 22–48-second diagnostics, but worse on the approximately 152.5-second set.
 
-限制：metrics 文件没有 checkpoint 路径/hash；不重复运行 sealed test，也不利用 test 在 step 1000/1110 间反选。
+The outlier audit shows that most of the R2 regression is caused by one Tenor-6 `寻人启事` sequence, with a multi-second early drift around 120–140 seconds. Removing this single item reduces R2 pooled penalized MAE from 115.085 ms to 64.534 ms; R1 without the same item is 48.929 ms. A smaller residual R2 disadvantage therefore remains.
 
-## MIR-1K OOD 状态
-
-已有 `20260723_qwen_fa_r2_mir1k_ood`，但它生成于 full R2 完成前，是 pilot OOD。最终缺失：
+Canonical audit:
 
 ```text
-/home/hyan/Data/lyricalign/runs/20260723_qwen_fa_r2_full_mir1k_ood
+reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md
 ```
 
-## 当前结论
+## Current conclusion strength
 
-- projector-only 对领域适配有效；
-- audio tower top-half LoRA 提供明确的额外收益；
-- all-layer LoRA 在本轮预算下没有超过 top-half；
-- full R2 在 validation 和 sealed test 上继续改善；
-- 结论为单 seed 可行性证据，尚缺 final full-R2 MIR-1K OOD 与跨 seed 稳定性。
+Supported:
 
-## 当前唯一执行入口
+- projector adaptation supplies the majority of the gain;
+- top-half audio-attention LoRA provides an additional matched-budget gain;
+- R2 performance is stable across two complete R2 seeds on M4Singer test;
+- both R2 seeds outperform R1 seed3407 on MIR-1K OOD;
+- the training, resume, evaluation, and evidence path is operational.
 
-```bash
-bash scripts/training/finalize_qwen_fa_r2_manual.sh inspect
-bash scripts/training/finalize_qwen_fa_r2_manual.sh run-ood
-bash scripts/training/finalize_qwen_fa_r2_manual.sh summarize
+Not yet supported:
+
+- monotonic degradation with duration;
+- robust full-song alignment at approximately 150 seconds and above;
+- cross-seed stability of the R2-minus-R1 effect size, because a second full R1 seed was not run;
+- attribution of the long-context collapse to attention length, repeated lyrics, timestamp classes, or synthetic concatenation.
+
+## Canonical artifacts
+
+```text
+results/comparisons/20260724_qwen_fa_followup_final_summary.json
+results/recomputed/20260724_character_metrics_v3/
+reports/progress/20260724_qwen_fa_overnight_overall_summary.md
+reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md
+docs/sessions/20260724_qwen_fa_followup_repair_archive.md
 ```

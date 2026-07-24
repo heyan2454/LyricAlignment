@@ -30,6 +30,26 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def sha256_strings(values: list[str]) -> str:
+    """Hash an ordered string list without depending on JSON whitespace."""
+    digest = hashlib.sha256()
+    for value in values:
+        digest.update(value.encode("utf-8"))
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def legacy_execution_identity(identity: dict[str, Any]) -> dict[str, Any]:
+    """Project schema-v2 execution identity to the historical schema."""
+    return {
+        "stage": identity["stage"],
+        "seed": identity["seed"],
+        "configured_max_steps": identity["configured_max_steps"],
+        "train_items": identity["requested_train_items"],
+        "validation_items": identity["requested_validation_items"],
+    }
+
+
 def song_sample(rows: list[dict], count: int, seed: int) -> list[dict]:
     if not count or count >= len(rows): return rows
     songs: dict[str, list[dict]] = {}
@@ -79,7 +99,10 @@ def verify_resume_identity(run_dir: Path, cfg: dict, execution_identity: dict[st
         raise RuntimeError("resume labels identity differs from frozen run identity")
     if observed_split != {"split_manifest": expected["split_manifest"], "split_manifest_sha256": expected["split_manifest_sha256"]}:
         raise RuntimeError("resume split identity differs from frozen run identity")
-    if observed_execution != execution_identity:
+    compatible_execution = observed_execution == execution_identity
+    if execution_identity.get("schema_version") == 2:
+        compatible_execution = compatible_execution or observed_execution == legacy_execution_identity(execution_identity)
+    if not compatible_execution:
         raise RuntimeError("resume execution identity differs from frozen run identity")
 
 
@@ -157,11 +180,13 @@ def main() -> None:
     train_limit = int(args.train_items if args.train_items is not None else stage_cfg.get("train_items", 0))
     validation_limit = int(args.validation_items if args.validation_items is not None else stage_cfg.get("validation_items", 0))
     execution_identity = {
+        "schema_version": 2,
         "stage": args.stage,
         "seed": seed,
         "configured_max_steps": configured_max_steps,
-        "train_items": train_limit,
-        "validation_items": validation_limit,
+        "requested_train_items": train_limit,
+        "requested_validation_items": validation_limit,
+        "zero_limit_semantics": "0 means use the complete frozen split, not zero selected items",
     }
     if run_dir.exists() and any(run_dir.iterdir()) and not args.resume and not args.overwrite: raise SystemExit(f"run exists; use --resume or --overwrite: {run_dir}")
     if args.overwrite and run_dir.exists(): shutil.rmtree(run_dir)
@@ -195,12 +220,27 @@ def main() -> None:
     atomic_json(run_dir / "model_identity.json", {"model_id": model_cfg["id"], "model_revision": model_cfg["revision"], "timestamp_token_id": model.config.timestamp_token_id, "num_labels": model.config.num_labels})
     labels = read_jsonl(Path(cfg["data"]["labels"])); chars = read_jsonl(Path(cfg["data"]["characters"])); references: dict[str, list[dict]] = {}
     for row in chars: references.setdefault(row["item_id"], []).append(row)
-    train = [row for row in labels if row["split"] == "train"]; valid = [row for row in labels if row["split"] == "validation"]
-    train = song_sample(train, train_limit, seed)
+    available_train = [row for row in labels if row["split"] == "train"]
+    available_valid = [row for row in labels if row["split"] == "validation"]
+    train = song_sample(available_train, train_limit, seed)
+    valid = available_valid
     if args.stage == "overfit":
-        train = item_sample([row for row in labels if row["split"] == "train"], train_limit, seed)
+        train = item_sample(available_train, train_limit, seed)
     if validation_limit:
         valid = item_sample(valid, validation_limit, seed)
+    atomic_json(run_dir / "resolved_dataset_identity.json", {
+        "schema_version": 1,
+        "available_train_items": len(available_train),
+        "available_validation_items": len(available_valid),
+        "selected_train_items": len(train),
+        "selected_validation_items": len(valid),
+        "selected_train_item_ids_sha256": sha256_strings([str(row["item_id"]) for row in train]),
+        "selected_validation_item_ids_sha256": sha256_strings([str(row["item_id"]) for row in valid]),
+        "requested_train_items": train_limit,
+        "requested_validation_items": validation_limit,
+        "seed": seed,
+        "stage": args.stage,
+    })
     collator = QwenFABatchCollator(processor, audio_root=Path(cfg["data"]["audio_root"]), language=cfg["data"]["language"], timestamp_token_id=model.config.timestamp_token_id)
     evaluation_batch = int(cfg["training"].get("evaluation_micro_batch_size", cfg["training"]["micro_batch_size"]))
     if args.stage == "r0":
@@ -226,6 +266,7 @@ def main() -> None:
     best_path = run_dir / "best_checkpoint.json"
     best_metric = json.loads(best_path.read_text(encoding="utf-8"))["song_macro_boundary_mae_sec"] if best_path.exists() else float("inf")
     last_validation = None
+    last_validation_step: int | None = None
     while step < run_until_step:
         accumulated_loss = 0.0
         ordered = sorted(train, key=lambda row: hashlib.sha256(f"{seed}:{epoch}:{row['item_id']}".encode()).hexdigest())
@@ -241,7 +282,10 @@ def main() -> None:
                 checkpoint(run_dir, model, optimizer, scheduler, step, epoch, next_offset)
             if step % int(cfg["training"]["eval_steps"]) == 0:
                 validation = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
+                validation["evaluation_step"] = step
+                validation["evaluation_trigger"] = "periodic"
                 last_validation = validation
+                last_validation_step = step
                 atomic_json(run_dir / f"validation_step_{step:06d}.json", validation)
                 candidate = validation["metric"]["song_macro_boundary_mae_sec"]
                 with metrics_path.open("a", encoding="utf-8") as f: f.write(json.dumps({"step": step, "validation": validation}) + "\n")
@@ -252,9 +296,38 @@ def main() -> None:
             if step >= run_until_step: break
         epoch += 1
         resume_offset = 0
-    if last_validation is None and (run_dir / f"validation_step_{step:06d}.json").exists():
-        last_validation = json.loads((run_dir / f"validation_step_{step:06d}.json").read_text(encoding="utf-8"))
-    result = last_validation or evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
+    terminal_validation_path = run_dir / f"validation_step_{step:06d}.json"
+    if last_validation is None and terminal_validation_path.exists():
+        last_validation = json.loads(terminal_validation_path.read_text(encoding="utf-8"))
+        last_validation_step = int(last_validation.get("evaluation_step", step))
+    if last_validation_step != step:
+        # A terminal step that is not divisible by eval_steps must still enter
+        # validation-only checkpoint selection. This prevents a completed run
+        # from reporting a stale periodic evaluation.
+        terminal_validation = evaluate(
+            model, processor, collator, valid, references,
+            device=args.device, dtype=dtype, batch_size=evaluation_batch,
+        )
+        terminal_validation["evaluation_step"] = step
+        terminal_validation["evaluation_trigger"] = "terminal"
+        atomic_json(terminal_validation_path, terminal_validation)
+        with metrics_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"step": step, "validation": terminal_validation, "trigger": "terminal"}) + "\n")
+        candidate = terminal_validation["metric"]["song_macro_boundary_mae_sec"]
+        if candidate < best_metric:
+            best_metric = candidate
+            atomic_json(best_path, {
+                "step": step,
+                "checkpoint": str(run_dir / "checkpoints" / f"step-{step:06d}"),
+                "song_macro_boundary_mae_sec": candidate,
+                "selection_split": "validation",
+                "evaluation_trigger": "terminal",
+            })
+        last_validation = terminal_validation
+        last_validation_step = step
+    result = last_validation
+    if result is None:
+        raise RuntimeError("validation result was not produced")
     atomic_json(run_dir / "evaluation.json", result)
     if args.stage == "overfit":
         atomic_json(run_dir / "training_evaluation.json", evaluate(model, processor, collator, train, references, device=args.device, dtype=dtype, batch_size=evaluation_batch))

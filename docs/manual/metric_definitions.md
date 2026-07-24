@@ -1,70 +1,137 @@
 # Metric Definitions
 
-## 1. Token 对齐输入
+## 1. Character alignment input
 
-每个 GT 与预测 token 至少包含：
+Each reference and prediction row uses:
 
 ```text
 item_id
-token_index
-token_text
-normalized_token
-start_seconds
-end_seconds
+song_id
+character_index
+normalized_character
+start_sec
+end_sec
 ```
 
-中文使用 character token；英文使用 word token。GT 与模型 token 不一致时，先进行显式序列映射，并单独报告 unmapped / missing / extra。
+Reference rows must have unique keys and finite intervals satisfying
+`0 <= start_sec < end_sec`. Reference identity errors are hard failures.
 
-## 2. 边界误差
+## 2. Prediction states
+
+The tolerant evaluator assigns every reference character to exactly one state:
+
+- **valid**: exactly one prediction row exists and its interval is finite with
+  `0 <= start_sec < end_sec`;
+- **invalid**: a prediction row exists, but the key is duplicated or its
+  interval is malformed, zero-duration, negative-duration, non-finite, or
+  starts before zero;
+- **missing**: no prediction row exists for the reference key.
+
+These sets are disjoint. Therefore:
 
 ```text
-start_signed_error = pred_start - gt_start
-start_abs_error = abs(start_signed_error)
-end_signed_error = pred_end - gt_end
-end_abs_error = abs(end_signed_error)
+valid_prediction_count
++ invalid_prediction_count
++ missing_prediction_count
+= character_count
 ```
 
-分别统计 mean、median、p90，signed 和 absolute 不混算。
+`unusable_prediction_count` is the union of invalid and missing output.
 
-## 3. 容忍率
+## 3. Boundary errors
 
-候选容忍度：
+For valid output:
 
 ```text
-50 ms / 100 ms / 200 ms / 500 ms
+onset_abs_error = abs(pred_start - gt_start)
+offset_abs_error = abs(pred_end - gt_end)
+boundary_error = (onset_abs_error + offset_abs_error) / 2
 ```
 
-分别报告 onset、offset 和 joint within-tolerance。正式容忍度需在读取高质量 GT 与相关论文后冻结。
+For invalid or missing output, both onset and offset receive a transparent
+penalty:
 
-## 4. 序列与有效性
+```text
+max(1.0 second, reference interval duration)
+```
 
-- token coverage；
-- missing token count / rate；
-- extra token count / rate；
-- token mapping failure；
-- monotonic violation；
-- negative duration；
-- near-zero duration；
-- 前半段与后半段误差差异；
-- token index 对 signed error 的漂移斜率。
+The fixed penalty is part of the metric schema and must not be changed between
+models in the same comparison.
 
-## 5. 聚合口径
+## 4. Primary metric
 
-同时报告：
+```text
+song_macro_boundary_mae_sec
+```
 
-- pooled micro：所有 token 合并；
-- per-song macro：先按歌曲统计再平均；
-- 样本数、歌曲数、GT token 数、预测 token 数。
+First average penalized character boundary error within each song, then average
+songs equally. Lower is better. This is the checkpoint-selection and primary
+comparison metric for the current Qwen FA experiments.
 
-长歌不得在不说明的情况下通过 pooled 结果获得过高权重。
+## 5. Auxiliary metrics
 
-## 6. 辅助 transcription 指标
+- `all_item_penalized_boundary_mae_sec`: pooled average over all reference
+  characters, including invalid/missing penalties;
+- `valid_only_boundary_mae_sec`: average over the exact valid-prediction set;
+  predictions with errors above one second remain included if their intervals
+  are structurally valid;
+- onset/offset mean, median, and p90;
+- interval IoU;
+- joint boundary accuracy at 80/160/240 ms;
+- invalid, missing, unusable, zero-duration, negative-duration, and non-finite
+  rates.
 
-若开展 audio-to-text：
+## 6. Coverage
 
-- 中文：CER；
-- 英文：WER；
-- deletion / insertion / substitution；
-- 与 forced alignment 结果分表报告。
+```text
+character_coverage = valid_prediction_count / character_count
+```
 
-不使用 token-level CER。
+`item_coverage` is retained only as a backward-compatible alias of
+`character_coverage`.
+
+```text
+song_coverage
+```
+
+is the fraction of reference songs containing at least one valid prediction.
+It can legitimately be 1.0 even when some characters are unusable.
+
+```text
+complete_song_coverage
+```
+
+is the fraction of songs for which every reference character has a valid
+prediction. This is the stricter song-level completeness measure.
+
+## 7. Aggregation discipline
+
+Always report:
+
+- metric schema version;
+- character and song counts;
+- primary song-macro metric;
+- pooled penalized metric;
+- valid-only metric;
+- character coverage and complete-song coverage;
+- invalid and missing rates separately.
+
+Long songs must not silently dominate a song-macro comparison. Synthetic
+concatenations are diagnostics, not independent natural-song benchmarks.
+
+## 8. Recalculation
+
+Historical `character_interval_metrics_v2_tolerant` files are preserved as
+original evidence. Corrected auxiliary metrics are generated from preserved
+reference and prediction rows with:
+
+```bash
+python scripts/evaluation/recompute_character_metrics.py \
+  --references references.filtered.jsonl \
+  --predictions predictions.jsonl \
+  --original-metrics metrics.original.json \
+  --out metrics.corrected.json
+```
+
+The tool verifies that correction of prediction-state semantics does not change
+`song_macro_boundary_mae_sec`.

@@ -1,3 +1,5 @@
+> **Superseded for current status:** This is a historical 2026-07-23 report. Use `docs/status/project_current.md` and `docs/status/known_issues_20260724.md`. Its valid-only MAE and song-coverage fields are provisional pending metric repair.
+
 # Qwen Forced Aligner LoRA 首轮结果
 
 **状态日期：** 2026-07-23  

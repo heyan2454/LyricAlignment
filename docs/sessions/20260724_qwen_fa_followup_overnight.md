@@ -132,3 +132,7 @@ Main outputs:
 ```
 
 The formal model/evaluation run directories remain siblings under `/home/hyan/Data/lyricalign/runs`, while generated long data remains under `/home/hyan/Data/lyricalign/derived`.
+
+## Post-execution outcome and review note
+
+The pipeline completed with return code `0`; full R2 seed `20260724` later completed according to the user-provided event log. The exact supplied summary is archived as provisional evidence. Do not treat its `valid_only_boundary_mae_sec` or `song_coverage` as final, and do not infer missing full seed2 or final R2 OOD values. Continue from `20260724_qwen_fa_followup_review_archive.md`.

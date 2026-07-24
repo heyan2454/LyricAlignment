@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "archive_date": "2026-07-24",
+  "stable_extracted_root": "LyricAlignment",
+  "source_archive": "LyricAlignment_20260724_qwen_fa_followup_review_handoff(1).zip",
+  "output_archive": "LyricAlignment_20260724_qwen_fa_followup_repaired_archive.zip",
+  "current_entry": "docs/sessions/20260724_qwen_fa_followup_repair_archive.md",
+  "current_status": "docs/status/project_current.md",
+  "known_issues": "docs/status/known_issues_20260724.md",
+  "next_plan": "docs/status/next_execution_plan.md",
+  "experiment_record": "runs/evaluation/20260724_qwen_fa_followup_repair_archive/run_summary.json",
+  "canonical_summary": "results/comparisons/20260724_qwen_fa_followup_final_summary.json",
+  "canonical_summary_schema_version": 2,
+  "canonical_metric_schema": "character_interval_metrics_v3_tolerant",
+  "archive_policy": "preserve original evidence; add versioned code fixes, recomputed auxiliary metrics, reconciled identities, and portable manifests",
+  "training_or_gpu_inference_rerun_during_archive": false
+}

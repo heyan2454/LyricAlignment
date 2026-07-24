@@ -40,6 +40,18 @@ def env_true(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def checkpoint_step(checkpoint: Path | None) -> int | None:
+    if checkpoint is None:
+        return None
+    name = checkpoint.name
+    if not name.startswith("step-"):
+        return None
+    try:
+        return int(name.split("-", 1)[1])
+    except ValueError:
+        return None
+
+
 def resolve_kind(requested: str, checkpoint: Path | None) -> str:
     if requested != "auto":
         return requested
@@ -248,6 +260,7 @@ def main() -> None:
         "model_revision": args.revision,
         "checkpoint_kind": checkpoint_kind,
         "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
+        "checkpoint_step": checkpoint_step(args.checkpoint),
         "labels_path": str(args.labels),
         "labels_sha256": sha256(args.labels),
         "characters_path": str(args.characters),
@@ -257,6 +270,8 @@ def main() -> None:
         "max_items": args.max_items,
         "item_count": len(records),
         "character_count": len(reference),
+        "prediction_count": len(predictions),
+        "metric_schema_version": metrics.get("metric_schema_version"),
         "batch_size": args.batch_size,
         "device": args.device,
         "language": args.language,

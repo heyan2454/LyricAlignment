@@ -117,8 +117,12 @@ for key in (
     "joint_within_240ms",
     "mean_iou",
     "invalid_prediction_rate",
+    "missing_prediction_rate",
+    "unusable_prediction_rate",
+    "character_coverage",
     "item_coverage",
     "song_coverage",
+    "complete_song_coverage",
 ):
     value = metric.get(key)
     if value is None:

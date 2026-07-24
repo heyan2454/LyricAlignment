@@ -31,7 +31,9 @@ def main() -> None:
     absolute = r1_value - r2_value
     relative = absolute / r1_value if r1_value > 0 else float("-inf")
     invalid_delta = float(r2.get("invalid_prediction_rate", 1.0)) - float(r1.get("invalid_prediction_rate", 1.0))
-    coverage_delta = float(r2.get("item_coverage", 0.0)) - float(r1.get("item_coverage", 0.0))
+    r1_coverage = float(r1.get("character_coverage", r1.get("item_coverage", 0.0)))
+    r2_coverage = float(r2.get("character_coverage", r2.get("item_coverage", 0.0)))
+    coverage_delta = r2_coverage - r1_coverage
     finite = all(math.isfinite(value) for value in (r1_value, r2_value, absolute, relative, invalid_delta, coverage_delta))
     criteria = {
         "finite_metrics": finite,
@@ -52,6 +54,7 @@ def main() -> None:
         "absolute_improvement_sec": absolute,
         "relative_improvement": relative,
         "invalid_rate_delta": invalid_delta,
+        "character_coverage_delta": coverage_delta,
         "item_coverage_delta": coverage_delta,
         "thresholds": {
             "minimum_absolute_improvement_sec": args.minimum_absolute_improvement_sec,

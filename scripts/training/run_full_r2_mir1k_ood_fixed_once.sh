@@ -61,7 +61,7 @@ model_id = cfg["model"]["id"]
 revision = cfg["model"]["revision"]
 processor = AutoProcessor.from_pretrained(model_id, revision=revision, local_files_only=True)
 config = AutoConfig.from_pretrained(model_id, revision=revision, local_files_only=True)
-segment = float(processor.timestamp_segment_time)
+segment = float(processor.timestamp_segment_time) / 1000.0
 num_labels = int(config.num_labels)
 if abs(segment - expected_segment) > 1e-12:
     raise SystemExit(f"timestamp segment mismatch: model={segment}, expected={expected_segment}")

@@ -1,32 +1,35 @@
-# Apply and run
+# Apply the repaired archive
 
-This is a relative-path patch for `/home/hyan/LyricAlignment`.
+This archive is rooted at `LyricAlignment/`. Apply it over the repository root
+only after preserving local modifications.
 
 ```bash
 cd /home/hyan/LyricAlignment
-
 git status --short
-# Copy/extract this patch over the repository root, preserving relative paths.
+
+# Extract/copy the archive over this directory while preserving relative paths.
 
 conda activate lyricalign-qwen
 python -m compileall -q src scripts tests
 pytest -q \
-  tests/test_synthetic.py \
-  tests/test_qwen_fa_followup_entrypoint.py \
+  tests/test_character_metrics.py \
+  tests/test_recompute_character_metrics.py \
   tests/test_qwen_fa_training_entrypoint.py \
+  tests/test_qwen_fa_followup_entrypoint.py \
   tests/test_qwen_fa_finalize_entrypoint.py \
   tests/test_qwen_fa_labels.py \
-  tests/test_character_metrics.py \
-  tests/test_smoke_helpers.py \
-  tests/test_qwen_fa_model.py
+  tests/test_qwen_fa_model.py \
+  tests/test_smoke_helpers.py
 
-bash scripts/training/launch_qwen_fa_followup_detached.sh start
-bash scripts/training/launch_qwen_fa_followup_detached.sh status
+bash -n scripts/training/run_full_r2_mir1k_ood_fixed_once.sh
+bash -n scripts/training/run_qwen_fa_r2_missing_evaluations.sh
+bash -n scripts/training/collect_qwen_fa_followup_supplement.sh
 ```
 
-The default writes a second-seed recommendation but does not launch full seed-2 R2. To permit automatic continuation when the validation-only gate passes:
+Do not rerun completed test/OOD evaluations merely to apply this archive.
 
-```bash
-export AUTO_RUN_FULL_SEED2=1
-bash scripts/training/launch_qwen_fa_followup_detached.sh start
+The next planned experiment is described in:
+
+```text
+docs/status/next_execution_plan.md
 ```

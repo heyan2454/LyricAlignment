@@ -1,106 +1,103 @@
 # LyricAlignment
 
-面向普通话歌声的已知歌词强制对齐研究项目。仓库根目录永久保持为 `LyricAlignment/`；日期和阶段后缀只用于压缩包、run 与报告名称。
+面向普通话歌声的已知歌词强制对齐研究项目。仓库根目录固定为
+`LyricAlignment/`；日期后缀只用于 archive、run 和报告。
 
-## 当前研究主线
+## 当前状态（2026-07-24）
 
-```text
-vocal-only singing audio + known Mandarin lyrics
--> character-level timestamp labels
--> Qwen Forced Aligner raw baseline
--> projector-only / audio-tower LoRA adaptation
--> frozen validation checkpoint selection
--> sealed M4Singer test
--> MIR-1K vocal-only OOD
-```
+Qwen Forced Aligner 首轮 LoRA 实验链已经完成并归档：
 
-## 当前状态（2026-07-23）
+- R0 raw；
+- matched-budget R1 projector-only；
+- R2 projector + top-half audio-attention LoRA；
+- M4Singer validation-only checkpoint selection；
+- M4Singer sealed test；
+- MIR-1K vocal-only OOD；
+- approximately 22/33/48/152-second diagnostics；
+- second full R2 seed；
+- missing-evaluation recovery；
+- metric and identity repair。
 
-### 数据
+Primary song-macro penalized boundary MAE:
 
-M4Singer 当前 operational canonical：
-
-```text
-/home/hyan/Data/lyricalign/derived/20260722_m4singer_pinyin_validated_v4/
-```
-
-- 20,896 items；
-- 20,298 `accepted`，解释为 `rule_validated` weak-supervision candidates；
-- 598 `review_required`，本轮训练全部排除；
-- manifest SHA-256：`22828f809e60cfaeb44f0fec973d7ce5b026fd024d0740b9120725f012d6053a`；
-- character annotation SHA-256：`ba28f0e0c5f5d6c850b47632808ccc60052f3be397f3316ee95bc95678ca613d`。
-
-MIR-1K OOD：
-
-- 17 首、2,035 字符；
-- zero-based channel index 1 经用户人工确认并按交错 PCM 声道提取为 vocal-only；
-- 只用于 `ood_test_only`；
-- manifest SHA-256：`bd8109d608247b78407c1d63e9f648b83f697a00c5c0b05b3fe93c87b42c884f`；
-- character JSONL SHA-256：`78d7054ada0a3fb5ec3cd916174d094d78ab5d96f67d0112408de30dc24469c9`。
-
-### LoRA 首轮实验
-
-模型：`Qwen/Qwen3-ForcedAligner-0.6B-hf`，revision `c07281df297b9905d24a508279258cccf987a064`。
-
-Pilot validation：
-
-| 配置 | Step | Song-macro boundary MAE |
+| Model | M4Singer test | MIR-1K OOD |
 |---|---:|---:|
-| R0 raw | 0 | 169.925 ms |
-| R1 projector-only | 100 / 200 | 90.823 / 65.699 ms |
-| R2 projector + audio top-half LoRA | 100 | **55.247 ms** |
-| R3 projector + audio all-layer LoRA | 100 | 61.078 ms |
+| R0 raw | 251.391 ms | 97.108 ms |
+| R1 projector-only | 90.775 ms | 44.007 ms |
+| R2 seed3407 | 79.590 ms | 42.557 ms |
+| R2 seed20260724 | 80.920 ms | 40.459 ms |
 
-R2 全量训练完成 1,110 optimizer steps，最终 validation MAE 为 **46.634 ms**。程序周期 selector 记录 step 1000 为 validation-best（46.734 ms）；step 1110 的最终 evaluation 更低 0.100 ms，但没有进入周期 selector。
+当前不应立即扩展 LoRA；下一步是定位 approximately 150-second 序列中的
+局部对齐崩溃。
 
-full R2 M4Singer sealed test 已产生结果：
-
-- song-macro boundary MAE：**79.590 ms**；
-- onset/offset MAE：41.854/51.249 ms；
-- joint within 80 ms：89.755%；
-- mean IoU：84.579%；
-- invalid rate：0.959%。
-
-现有 MIR-1K OOD 指标属于 earlier pilot R2。**full R2 validation-best checkpoint 的 MIR-1K OOD 尚未完成。**
-
-## 当前入口
+## 必读入口
 
 1. `AI_SESSION_ENTRY.md`
 2. `docs/status/project_current.md`
-3. `docs/sessions/20260723_qwen_fa_lora_full_r2_archive.md`
-4. `reports/progress/20260723_qwen_fa_lora_results.md`
-5. `docs/status/next_execution_plan.md`
+3. `docs/sessions/20260724_qwen_fa_followup_repair_archive.md`
+4. `reports/review/20260724_qwen_fa_followup_repair_review.md`
+5. `reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md`
+6. `docs/status/next_execution_plan.md`
 
-服务器下一步：
+## 指标口径
 
-```bash
-cd /home/hyan/LyricAlignment
-conda activate lyricalign-qwen
-bash scripts/training/finalize_qwen_fa_r2_manual.sh inspect
-bash scripts/training/finalize_qwen_fa_r2_manual.sh run-ood
-bash scripts/training/finalize_qwen_fa_r2_manual.sh summarize
+Canonical schema:
+
+```text
+character_interval_metrics_v3_tolerant
 ```
 
-入口默认只读检查；不会重复运行 sealed test；`run-ood` 使用 `best_checkpoint.json` 指向的 validation-best checkpoint，并拒绝覆盖已有 final OOD 目录。
+关键规则：
+
+- valid / invalid / missing 互斥；
+- 主指标为带缺失惩罚的 per-song macro boundary MAE；
+- valid-only 使用完全相同的有效集合计算分子与分母；
+- `character_coverage` 为有效字符比例；
+- `song_coverage` 为至少有一个有效字符的歌曲比例；
+- `complete_song_coverage` 为整首全部字符有效的歌曲比例。
+
+原始 v2 指标不覆盖；修正版位于：
+
+```text
+results/recomputed/20260724_character_metrics_v3/
+```
+
+## Canonical result files
+
+```text
+results/comparisons/20260724_qwen_fa_followup_final_summary.json
+reports/progress/20260724_qwen_fa_overnight_overall_summary.md
+reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md
+```
+
+旧的 provisional summary 保留作为历史证据，不作为当前正式结果表。
+
+## 强约束
+
+- checkpoint 只允许使用 validation 选择；
+- 不根据 test/OOD 修改 checkpoint；
+- 不静默覆盖原始 aggregate JSON；
+- metric 修正必须从逐字符 reference/prediction 重算；
+- `rule_validated` 是 weak supervision，不等同于人工 GT；
+- synthetic approximately 152.5-second set 不是自然三分钟 benchmark；
+- checkpoint、模型缓存、音频和大型 prediction 文件不进入 Git/archive。
 
 ## 顶层目录
 
-| 路径 | 定位 |
+| 路径 | 作用 |
 |---|---|
 | `configs/` | 模型、训练、数据和 metric 配置 |
 | `data/` | 轻量 schema、registry 和 manifest 模板 |
-| `src/lyricalign/` | 核心 Python 逻辑 |
-| `scripts/` | 可复现薄入口 |
-| `runs/` | 轻量 run 证据和外部产物索引 |
-| `results/` | 结构化指标和比较结果 |
-| `reports/` | 实验、进展、审查和研究报告 |
+| `src/lyricalign/` | 核心实现 |
+| `scripts/` | 可复现入口 |
+| `runs/` | 轻量执行证据与外部产物索引 |
+| `results/` | 原始、修正和比较结果 |
+| `reports/` | 审计、进展和研究报告 |
 | `docs/` | 原则、状态、manual 和 session |
-| `requirements/` | 环境复现说明 |
-| `tests/` | 不依赖大型真实资产的工程检查 |
+| `tests/` | 回归与执行合同测试 |
 
-## 外部资产与 Git
+Remote:
 
-- remote：`git@github.com:heyan2454/LyricAlignment.git`；
-- 数据、模型缓存、checkpoint、音频、predictions 和大型日志位于仓库外；
-- 仓库保存实现、配置、命令、数据/模型身份、轻量结果和结论；
-- sealed test 和 OOD 不得参与 checkpoint 或超参数反选。
+```text
+git@github.com:heyan2454/LyricAlignment.git
+```

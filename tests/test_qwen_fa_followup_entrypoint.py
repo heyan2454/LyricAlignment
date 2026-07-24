@@ -39,5 +39,8 @@ def test_entrypoints_are_shell_syntax_valid() -> None:
     for relative in (
         "scripts/training/run_qwen_fa_followup_overnight.sh",
         "scripts/training/launch_qwen_fa_followup_detached.sh",
+        "scripts/training/run_full_r2_mir1k_ood_fixed_once.sh",
+        "scripts/training/run_qwen_fa_r2_missing_evaluations.sh",
+        "scripts/training/collect_qwen_fa_followup_supplement.sh",
     ):
         subprocess.run(["bash", "-n", str(ROOT / relative)], check=True)

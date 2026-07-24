@@ -1,54 +1,82 @@
-# Archive Report: Qwen FA LoRA Full R2
+# Archive Report: Qwen FA Follow-up Repaired Archive
 
-**Archive date:** 2026-07-23  
+**Archive date:** 2026-07-24  
 **Stable extracted root:** `LyricAlignment/`  
-**Output archive:** `LyricAlignment_20260723_qwen_fa_lora_full_r2_archive.zip`  
-**Source archive:** `LyricAlignment_202607231143_tryloraovernight(1).zip`
+**Output:** `LyricAlignment_20260724_qwen_fa_followup_repaired_archive.zip`  
+**Role:** canonical closeout of the first Qwen Forced Aligner LoRA experiment cycle.
 
-## Purpose
+## Integrated evidence
 
-将 Qwen Forced Aligner LoRA 首轮实验的已知状态、轻量指标和后续手动入口归档。此次归档不运行 GPU 训练或评测，不复制 checkpoint、音频、predictions 或外部 manifest。
+The archive integrates the original follow-up handoff, completed evaluation evidence,
+row-level recomputation inputs, the missing-evaluation controller, and the consolidated
+overnight summary.
 
-## Added or updated
+Confirmed return-code-0 evaluations:
 
-- 更新 `README.md`、`AI_SESSION_ENTRY.md`、`docs/status/project_current.md`；
-- 将下一步收敛为 final full-R2 MIR-1K OOD；
-- 新增 `docs/sessions/20260723_qwen_fa_lora_full_r2_archive.md`；
-- 新增 `reports/progress/20260723_qwen_fa_lora_results.md`；
-- 新增结构化比较 `results/comparisons/20260723_qwen_fa_lora_summary.json`；
-- 保存用户提供的三份原始 `metrics.json`；
-- 新增安全入口 `scripts/training/finalize_qwen_fa_r2_manual.sh`；
-- 新增入口安全性测试；
-- 保存原始 Codex LoRA 执行计划与轻量 external-run summary。
+1. seed3407 R2 MIR-1K OOD;
+2. seed20260724 terminal step1110 validation;
+3. seed20260724 M4Singer sealed test;
+4. seed20260724 MIR-1K OOD.
 
-## Current result
+The second R2 seed remains frozen at step750 after terminal validation is added to
+the validation-only candidate set.
 
-- R2 pilot：55.247 ms validation song-macro boundary MAE；
-- R2 full final validation：46.634 ms；
-- 程序 validation-best：step 1000，46.734 ms；
-- full R2 M4Singer sealed test：79.590 ms；
-- final full-R2 MIR-1K OOD：尚未执行；已有 OOD 为 pilot 结果。
+## Direct repairs
+
+- corrected character metric state semantics and valid-only denominator;
+- added deterministic metric recomputation with provenance and primary-metric invariance checks;
+- recomputed 19 preserved test/OOD/long-diagnostic result sets under
+  `character_interval_metrics_v3_tolerant`;
+- fixed MIR-1K timestamp milliseconds/seconds handling;
+- added complete pinned-model snapshot preflight;
+- added terminal-checkpoint validation and selection support;
+- separated requested item limits from resolved sample counts;
+- reconciled historical seed2 identity without rewriting the original evidence;
+- added a long-context per-item/outlier audit;
+- replaced the old non-portable/self-referential archive checksum pattern with
+  relative-path manifests that exclude themselves.
 
 ## Evidence boundary
 
-- pilot/full validation 数值来自用户贴出的服务器控制台；结构化 summary 明确记录该 provenance；
-- sealed test 与 pilot OOD 使用用户提供的原始 metrics 文件；
-- sealed-test metrics 未记录 checkpoint 身份，因此归档不补造该事实；
-- watcher 曾创建 full sealed-test 目录并产生指标，但自动串联未完成 final full-R2 OOD；
-- 本地只验证项目文件、脚本语法和不依赖外部资产的测试。
+- No training or GPU inference was run while constructing this archive.
+- Original metrics and identity files remain preserved.
+- Corrected metrics and reconciled identities are separate, versioned files.
+- The primary metric `song_macro_boundary_mae_sec` remained unchanged in all 19
+  row-level recomputations.
+- Audio, base-model weights, LoRA checkpoints, Hugging Face caches, and large
+  per-item external runs are not copied into the source tree.
 
-## Manual continuation
+## Primary results
 
-```bash
-conda activate lyricalign-qwen
-bash scripts/training/finalize_qwen_fa_r2_manual.sh inspect
-bash scripts/training/finalize_qwen_fa_r2_manual.sh run-ood
-bash scripts/training/finalize_qwen_fa_r2_manual.sh summarize
+| Configuration | M4Singer test | MIR-1K OOD |
+|---|---:|---:|
+| R0 raw | 251.391 ms | 97.108 ms |
+| R1 projector-only, seed3407 | 90.775 ms | 44.007 ms |
+| R2 audio LoRA, seed3407 | 79.590 ms | 42.557 ms |
+| R2 audio LoRA, seed20260724 | 80.920 ms | 40.459 ms |
+
+## Remaining limitations
+
+- seed2 terminal-validation auxiliary metrics cannot be recomputed without its
+  validation reference rows;
+- the exact seed3407 R2 M4Singer sealed-test row-level input is not present, so
+  its historical v2 auxiliary fields remain explicitly historical;
+- the approximately 150-second R2 regression is localized but not mechanistically
+  resolved;
+- a second full R1 seed would be required to estimate cross-seed variance of the
+  R2-minus-R1 difference.
+
+## Validation
+
+- `python -m compileall -q src scripts tests`: passed;
+- targeted regression/entrypoint/archive tests: **26 passed**;
+- shell syntax: **7 scripts passed `bash -n`**;
+- full pytest collection is blocked only by missing local `pypinyin` in three
+  unrelated dataset/audio test modules.
+
+See:
+
+```text
+reports/review/20260724_qwen_fa_followup_repair_archive_validation.md
+runs/evaluation/20260724_qwen_fa_followup_repair_archive/run_summary.json
 ```
-
-## Local validation
-
-- `bash -n scripts/training/finalize_qwen_fa_r2_manual.sh`：通过；
-- `python -m compileall -q src scripts tests`：通过；
-- LoRA finalizer/training/model/label/metric 相关 targeted tests：12 passed；
-- 全量 pytest 在本地归档容器 collection 阶段因缺少可安装的 `pypinyin` 依赖而未完成；这不是服务器 Conda 环境的实验结果，也未被写成全套测试通过。

@@ -49,3 +49,36 @@ def test_checkpoint_persists_next_sampler_offset(tmp_path: Path) -> None:
     assert state["epoch"] == 3
     assert state["next_offset"] == 28
     assert json.loads((path / "checkpoint_identity.json").read_text(encoding="utf-8"))["next_offset"] == 28
+
+
+def test_schema_v2_execution_identity_accepts_legacy_resume_file(tmp_path: Path) -> None:
+    labels = tmp_path / "labels.jsonl"; labels.write_text('{"item_id":"a"}\n', encoding="utf-8")
+    split = tmp_path / "split.jsonl"; split.write_text('{"item_id":"a","split":"train"}\n', encoding="utf-8")
+    run_dir = tmp_path / "run"; config = _config(labels, split)
+    legacy = {
+        "stage": "r2",
+        "seed": 3407,
+        "configured_max_steps": 1110,
+        "train_items": 0,
+        "validation_items": 0,
+    }
+    ENTRYPOINT.write_run_identity(run_dir, config, object(), legacy)
+    current = {
+        "schema_version": 2,
+        "stage": "r2",
+        "seed": 3407,
+        "configured_max_steps": 1110,
+        "requested_train_items": 0,
+        "requested_validation_items": 0,
+        "zero_limit_semantics": "0 means use the complete frozen split, not zero selected items",
+    }
+    ENTRYPOINT.verify_resume_identity(run_dir, config, current)
+
+
+def test_training_entrypoint_records_terminal_validation_and_resolved_counts() -> None:
+    source = SCRIPT.read_text(encoding="utf-8")
+    assert 'last_validation_step != step' in source
+    assert '"evaluation_trigger"] = "terminal"' in source
+    assert 'resolved_dataset_identity.json' in source
+    assert 'selected_train_items' in source
+    assert 'requested_train_items' in source
