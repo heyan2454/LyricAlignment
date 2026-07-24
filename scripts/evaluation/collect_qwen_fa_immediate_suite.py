@@ -78,6 +78,8 @@ def main() -> None:
     parser.add_argument("--language", default="Chinese")
     parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--local-files-only", action="store_true")
+    parser.add_argument("--skip-shift", action="store_true")
+    parser.add_argument("--skip-crop", action="store_true")
     args = parser.parse_args()
 
     tasks = [
@@ -93,27 +95,6 @@ def main() -> None:
         ),
         task_args(
             args,
-            experiment="shift",
-            labels=args.m4_labels,
-            characters=args.m4_characters,
-            audio_root=args.m4_audio_root,
-            out_dir=args.out_root / "shift",
-            max_items=1,
-            select_shortest=True,
-        ),
-        task_args(
-            args,
-            experiment="crop",
-            labels=args.long_labels,
-            characters=args.long_characters,
-            manifest=args.long_manifest,
-            audio_root=args.long_audio_root,
-            out_dir=args.out_root / "crop_outlier",
-            item_id=[args.outlier_item_id],
-            include_full=True,
-        ),
-        task_args(
-            args,
             experiment="existing",
             labels=args.mir_labels,
             characters=args.mir_characters,
@@ -122,6 +103,33 @@ def main() -> None:
             max_items=args.mir_max_items,
         ),
     ]
+    if not args.skip_shift:
+        tasks.append(
+            task_args(
+                args,
+                experiment="shift",
+                labels=args.m4_labels,
+                characters=args.m4_characters,
+                audio_root=args.m4_audio_root,
+                out_dir=args.out_root / "shift",
+                max_items=1,
+                select_shortest=True,
+            )
+        )
+    if not args.skip_crop:
+        tasks.append(
+            task_args(
+                args,
+                experiment="crop",
+                labels=args.long_labels,
+                characters=args.long_characters,
+                manifest=args.long_manifest,
+                audio_root=args.long_audio_root,
+                out_dir=args.out_root / "crop_outlier",
+                item_id=[args.outlier_item_id],
+                include_full=True,
+            )
+        )
     pending = [task for task in tasks if not task_complete(task.out_dir)]
     if not pending:
         print(json.dumps({"model": args.model_name, "status": "already_complete"}))

@@ -457,6 +457,7 @@ def infer_variant(
     input_ids = batch["input_ids"][0]
     positions = (input_ids == model.config.timestamp_token_id).nonzero(as_tuple=False).flatten()
     slot_logits = output.logits[0, positions].float()
+    timestamp_logit_class_count = int(slot_logits.shape[-1])
     raw_classes = slot_logits.argmax(dim=-1).tolist()
     timestamp_unit_ms = float(args.timestamp_segment_sec) * 1000.0
     raw_timestamp_ms = [int(round(int(value) * timestamp_unit_ms)) for value in raw_classes]
@@ -485,6 +486,8 @@ def infer_variant(
         raw_start, raw_end = raw_start_class * segment_sec, raw_end_class * segment_sec
         fixed_start, fixed_end = float(item["start_time"]), float(item["end_time"])
         gt_start, gt_end = float(reference["start_sec"]), float(reference["end_sec"])
+        gt_start_class = int(round(gt_start / segment_sec))
+        gt_end_class = int(round(gt_end / segment_sec))
         repaired_slots += int(abs(raw_start - reproduced_start) > 1e-9) + int(abs(raw_end - reproduced_end) > 1e-9)
         official_diffs.extend([abs(fixed_start - reproduced_start), abs(fixed_end - reproduced_end)])
         raw_errors.extend([abs(raw_start - gt_start), abs(raw_end - gt_end)])
@@ -496,6 +499,15 @@ def infer_variant(
             slot_stats[f"raw_{boundary}_top2_class"] = int(top_indices[slot_index, 1])
             slot_stats[f"raw_{boundary}_margin"] = float(top_values[slot_index, 0] - top_values[slot_index, 1])
             slot_stats[f"raw_{boundary}_entropy"] = float(entropy[slot_index])
+            gt_class = gt_start_class if boundary == "start" else gt_end_class
+            slot_stats[f"gt_{boundary}_class"] = gt_class
+            slot_stats[f"gt_{boundary}_class_in_range"] = 0 <= gt_class < timestamp_logit_class_count
+            slot_stats[f"raw_{boundary}_signed_class_error"] = int(raw_classes[slot_index]) - gt_class
+            slot_stats[f"gt_{boundary}_class_probability"] = (
+                float(probabilities[slot_index, gt_class])
+                if 0 <= gt_class < timestamp_logit_class_count
+                else None
+            )
         character_rows.append(
             {
                 "schema_version": "qwen_fa_immediate_diagnostic_v1",
@@ -505,6 +517,9 @@ def infer_variant(
                 "variant_kind": variant["variant_kind"],
                 "variant_item_id": variant["variant_item_id"],
                 "source_item_id": variant["source_item_id"],
+                "reference_source_item_id": reference.get("reference_source_item_id", variant["source_item_id"]),
+                "segment_role": reference.get("segment_role"),
+                "probe_condition": variant.get("probe_condition"),
                 "song_id": variant.get("song_id"),
                 "variant_offset_sec": float(variant["offset_sec"]),
                 "character_index": index,
@@ -548,9 +563,11 @@ def infer_variant(
         "variant_kind": variant["variant_kind"],
         "variant_item_id": variant["variant_item_id"],
         "source_item_id": variant["source_item_id"],
+        "probe_condition": variant.get("probe_condition"),
         "song_id": variant.get("song_id"),
         "variant_offset_sec": float(variant["offset_sec"]),
         "audio_duration_sec": float(audio.size / 16000.0),
+        "timestamp_logit_class_count": timestamp_logit_class_count,
         "declared_duration_sec": float(variant["duration_sec"]),
         "character_count": len(refs),
         "timestamp_slot_count": len(raw_classes),
@@ -568,6 +585,7 @@ def infer_variant(
         "variant_item_id": variant["variant_item_id"],
         "source_item_id": variant["source_item_id"],
         "variant_kind": variant["variant_kind"],
+        "probe_condition": variant.get("probe_condition"),
         "variant_offset_sec": float(variant["offset_sec"]),
         "audio_path": str(variant["audio_path"]),
         "audio_sha256": sha256(Path(variant["audio_path"])),
@@ -576,6 +594,8 @@ def infer_variant(
         "transcript_character_count": len(variant["transcript"]),
         "word_count": len(word_lists[0]),
         "timestamp_position_count": int(len(positions)),
+        "timestamp_logit_class_count": timestamp_logit_class_count,
+        "timestamp_token_id": int(model.config.timestamp_token_id),
         "tensors": audit,
     }
     return character_rows, item_summary, input_audit

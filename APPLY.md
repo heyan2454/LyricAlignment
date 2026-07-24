@@ -1,46 +1,38 @@
-# Immediate Qwen FA diagnostics patch
+# Apply and run
 
-## Added files
-
-```text
-scripts/evaluation/collect_qwen_fa_immediate_diagnostics.py
-scripts/evaluation/collect_qwen_fa_immediate_suite.py
-scripts/evaluation/analyze_qwen_fa_time_coverage.py
-scripts/evaluation/summarize_qwen_fa_immediate_diagnostics.py
-scripts/training/run_qwen_fa_immediate_diagnostics.sh
-tests/test_qwen_fa_immediate_diagnostics.py
-docs/sessions/20260725_qwen_fa_long_diagnostic_plan.md
-```
-
-## Apply
-
-Copy the files into the same relative paths under `/home/hyan/LyricAlignment`.
-
-## Verify before server inference
+Copy the patch contents into the repository root, preserving paths.
 
 ```bash
 cd /home/hyan/LyricAlignment
+conda activate lyricalign-qwen
+
 python -m compileall -q \
   scripts/evaluation/collect_qwen_fa_immediate_diagnostics.py \
-  scripts/evaluation/collect_qwen_fa_immediate_suite.py \
-  scripts/evaluation/analyze_qwen_fa_time_coverage.py \
-  scripts/evaluation/summarize_qwen_fa_immediate_diagnostics.py
-bash -n scripts/training/run_qwen_fa_immediate_diagnostics.sh
-pytest -q tests/test_qwen_fa_immediate_diagnostics.py
+  scripts/evaluation/collect_qwen_fa_240_cliff_probe.py \
+  scripts/evaluation/collect_qwen_fa_repeat_probe.py \
+  scripts/evaluation/prepare_qwen_fa_immediate_all_selection.py \
+  scripts/evaluation/analyze_qwen_fa_error_blocks.py \
+  scripts/evaluation/summarize_qwen_fa_immediate_all.py
+
+bash -n scripts/training/run_qwen_fa_immediate_all.sh
+bash -n scripts/maintenance/collect_qwen_fa_immediate_all_review.sh
+
+pytest -q \
+  tests/test_qwen_fa_immediate_diagnostics.py \
+  tests/test_qwen_fa_240_cliff_probe.py \
+  tests/test_qwen_fa_immediate_all.py
 ```
 
-## Smoke
+Run all immediate diagnostics:
 
 ```bash
-MIR_MAX_ITEMS=8 LONG_MAX_ITEMS=3 \
-OUT_ROOT=/home/hyan/Data/lyricalign/runs/20260725_qwen_fa_immediate_diagnostics_smoke \
-bash scripts/training/run_qwen_fa_immediate_diagnostics.sh
+OUT_ROOT=/home/hyan/Data/lyricalign/runs/20260725_qwen_fa_immediate_all \
+bash scripts/training/run_qwen_fa_immediate_all.sh
 ```
 
-## Formal diagnostic
+Collect upload evidence:
 
 ```bash
-bash scripts/training/run_qwen_fa_immediate_diagnostics.sh
+ROOT=/home/hyan/Data/lyricalign/runs/20260725_qwen_fa_immediate_all \
+bash scripts/maintenance/collect_qwen_fa_immediate_all_review.sh
 ```
-
-The script performs no training. Reruns skip task directories that already contain all four required outputs.
