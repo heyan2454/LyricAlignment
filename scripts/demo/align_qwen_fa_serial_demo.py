@@ -24,14 +24,16 @@ sys.path.insert(0, str(ROOT / "src"))
 from lyricalign.demo.karaoke import (
     LyricDocument,
     build_serial_windows,
-    candidate_character_range,
-    merge_window_candidates,
+    append_strict_core_commits,
+    future_character_range,
     parse_lyrics_text,
     repair_monotonic_intervals,
+    split_core_commit_prefix,
+    next_window_transcript_start,
 )
 from lyricalign.training.qwen_fa_runtime import decode_audio, move_inputs
 
-SCHEMA_VERSION = "qwen_fa_serial_demo_v1"
+SCHEMA_VERSION = "qwen_fa_serial_demo_v3_overlap_transcript"
 
 
 def sha256(path: Path) -> str:
@@ -266,6 +268,15 @@ def windowed_alignment(
     document: LyricDocument,
     args: argparse.Namespace,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Run strict serial cores with overlap lyrics used as context only.
+
+    Every 60-second core owns immutable output.  A later window receives the
+    lyrics corresponding to its 10-second left acoustic extension, but those
+    already committed characters are context-only and can never overwrite the
+    preceding core.  The next transcript start is computed from the previous
+    window at the next *input* boundary; a character cut by that boundary is
+    omitted and input begins with the following complete character.
+    """
     duration = float(len(audio) / 16000.0)
     windows = build_serial_windows(
         duration,
@@ -273,64 +284,222 @@ def windowed_alignment(
         left_context_sec=args.left_context_sec,
         right_context_sec=args.right_context_sec,
     )
-    cursor = 0
-    candidates: list[dict[str, Any]] = []
+    total_characters = len(document.characters)
+    committed_cursor = 0
+    input_cursor = 0
+    committed_rows: list[dict[str, Any]] = []
     traces: list[dict[str, Any]] = []
-    for window in windows:
+    previous_committed_count = 0
+    previous_core_duration = 0.0
+
+    for window_position, window in enumerate(windows):
+        if committed_cursor >= total_characters:
+            break
         input_start = float(window["input_start_sec"])
         input_end = float(window["input_end_sec"])
         core_start = float(window["core_start_sec"])
         core_end = float(window["core_end_sec"])
-        char_start, char_end = candidate_character_range(
-            document,
-            duration_sec=duration,
-            input_start_sec=input_start,
-            input_end_sec=input_end,
-            cursor=cursor,
-            line_padding=args.line_padding,
-            character_backtrack=args.character_backtrack,
-            minimum_forward_characters=args.minimum_forward_characters,
+        final_core = math.isclose(core_end, duration, abs_tol=1e-9)
+
+        global_rate = total_characters / duration
+        recent_rate = (
+            previous_committed_count / previous_core_duration
+            if previous_committed_count > 0 and previous_core_duration > 0
+            else 0.0
         )
+        characters_per_second = max(global_rate, recent_rate)
+        covered_input_sec = max(0.0, input_end - input_start)
+        target_count = max(
+            args.minimum_forward_characters,
+            int(math.ceil(characters_per_second * covered_input_sec * args.future_character_ratio)),
+        )
+        if final_core:
+            target_count = total_characters - input_cursor
+
         sample_start = int(round(input_start * 16000))
         sample_end = int(round(input_end * 16000))
-        rows, audit = infer_slice(
-            processor=processor,
-            model=model,
-            audio=audio[sample_start:sample_end],
-            document=document,
-            character_start=char_start,
-            character_end=char_end,
-            global_audio_offset_sec=input_start,
-            args=args,
+        attempts: list[dict[str, Any]] = []
+        accepted_context: list[dict[str, Any]] | None = None
+        accepted_committed: list[dict[str, Any]] | None = None
+        accepted_lookahead: list[dict[str, Any]] | None = None
+        accepted_range: tuple[int, int] | None = None
+        accepted_next_input_cursor: int | None = None
+        accepted_next_input_cut_character: dict[str, Any] | None = None
+
+        next_input_boundary = None
+        if not final_core and window_position + 1 < len(windows):
+            next_input_boundary = float(windows[window_position + 1]["input_start_sec"])
+
+        for attempt_index in range(args.max_candidate_expansions + 1):
+            char_start, char_end = future_character_range(
+                document,
+                cursor=input_cursor,
+                target_character_count=max(1, target_count),
+                line_padding=args.future_line_padding,
+            )
+            if final_core:
+                char_end = total_characters
+            rows, audit = infer_slice(
+                processor=processor,
+                model=model,
+                audio=audio[sample_start:sample_end],
+                document=document,
+                character_start=char_start,
+                character_end=char_end,
+                global_audio_offset_sec=input_start,
+                args=args,
+            )
+            decorated_rows: list[dict[str, Any]] = []
+            for row in rows:
+                decorated = dict(row)
+                decorated.update(window)
+                decorated["candidate_character_start"] = char_start
+                decorated["candidate_character_end"] = char_end
+                decorated["inference_source"] = "strict_serial_window_raw"
+                decorated_rows.append(decorated)
+
+            context_rows, core_committed, lookahead = split_core_commit_prefix(
+                decorated_rows,
+                expected_input_character_start=input_cursor,
+                committed_character_start=committed_cursor,
+                core_start_sec=core_start,
+                core_end_sec=core_end,
+                final_core=final_core,
+                start_tolerance_sec=args.boundary_start_tolerance_sec,
+            )
+            core_boundary_observed = final_core or bool(lookahead) or char_end == total_characters
+
+            next_input_candidate: int | None = total_characters if final_core else None
+            next_input_cut_character: dict[str, Any] | None = None
+            if next_input_boundary is not None:
+                next_input_candidate, next_input_cut_character = next_window_transcript_start(
+                    decorated_rows,
+                    input_boundary_sec=next_input_boundary,
+                    total_characters=total_characters,
+                )
+                if next_input_candidate is None and char_end == total_characters:
+                    next_input_candidate = total_characters
+            next_input_boundary_observed = final_core or next_input_candidate is not None
+            boundary_observed = core_boundary_observed and next_input_boundary_observed
+
+            attempts.append(
+                {
+                    "attempt_index": attempt_index,
+                    "target_character_count": target_count,
+                    "candidate_character_start": char_start,
+                    "candidate_character_end": char_end,
+                    "context_character_count": len(context_rows),
+                    "committed_prefix_count": len(core_committed),
+                    "lookahead_count": len(lookahead),
+                    "core_boundary_observed": core_boundary_observed,
+                    "next_input_boundary_sec": next_input_boundary,
+                    "next_input_boundary_observed": next_input_boundary_observed,
+                    "next_window_input_character_start": next_input_candidate,
+                    "boundary_observed": boundary_observed,
+                    **audit,
+                }
+            )
+            if boundary_observed:
+                accepted_context = context_rows
+                accepted_committed = core_committed
+                accepted_lookahead = lookahead
+                accepted_range = (char_start, char_end)
+                accepted_next_input_cursor = next_input_candidate
+                accepted_next_input_cut_character = next_input_cut_character
+                break
+
+            target_count = max(
+                target_count + args.minimum_forward_characters,
+                int(math.ceil(target_count * 1.8)),
+            )
+
+        if (
+            accepted_context is None
+            or accepted_committed is None
+            or accepted_lookahead is None
+            or accepted_range is None
+            or accepted_next_input_cursor is None
+        ):
+            raise RuntimeError(
+                f"window {window['window_index']} could not observe the required boundaries "
+                f"after {args.max_candidate_expansions + 1} attempts"
+            )
+
+        committed_cursor_before = committed_cursor
+        input_cursor_before = input_cursor
+        committed_rows = append_strict_core_commits(
+            committed_rows,
+            accepted_committed,
+            window=window,
+            duration_sec=duration,
+            seam_tolerance_sec=args.seam_tolerance_sec,
         )
-        committed: list[int] = []
-        for row in rows:
-            decorated = dict(row)
-            decorated.update(window)
-            decorated["candidate_character_start"] = char_start
-            decorated["candidate_character_end"] = char_end
-            decorated["inference_source"] = "serial_window"
-            midpoint = (
-                float(decorated["fixed_global_start_sec"])
-                + float(decorated["fixed_global_end_sec"])
-            ) / 2.0
-            if core_start <= midpoint < core_end or (
-                math.isclose(core_end, duration) and midpoint <= core_end
-            ):
-                committed.append(int(decorated["global_character_index"]))
-            candidates.append(decorated)
-        cursor_before = cursor
-        if committed:
-            cursor = max(cursor, max(committed) + 1)
+        committed_cursor += len(accepted_committed)
+        previous_committed_count = len(accepted_committed)
+        previous_core_duration = max(core_end - core_start, 1e-9)
+
+        if not final_core:
+            if accepted_next_input_cursor > committed_cursor:
+                # This is valid only when there is a lyric-free gap covering the
+                # remainder of the current core.  The next input still starts at
+                # the first character at/after its acoustic boundary, while no
+                # uncommitted lyric is silently skipped.
+                skipped = accepted_next_input_cursor - committed_cursor
+                raise RuntimeError(
+                    "next input cursor would skip uncommitted lyrics: "
+                    f"committed_cursor={committed_cursor} "
+                    f"next_input_cursor={accepted_next_input_cursor} skipped={skipped}"
+                )
+            input_cursor = accepted_next_input_cursor
+
+        core_boundary_character = None
+        if accepted_committed:
+            last = accepted_committed[-1]
+            if float(last["fixed_global_end_sec"]) > core_end:
+                core_boundary_character = {
+                    "global_character_index": int(last["global_character_index"]),
+                    "character": last["character"],
+                    "start_sec": float(last["fixed_global_start_sec"]),
+                    "end_sec": float(last["fixed_global_end_sec"]),
+                    "crosses_core_end": True,
+                    "owned_by_previous_core": True,
+                }
+
+        next_uncommitted_character = None
+        if committed_cursor < total_characters:
+            next_uncommitted_character = {
+                "global_character_index": committed_cursor,
+                "character": document.characters[committed_cursor].text,
+            }
+            if accepted_lookahead and int(accepted_lookahead[0]["global_character_index"]) == committed_cursor:
+                next_uncommitted_character.update(
+                    {
+                        "lookahead_start_sec": float(accepted_lookahead[0]["fixed_global_start_sec"]),
+                        "lookahead_end_sec": float(accepted_lookahead[0]["fixed_global_end_sec"]),
+                    }
+                )
+
         traces.append(
             {
                 **window,
-                "cursor_before": cursor_before,
-                "cursor_after": cursor,
-                "candidate_character_start": char_start,
-                "candidate_character_end": char_end,
-                "committed_character_count": len(set(committed)),
-                **audit,
+                "serial_policy": "hard_core_overlap_transcript_v3",
+                "input_character_start_before": input_cursor_before,
+                "committed_cursor_before": committed_cursor_before,
+                "committed_cursor_after": committed_cursor,
+                "candidate_character_start": accepted_range[0],
+                "candidate_character_end": accepted_range[1],
+                "left_context_character_count": len(accepted_context),
+                "committed_character_start": committed_cursor_before,
+                "committed_character_end": committed_cursor,
+                "committed_character_count": len(accepted_committed),
+                "next_input_boundary_sec": next_input_boundary,
+                "next_window_character_start": input_cursor if not final_core else total_characters,
+                "next_window_input_character_start": input_cursor if not final_core else total_characters,
+                "next_uncommitted_character_start": committed_cursor,
+                "input_boundary_cut_character": accepted_next_input_cut_character,
+                "core_boundary_character": core_boundary_character,
+                "next_uncommitted_character": next_uncommitted_character,
+                "attempts": attempts,
             }
         )
         print(
@@ -340,15 +509,26 @@ def windowed_alignment(
                     "windows_total": len(windows),
                     "core": [core_start, core_end],
                     "input": [input_start, input_end],
-                    "characters": [char_start, char_end],
-                    "cursor": cursor,
+                    "characters": [accepted_range[0], accepted_range[1]],
+                    "context_characters": [input_cursor_before, committed_cursor_before],
+                    "committed": [committed_cursor_before, committed_cursor],
+                    "next_input_boundary_sec": next_input_boundary,
+                    "next_window_character_start": input_cursor if not final_core else total_characters,
+                    "next_uncommitted_character_start": committed_cursor,
+                    "input_boundary_cut_character": accepted_next_input_cut_character,
+                    "core_boundary_character": core_boundary_character,
                 },
                 ensure_ascii=False,
             ),
             flush=True,
         )
-    merged = merge_window_candidates(candidates, duration_sec=duration)
-    return decorate_final_rows(merged, document), traces
+
+    if committed_cursor != total_characters:
+        raise RuntimeError(
+            f"strict serial alignment ended with uncommitted lyrics: "
+            f"cursor={committed_cursor} total={total_characters}"
+        )
+    return decorate_final_rows(committed_rows, document), traces
 
 
 def output_is_current(path: Path, request_hash: str) -> bool:
@@ -375,11 +555,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--language", default="Chinese")
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)
     parser.add_argument("--core-sec", type=float, default=60.0)
-    parser.add_argument("--left-context-sec", type=float, default=15.0)
-    parser.add_argument("--right-context-sec", type=float, default=15.0)
-    parser.add_argument("--line-padding", type=int, default=2)
-    parser.add_argument("--character-backtrack", type=int, default=24)
-    parser.add_argument("--minimum-forward-characters", type=int, default=48)
+    parser.add_argument("--left-context-sec", type=float, default=10.0)
+    parser.add_argument("--right-context-sec", type=float, default=10.0)
+    parser.add_argument("--future-line-padding", type=int, default=1)
+    parser.add_argument("--minimum-forward-characters", type=int, default=64)
+    parser.add_argument("--future-character-ratio", type=float, default=1.35)
+    parser.add_argument("--max-candidate-expansions", type=int, default=4)
+    parser.add_argument("--boundary-start-tolerance-sec", type=float, default=0.32)
+    parser.add_argument("--seam-tolerance-sec", type=float, default=0.16)
+    # Accepted only so older launch commands fail soft; strict v2 never backtracks.
+    parser.add_argument("--line-padding", type=int, default=0, help=argparse.SUPPRESS)
+    parser.add_argument("--character-backtrack", type=int, default=0, help=argparse.SUPPRESS)
     parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--force", action="store_true")
@@ -442,9 +628,13 @@ def main() -> None:
                         "core_sec": args.core_sec,
                         "left_context_sec": args.left_context_sec,
                         "right_context_sec": args.right_context_sec,
-                        "line_padding": args.line_padding,
-                        "character_backtrack": args.character_backtrack,
+                        "policy": "hard_core_overlap_transcript_v3",
+                        "future_line_padding": args.future_line_padding,
                         "minimum_forward_characters": args.minimum_forward_characters,
+                        "future_character_ratio": args.future_character_ratio,
+                        "max_candidate_expansions": args.max_candidate_expansions,
+                        "boundary_start_tolerance_sec": args.boundary_start_tolerance_sec,
+                        "seam_tolerance_sec": args.seam_tolerance_sec,
                     } if mode == "windowed" else None,
                 }
                 request_hash = canonical_hash(request)
@@ -481,6 +671,7 @@ def main() -> None:
                             processor, model, decoded_audio[audio_name], document, args
                         )
                     repaired_count = sum(bool(row.get("cross_window_repaired")) for row in rows)
+                    seam_repaired_count = sum(bool(row.get("seam_repaired")) for row in rows)
                     payload = {
                         "schema_version": SCHEMA_VERSION,
                         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -491,6 +682,9 @@ def main() -> None:
                             "character_count": len(rows),
                             "cross_window_repaired_character_count": repaired_count,
                             "cross_window_repaired_character_rate": repaired_count / len(rows),
+                            "seam_repaired_character_count": seam_repaired_count,
+                            "seam_repaired_character_rate": seam_repaired_count / len(rows),
+                            "window_policy": "hard_core_overlap_transcript_v3" if mode == "windowed" else None,
                             "window_count": len(trace) if mode == "windowed" else 1,
                             "diagnostic_only": True,
                             "uses_full_alignment_as_window_input": False,

@@ -410,3 +410,57 @@ STAGE=align bash scripts/demo/run_yessoda_serial_demo.sh
 ```
 
 若某个复合视频表现异常，再补对应的单独视频即可，不必第一轮上传全部 12 个单视频。
+
+## 3.4 Spleeter 权重失败与相同音频防护
+
+Spleeter 首次运行会下载预训练模型。若下载失败，不能只依据命令返回码或
+`vocals.wav` 是否存在来判断成功；必须同时检查模型缓存和输出差异。
+
+本 demo 现在固定使用显式模型目录，并在写入正式 stem 前执行质量检查：
+
+- `mix.wav` 与 `vocals.wav` 若近似为同一信号，直接失败；
+- `vocals.wav` 与 `accompaniment.wav` 若近似一致，直接失败；
+- 任一 stem 近似静音，直接失败；
+- 保存 `separation_quality.json`，记录相关系数、拟合残差、RMS 和重构残差；
+- 只有 identity、两条 stem 和质量报告全部存在时才允许复用。
+
+建议将权重放在项目目录之外：
+
+```bash
+export SPLEETER_MODEL_ROOT=/root/autodl-tmp/AST_storage/Data/lyricalign/models/spleeter
+```
+
+若此前下载中断或已经产生错误 stem，优先使用可断点续传下载脚本：
+
+```bash
+cd /home/hyan/LyricAlignment
+SPLEETER_MODEL_ROOT=/root/autodl-tmp/AST_storage/Data/lyricalign/models/spleeter \
+  bash scripts/demo/download_spleeter_model_resumable.sh
+```
+
+随后强制重新分离，禁止复用旧结果：
+
+```bash
+SPLEETER_MODEL_ROOT=/root/autodl-tmp/AST_storage/Data/lyricalign/models/spleeter \
+FORCE_SEPARATE=1 \
+STAGE=prepare \
+  bash scripts/demo/run_yessoda_serial_demo.sh
+```
+
+也可让主入口删除缓存并触发 Spleeter 自己重新下载，但该下载不支持断点续传：
+
+```bash
+FORCE_SPLEETER_MODEL_REDOWNLOAD=1 \
+FORCE_SEPARATE=1 \
+STAGE=prepare \
+  bash scripts/demo/run_yessoda_serial_demo.sh
+```
+
+成功后检查：
+
+```bash
+cat 夜苏打/qwen_fa_demo_serial/work/audio/separation_quality.json
+ls -lh 夜苏打/qwen_fa_demo_serial/work/audio/{mix,vocals,accompaniment}.wav
+```
+
+`passed` 必须为 `true`。旧版 `yessoda_spleeter_v1` identity 不再足以证明分离有效。
