@@ -40,3 +40,6 @@ runs/**/large_outputs/
 *.safetensors
 *.pt
 *.pth
+
+# Standalone local demo assets and generated videos
+/夜苏打/

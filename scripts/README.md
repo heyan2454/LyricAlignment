@@ -1,11 +1,19 @@
 # Scripts
 
-本目录保存可复现的薄入口；稳定核心逻辑优先位于 `src/lyricalign/`。
+本目录保存可复现的薄入口；稳定、可测试的纯逻辑优先位于 `src/lyricalign/`。
 
-当前已实现：
+当前主要分区：
 
-- `assets/`：AST 数据发现、Qwen 下载、OpenCpop 可恢复下载、外部资产校验；
-- `smoke/`：revision-aware Qwen Forced Aligner 非指标 smoke 与轻量证据；
-- `environment/`：实际环境、包来源和 VCS commit 捕获。
+- `assets/`：数据发现、模型下载与外部资产校验；
+- `datasets/`：M4Singer、MIR-1K 与 synthetic-long 准备；
+- `training/`：Qwen FA LoRA、恢复评估、120s 快速诊断入口；
+- `evaluation/`：字符指标、长音频诊断、raw/fixed timestamp 审计与汇总；
+- `demo/`：独立歌曲的串行分窗对齐、Spleeter 人声分离与 KTV 视频；
+- `maintenance/`：轻量证据收集；
+- `environment/`：环境、包来源和 archive 构建。
 
-字符转换、正式 metric、训练和 LoRA 入口仍推迟到数据清洗和 schema 冻结之后。
+夜苏打 demo 与 120s 快速反馈的服务器执行说明见：
+
+```text
+docs/manual/qwen_fa_120_quick_feedback_and_yessoda_demo.md
+```

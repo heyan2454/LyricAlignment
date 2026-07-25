@@ -1,7 +1,7 @@
 # Project Current
 
-**Snapshot date:** 2026-07-24  
-**Stage:** first Qwen Forced Aligner LoRA experiment cycle archived; targeted long-context diagnosis next
+**Snapshot date:** 2026-07-25  
+**Stage:** first Qwen Forced Aligner LoRA cycle archived; focused 120s quick diagnostic and standalone demo code ready for server execution
 
 ## Completed experiment chain
 
@@ -113,3 +113,22 @@ reports/progress/20260724_qwen_fa_overnight_overall_summary.md
 reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md
 docs/sessions/20260724_qwen_fa_followup_repair_archive.md
 ```
+
+## 2026-07-25 implementation status
+
+Implemented but not yet executed on the GPU server:
+
+- dense short-sample prefix-silence probe around 120 seconds;
+- fixed-target trailing-silence probe for total-input-length effects;
+- request-hash-aware resume and strict validation-best checkpoint resolution for the new quick entry;
+- standalone 夜苏打 R0/R1/R2 × mix/vocal × full/windowed serial demo;
+- Spleeter vocal preparation;
+- 12 KTV videos, four three-way comparisons and three same-model four-way comparisons.
+
+Execution guide:
+
+```text
+docs/manual/qwen_fa_120_quick_feedback_and_yessoda_demo.md
+```
+
+No new metric result or model conclusion should be inferred until the server outputs are returned.

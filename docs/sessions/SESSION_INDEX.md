@@ -8,6 +8,9 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-07-25 | `20260725_qwen_fa_quick_feedback_and_yessoda_demo_patch.md` | hot | Dense 120s quick probes plus standalone 夜苏打 serial-window KTV demo implementation and execution guide. |
+| 2026-07-25 | `20260725_qwen_fa_long_diagnostic_plan.md` | hot | Long-context mechanism hypotheses, raw/fixed timestamp evidence requirements and staged diagnostic design. |
+| 2026-07-25 | `20260725_qwen_fa_immediate_all_plan.md` | warm | Earlier all-in-one diagnostic expansion plan; use the newer focused quick entry for immediate feedback. |
 | 2026-07-24 | `20260724_qwen_fa_followup_repair_archive.md` | hot | Missing evaluations integrated; metric, identity, terminal-validation, and archive defects repaired; corrected results and long-context outlier audit archived. |
 | 2026-07-24 | `20260724_qwen_fa_followup_review_archive.md` | warm | Pre-repair handoff preserving provisional evidence and the defect inventory. Superseded for current execution by the repair archive. |
 | 2026-07-24 | `20260724_qwen_fa_followup_overnight.md` | hot | Resumable detached R0/R1/long/seed2 execution design and post-execution note. |

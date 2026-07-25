@@ -5,6 +5,7 @@ Experiments:
 - existing: raw-vs-fixed, mask/feature audit, absolute-time and seam metadata.
 - shift: prepend controlled silence and shift the same transcript/GT.
 - crop: oracle-GT transcript/audio crops for full-vs-local consistency diagnosis.
+- tailpad: keep target positions fixed while extending total input duration with trailing silence.
 
 This is diagnostic code. Crop and shift variants must not be reported as an
 independent benchmark or used for checkpoint selection.
@@ -230,8 +231,40 @@ def make_silence_prefix(source: Path, output: Path, offset: float) -> None:
             "ffmpeg", "-nostdin", "-y", "-v", "error",
             "-f", "lavfi", "-t", f"{offset:.6f}", "-i", "anullsrc=r=16000:cl=mono",
             "-i", str(source),
-            "-filter_complex", "[0:a][1:a]concat=n=2:v=0:a=1[out]", "-map", "[out]",
+            "-filter_complex",
+            "[0:a]aresample=16000,aformat=sample_fmts=s16:channel_layouts=mono[a0];"
+            "[1:a]aresample=16000,aformat=sample_fmts=s16:channel_layouts=mono[a1];"
+            "[a0][a1]concat=n=2:v=0:a=1[out]",
+            "-map", "[out]", "-c:a", "pcm_s16le", str(temporary),
+        ]
+    subprocess.run(command, check=True, capture_output=True, text=True)
+    temporary.replace(output)
+
+
+def make_silence_tail(source: Path, output: Path, *, source_duration: float, target_duration: float) -> None:
+    if target_duration + 1e-6 < source_duration:
+        raise ValueError(
+            f"target duration {target_duration:.3f}s is shorter than source {source_duration:.3f}s"
+        )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if output.is_file():
+        return
+    temporary = output.with_suffix(".tmp.wav")
+    extra = max(0.0, target_duration - source_duration)
+    if extra <= 1e-6:
+        command = [
+            "ffmpeg", "-nostdin", "-y", "-v", "error", "-i", str(source),
             "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(temporary),
+        ]
+    else:
+        command = [
+            "ffmpeg", "-nostdin", "-y", "-v", "error", "-i", str(source),
+            "-f", "lavfi", "-t", f"{extra:.6f}", "-i", "anullsrc=r=16000:cl=mono",
+            "-filter_complex",
+            "[0:a]aresample=16000,aformat=sample_fmts=s16:channel_layouts=mono[a0];"
+            "[1:a]aresample=16000,aformat=sample_fmts=s16:channel_layouts=mono[a1];"
+            "[a0][a1]concat=n=2:v=0:a=1[out]",
+            "-map", "[out]", "-c:a", "pcm_s16le", str(temporary),
         ]
     subprocess.run(command, check=True, capture_output=True, text=True)
     temporary.replace(output)
@@ -348,6 +381,35 @@ def build_variants(
                         "variant_kind": "shift",
                         "join_points_sec": [],
                         "duration_sec": float(record["duration_sec"]) + offset,
+                    }
+                )
+        elif args.experiment == "tailpad":
+            source_duration = float(record["duration_sec"])
+            for requested_duration in parse_float_list(args.target_durations):
+                target_duration = source_duration if requested_duration <= 0 else requested_duration
+                if target_duration + 1e-6 < source_duration:
+                    continue
+                variant_id = f"tailpad:{target_duration:.3f}:{source_id}"
+                audio_path = derived_audio / "tailpad" / f"{hashlib.sha256(variant_id.encode()).hexdigest()[:16]}.wav"
+                make_silence_tail(
+                    source_audio, audio_path, source_duration=source_duration, target_duration=target_duration
+                )
+                variants.append(
+                    {
+                        "variant_item_id": variant_id,
+                        "source_item_id": source_id,
+                        "song_id": record.get("song_id"),
+                        "audio_path": audio_path,
+                        "transcript": str(record["lyrics_normalized"]),
+                        "refs": [dict(row, source_character_index=int(row["character_index"])) for row in refs],
+                        "offset_sec": 0.0,
+                        "variant_kind": "tailpad",
+                        "probe_condition": {
+                            "requested_total_duration_sec": requested_duration,
+                            "actual_total_duration_sec": target_duration,
+                        },
+                        "join_points_sec": [],
+                        "duration_sec": target_duration,
                     }
                 )
         elif args.experiment == "crop":
@@ -666,6 +728,16 @@ def run_task(
         "variant_count": len(variants),
         "character_row_count": len(character_rows),
         "timestamp_segment_sec": args.timestamp_segment_sec,
+        "experiment_parameters": {
+            "shift_offsets": parse_float_list(args.shift_offsets) if args.experiment == "shift" else None,
+            "target_durations": parse_float_list(args.target_durations) if args.experiment == "tailpad" else None,
+            "crop_windows": parse_windows(args.crop_windows) if args.experiment == "crop" else None,
+            "include_full": bool(args.include_full),
+            "minimum_crop_characters": int(args.minimum_crop_characters),
+            "max_items": int(args.max_items),
+            "select_shortest": bool(args.select_shortest),
+        },
+        "request_hash": getattr(args, "request_hash", None),
         "diagnostic_only": True,
     }
     atomic_json(args.out_dir / "identity.json", identity)
@@ -690,12 +762,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--audio-root", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--experiment", choices=("existing", "shift", "crop"), required=True)
+    parser.add_argument("--experiment", choices=("existing", "shift", "tailpad", "crop"), required=True)
     parser.add_argument("--split")
     parser.add_argument("--item-id", action="append", default=[])
     parser.add_argument("--max-items", type=int, default=0)
     parser.add_argument("--select-shortest", action="store_true")
     parser.add_argument("--shift-offsets", default="0,30,60,120,180,240")
+    parser.add_argument("--target-durations", default="60,90,105,115,120,125,135,150,180")
     parser.add_argument("--crop-windows", default="90:120,110:150,120:140,140:151")
     parser.add_argument("--include-full", action="store_true")
     parser.add_argument("--minimum-crop-characters", type=int, default=4)
