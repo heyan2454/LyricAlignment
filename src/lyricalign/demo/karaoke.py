@@ -1,22 +1,241 @@
-"""Pure helpers for serial-window lyric alignment and KTV subtitle rendering.
+"""Pure helpers for multilingual serial-window lyric alignment and rendering.
 
-The helpers intentionally do not load a model. They keep lyric occurrence IDs,
-window ownership, overlap-only transcript context, and strict seam checks
-explicit so repeated lyrics cannot be merged by text equality.
+The helpers do not load a model.  Alignment units follow the official Qwen3
+Forced Aligner processor policy: CJK characters and Latin words for
+Chinese/Cantonese and space-delimited languages, and Nagisa word units for
+Japanese.  Display punctuation and spacing are preserved separately from the
+model-facing unit text.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable, Sequence
+import unicodedata
+
+
+SUPPORTED_DEMO_LANGUAGES = (
+    "Chinese",
+    "English",
+    "Cantonese",
+    "French",
+    "German",
+    "Italian",
+    "Japanese",
+    "Portuguese",
+    "Russian",
+    "Spanish",
+)
+
+_LANGUAGE_ALIASES = {
+    "zh": "Chinese",
+    "zho": "Chinese",
+    "cmn": "Chinese",
+    "mandarin": "Chinese",
+    "chinese": "Chinese",
+    "中文": "Chinese",
+    "en": "English",
+    "eng": "English",
+    "english": "English",
+    "英文": "English",
+    "ja": "Japanese",
+    "jpn": "Japanese",
+    "japanese": "Japanese",
+    "日文": "Japanese",
+    "日语": "Japanese",
+    "yue": "Cantonese",
+    "cantonese": "Cantonese",
+    "粤语": "Cantonese",
+    "fr": "French",
+    "french": "French",
+    "de": "German",
+    "german": "German",
+    "it": "Italian",
+    "italian": "Italian",
+    "pt": "Portuguese",
+    "portuguese": "Portuguese",
+    "ru": "Russian",
+    "russian": "Russian",
+    "es": "Spanish",
+    "spanish": "Spanish",
+}
+
+
+def normalize_alignment_language(language: str) -> str:
+    """Return the canonical Forced Aligner language name.
+
+    The command line accepts canonical names case-insensitively plus common ISO
+    aliases.  Unsupported values fail before model loading so cache identities
+    cannot silently mix languages.
+    """
+    value = str(language).strip()
+    if not value:
+        raise ValueError("language must be non-empty")
+    for canonical in SUPPORTED_DEMO_LANGUAGES:
+        if value.casefold() == canonical.casefold():
+            return canonical
+    canonical = _LANGUAGE_ALIASES.get(value.casefold())
+    if canonical is None:
+        raise ValueError(
+            f"unsupported forced-aligner language {language!r}; supported: "
+            + ", ".join(SUPPORTED_DEMO_LANGUAGES)
+        )
+    return canonical
+
+
+def alignment_unit_mode(language: str) -> str:
+    canonical = normalize_alignment_language(language)
+    if canonical in {"Chinese", "Cantonese"}:
+        return "cjk_character_or_latin_word"
+    if canonical == "Japanese":
+        return "japanese_word_nagisa"
+    return "space_word_or_cjk_character"
+
+
+def _is_kept_char(character: str) -> bool:
+    if character == "'":
+        return True
+    category = unicodedata.category(character)
+    return category.startswith("L") or category.startswith("N")
+
+
+def _clean_token(token: str) -> str:
+    return "".join(character for character in token if _is_kept_char(character))
+
+
+def _is_cjk_char(character: str) -> bool:
+    code = ord(character)
+    return (
+        0x4E00 <= code <= 0x9FFF
+        or 0x3400 <= code <= 0x4DBF
+        or 0x20000 <= code <= 0x2A6DF
+        or 0x2A700 <= code <= 0x2B73F
+        or 0x2B740 <= code <= 0x2B81F
+        or 0x2B820 <= code <= 0x2CEAF
+        or 0xF900 <= code <= 0xFAFF
+    )
+
+
+def _split_segment_with_chinese(segment: str) -> list[str]:
+    tokens: list[str] = []
+    buffer: list[str] = []
+
+    def flush() -> None:
+        if buffer:
+            tokens.append("".join(buffer))
+            buffer.clear()
+
+    for character in segment:
+        if _is_cjk_char(character):
+            flush()
+            tokens.append(character)
+        else:
+            buffer.append(character)
+    flush()
+    return tokens
+
+
+def _tokenize_space_language(text: str) -> list[str]:
+    tokens: list[str] = []
+    for segment in text.split():
+        cleaned = _clean_token(segment)
+        if cleaned:
+            tokens.extend(_split_segment_with_chinese(cleaned))
+    return tokens
+
+
+def _default_japanese_tokenizer(text: str) -> Sequence[str]:
+    try:
+        import nagisa
+    except ImportError as exc:
+        raise RuntimeError(
+            "Japanese alignment requires the official Nagisa tokenizer. "
+            "Install the Qwen3-ASR runtime dependencies or run: pip install nagisa"
+        ) from exc
+    return nagisa.tagging(text).words
+
+
+def _tokenize_japanese(
+    text: str,
+    *,
+    tokenizer: Callable[[str], Sequence[str]] | None = None,
+) -> list[str]:
+    raw_words = (tokenizer or _default_japanese_tokenizer)(text)
+    return [cleaned for word in raw_words if (cleaned := _clean_token(str(word)))]
+
+
+def _tokenize_line(
+    text: str,
+    *,
+    language: str,
+    japanese_tokenizer: Callable[[str], Sequence[str]] | None,
+) -> list[str]:
+    canonical = normalize_alignment_language(language)
+    if canonical == "Japanese":
+        return _tokenize_japanese(text, tokenizer=japanese_tokenizer)
+    # This mirrors Qwen3ForceAlignProcessor.tokenize_space_lang.  Chinese and
+    # Cantonese are therefore character-level for CJK while contiguous Latin
+    # text remains one word, including mixed-language lyrics.
+    return _tokenize_space_language(text)
+
+
+def _visible_parts(display: str, tokens: Sequence[str]) -> list[tuple[str, str, str]]:
+    """Map clean model tokens back to exact visible spans.
+
+    Returns ``(prefix, visible_text, suffix)`` per token.  Punctuation and
+    whitespace removed by the model processor are attached to neighboring
+    units so joining the visible parts reconstructs the original line.
+    """
+    kept = [(index, character) for index, character in enumerate(display) if _is_kept_char(character)]
+    expected = "".join(tokens)
+    observed = "".join(character for _, character in kept)
+    if expected != observed:
+        raise ValueError(
+            "alignment tokenizer cannot be mapped back to the source line: "
+            f"tokens={tokens!r} cleaned_source={observed!r} source={display!r}"
+        )
+    spans: list[tuple[int, int]] = []
+    cursor = 0
+    for token in tokens:
+        length = len(token)
+        if length <= 0:
+            raise ValueError("empty alignment unit")
+        unit_positions = kept[cursor: cursor + length]
+        if len(unit_positions) != length:
+            raise ValueError(f"token exceeds source line: {token!r}")
+        if "".join(character for _, character in unit_positions) != token:
+            raise ValueError(f"token/source mismatch for {token!r} in {display!r}")
+        spans.append((unit_positions[0][0], unit_positions[-1][0] + 1))
+        cursor += length
+
+    parts: list[tuple[str, str, str]] = []
+    for index, (start, end) in enumerate(spans):
+        prefix = display[:start] if index == 0 else ""
+        next_start = spans[index + 1][0] if index + 1 < len(spans) else len(display)
+        parts.append((prefix, display[start:end], display[end:next_start]))
+    return parts
 
 
 @dataclass(frozen=True)
 class LyricCharacter:
+    """One model-facing alignment unit.
+
+    The historic class name is retained for compatibility.  ``text`` may be a
+    CJK character or a multi-character word.  Rendering uses the separate
+    display fields rather than assuming one Unicode character per timestamp.
+    """
+
     global_index: int
     line_index: int
     index_in_line: int
     text: str
     display_suffix: str = ""
+    display_prefix: str = ""
+    display_text: str = ""
+    unit_type: str = "character"
+
+    @property
+    def visible_text(self) -> str:
+        return self.display_prefix + (self.display_text or self.text) + self.display_suffix
 
 
 @dataclass(frozen=True)
@@ -31,64 +250,94 @@ class LyricLine:
 class LyricDocument:
     lines: tuple[LyricLine, ...]
     characters: tuple[LyricCharacter, ...]
+    language: str = "Chinese"
+    unit_mode: str = "cjk_character_or_latin_word"
 
     @property
     def transcript(self) -> str:
+        # Historical compact view used by existing diagnostics.  Model calls
+        # should use ``transcript_for_slice`` so pre-tokenized units remain
+        # stable across English/Japanese window boundaries.
         return "".join(item.text for item in self.characters)
 
+    def transcript_for_slice(self, start: int, end: int) -> str:
+        selected = self.characters[start:end]
+        # Explicit spaces make each pre-tokenized unit stable when the official
+        # processor tokenizes a window slice again.  The processor removes the
+        # separators; this also prevents Japanese words from merging when a
+        # slice starts or ends mid-line.
+        return " ".join(item.text for item in selected)
 
-def parse_lyrics_text(text: str) -> LyricDocument:
-    """Parse non-empty text lines while excluding whitespace from model text.
+    def display_transcript_for_slice(self, start: int, end: int) -> str:
+        """Reconstruct visible source text for a unit slice.
 
-    Whitespace following a character is kept as ``display_suffix`` so the KTV
-    renderer can preserve intentional phrase spacing without sending spaces to
-    the forced aligner.
+        This is a processor-compatibility fallback.  Line changes are separated
+        explicitly so the last word of one line cannot merge with the first word
+        of the next line.
+        """
+        selected = self.characters[start:end]
+        parts: list[str] = []
+        previous_line: int | None = None
+        for item in selected:
+            if previous_line is not None and item.line_index != previous_line:
+                parts.append("\n")
+            parts.append(item.visible_text)
+            previous_line = item.line_index
+        return "".join(parts)
+
+
+def parse_lyrics_text(
+    text: str,
+    *,
+    language: str = "Chinese",
+    japanese_tokenizer: Callable[[str], Sequence[str]] | None = None,
+) -> LyricDocument:
+    """Parse lyrics into language-aware Forced Aligner units.
+
+    - Chinese/Cantonese: CJK character units; contiguous Latin text is one word.
+    - English and other space languages: word units, while embedded CJK remains
+      character-level as in the official processor.
+    - Japanese: Nagisa word units.  Punctuation is display-only.
     """
+    canonical = normalize_alignment_language(language)
+    mode = alignment_unit_mode(canonical)
     lines: list[LyricLine] = []
     characters: list[LyricCharacter] = []
     for raw_line in text.splitlines():
         display = raw_line.strip()
         if not display:
             continue
+        tokens = _tokenize_line(
+            display,
+            language=canonical,
+            japanese_tokenizer=japanese_tokenizer,
+        )
+        if not tokens:
+            continue
+        visible_parts = _visible_parts(display, tokens)
         line_index = len(lines)
         start = len(characters)
-        pending_spaces = ""
-        index_in_line = 0
-        for symbol in display:
-            if symbol.isspace():
-                pending_spaces += symbol
-                continue
-            if pending_spaces and characters and characters[-1].line_index == line_index:
-                previous = characters[-1]
-                characters[-1] = LyricCharacter(
-                    global_index=previous.global_index,
-                    line_index=previous.line_index,
-                    index_in_line=previous.index_in_line,
-                    text=previous.text,
-                    display_suffix=previous.display_suffix + pending_spaces,
-                )
-            pending_spaces = ""
+        for index_in_line, (token, visible) in enumerate(zip(tokens, visible_parts, strict=True)):
+            prefix, visible_text, suffix = visible
+            if len(token) == 1 and _is_cjk_char(token):
+                unit_type = "cjk_character"
+            elif canonical == "Japanese":
+                unit_type = "japanese_word"
+            else:
+                unit_type = "word"
             characters.append(
                 LyricCharacter(
                     global_index=len(characters),
                     line_index=line_index,
                     index_in_line=index_in_line,
-                    text=symbol,
+                    text=token,
+                    display_prefix=prefix,
+                    display_text=visible_text,
+                    display_suffix=suffix,
+                    unit_type=unit_type,
                 )
             )
-            index_in_line += 1
-        if pending_spaces and characters and characters[-1].line_index == line_index:
-            previous = characters[-1]
-            characters[-1] = LyricCharacter(
-                global_index=previous.global_index,
-                line_index=previous.line_index,
-                index_in_line=previous.index_in_line,
-                text=previous.text,
-                display_suffix=previous.display_suffix + pending_spaces,
-            )
         end = len(characters)
-        if end == start:
-            continue
         lines.append(
             LyricLine(
                 line_index=line_index,
@@ -98,8 +347,13 @@ def parse_lyrics_text(text: str) -> LyricDocument:
             )
         )
     if not characters:
-        raise ValueError("lyrics contain no non-whitespace characters")
-    return LyricDocument(lines=tuple(lines), characters=tuple(characters))
+        raise ValueError("lyrics contain no alignable letters or numbers")
+    return LyricDocument(
+        lines=tuple(lines),
+        characters=tuple(characters),
+        language=canonical,
+        unit_mode=mode,
+    )
 
 
 def build_serial_windows(

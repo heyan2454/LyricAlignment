@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 from lyricalign.demo.karaoke import ass_escape, ass_time
 
-SCHEMA_VERSION = "qwen_fa_karaoke_render_v1"
+SCHEMA_VERSION = "qwen_fa_karaoke_render_v2_multilingual_units"
 
 
 def sha256(path: Path) -> str:
@@ -97,7 +97,7 @@ def build_ass(
         preview_start = starts[index - 1] if index > 0 else 0.0
         preview_end = line_start
         y = y_positions[index % 2]
-        display_text = "".join(str(row["character"]) + str(row.get("display_suffix", "")) for row in rows)
+        display_text = "".join(str(row.get("display_prefix", "")) + str(row.get("display_text") or row.get("alignment_unit") or row["character"]) + str(row.get("display_suffix", "")) for row in rows)
         visual_units = sum(0.5 if char.isspace() else 1.0 for char in display_text)
         line_font_size = min(font_size, max(30, int((width - 100) / max(visual_units, 1.0))))
         if preview_end - preview_start > 0.01:
@@ -114,7 +114,7 @@ def build_ass(
                 duration_cs = max(1, int(round(max(next_char_start - current_start, 0.01) * 100)))
             else:
                 duration_cs = max(1, int(round(max(float(row["end_sec"]) - current_start, 0.01) * 100)))
-            visible = ass_escape(str(row["character"]) + str(row.get("display_suffix", "")))
+            visible = ass_escape(str(row.get("display_prefix", "")) + str(row.get("display_text") or row.get("alignment_unit") or row["character"]) + str(row.get("display_suffix", "")))
             karaoke_parts.append(f"{{\\kf{duration_cs}}}{visible}")
         events.append(
             f"Dialogue: 1,{ass_time(line_start)},{ass_time(active_end)},Karaoke,,0,0,0,,"

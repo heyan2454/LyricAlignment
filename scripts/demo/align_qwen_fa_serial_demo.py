@@ -30,10 +30,11 @@ from lyricalign.demo.karaoke import (
     repair_monotonic_intervals,
     split_core_commit_prefix,
     next_window_transcript_start,
+    normalize_alignment_language,
 )
 from lyricalign.training.qwen_fa_runtime import decode_audio, move_inputs
 
-SCHEMA_VERSION = "qwen_fa_serial_demo_v3_overlap_transcript"
+SCHEMA_VERSION = "qwen_fa_serial_demo_v4_multilingual_units"
 
 
 def sha256(path: Path) -> str:
@@ -140,10 +141,42 @@ def infer_slice(
     import torch
 
     selected = document.characters[character_start:character_end]
-    transcript = "".join(item.text for item in selected)
-    inputs, words = processor.prepare_forced_aligner_inputs(
-        audio=[audio], transcript=[transcript], language=args.language
-    )
+    expected_units = [item.text for item in selected]
+    transcript_candidates = [
+        ("unit_separated", document.transcript_for_slice(character_start, character_end)),
+        ("visible_slice", document.display_transcript_for_slice(character_start, character_end)),
+    ]
+    inputs = None
+    words = None
+    transcript = ""
+    transcript_policy = ""
+    processor_units: list[str] = []
+    mismatches: list[dict[str, Any]] = []
+    for candidate_policy, candidate_transcript in transcript_candidates:
+        candidate_inputs, candidate_words = processor.prepare_forced_aligner_inputs(
+            audio=[audio], transcript=[candidate_transcript], language=args.language
+        )
+        candidate_units = [str(item) for item in candidate_words[0]]
+        if candidate_units == expected_units:
+            inputs = candidate_inputs
+            words = candidate_words
+            transcript = candidate_transcript
+            transcript_policy = candidate_policy
+            processor_units = candidate_units
+            break
+        mismatches.append(
+            {
+                "policy": candidate_policy,
+                "transcript": candidate_transcript,
+                "processor_units": candidate_units,
+            }
+        )
+    if inputs is None or words is None:
+        raise RuntimeError(
+            "processor alignment units differ from parsed lyric units: "
+            f"language={document.language} expected={expected_units!r} attempts={mismatches!r}"
+        )
+
     batch = move_inputs(inputs, args.device, torch.bfloat16)
     with torch.inference_mode():
         output = model(**batch)
@@ -152,7 +185,7 @@ def infer_slice(
     slot_logits = output.logits[0, positions].float()
     if int(slot_logits.shape[0]) != 2 * len(selected):
         raise RuntimeError(
-            f"timestamp slots mismatch: slots={slot_logits.shape[0]} characters={len(selected)}"
+            f"timestamp slots mismatch: slots={slot_logits.shape[0]} units={len(selected)}"
         )
     raw_classes = slot_logits.argmax(dim=-1)
     probabilities = torch.softmax(slot_logits, dim=-1)
@@ -162,7 +195,7 @@ def infer_slice(
         output.logits, batch["input_ids"], words, model.config.timestamp_token_id
     )[0]
     if len(decoded) != len(selected):
-        raise RuntimeError(f"decode mismatch: decoded={len(decoded)} characters={len(selected)}")
+        raise RuntimeError(f"decode mismatch: decoded={len(decoded)} units={len(selected)}")
 
     rows: list[dict[str, Any]] = []
     segment = float(args.timestamp_segment_sec)
@@ -179,6 +212,10 @@ def infer_slice(
                 "line_index": meta.line_index,
                 "index_in_line": meta.index_in_line,
                 "character": meta.text,
+                "alignment_unit": meta.text,
+                "unit_type": meta.unit_type,
+                "display_prefix": meta.display_prefix,
+                "display_text": meta.display_text or meta.text,
                 "display_suffix": meta.display_suffix,
                 "raw_local_start_sec": raw_start,
                 "raw_local_end_sec": raw_end,
@@ -206,7 +243,12 @@ def infer_slice(
         "character_start": character_start,
         "character_end": character_end,
         "character_count": len(selected),
+        "alignment_unit_count": len(selected),
+        "alignment_unit_mode": document.unit_mode,
+        "language": document.language,
         "transcript": transcript,
+        "transcript_policy": transcript_policy,
+        "processor_units": processor_units,
         "word_count": len(words[0]),
         "timestamp_position_count": int(len(positions)),
         "timestamp_logit_class_count": int(slot_logits.shape[-1]),
@@ -225,8 +267,12 @@ def decorate_final_rows(rows: list[dict[str, Any]], document: LyricDocument) -> 
     for item in document.characters:
         row = dict(by_index[item.global_index])
         row["character"] = item.text
+        row["alignment_unit"] = item.text
+        row["unit_type"] = item.unit_type
         row["line_index"] = item.line_index
         row["index_in_line"] = item.index_in_line
+        row["display_prefix"] = item.display_prefix
+        row["display_text"] = item.display_text or item.text
         row["display_suffix"] = item.display_suffix
         result.append(row)
     return result
@@ -552,7 +598,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--r1-checkpoint", type=Path, required=True)
     parser.add_argument("--r2-checkpoint", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--language", default="Chinese")
+    parser.add_argument("--language", type=normalize_alignment_language, default="Chinese")
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)
     parser.add_argument("--core-sec", type=float, default=60.0)
     parser.add_argument("--left-context-sec", type=float, default=10.0)
@@ -577,12 +623,15 @@ def main() -> None:
     for path in (args.lyrics, args.mix_audio, args.vocal_audio):
         if not path.is_file():
             raise FileNotFoundError(path)
-    document = parse_lyrics_text(args.lyrics.read_text(encoding="utf-8-sig"))
+    document = parse_lyrics_text(args.lyrics.read_text(encoding="utf-8-sig"), language=args.language)
     lyrics_identity = {
         "path": str(args.lyrics.resolve()),
         "sha256": sha256(args.lyrics),
         "line_count": len(document.lines),
         "character_count": len(document.characters),
+        "alignment_unit_count": len(document.characters),
+        "language": document.language,
+        "alignment_unit_mode": document.unit_mode,
     }
     audio_inputs = {
         "mix": args.mix_audio,
@@ -618,6 +667,8 @@ def main() -> None:
                     "model_name": model_name,
                     "model_id": args.model,
                     "revision": args.revision,
+                    "language": document.language,
+                    "alignment_unit_mode": document.unit_mode,
                     "checkpoint": checkpoint_info,
                     "lyrics": lyrics_identity,
                     "audio_name": audio_name,
@@ -680,6 +731,9 @@ def main() -> None:
                             "audio_duration_sec": float(len(decoded_audio[audio_name]) / 16000.0),
                             "line_count": len(document.lines),
                             "character_count": len(rows),
+                            "alignment_unit_count": len(rows),
+                            "language": document.language,
+                            "alignment_unit_mode": document.unit_mode,
                             "cross_window_repaired_character_count": repaired_count,
                             "cross_window_repaired_character_rate": repaired_count / len(rows),
                             "seam_repaired_character_count": seam_repaired_count,

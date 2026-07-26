@@ -19,7 +19,7 @@ from types import ModuleType
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-SCHEMA_VERSION = "qwen_fa_tail_windowed_v3_overlap_transcript"
+SCHEMA_VERSION = "qwen_fa_tail_windowed_v4_multilingual_units"
 
 
 def load_serial_demo_module() -> ModuleType:
@@ -100,6 +100,7 @@ def main() -> None:
     if not args.config.is_file():
         raise FileNotFoundError(args.config)
     serial = load_serial_demo_module()
+    args.language = serial.normalize_alignment_language(args.language)
     cases = read_config(args.config.resolve())
 
     prepared: list[dict[str, Any]] = []
@@ -107,12 +108,15 @@ def main() -> None:
         for key in ("lyrics_path", "audio_path"):
             if not case[key].is_file():
                 raise FileNotFoundError(case[key])
-        document = serial.parse_lyrics_text(case["lyrics_path"].read_text(encoding="utf-8-sig"))
+        document = serial.parse_lyrics_text(case["lyrics_path"].read_text(encoding="utf-8-sig"), language=args.language)
         lyrics_identity = {
             "path": str(case["lyrics_path"].resolve()),
             "sha256": serial.sha256(case["lyrics_path"]),
             "line_count": len(document.lines),
             "character_count": len(document.characters),
+            "alignment_unit_count": len(document.characters),
+            "language": document.language,
+            "alignment_unit_mode": document.unit_mode,
         }
         audio_identity = {
             "path": str(case["audio_path"].resolve()),
@@ -160,6 +164,8 @@ def main() -> None:
                 "model_name": model_name,
                 "model_id": args.model,
                 "revision": args.revision,
+                "language": case["document"].language,
+                "alignment_unit_mode": case["document"].unit_mode,
                 "checkpoint": checkpoint_info,
                 "lyrics": case["lyrics_identity"],
                 "audio_name": "vocal_tail",
@@ -228,6 +234,9 @@ def main() -> None:
                         "source_end_sec": case["source_start_sec"] + float(len(audio) / 16000.0),
                         "line_count": len(case["document"].lines),
                         "character_count": len(rows),
+                        "alignment_unit_count": len(rows),
+                        "language": case["document"].language,
+                        "alignment_unit_mode": case["document"].unit_mode,
                         "cross_window_repaired_character_count": repaired_count,
                         "cross_window_repaired_character_rate": repaired_count / len(rows),
                         "seam_repaired_character_count": seam_repaired_count,

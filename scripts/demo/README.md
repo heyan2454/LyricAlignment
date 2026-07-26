@@ -1,30 +1,65 @@
 # Demo scripts
 
-- `run_yessoda_serial_demo.sh`: 夜苏打完整 demo 入口。
-- `align_qwen_fa_serial_demo.py`: R0/R1/R2 full 与严格串行核心分窗推理。
-- `run_yessoda_tail_windowed.sh`: 03:05 / 03:12 后分离人声尾段实验入口。
-- `align_qwen_fa_tail_windowed.py`: 尾段 R0/R1/R2 严格串行核心分窗推理。
-- `render_qwen_fa_karaoke.py`: 完整 demo 的 ASS/KTV 视频渲染。
-- `render_qwen_fa_tail_windowed.py`: 尾段单模型与三模型比较视频渲染。
+## Recommended reusable entry
+
+```text
+run_qwen_fa_batch.sh
+run_qwen_fa_batch.py
+```
+
+The batch entry discovers same-stem media/TXT groups and defaults to:
+
+```text
+R2 + vocal + windowed
+```
+
+It supports single files, basenames, folders, optional output roots, arbitrary
+individual modes, model/input composites, stage-specific resume and strict
+Spleeter quality checks.  `--language` now controls language-aware alignment
+units: English uses words, Japanese uses Nagisa words, and Chinese/Cantonese use
+CJK characters plus contiguous Latin words.  Language and unit mode are part of
+the cache identity.
+
+Detailed guide, including English/Japanese/Cantonese examples and Japanese
+dependency installation:
+
+```text
+docs/manual/qwen_fa_batch_demo.md
+```
+
+## Historical fixed-song entries
+
+- `run_yessoda_serial_demo.sh`: 夜苏打完整 12-mode demo entry.
+- `align_qwen_fa_serial_demo.py`: shared R0/R1/R2 full and strict serial-window implementation.
+- `run_yessoda_tail_windowed.sh`: 03:05 / 03:12 vocal-tail diagnostic entry.
+- `align_qwen_fa_tail_windowed.py`: tail R0/R1/R2 strict serial-window inference.
+- `render_qwen_fa_karaoke.py`: historical black-background full-demo renderer.
+- `render_qwen_fa_tail_windowed.py`: tail individual and three-model renderer.
+
+## Audio separation
+
+- `download_spleeter_model_resumable.sh`: resumable checksum-verified 2-stem model installation.
+- `check_audio_separation.py`: rejects silent, mix-copy or mutually identical stems.
 
 ## Windowed policy
 
-`windowed` 当前使用 `hard_core_overlap_transcript_v3`：
+`windowed` uses `hard_core_overlap_transcript_v3`:
 
-- 60 秒核心区完全相邻；
-- 左右各 10 秒为音频上下文；
-- 下一窗口的歌词起点由上一窗口在“下一窗口音频起点”处的对齐计算；
-- 若该音频切点落在某个字内部，下一窗口排除这个被切开的字，从后一个完整字开始；
-- 左侧 10 秒中的已提交歌词会重新输入给 forced aligner 作为定位上下文，但不会再次提交；
-- 字符按起点归属核心，跨核心右边界字符完整归前窗；
-- 已提交歌词不可被后窗覆盖；
-- 不再执行跨窗候选竞争或大范围累计单调修复。
+- adjacent 60-second trusted cores;
+- 10 seconds of acoustic context on both sides when available;
+- the preceding window determines the next transcript at the next acoustic-input boundary;
+- a character cut by that boundary is excluded and input begins with the following complete character;
+- complete lyrics in the 10-second left overlap are re-input as context only;
+- character ownership is determined by start time;
+- a character crossing a core end belongs wholly to the preceding core;
+- committed characters are immutable;
+- no cross-window candidate competition or large cumulative monotonic flattening.
 
-输出的 `window_trace` 同时记录：
+Important trace fields:
 
-- `next_window_input_character_start`：下一窗口实际输入歌词起点；
-- `next_uncommitted_character_start`：尚未由任何核心提交的第一个字符；
-- `input_boundary_cut_character`：被下一窗口音频起点切开、因此从下一输入排除的字符；
-- `core_boundary_character`：跨核心右边界但完整归当前核心的字符。
+- `next_window_input_character_start`;
+- `next_uncommitted_character_start`;
+- `input_boundary_cut_character`;
+- `core_boundary_character`.
 
-Demo 不含正式 metric，不能用于选择检查点。输出仍保存在输入歌曲目录下，不进入 tracked project results。
+Demo output is diagnostic-only and cannot select checkpoints.

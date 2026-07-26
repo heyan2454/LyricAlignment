@@ -3,7 +3,7 @@
 面向普通话歌声的已知歌词强制对齐研究项目。仓库根目录固定为
 `LyricAlignment/`；日期后缀只用于 archive、run 和报告。
 
-## 当前状态（2026-07-24）
+## 当前状态（2026-07-26）
 
 Qwen Forced Aligner 首轮 LoRA 实验链已经完成并归档：
 
@@ -30,14 +30,34 @@ Primary song-macro penalized boundary MAE:
 当前不应立即扩展 LoRA；下一步是定位 approximately 150-second 序列中的
 局部对齐崩溃。
 
+
+## 通用 Demo 入口
+
+默认对同名媒体和 TXT 执行 `R2 + vocal + windowed`：
+
+```bash
+scripts/demo/run_qwen_fa_batch.sh /path/to/media_or_folder
+```
+
+- 视频：原画面上方保持不变，字幕在新增的底部黑色区域；
+- 音频：纯黑背景；
+- 默认最终音轨仍为原始歌曲，`vocal` 仅表示对齐输入；
+- 可选 R0/R1/R2、mix/vocal、full/windowed 单独或复合输出；
+- `--language English` 使用英文词级输入；`--language Japanese` 使用 Nagisa 日文词级输入；
+- 中文/粤语按汉字字符并保留连续拉丁词，中英混杂不会再拆成英文字母；
+- 详细说明见 `docs/manual/qwen_fa_batch_demo.md`；
+- 实验讨论、失败实现与证据链见 `docs/sessions/20260726_demo_exploration_archive.md`。
+
 ## 必读入口
 
 1. `AI_SESSION_ENTRY.md`
 2. `docs/status/project_current.md`
-3. `docs/sessions/20260724_qwen_fa_followup_repair_archive.md`
-4. `reports/review/20260724_qwen_fa_followup_repair_review.md`
-5. `reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md`
-6. `docs/status/next_execution_plan.md`
+3. `docs/sessions/20260726_demo_exploration_archive.md`
+4. `docs/manual/qwen_fa_batch_demo.md`
+5. `docs/sessions/20260724_qwen_fa_followup_repair_archive.md`
+6. `reports/review/20260724_qwen_fa_followup_repair_review.md`
+7. `reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md`
+8. `docs/status/next_execution_plan.md`
 
 ## 指标口径
 

@@ -1,7 +1,7 @@
 # Project Current
 
-**Snapshot date:** 2026-07-25  
-**Stage:** first Qwen Forced Aligner LoRA cycle archived; focused 120s quick diagnostic and standalone demo code ready for server execution
+**Snapshot date:** 2026-07-26  
+**Stage:** first Qwen Forced Aligner LoRA cycle archived; strict serial-window v3 and reusable batch demo implemented; formal long-audio validation remains open
 
 ## Completed experiment chain
 
@@ -114,21 +114,34 @@ reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md
 docs/sessions/20260724_qwen_fa_followup_repair_archive.md
 ```
 
-## 2026-07-25 implementation status
+## 2026-07-26 demo implementation status
 
-Implemented but not yet executed on the GPU server:
+Completed and archived:
 
-- dense short-sample prefix-silence probe around 120 seconds;
-- fixed-target trailing-silence probe for total-input-length effects;
-- request-hash-aware resume and strict validation-best checkpoint resolution for the new quick entry;
-- standalone 夜苏打 R0/R1/R2 × mix/vocal × full/windowed serial demo;
-- Spleeter vocal preparation;
-- 12 KTV videos, four three-way comparisons and three same-model four-way comparisons.
+- strict Spleeter model-cache and two-stem quality gate;
+- preservation of mix, vocals and accompaniment identities;
+- full-song versus 03:05 cropped R2 windowed-vocal comparison;
+- evidence that the 225-second collapse was amplified by candidate selection and cumulative monotonic repair;
+- rejection of strict-core v2 after it supplied left acoustic overlap without matching overlap lyrics;
+- `hard_core_overlap_transcript_v3` with 60-second adjacent cores and 10-second acoustic context;
+- immutable core ownership, overlap lyrics as context only and hard failure on large seams;
+- reusable same-stem batch entry defaulting to R2 + vocal + windowed;
+- video rendering with a separate bottom subtitle band and audio-only black-background rendering;
+- optional individual, three-model and four-input composite outputs;
+- language-aware units for English words, Japanese Nagisa words, and Chinese/Cantonese CJK-character plus Latin-word mixtures;
+- language/unit identity in alignment caches and language-specific default subtitle fonts.
 
-Execution guide:
+Current reusable entry:
 
 ```text
-docs/manual/qwen_fa_120_quick_feedback_and_yessoda_demo.md
+scripts/demo/run_qwen_fa_batch.sh
 ```
 
-No new metric result or model conclusion should be inferred until the server outputs are returned.
+Current detailed records:
+
+```text
+docs/manual/qwen_fa_batch_demo.md
+docs/sessions/20260726_demo_exploration_archive.md
+```
+
+The new demo path has passed focused code, discovery, window-policy, separation-quality and FFmpeg rendering regressions. Actual multi-file GPU inference remains a server execution task. The qualitative improvement observed on 夜苏打 is not a formal metric result because corrected vocals, forced re-inference and the new window policy changed together.

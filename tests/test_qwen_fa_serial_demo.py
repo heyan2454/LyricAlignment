@@ -225,3 +225,50 @@ def test_windowed_alignment_is_strictly_serial_and_never_reinputs_boundary_chara
     assert trace[1]["next_window_character_start"] == 3
     assert trace[1]["next_uncommitted_character_start"] == 4
     assert all(row["cross_window_repaired"] is False for row in rows)
+
+
+def test_english_lyrics_use_word_units_and_preserve_visible_punctuation() -> None:
+    document = parse_lyrics_text("Hello, world!\nDon't stop now.", language="English")
+    assert document.language == "English"
+    assert document.unit_mode == "space_word_or_cjk_character"
+    assert [item.text for item in document.characters] == [
+        "Hello", "world", "Don't", "stop", "now"
+    ]
+    assert [item.visible_text for item in document.characters] == [
+        "Hello, ", "world!", "Don't ", "stop ", "now."
+    ]
+    assert document.transcript_for_slice(0, 2) == "Hello world"
+    assert "".join(item.visible_text for item in document.characters[:2]) == "Hello, world!"
+
+
+def test_chinese_english_mixed_lyrics_keep_cjk_characters_and_latin_words() -> None:
+    document = parse_lyrics_text("今晚 sing with me!", language="Chinese")
+    assert [item.text for item in document.characters] == ["今", "晚", "sing", "with", "me"]
+    assert [item.unit_type for item in document.characters] == [
+        "cjk_character", "cjk_character", "word", "word", "word"
+    ]
+    assert "".join(item.visible_text for item in document.characters) == "今晚 sing with me!"
+
+
+def test_japanese_lyrics_use_nagisa_word_units_and_preserve_punctuation() -> None:
+    # Production uses nagisa.tagging(text).words.  A deterministic stub keeps
+    # this unit test independent of optional server-side Japanese dependencies.
+    document = parse_lyrics_text(
+        "今日は、晴れです。",
+        language="Japanese",
+        japanese_tokenizer=lambda _: ["今日", "は", "、", "晴れ", "です", "。"],
+    )
+    assert document.language == "Japanese"
+    assert document.unit_mode == "japanese_word_nagisa"
+    assert [item.text for item in document.characters] == ["今日", "は", "晴れ", "です"]
+    assert [item.visible_text for item in document.characters] == ["今日", "は、", "晴れ", "です。"]
+    assert document.transcript_for_slice(0, 4) == "今日 は 晴れ です"
+
+
+def test_language_aliases_are_canonicalized() -> None:
+    from lyricalign.demo.karaoke import normalize_alignment_language
+
+    assert normalize_alignment_language("en") == "English"
+    assert normalize_alignment_language("JA") == "Japanese"
+    assert normalize_alignment_language("yue") == "Cantonese"
+    assert normalize_alignment_language("中文") == "Chinese"
