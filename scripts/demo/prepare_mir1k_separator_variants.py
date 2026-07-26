@@ -191,7 +191,7 @@ def prepare_demucs(item_root: Path, args: argparse.Namespace) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--subset-root", type=Path, required=True)
-    parser.add_argument("--roles", nargs="+", choices=("development", "heldout"), default=["development"])
+    parser.add_argument("--roles", nargs="+", choices=("development", "quick_v2_extra", "heldout"), default=["development"])
     parser.add_argument("--separators", nargs="+", choices=("spleeter", "demucs"), default=["spleeter", "demucs"])
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--continue-on-error", action="store_true")

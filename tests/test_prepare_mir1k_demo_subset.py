@@ -39,3 +39,14 @@ def test_selection_is_deterministic_and_role_counts_are_frozen() -> None:
     assert sum(row["selection_role"] == "spare" for row in first) == 5
     assert any("longest" in row["selection_reasons"] for row in first if row["selection_role"] == "development")
     assert any("highest_character_rate" in row["selection_reasons"] for row in first if row["selection_role"] == "development")
+
+
+def test_quick_v2_extra_promotion_preserves_heldout_membership() -> None:
+    module = load_module()
+    base = module.select_subset(fake_items(), development_count=8, heldout_count=4, seed=20260727)
+    heldout_before = {row["item_id"] for row in base if row["selection_role"] == "heldout"}
+    promoted = module.promote_spares_for_quick_v2(base, extra_count=4, seed=20260727)
+    assert {row["item_id"] for row in promoted if row["selection_role"] == "heldout"} == heldout_before
+    assert sum(row["selection_role"] == "development" for row in promoted) == 8
+    assert sum(row["selection_role"] == "quick_v2_extra" for row in promoted) == 4
+    assert sum(row["selection_role"] == "spare" for row in promoted) == 1

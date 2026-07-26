@@ -392,6 +392,7 @@ def windowed_alignment(
         accepted_next_input_cursor: int | None = None
         accepted_next_input_cut_character: dict[str, Any] | None = None
         accepted_effective_window: dict[str, Any] | None = None
+        accepted_shadow_rows: list[dict[str, Any]] | None = None
 
         next_input_boundary = None
         if not final_core and window_position + 1 < len(windows):
@@ -514,6 +515,8 @@ def windowed_alignment(
                     accepted_next_input_cursor = next_input_candidate
                     accepted_next_input_cut_character = next_input_cut_character
                     accepted_effective_window = effective_window
+                    if bool(getattr(args, "capture_shadow_rows", False)):
+                        accepted_shadow_rows = [dict(row) for row in decorated_rows]
                     break
 
                 target_count = max(
@@ -642,6 +645,7 @@ def windowed_alignment(
                 "core_boundary_character": core_boundary_character,
                 "next_uncommitted_character": next_uncommitted_character,
                 "attempts": attempts,
+                **({"shadow_rows": accepted_shadow_rows or []} if bool(getattr(args, "capture_shadow_rows", False)) else {}),
             }
         )
         if progress_callback is not None:
@@ -734,6 +738,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--capture-shadow-rows", action="store_true",
+        help="retain all accepted-window candidate rows in window_trace for quick diagnostics",
+    )
     return parser
 
 

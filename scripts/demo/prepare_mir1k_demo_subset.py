@@ -175,6 +175,50 @@ def select_subset(
     return rows
 
 
+
+def promote_spares_for_quick_v2(
+    selection: list[dict[str, Any]], *, extra_count: int, seed: int
+) -> list[dict[str, Any]]:
+    """Promote diverse spare songs without changing development/held-out membership.
+
+    This keeps the original held-out split untouched while giving Quick v2 more
+    songs for design exploration.  Promoted rows receive the
+    ``quick_v2_extra`` role and a deterministic order.
+    """
+    if extra_count <= 0:
+        return [dict(row) for row in selection]
+    result = [dict(row) for row in selection]
+    spares = [row for row in result if row.get("selection_role") == "spare"]
+    if extra_count > len(spares):
+        raise ValueError(f"requested {extra_count} Quick v2 extras but only {len(spares)} spare songs exist")
+    feature_keys = (
+        "duration_sec", "character_rate_per_sec", "gap_ratio",
+        "mean_character_duration_sec", "coverage_ratio",
+    )
+    coordinates = _normalized(result, feature_keys)
+    chosen_ids = [str(row["item_id"]) for row in result if row.get("selection_role") == "development"]
+    chosen_singers = {str(row["singer_id"]) for row in result if row.get("selection_role") == "development"}
+    promoted: list[str] = []
+    while len(promoted) < extra_count:
+        candidates = [row for row in spares if str(row["item_id"]) not in promoted]
+        def score(row: dict[str, Any]) -> tuple[float, int]:
+            item_id = str(row["item_id"])
+            reference = chosen_ids + promoted
+            minimum = min(_distance(coordinates[item_id], coordinates[other]) for other in reference) if reference else 1.0
+            singer_bonus = 0.20 if str(row["singer_id"]) not in chosen_singers else 0.0
+            return (minimum + singer_bonus, -_stable_tie(seed + 2000, item_id))
+        picked = max(candidates, key=score)
+        item_id = str(picked["item_id"])
+        promoted.append(item_id)
+        chosen_singers.add(str(picked["singer_id"]))
+    for row in result:
+        item_id = str(row["item_id"])
+        if item_id in promoted:
+            row["selection_role"] = "quick_v2_extra"
+            row["selection_order"] = promoted.index(item_id)
+            row.setdefault("selection_reasons", []).append("quick_v2_extra_farthest_point_without_model_results")
+    return result
+
 def _run_ffmpeg(source: Path, output: Path, audio_filter: str, *, force: bool) -> None:
     if output.is_file() and not force:
         return
@@ -255,6 +299,10 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--development-count", type=int, default=8)
     parser.add_argument("--heldout-count", type=int, default=4)
+    parser.add_argument(
+        "--quick-v2-extra-count", type=int, default=0,
+        help="promote this many spare songs for Quick v2 while preserving held-out membership",
+    )
     parser.add_argument("--seed", type=int, default=20260727)
     parser.add_argument("--units-per-line", type=int, default=12)
     parser.add_argument("--force", action="store_true")
@@ -279,6 +327,9 @@ def main() -> None:
         heldout_count=args.heldout_count,
         seed=args.seed,
     )
+    selection = promote_spares_for_quick_v2(
+        selection, extra_count=args.quick_v2_extra_count, seed=args.seed
+    )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     materialize(
         selection,
@@ -301,11 +352,12 @@ def main() -> None:
         "available_song_count": len(selection),
         "development_count": sum(row["selection_role"] == "development" for row in selection),
         "heldout_count": sum(row["selection_role"] == "heldout" for row in selection),
+        "quick_v2_extra_count": sum(row["selection_role"] == "quick_v2_extra" for row in selection),
         "spare_count": sum(row["selection_role"] == "spare" for row in selection),
         "units_per_line": args.units_per_line,
         "roles": {
             role: [row["item_id"] for row in sorted(selection, key=lambda value: (value["selection_role"], value["selection_order"] if value["selection_order"] is not None else 999)) if row["selection_role"] == role]
-            for role in ("development", "heldout", "spare")
+            for role in ("development", "quick_v2_extra", "heldout", "spare")
         },
         "test_only": True,
         "must_not_train_or_validate": True,

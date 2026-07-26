@@ -137,3 +137,19 @@ The general batch entry supports:
 
 The experiment default uses zero shifts for deterministic, lower-cost
 comparison.  Keep the same parameters across development and held-out runs.
+
+## Demo local-realignment quick diagnostics
+
+```text
+run_demo_realign_quick.sh
+run_demo_realign_quick.py
+collect_demo_realign_quick.py
+```
+
+These entries implement Q1–Q3 quick scientific diagnostics.  Quick results are
+reviewed before the overnight design is frozen; they are not the later
+post-design overnight smoke.  Execution and collection guide:
+
+```text
+docs/manual/demo_realign_quick_execution.md
+```
