@@ -1,3 +1,5 @@
+> **Historical record.** Current demo execution uses `hard_core_forward_overlap_compression_v6`; current controlled experiments are specified in `docs/sessions/20260727_mir1k_demo_diagnostic_experiment.md`.
+
 # 2026-07-26 Demo exploration and reusable batch entry archive
 
 ## 1. Scope

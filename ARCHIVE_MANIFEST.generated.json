@@ -8,13 +8,13 @@
     },
     {
       "path": "AI_SESSION_ENTRY.md",
-      "sha256": "2727a6dbf2aa7f21bd2ce6b6cb36d2c575db74880e58f44ccabdd7a47e9b33ba",
-      "size": 2060
+      "sha256": "107e88b4c3be145cced7d873f5c2da3c80559953640269766e6a0fb7eb70d7b3",
+      "size": 2760
     },
     {
       "path": "README.md",
-      "sha256": "a08a9f6789271c22eeb5cb0fdad65d7ae156ded24c41a664da898ea7c5092101",
-      "size": 4607
+      "sha256": "f6e5b99f284c9f16aefc8760de02daeec01fac658079c1a71339d525160584e0",
+      "size": 4696
     },
     {
       "path": "configs/README.md",
@@ -227,6 +227,11 @@
       "size": 1861
     },
     {
+      "path": "docs/manual/demucs_deployment.md",
+      "sha256": "38205c482aa4eaf5dc69e5808fa7c0dbe3bbd71f2656f3fd57b04aba4d1223a3",
+      "size": 5926
+    },
+    {
       "path": "docs/manual/experiment_protocol.md",
       "sha256": "51e5939120232a318dc1564c040d6e6ee7e52c7478642a7cdd21827c99d64536",
       "size": 2473
@@ -253,8 +258,8 @@
     },
     {
       "path": "docs/manual/qwen_fa_batch_demo.md",
-      "sha256": "649b3c2c96115fa4c4b5ef1bbb9fd18930d6eab1e540615623530e5dc6177d43",
-      "size": 13001
+      "sha256": "992a020cf36e7d7b6c36fc397f4f772e4adde7fd279de99255c8283915cbd118",
+      "size": 13549
     },
     {
       "path": "docs/manual/text_normalization.md",
@@ -353,18 +358,28 @@
     },
     {
       "path": "docs/sessions/20260725_qwen_fa_quick_feedback_and_yessoda_demo_patch.md",
-      "sha256": "a32d7233fc6bdb2647a7ebcb2c302a350b148757ef16d2cf6fe72b3a6924074a",
-      "size": 1333
+      "sha256": "43da6e3670005978feccd583cd683b05db8a5183b7ab66d953e7f15fa719b078",
+      "size": 1541
+    },
+    {
+      "path": "docs/sessions/20260726_demo_alignment_stability_exploration.md",
+      "sha256": "4c88981fe8cdd8f30ad75cbcf013cf7033a02adeff25dfdb98f76f76c6b423a2",
+      "size": 5546
     },
     {
       "path": "docs/sessions/20260726_demo_exploration_archive.md",
-      "sha256": "82af92cd75866c2eb9550935dbed1a13cafd7c2249f3f9f910987d14efdc6cb0",
-      "size": 17793
+      "sha256": "13f08e364901485717a8fb1e686f794ade59bdb92a7912af9cc8f8ffe435d8de",
+      "size": 18001
     },
     {
       "path": "docs/sessions/20260726_demo_v2_failure_diagnostics_and_pack_repair.md",
       "sha256": "aeedf6378545d2db50c8e5f99990acdaf4397976f9daacac48f7b662a2a17057",
       "size": 2373
+    },
+    {
+      "path": "docs/sessions/20260727_mir1k_demo_diagnostic_experiment.md",
+      "sha256": "9ef15bb18770e17ef4ea6ac540527ffe572f948fb608dced015416876cbd4b7f",
+      "size": 10025
     },
     {
       "path": "docs/sessions/README.md",
@@ -373,8 +388,8 @@
     },
     {
       "path": "docs/sessions/SESSION_INDEX.md",
-      "sha256": "3010b7ec0316d2635a6c43ef54363733c30e11eb576c98edad7a3ccf4c98c2d3",
-      "size": 3315
+      "sha256": "ab0f22a0d6e4a0dd166077159e9a51d86deb874efd6f9cf79e5910b869da661a",
+      "size": 3526
     },
     {
       "path": "docs/sessions/_templates/NEXT_PROMPT_TEMPLATE.md",
@@ -408,18 +423,18 @@
     },
     {
       "path": "docs/status/next_execution_plan.md",
-      "sha256": "5d269de3add9fff7e8fd6b06a1f84a194a200198ed2165247315792857550324",
-      "size": 2171
+      "sha256": "e75dfad45904e1a04bbc3acb1ae6138f797518e54bbf39a3ffe5258a403f2362",
+      "size": 3758
     },
     {
       "path": "docs/status/project_current.md",
-      "sha256": "df70a2ff052294d93c499df61dd69ba0fc88be5a9afbc2a25c2e470b96e6fba6",
-      "size": 6277
+      "sha256": "0d19c7032a44f96d145bffee5ce233d5e48fa61b2f8872fc7c3844c78ce1e5bd",
+      "size": 8004
     },
     {
       "path": "pyproject.toml",
-      "sha256": "a3fedd3c98303b34b1f53c4f7877dbf6db9fbf75df145eecf5dcfdb8f1edac32",
-      "size": 468
+      "sha256": "28d52769870c76c71b39d03923f8f95ccfbadd91843047f40438083d68635ab1",
+      "size": 505
     },
     {
       "path": "reports/README.md",
@@ -450,6 +465,11 @@
       "path": "reports/audits/20260724_qwen_fa_long_b180_outlier_audit.md",
       "sha256": "648d36290f9781cee58b348e765d2631e659e5cfbfcd98f5685c965d5fdb92e8",
       "size": 2808
+    },
+    {
+      "path": "reports/audits/20260727_demo_mir1k_demucs_package_review.md",
+      "sha256": "c75ec3a784b5cabbf6a5103287895418e8332d9e13d2f9466d1465c1cc213dba",
+      "size": 5360
     },
     {
       "path": "reports/progress/20260723_dataset_mapping_progress.md",
@@ -1298,28 +1318,43 @@
     },
     {
       "path": "scripts/demo/README.md",
-      "sha256": "a5f1618ae5b7364019de9cf66fbc44a8b79d4e5f2ebd4992ae99612738588039",
-      "size": 2787
+      "sha256": "88e1f2b6759c675c24c28d9671317ab6bd03ab7f5fb7f495e1da6369c6e3bab2",
+      "size": 5296
     },
     {
       "path": "scripts/demo/align_qwen_fa_serial_demo.py",
-      "sha256": "55f5ed5fd340c1d1ad2a012559b8b4dcb2851468470d40faa9af78d96dd7ac53",
-      "size": 42961
+      "sha256": "26d5644e8d944c933cb9190bcd4563e6e071bef8ac3098832bbc3362fb98e654",
+      "size": 44685
     },
     {
       "path": "scripts/demo/align_qwen_fa_tail_windowed.py",
-      "sha256": "6e44e71bd388cecd8979e927fe549183316354c664f4de57a72aac63182bdb33",
-      "size": 13238
+      "sha256": "909eb2d40905e499bdd11791cf0a58fce88de9687af6de0a398d47e0512a2868",
+      "size": 15694
     },
     {
       "path": "scripts/demo/check_audio_separation.py",
-      "sha256": "02739dd4f01773274e65067ef3838c53f7fcf9ed89ac7398fa864d4ea48eafdf",
-      "size": 2474
+      "sha256": "51df6f0a6f5385399ecee646844ab2738a50ea22923433e376280e2c9bffd445",
+      "size": 2475
+    },
+    {
+      "path": "scripts/demo/check_qwen_fa_processor_equivalence.py",
+      "sha256": "8ce96c050c0e6a9cb102a41712ab9f7480021c520dfc2f7941f91c0fcc5f611c",
+      "size": 6249
     },
     {
       "path": "scripts/demo/download_spleeter_model_resumable.sh",
       "sha256": "87818ed61f7e70a414eb8c6e396838c6f9085a28e83e54901f8b558d075a0dda",
       "size": 2302
+    },
+    {
+      "path": "scripts/demo/prepare_mir1k_demo_subset.py",
+      "sha256": "08a023bee2cb328803344e35bca31f17010141831524b1ecef871d4f1e8b5404",
+      "size": 14060
+    },
+    {
+      "path": "scripts/demo/prepare_mir1k_separator_variants.py",
+      "sha256": "8e5340e6a377eafdfadb88698ac9f5e3b8362075afe9c0c942753d9cbfdb69c1",
+      "size": 10530
     },
     {
       "path": "scripts/demo/render_qwen_fa_karaoke.py",
@@ -1332,9 +1367,14 @@
       "size": 5699
     },
     {
+      "path": "scripts/demo/run_mir1k_demo_diagnostics.py",
+      "sha256": "7870b26f5db8020f2e277e15eaf5416c589e6e5b3eb680f9b9b753a57e505d07",
+      "size": 21169
+    },
+    {
       "path": "scripts/demo/run_qwen_fa_batch.py",
-      "sha256": "b8b50031752d9bb18a5ec7cc84daa18d54078f1d544c087eacf0ca5c156d5897",
-      "size": 37590
+      "sha256": "08326212bf22264e63c91c8b29444ac1b1acd682683b532dcec9f33e3e2e6652",
+      "size": 46708
     },
     {
       "path": "scripts/demo/run_qwen_fa_batch.sh",
@@ -1632,6 +1672,11 @@
       "size": 64
     },
     {
+      "path": "src/lyricalign/demo/alignment_artifacts.py",
+      "sha256": "7bda99c0f5b175ac21fd816a689c8aa79dc047134f5418b80ad67d5076461524",
+      "size": 15567
+    },
+    {
       "path": "src/lyricalign/demo/audio_separation.py",
       "sha256": "57c0a12df353010206bef54abb19d24621b12726df3f42c59fa6e192b18fe1b8",
       "size": 5172
@@ -1643,8 +1688,8 @@
     },
     {
       "path": "src/lyricalign/demo/karaoke.py",
-      "sha256": "b690b268cff2962bfaa3d69b865bf4775f0a61de776b2f68cb62f1c9fbb9c310",
-      "size": 23499
+      "sha256": "f1e1d43fc253170775fe71d2dbbbad6ec1551cda72e1cd08d586883656e579d9",
+      "size": 23565
     },
     {
       "path": "src/lyricalign/demo/media_render.py",
@@ -1712,6 +1757,11 @@
       "size": 490
     },
     {
+      "path": "tests/test_alignment_artifacts.py",
+      "sha256": "fe12b89d053753047c9b71e51399b68588b07e40ff39f37fb2015cb0eda2ab1a",
+      "size": 2551
+    },
+    {
       "path": "tests/test_archive_builder.py",
       "sha256": "e22d3535d98c9c96e5568a5c92d89847a604c6cda806ef85450a9e50a306620e",
       "size": 3645
@@ -1742,9 +1792,19 @@
       "size": 8596
     },
     {
+      "path": "tests/test_mir1k_demo_diagnostics.py",
+      "sha256": "588af72d7a9f0b03f515d434366b821ecf6357eafcf4719dac16cc986f8ff058",
+      "size": 3928
+    },
+    {
       "path": "tests/test_mir1k_partial_align.py",
       "sha256": "193edc6e982b18427eb750d8cf22cb4a14b1932a44d0a001b07708d2bf8cf398",
       "size": 2649
+    },
+    {
+      "path": "tests/test_prepare_mir1k_demo_subset.py",
+      "sha256": "789033ed675f7672706ae751003de202a98b340690e8ee2f182677f85649b7a1",
+      "size": 1751
     },
     {
       "path": "tests/test_quality_tiers.py",
@@ -1763,8 +1823,8 @@
     },
     {
       "path": "tests/test_qwen_fa_batch_demo.py",
-      "sha256": "b6ec68b479cc59481ae5b445f72d47e36d0e77219f1d09c2f00ded85fddc0572",
-      "size": 12627
+      "sha256": "44c9331295a8dea300b39866ec116a32eccb980ee286361e395c0702f656c26c",
+      "size": 14088
     },
     {
       "path": "tests/test_qwen_fa_finalize_entrypoint.py",
@@ -1798,8 +1858,8 @@
     },
     {
       "path": "tests/test_qwen_fa_serial_demo.py",
-      "sha256": "ecc1d176144afe59f556c80efc18c9d01bfee32c1f82761f94fba65a07790d96",
-      "size": 18709
+      "sha256": "81c59c85871d2222cea339f02f0d95f0bf6198fcd0c5d0dc5ba5f37d188c6e2c",
+      "size": 20231
     },
     {
       "path": "tests/test_qwen_fa_tail_windowed_demo.py",

@@ -8,6 +8,7 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-07-27 | `20260727_mir1k_demo_diagnostic_experiment.md` | hot | MIR-1K data-only subset selection, independent context/separator probes, v6 propagation diagnosis, held-out freeze, and artifact protocol. |
 | 2026-07-25 | `20260725_qwen_fa_quick_feedback_and_yessoda_demo_patch.md` | hot | Dense 120s quick probes plus standalone 夜苏打 serial-window KTV demo implementation and execution guide. |
 | 2026-07-25 | `20260725_qwen_fa_long_diagnostic_plan.md` | hot | Long-context mechanism hypotheses, raw/fixed timestamp evidence requirements and staged diagnostic design. |
 | 2026-07-25 | `20260725_qwen_fa_immediate_all_plan.md` | warm | Earlier all-in-one diagnostic expansion plan; use the newer focused quick entry for immediate feedback. |

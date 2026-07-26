@@ -176,7 +176,7 @@ def main() -> None:
                     "core_sec": args.core_sec,
                     "left_context_sec": args.left_context_sec,
                     "right_context_sec": args.right_context_sec,
-                    "policy": "hard_core_overlap_transcript_v3",
+                    "policy": serial.WINDOW_POLICY,
                     "future_line_padding": args.future_line_padding,
                     "minimum_forward_characters": args.minimum_forward_characters,
                     "future_character_ratio": args.future_character_ratio,
@@ -215,13 +215,53 @@ def main() -> None:
                     flush=True,
                 )
                 audio = serial.decode_audio(case["audio_path"])
-                rows, trace = serial.windowed_alignment(
-                    processor,
-                    model,
-                    audio,
-                    case["document"],
-                    args,
-                )
+                progress_output = output.with_name("alignment.progress.json")
+                failure_output = output.with_name("alignment.failure.json")
+                output.unlink(missing_ok=True)
+                failure_output.unlink(missing_ok=True)
+
+                def write_progress(state: dict[str, Any]) -> None:
+                    serial.atomic_json(
+                        progress_output,
+                        {
+                            "schema_version": "qwen_fa_alignment_progress_v1",
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
+                            "identity": {**request, "request_hash": request_hash},
+                            "state": state,
+                        },
+                    )
+
+                write_progress({"event": "alignment_started", "mode": "windowed"})
+                try:
+                    rows, trace = serial.windowed_alignment(
+                        processor,
+                        model,
+                        audio,
+                        case["document"],
+                        args,
+                        progress_callback=write_progress,
+                    )
+                except Exception as exc:
+                    latest_progress = None
+                    try:
+                        latest_progress = json.loads(progress_output.read_text(encoding="utf-8"))
+                    except (OSError, json.JSONDecodeError):
+                        pass
+                    serial.atomic_json(
+                        failure_output,
+                        {
+                            "schema_version": "qwen_fa_alignment_failure_v1",
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "identity": {**request, "request_hash": request_hash},
+                            "error": {
+                                "type": type(exc).__name__,
+                                "message": str(exc),
+                                "diagnostic": getattr(exc, "diagnostic", None),
+                            },
+                            "latest_progress": latest_progress,
+                        },
+                    )
+                    raise
                 repaired_count = sum(bool(row.get("cross_window_repaired")) for row in rows)
                 seam_repaired_count = sum(bool(row.get("seam_repaired")) for row in rows)
                 payload = {
@@ -241,7 +281,7 @@ def main() -> None:
                         "cross_window_repaired_character_rate": repaired_count / len(rows),
                         "seam_repaired_character_count": seam_repaired_count,
                         "seam_repaired_character_rate": seam_repaired_count / len(rows),
-                        "window_policy": "hard_core_overlap_transcript_v3",
+                        "window_policy": serial.WINDOW_POLICY,
                         "window_count": len(trace),
                         "mode": "windowed",
                         "audio_input": "separated_vocals_tail",
@@ -252,8 +292,20 @@ def main() -> None:
                     "characters": rows,
                     "window_trace": trace,
                 }
-                serial.atomic_json(output, payload)
-                print(json.dumps({"completed": str(output)}, ensure_ascii=False), flush=True)
+                artifact_result = serial.write_alignment_bundle(output, payload)
+                progress_output.unlink(missing_ok=True)
+                failure_output.unlink(missing_ok=True)
+                print(
+                    json.dumps(
+                        {
+                            "completed": str(output),
+                            "quality_status": artifact_result["quality"]["status"],
+                            "artifacts": artifact_result["paths"],
+                        },
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
                 del audio
         finally:
             del model

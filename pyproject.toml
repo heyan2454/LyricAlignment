@@ -17,6 +17,9 @@ qwen-smoke = [
 demo-multilingual = [
   "nagisa>=0.2",
 ]
+demo-demucs = [
+  "demucs==4.1.0",
+]
 test = [
   "pytest>=8,<9",
 ]

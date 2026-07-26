@@ -76,3 +76,64 @@ Important result/trace fields:
 - `core_boundary_character`.
 
 Demo output is diagnostic-only and cannot select checkpoints.
+
+## MIR-1K controlled demo diagnostics
+
+- `prepare_mir1k_demo_subset.py`: selects 8 development + 4 held-out songs from
+  the 17 manually character-aligned MIR-1K OOD songs using GT/data descriptors
+  only, then materializes mix, official vocal, lyrics and character GT.
+- `prepare_mir1k_separator_variants.py`: prepares cached Spleeter and Demucs
+  variants with command/weight/output identities and structural quality checks.
+- `run_mir1k_demo_diagnostics.py`: runs independent oracle-window context and
+  separator probes, plus current v6 serial propagation, and evaluates all
+  stages against MIR-1K character GT.
+- `check_qwen_fa_processor_equivalence.py`: compares official Processor input
+  preparation with the project's pretokenized unit path in the real Qwen
+  environment.
+
+Canonical experiment and deployment guides:
+
+```text
+docs/sessions/20260727_mir1k_demo_diagnostic_experiment.md
+docs/manual/demucs_deployment.md
+```
+
+MIR-1K remains OOD test-only.  Development songs may choose one demo setting;
+held-out songs are run once after the configuration is frozen.  The official
+MIR-1K vocal channel is a diagnostic upper-bound input, not a deployable
+separator.
+
+## Alignment evidence bundle
+
+Every successful alignment now writes:
+
+```text
+alignment.raw.json
+alignment.processor_decoded.json
+alignment.selected.json
+alignment.json
+alignment.quality.json
+```
+
+`alignment.quality.json` distinguishes structural success, warning, and
+structural failure.  It surfaces raw regressions, processor changes, candidate
+expansion, overlap compression, and zero-duration units.  It is not a GT score
+and cannot be used to select a checkpoint.
+
+## Demucs
+
+The general batch entry supports:
+
+```text
+--separator demucs
+--demucs-command "conda run -n demucs demucs"
+--demucs-version 4.1.0
+--demucs-model htdemucs_ft
+--demucs-device cuda
+--demucs-shifts 0
+--demucs-overlap 0.25
+--demucs-torch-home <external cache>
+```
+
+The experiment default uses zero shifts for deterministic, lower-cost
+comparison.  Keep the same parameters across development and held-out runs.

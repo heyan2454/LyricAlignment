@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import shutil
+import shlex
 import subprocess
 import sys
 import traceback
@@ -24,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
+from lyricalign.demo.alignment_artifacts import write_alignment_bundle  # noqa: E402
 from lyricalign.demo.batch import (  # noqa: E402
     AUDIO_INPUTS,
     ALIGNMENT_MODES,
@@ -158,7 +160,7 @@ def _spleeter_command(args: argparse.Namespace) -> list[str]:
     )
 
 
-def _prepare_vocals(
+def _prepare_spleeter_vocals(
     *,
     mix: Path,
     work_audio: Path,
@@ -169,14 +171,14 @@ def _prepare_vocals(
     accompaniment = work_audio / "accompaniment.wav"
     quality = work_audio / "separation_quality.json"
     identity = work_audio / "vocals.identity.json"
-    model_info = resolve_spleeter_model(args.spleeter_model_root, "2stems")
+    model_info = resolve_spleeter_model(args.spleeter_model_root, args.spleeter_model_name)
     model_identity = model_info.as_dict()
     request = {
         "schema_version": "qwen_fa_batch_spleeter_v2_explicit_weights",
         "mix_sha256": sha256(mix),
         "model_root": str(model_info.model_root.resolve()),
         "model_dir": str(model_info.model_dir.resolve()),
-        "model_name": "2stems",
+        "model_name": args.spleeter_model_name,
         "model_identity_sha256": model_identity["identity_sha256"],
         "model_layout": model_identity["layout"],
         "model_marker_present": model_identity["marker_present"],
@@ -199,7 +201,7 @@ def _prepare_vocals(
     shutil.rmtree(stage, ignore_errors=True)
     stage.mkdir(parents=True, exist_ok=True)
     command = _spleeter_command(args) + [
-        "separate", "-p", "spleeter:2stems", "-o", str(stage), str(mix),
+        "separate", "-p", f"spleeter:{args.spleeter_model_name}", "-o", str(stage), str(mix),
     ]
     environment = os.environ.copy()
     environment["MODEL_PATH"] = str(model_info.model_root)
@@ -232,6 +234,124 @@ def _prepare_vocals(
     )
     shutil.rmtree(stage, ignore_errors=True)
     return vocals, accompaniment
+
+
+def _demucs_command(args: argparse.Namespace) -> list[str]:
+    if args.demucs_command:
+        return shlex.split(args.demucs_command)
+    if shutil.which("demucs"):
+        return ["demucs"]
+    if shutil.which("conda"):
+        return ["conda", "run", "-n", args.demucs_env, "demucs"]
+    raise RuntimeError(
+        "Demucs is required for --separator demucs. Install demucs==4.1.0 in PATH "
+        "or provide --demucs-command/--demucs-env."
+    )
+
+
+def _prepare_demucs_vocals(
+    *,
+    mix: Path,
+    work_audio: Path,
+    args: argparse.Namespace,
+    force: bool,
+) -> tuple[Path, Path]:
+    vocals = work_audio / "vocals.wav"
+    accompaniment = work_audio / "accompaniment.wav"
+    quality = work_audio / "separation_quality.json"
+    identity = work_audio / "vocals.identity.json"
+    request = {
+        "schema_version": "qwen_fa_batch_demucs_v1",
+        "mix_sha256": sha256(mix),
+        "separator": "demucs",
+        "package_version_requested": args.demucs_version,
+        "model_name": args.demucs_model,
+        "device": args.demucs_device,
+        "shifts": args.demucs_shifts,
+        "overlap": args.demucs_overlap,
+        "segment_sec": args.demucs_segment,
+        "jobs": args.demucs_jobs,
+        "clip_mode": args.demucs_clip_mode,
+        "two_stems": "vocals",
+        "other_method": "add",
+        "torch_home": str(args.demucs_torch_home.resolve()) if args.demucs_torch_home else None,
+        "quality_policy": "reject_silent_or_near_copy_v1",
+    }
+    request_hash = canonical_hash(request)
+    if not force and all(path.is_file() for path in (vocals, accompaniment, quality, identity)):
+        try:
+            identity_payload = json.loads(identity.read_text(encoding="utf-8"))
+            quality_payload = json.loads(quality.read_text(encoding="utf-8"))
+            if identity_payload.get("request_hash") == request_hash and quality_payload.get("passed") is True:
+                return vocals, accompaniment
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    stage = work_audio / ".demucs_stage"
+    shutil.rmtree(stage, ignore_errors=True)
+    stage.mkdir(parents=True, exist_ok=True)
+    command = _demucs_command(args) + [
+        "-n", args.demucs_model,
+        "--two-stems", "vocals",
+        "--other-method", "add",
+        "--out", str(stage),
+        "--device", args.demucs_device,
+        "--shifts", str(args.demucs_shifts),
+        "--overlap", str(args.demucs_overlap),
+        "--jobs", str(args.demucs_jobs),
+        "--clip-mode", args.demucs_clip_mode,
+    ]
+    if args.demucs_segment is not None:
+        command.extend(["--segment", str(args.demucs_segment)])
+    command.append(str(mix))
+    environment = os.environ.copy()
+    if args.demucs_torch_home is not None:
+        args.demucs_torch_home.mkdir(parents=True, exist_ok=True)
+        environment["TORCH_HOME"] = str(args.demucs_torch_home)
+    _log({"demucs": command, "TORCH_HOME": environment.get("TORCH_HOME"), "request": request})
+    subprocess.run(command, check=True, env=environment)
+    generated = stage / args.demucs_model / mix.stem
+    generated_vocals = generated / "vocals.wav"
+    generated_accompaniment = generated / "no_vocals.wav"
+    if not generated_vocals.is_file() or not generated_accompaniment.is_file():
+        raise FileNotFoundError(f"incomplete Demucs output under {generated}")
+    shutil.copy2(generated_vocals, vocals)
+    shutil.copy2(generated_accompaniment, accompaniment)
+
+    check_command = [
+        sys.executable, str(ROOT / "scripts" / "demo" / "check_audio_separation.py"),
+        "--mix", str(mix), "--vocals", str(vocals),
+        "--accompaniment", str(accompaniment), "--report", str(quality),
+    ]
+    _log({"separation_quality_check": check_command})
+    subprocess.run(check_command, check=True)
+    atomic_json(
+        identity,
+        {
+            **request,
+            "request_hash": request_hash,
+            "command": command,
+            "vocals_sha256": sha256(vocals),
+            "accompaniment_sha256": sha256(accompaniment),
+            "quality_report_sha256": sha256(quality),
+        },
+    )
+    shutil.rmtree(stage, ignore_errors=True)
+    return vocals, accompaniment
+
+
+def _prepare_vocals(
+    *,
+    mix: Path,
+    work_audio: Path,
+    args: argparse.Namespace,
+    force: bool,
+) -> tuple[Path, Path]:
+    if args.separator == "spleeter":
+        return _prepare_spleeter_vocals(mix=mix, work_audio=work_audio, args=args, force=force)
+    if args.separator == "demucs":
+        return _prepare_demucs_vocals(mix=mix, work_audio=work_audio, args=args, force=force)
+    raise ValueError(f"unsupported separator: {args.separator}")
 
 
 def _job_output_root(job: MediaJob, args: argparse.Namespace) -> Path:
@@ -277,6 +397,36 @@ def _prepare_job(job: MediaJob, plan: OutputPlan, args: argparse.Namespace) -> d
             force=args.force_prepare or args.force_separation,
         )
         paths["vocal"] = vocals
+        paths["accompaniment"] = accompaniment
+    return paths
+
+
+def _existing_render_audio_paths(
+    job: MediaJob, plan: OutputPlan, args: argparse.Namespace
+) -> dict[str, Path]:
+    """Resolve render inputs without invoking separation or validating model weights."""
+    out_root = _job_output_root(job, args)
+    work_audio = out_root / "work" / "audio"
+    cached_mix = work_audio / "mix.wav"
+    paths: dict[str, Path] = {"mix": cached_mix if cached_mix.is_file() else job.mix_source}
+    needs_aligned_vocal = (
+        args.render_audio == "aligned"
+        and any(spec.audio == "vocal" for spec in plan.individuals)
+    )
+    if needs_aligned_vocal:
+        vocal = work_audio / "vocals.wav"
+        if not vocal.is_file():
+            raise FileNotFoundError(
+                "render-only requested aligned vocal audio but cached vocals.wav is missing: "
+                f"{vocal}. Run --stage prepare with the intended --separator first."
+            )
+        paths["vocal"] = vocal
+    else:
+        # Source-audio rendering never reads the separated stem.  Keep a value
+        # for callers that inspect the mapping, but do not require it to exist.
+        paths["vocal"] = work_audio / "vocals.wav"
+    accompaniment = work_audio / "accompaniment.wav"
+    if accompaniment.is_file():
         paths["accompaniment"] = accompaniment
     return paths
 
@@ -495,10 +645,10 @@ def _write_alignment(
         "characters": rows,
         "window_trace": trace,
     }
-    atomic_json(output, payload)
+    artifact_result = write_alignment_bundle(output, payload)
     progress_output.unlink(missing_ok=True)
     failure_output.unlink(missing_ok=True)
-    _log({"completed_alignment": str(output)})
+    _log({"completed_alignment": str(output), "quality_status": artifact_result["quality"]["status"], "artifacts": artifact_result["paths"]})
     return output
 
 
@@ -775,9 +925,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="diagnostic legacy threshold only; v6 never limits overlap compression",
     )
 
+    parser.add_argument("--separator", choices=("spleeter", "demucs"), default=os.environ.get("LYRICALIGN_SEPARATOR", "spleeter"))
     parser.add_argument("--spleeter-model-root", type=Path, default=Path(os.environ.get("SPLEETER_MODEL_ROOT", Path.home() / ".cache/spleeter_models")))
+    parser.add_argument("--spleeter-model-name", default="2stems")
     parser.add_argument("--spleeter-env", default=os.environ.get("SPLEETER_ENV", "spleeter"))
     parser.add_argument("--spleeter-command", help="explicit command prefix, e.g. 'conda run -n spleeter spleeter'")
+    parser.add_argument("--demucs-version", default=os.environ.get("DEMUCS_VERSION", "4.1.0"))
+    parser.add_argument("--demucs-model", default=os.environ.get("DEMUCS_MODEL", "htdemucs_ft"))
+    parser.add_argument("--demucs-env", default=os.environ.get("DEMUCS_ENV", "demucs"))
+    parser.add_argument("--demucs-command", help="explicit command prefix, e.g. 'conda run -n demucs demucs'")
+    parser.add_argument("--demucs-device", default=os.environ.get("DEMUCS_DEVICE", "cuda"))
+    parser.add_argument("--demucs-shifts", type=int, default=int(os.environ.get("DEMUCS_SHIFTS", "0")))
+    parser.add_argument("--demucs-overlap", type=float, default=float(os.environ.get("DEMUCS_OVERLAP", "0.25")))
+    parser.add_argument("--demucs-segment", type=int)
+    parser.add_argument("--demucs-jobs", type=int, default=int(os.environ.get("DEMUCS_JOBS", "0")))
+    parser.add_argument("--demucs-clip-mode", choices=("rescale", "clamp"), default="rescale")
+    parser.add_argument("--demucs-torch-home", type=Path, default=Path(os.environ["TORCH_HOME"]) if os.environ.get("TORCH_HOME") else None)
     parser.add_argument("--force-prepare", action="store_true")
     parser.add_argument("--force-separation", action="store_true")
     parser.add_argument("--force-align", action="store_true")
@@ -791,6 +954,8 @@ def main() -> int:
     args.r1_run = (args.r1_run or args.run_root / DEFAULT_R1_RUN).resolve()
     args.r2_run = (args.r2_run or args.run_root / DEFAULT_R2_RUN).resolve()
     args.spleeter_model_root = args.spleeter_model_root.expanduser().resolve()
+    if args.demucs_torch_home is not None:
+        args.demucs_torch_home = args.demucs_torch_home.expanduser().resolve()
     if args.force:
         args.force_prepare = True
         args.force_separation = True
@@ -830,6 +995,8 @@ def main() -> int:
         "language": args.language,
         "alignment_unit_mode": alignment_unit_mode(args.language),
         "render_audio": args.render_audio,
+        "separator": args.separator,
+        "separator_model": args.spleeter_model_name if args.separator == "spleeter" else args.demucs_model,
     }
     _log({"plan": plan_payload})
     if args.language != "Chinese" and any(item.model == "r2" for item in plan.individuals):
@@ -867,11 +1034,15 @@ def main() -> int:
     prepared: dict[str, dict[str, Path]] = {}
     for job in jobs:
         try:
-            prepared[job.stem] = _prepare_job(job, plan, args)
+            if args.stage == "render":
+                prepared[job.stem] = _existing_render_audio_paths(job, plan, args)
+            else:
+                prepared[job.stem] = _prepare_job(job, plan, args)
             out_root = _job_output_root(job, args)
             atomic_json(out_root / "batch_plan.json", {**plan_payload, "job": job.stem})
         except Exception as exc:  # noqa: BLE001
-            row = {"stage": "prepare", "job": job.stem, "error": f"{type(exc).__name__}: {exc}"}
+            stage_name = "render_input_resolution" if args.stage == "render" else "prepare"
+            row = {"stage": stage_name, "job": job.stem, "error": f"{type(exc).__name__}: {exc}"}
             failures.append(row)
             _log({"failure": row})
             if args.fail_fast:

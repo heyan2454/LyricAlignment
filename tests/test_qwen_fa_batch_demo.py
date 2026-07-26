@@ -349,3 +349,40 @@ def test_render_skips_missing_alignment_without_secondary_exception(tmp_path: Pa
             "diagnostic": str(failure),
         }
     ]
+
+
+def test_demucs_parser_defaults_are_reproducible(tmp_path: Path) -> None:
+    module = _load_batch_script_module()
+    args = module.build_parser().parse_args([str(tmp_path), "--separator", "demucs"])
+    assert args.demucs_version == "4.1.0"
+    assert args.demucs_model == "htdemucs_ft"
+    assert args.demucs_shifts == 0
+    assert args.demucs_overlap == 0.25
+    assert args.demucs_clip_mode == "rescale"
+
+
+def test_render_only_audio_resolution_does_not_require_separator(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+    from lyricalign.demo.batch import MediaJob, build_output_plan
+
+    module = _load_batch_script_module()
+    lyrics = tmp_path / "song.txt"
+    lyrics.write_text("甲乙\n", encoding="utf-8")
+    source = tmp_path / "song.wav"
+    source.write_bytes(b"source")
+    job = MediaJob("song", tmp_path, lyrics, None, source)
+    args = SimpleNamespace(output_dir=tmp_path / "out", render_audio="source")
+    paths = module._existing_render_audio_paths(job, build_output_plan(), args)
+    assert paths["mix"] == source
+    assert paths["vocal"].name == "vocals.wav"
+
+
+def test_explicit_demucs_command_is_shell_split(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    module = _load_batch_script_module()
+    args = SimpleNamespace(
+        demucs_command="conda run -n demucs demucs",
+        demucs_env="unused",
+    )
+    assert module._demucs_command(args) == ["conda", "run", "-n", "demucs", "demucs"]

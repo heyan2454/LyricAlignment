@@ -21,6 +21,7 @@ from typing import Any, Callable
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
+from lyricalign.demo.alignment_artifacts import write_alignment_bundle
 from lyricalign.demo.karaoke import (
     LyricDocument,
     build_serial_windows,
@@ -761,6 +762,7 @@ def main() -> None:
         ("r2", "lora", args.r2_checkpoint),
     ]
     args.out_root.mkdir(parents=True, exist_ok=True)
+    (args.out_root / "alignment_matrix.complete.json").unlink(missing_ok=True)
     atomic_json(
         args.out_root / "lyrics_structure.json",
         {
@@ -833,14 +835,54 @@ def main() -> None:
                         ),
                         flush=True,
                     )
-                    if mode == "full":
-                        rows, trace = full_alignment(
-                            processor, model, decoded_audio[audio_name], document, args
+                    progress_output = out_path.with_name("alignment.progress.json")
+                    failure_output = out_path.with_name("alignment.failure.json")
+                    out_path.unlink(missing_ok=True)
+                    failure_output.unlink(missing_ok=True)
+
+                    def write_progress(state: dict[str, Any]) -> None:
+                        atomic_json(
+                            progress_output,
+                            {
+                                "schema_version": "qwen_fa_alignment_progress_v1",
+                                "updated_at": datetime.now(timezone.utc).isoformat(),
+                                "identity": {**request, "request_hash": request_hash},
+                                "state": state,
+                            },
                         )
-                    else:
-                        rows, trace = windowed_alignment(
-                            processor, model, decoded_audio[audio_name], document, args
+
+                    write_progress({"event": "alignment_started", "mode": mode})
+                    try:
+                        if mode == "full":
+                            rows, trace = full_alignment(
+                                processor, model, decoded_audio[audio_name], document, args
+                            )
+                        else:
+                            rows, trace = windowed_alignment(
+                                processor, model, decoded_audio[audio_name], document, args,
+                                progress_callback=write_progress,
+                            )
+                    except Exception as exc:
+                        latest_progress = None
+                        try:
+                            latest_progress = json.loads(progress_output.read_text(encoding="utf-8"))
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                        atomic_json(
+                            failure_output,
+                            {
+                                "schema_version": "qwen_fa_alignment_failure_v1",
+                                "created_at": datetime.now(timezone.utc).isoformat(),
+                                "identity": {**request, "request_hash": request_hash},
+                                "error": {
+                                    "type": type(exc).__name__,
+                                    "message": str(exc),
+                                    "diagnostic": getattr(exc, "diagnostic", None),
+                                },
+                                "latest_progress": latest_progress,
+                            },
                         )
+                        raise
                     repaired_count = sum(bool(row.get("cross_window_repaired")) for row in rows)
                     seam_repaired_count = sum(bool(row.get("seam_repaired")) for row in rows)
                     overlap_compressed = [row for row in rows if row.get("overlap_compressed")]
@@ -880,8 +922,20 @@ def main() -> None:
                         "characters": rows,
                         "window_trace": trace,
                     }
-                    atomic_json(out_path, payload)
-                    print(json.dumps({"completed": str(out_path)}, ensure_ascii=False), flush=True)
+                    artifact_result = write_alignment_bundle(out_path, payload)
+                    progress_output.unlink(missing_ok=True)
+                    failure_output.unlink(missing_ok=True)
+                    print(
+                        json.dumps(
+                            {
+                                "completed": str(out_path),
+                                "quality_status": artifact_result["quality"]["status"],
+                                "artifacts": artifact_result["paths"],
+                            },
+                            ensure_ascii=False,
+                        ),
+                        flush=True,
+                    )
         finally:
             del model
             del processor

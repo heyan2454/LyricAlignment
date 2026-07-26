@@ -37,7 +37,7 @@ def decode_mono(path: Path, *, sample_rate: int) -> np.ndarray:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Reject silent or near-copy Spleeter 2-stem output.")
+    parser = argparse.ArgumentParser(description="Reject silent or near-copy two-stem separation output.")
     parser.add_argument("--mix", type=Path, required=True)
     parser.add_argument("--vocals", type=Path, required=True)
     parser.add_argument("--accompaniment", type=Path, required=True)
@@ -61,7 +61,7 @@ def main() -> int:
     payload = diagnostics.to_dict()
     payload.update(
         {
-            "schema_version": "spleeter_separation_quality_v1",
+            "schema_version": "audio_separation_quality_v1",
             "mix": str(args.mix.resolve()),
             "vocals": str(args.vocals.resolve()),
             "accompaniment": str(args.accompaniment.resolve()),

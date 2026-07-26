@@ -4,19 +4,22 @@
 
 1. `README.md`
 2. `docs/status/project_current.md`
-3. `docs/manual/qwen_fa_batch_demo.md`
-4. `docs/sessions/20260726_demo_v2_failure_diagnostics_and_pack_repair.md`
-5. `docs/sessions/20260726_demo_exploration_archive.md`
-6. `docs/status/known_issues_20260724.md`
-7. `docs/status/next_execution_plan.md`
-8. `docs/principles.md`
+3. `docs/sessions/20260727_mir1k_demo_diagnostic_experiment.md`
+4. `docs/manual/demucs_deployment.md`
+5. `docs/manual/qwen_fa_batch_demo.md`
+6. `docs/sessions/20260726_demo_alignment_stability_exploration.md`
+7. `docs/sessions/20260726_demo_v2_failure_diagnostics_and_pack_repair.md`
+8. `docs/sessions/20260726_demo_exploration_archive.md`
+9. `docs/status/known_issues_20260724.md`
+10. `docs/status/next_execution_plan.md`
+11. `docs/principles.md`
 
 ## Current stage
 
 ```text
 first Qwen FA LoRA cycle complete and archived
--> current focus: reusable multilingual demo
--> validate hard_core_forward_overlap_compression_v6 on real Cantonese/Japanese songs
+-> current focus: MIR-1K controlled demo diagnostics
+-> isolate context, separator, and v6 propagation effects before redesigning cascade logic
 ```
 
 ## Canonical facts
@@ -27,6 +30,9 @@ first Qwen FA LoRA cycle complete and archived
 - metric schema v3 fixes valid-only, missing/invalid, and coverage semantics;
 - nineteen result sets were recomputed without changing the primary metric;
 - R2 long-context regression is dominated by one late-sequence collapse;
+- MIR-1K demo diagnostics use a deterministic 8-development / 4-held-out / 5-spare split selected without model outputs;
+- successful demo alignments preserve raw, processor-decoded, selected, final, and structural-quality artifacts;
+- Demucs 4.1.0 / htdemucs_ft is available as a pinned optional separator input with external weight caching;
 - failed demo alignment now preserves `alignment.progress.json` and
   `alignment.failure.json` instead of leaving only a missing final JSON;
 - Japanese alignment uses parser-owned pretokenized units and does not run

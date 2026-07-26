@@ -1,7 +1,7 @@
 # Project Current
 
-**Snapshot date:** 2026-07-26  
-**Stage:** first Qwen Forced Aligner LoRA cycle archived; strict serial-window v3 and reusable batch demo implemented; formal long-audio validation remains open
+**Snapshot date:** 2026-07-27  
+**Stage:** first Qwen Forced Aligner LoRA cycle archived; reusable v6 demo and stage-separated evidence implemented; MIR-1K context/separator/propagation diagnosis is next
 
 ## Completed experiment chain
 
@@ -146,3 +146,41 @@ docs/sessions/20260726_demo_exploration_archive.md
 ```
 
 The new demo path has passed focused code, discovery, window-policy, separation-quality and FFmpeg rendering regressions. Actual multi-file GPU inference remains a server execution task. The qualitative improvement observed on 夜苏打 is not a formal metric result because corrected vocals, forced re-inference and the new window policy changed together.
+
+
+## 2026-07-27 controlled demo-diagnostic package
+
+Added without changing the v6 alignment policy:
+
+- stage-separated `raw`, `processor_decoded`, `selected`, `final`, and
+  `alignment.quality.json` artifacts;
+- structural warning/failure status for timestamp regressions, candidate
+  expansion, overlap compression and zero-duration units;
+- consistent progress/failure artifacts for the historical fixed-song and tail
+  entries;
+- tail policy identity corrected to the implementation's current constant;
+- render-only execution no longer resolves Spleeter or Demucs weights when the
+  required cached audio exists;
+- optional Demucs separator support in the reusable batch entry;
+- deterministic MIR-1K 8-development / 4-held-out / 5-spare selection using
+  data/GT descriptors only;
+- MIR-1K separator preparation with cached identities and quality checks;
+- independent oracle-window context/separator probes and current v6 serial
+  evaluation against character GT;
+- real-Processor equivalence audit for multilingual input preparation.
+
+Canonical execution documents:
+
+```text
+docs/sessions/20260727_mir1k_demo_diagnostic_experiment.md
+docs/manual/demucs_deployment.md
+docs/status/next_execution_plan.md
+```
+
+Current limits:
+
+- v6 still propagates transcript state from prior predictions and may convert
+  severe overlap into zero-duration but structurally legal units;
+- structural quality is not alignment accuracy;
+- Demucs and multilingual behavior have not yet been executed on the server;
+- MIR-1K is OOD test-only and its development subset cannot select a checkpoint.

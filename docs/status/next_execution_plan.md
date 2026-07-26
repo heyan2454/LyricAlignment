@@ -1,84 +1,149 @@
 # Next Execution Plan
 
-**Date:** 2026-07-25  
-**Goal:**先用低成本控制实验区分“绝对时间位置”和“总输入长度”，再决定是否扩大长音频诊断；同时独立完成夜苏打 demo，不把 demo 当成正式评测。
+**Date:** 2026-07-27  
+**Goal:**冻结当前 v6 demo 作为基线，使用 MIR-1K 字符级 GT 分离“额外歌词上下文、分离器和串行传播”三类影响，再决定是否设计新的级联方案。
 
-## Q1 — 120s 快速反馈
+## E0 — Environment and evidence preflight
 
-先运行：
+1. deploy pinned `demucs==4.1.0` in an isolated environment;
+2. retain Spleeter as the current baseline;
+3. verify Qwen model/revision/checkpoint hashes;
+4. run `check_qwen_fa_processor_equivalence.py` on short Chinese, English and
+   Japanese samples in the real Qwen environment;
+5. do not change `hard_core_forward_overlap_compression_v6` during the
+   development comparison.
 
-```text
-scripts/training/run_qwen_fa_120_quick_feedback.sh
-```
-
-两类控制：
-
-1. 同一短样本前置静音，改变绝对时间位置；
-2. 同一短样本尾部补静音，保持目标位置不变但增加总输入长度。
-
-优先查看：
+Guide:
 
 ```text
-QUICK_READOUT.md
-final_summary.json
+docs/manual/demucs_deployment.md
 ```
 
-Decision questions:
+## E1 — Materialize the MIR-1K subset
 
-- 恶化是否只随绝对位置出现？
-- 恶化是否只随总输入长度出现？
-- raw 是否稳定而 official fix 放大错误？
-- 是否只有 R2 出现明显变化？
-
-## Q2 — 有条件的 dominant-outlier 深诊断
-
-只有 Q1 不能解释时，再对 frozen dominant outlier 运行：
+Run:
 
 ```text
-full sequence
-prefix: 0–90 / 0–105 / 0–115 / 0–120 / 0–125 / 0–140
-local guarded crop around 90–150s
+scripts/demo/prepare_mir1k_demo_subset.py
 ```
 
-局部 crop 必须保留 guard context，只评价 core 内完整字符，避免裁剪边缘的音频/歌词不匹配。
-
-## Q3 — 夜苏打独立 Demo
-
-使用：
+Frozen split:
 
 ```text
-scripts/demo/run_yessoda_serial_demo.sh
+8 development
+4 held-out
+5 spare
+seed 20260727
 ```
 
-生成：
+Selection uses only duration, character rate, gap structure, annotation
+coverage and singer diversity.  Model outputs are forbidden from selection.
+
+## E2 — Prepare separator variants on development only
+
+Run:
 
 ```text
-R0/R1/R2 × mix/vocal × full/windowed = 12 alignments + 12 videos
-4 个 R0/R1/R2 三联视频
-3 个同模型四联视频
+scripts/demo/prepare_mir1k_separator_variants.py
 ```
 
-Demo 仅用于听感和可视化，不用于：
+Inputs:
 
-- 选择 checkpoint；
-- 调整 LoRA；
-- 替代 M4Singer/MIR-1K 指标；
-- 对 120s 机制做正式因果结论。
+```text
+mix
+official MIR-1K vocal channel
+Spleeter vocals
+Demucs htdemucs_ft vocals
+```
 
-## Q4 — 根据快速反馈决定后续
+The official vocal channel is a diagnostic upper bound, not a deployable
+candidate.
 
-- **shift 恶化、tailpad 稳定：**优先查 timestamp class calibration；
-- **tailpad 恶化、shift 稳定：**优先查总长度、mask、attention；
-- **raw 稳定、fixed 恶化：**优先查单调修复；
-- **仅 synthetic long 失败：**优先查 join/构造；
-- **窗口稳定且 full 失败：**再实现正式 serial window inference 并做有 GT 对比。
+## E3 — Independent-window context experiment
+
+Run `run_mir1k_demo_diagnostics.py --experiment context` with:
+
+```text
+30 s core
+10 s left acoustic context
+10 s right acoustic context
+future text: 0 / 5 / 15 / 30 s
+no serial state propagation
+```
+
+GT timestamps define only transcript coverage and evaluated core ownership.
+They are never passed to Qwen.
+
+Primary question:
+
+```text
+Does extra future text alter raw/processor-decoded timestamps before propagation?
+```
+
+After choosing a finite future-text condition, compare matched left-context
+lyrics against omitted left-context lyrics.
+
+## E4 — Independent-window separator experiment
+
+Run `--experiment separator` using the frozen context condition.
+
+Primary metrics:
+
+- character onset/offset MAE, median and P90;
+- onset and joint tolerance rates at 0.08/0.16/0.24/0.5/1.0 s.
+
+Auxiliary evidence:
+
+- raw confidence/margin/entropy;
+- processor adjustment;
+- separator structural quality;
+- blind listening;
+- wall time and peak GPU memory.
+
+Select at most one deployable separator on development data.
+
+## E5 — Current v6 propagation diagnosis
+
+Run `--experiment serial` on the surviving input candidates.
+
+Compare stages:
+
+```text
+raw
+processor-decoded
+selected
+final committed
+```
+
+Decision patterns:
+
+- independent poor -> model/audio/context dominates;
+- independent good, serial raw poor -> cursor/candidate feedback dominates;
+- selected good, final poor -> forward overlap compression is damaging;
+- Demucs helps independent but not serial -> local evidence improves while
+  propagation remains the main limitation.
+
+Do not add a new cascade rule before this attribution is available.
+
+## E6 — Freeze and held-out confirmation
+
+Write a frozen decision JSON containing all model, separator, context and
+window identities.  Then prepare and run exactly one held-out configuration.
+Do not retune after viewing held-out results.
+
+Canonical detailed protocol:
+
+```text
+docs/sessions/20260727_mir1k_demo_diagnostic_experiment.md
+```
 
 ## Deferred
 
-在机制没有更明确前，不启动：
+Until E3–E6 are complete, do not:
 
-- bottom-half LoRA；
-- 更大 rank；
-- 更长训练；
-- 新数据集扩张；
-- 根据 demo 主观效果修改 checkpoint。
+- use full-song confidence as a segmentation oracle;
+- add confidence anchors without calibration evidence;
+- redesign soft commit or overlap reconciliation;
+- expand LoRA scope or retrain based on demo listening;
+- make multilingual singing claims from Chinese MIR-1K results;
+- use MIR-1K development or held-out songs for training/checkpoint selection.
