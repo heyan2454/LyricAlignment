@@ -123,8 +123,9 @@ Completed and archived:
 - full-song versus 03:05 cropped R2 windowed-vocal comparison;
 - evidence that the 225-second collapse was amplified by candidate selection and cumulative monotonic repair;
 - rejection of strict-core v2 after it supplied left acoustic overlap without matching overlap lyrics;
-- `hard_core_overlap_transcript_v3` with 60-second adjacent cores and 10-second acoustic context;
-- immutable core ownership, overlap lyrics as context only and hard failure on large seams;
+- `hard_core_forward_overlap_compression_v6` with 60-second adjacent cores and nominal left acoustic context always retained;
+- immutable ownership by current-window start time, overlap lyrics as context only, and forward-only compression of new predictions against the previous committed end;
+- full-overlap units may become zero-duration; original current-window times and compression diagnostics remain in alignment JSON;
 - reusable same-stem batch entry defaulting to R2 + vocal + windowed;
 - video rendering with a separate bottom subtitle band and audio-only black-background rendering;
 - optional individual, three-model and four-input composite outputs;

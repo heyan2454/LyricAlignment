@@ -4,18 +4,19 @@
 
 1. `README.md`
 2. `docs/status/project_current.md`
-3. `docs/status/known_issues_20260724.md`
-4. `docs/sessions/20260724_qwen_fa_followup_repair_archive.md`
-5. `reports/review/20260724_qwen_fa_followup_repair_review.md`
-6. `docs/status/next_execution_plan.md`
-7. `docs/principles.md`
+3. `docs/manual/qwen_fa_batch_demo.md`
+4. `docs/sessions/20260726_demo_v2_failure_diagnostics_and_pack_repair.md`
+5. `docs/sessions/20260726_demo_exploration_archive.md`
+6. `docs/status/known_issues_20260724.md`
+7. `docs/status/next_execution_plan.md`
+8. `docs/principles.md`
 
 ## Current stage
 
 ```text
 first Qwen FA LoRA cycle complete and archived
--> isolate approximately-150-second collapse
--> decide chunked inference versus local-data/label diagnosis
+-> current focus: reusable multilingual demo
+-> validate hard_core_forward_overlap_compression_v6 on real Cantonese/Japanese songs
 ```
 
 ## Canonical facts
@@ -26,6 +27,12 @@ first Qwen FA LoRA cycle complete and archived
 - metric schema v3 fixes valid-only, missing/invalid, and coverage semantics;
 - nineteen result sets were recomputed without changing the primary metric;
 - R2 long-context regression is dominated by one late-sequence collapse;
+- failed demo alignment now preserves `alignment.progress.json` and
+  `alignment.failure.json` instead of leaving only a missing final JSON;
+- Japanese alignment uses parser-owned pretokenized units and does not run
+  Nagisa a second time on reconstructed window text;
+- window ownership is frozen by current-core start time; later-window overlap is
+  resolved by forward-only left compression against the previous committed end;
 - checkpoints, audio, and large predictions remain external.
 
 ## Constraints

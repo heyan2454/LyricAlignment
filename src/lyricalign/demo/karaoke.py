@@ -60,6 +60,18 @@ _LANGUAGE_ALIASES = {
 }
 
 
+class CoreStartBoundaryError(RuntimeError):
+    """A new lyric unit was aligned inside unmatched left acoustic context.
+
+    ``diagnostic`` is intentionally JSON-serializable so callers can persist
+    the exact failed window instead of losing it when alignment aborts.
+    """
+
+    def __init__(self, message: str, diagnostic: dict[str, Any]):
+        super().__init__(message)
+        self.diagnostic = diagnostic
+
+
 def normalize_alignment_language(language: str) -> str:
     """Return the canonical Forced Aligner language name.
 
@@ -439,7 +451,10 @@ def split_core_commit_prefix(
 
     Ownership of new characters is based on character *start* time.  A
     character whose start lies before ``core_end_sec`` belongs wholly to this
-    core, even when its end crosses the boundary.
+    core, even when its end crosses the boundary.  An uncommitted character may
+    be re-estimated before ``core_start_sec`` by the overlapping next window;
+    this is not a boundary failure.  Forward-only overlap compression is
+    applied later when the new rows are appended after the frozen prefix.
     """
     ordered = sorted((dict(row) for row in rows), key=lambda row: int(row["global_character_index"]))
     for offset, row in enumerate(ordered):
@@ -458,15 +473,6 @@ def split_core_commit_prefix(
         row for row in ordered
         if int(row["global_character_index"]) >= committed_character_start
     ]
-    if uncommitted and core_start_sec > 0:
-        first_start = float(uncommitted[0]["fixed_global_start_sec"])
-        if first_start < core_start_sec - start_tolerance_sec:
-            raise RuntimeError(
-                "first uncommitted character aligned before the trusted core: "
-                f"start={first_start:.3f}s core_start={core_start_sec:.3f}s "
-                f"tolerance={start_tolerance_sec:.3f}s"
-            )
-
     if final_core:
         return context, uncommitted, []
 
@@ -528,11 +534,20 @@ def append_strict_core_commits(
     duration_sec: float,
     seam_tolerance_sec: float = 0.16,
 ) -> list[dict[str, Any]]:
-    """Append one core's immutable rows with only a tiny seam correction.
+    """Append immutable core rows using forward-only overlap compression.
 
-    Large cumulative monotonic repair is deliberately forbidden.  A conflict
-    larger than ``seam_tolerance_sec`` is a boundary failure and must be
-    diagnosed or locally re-run rather than flattened across later lyrics.
+    Earlier cores are frozen.  A later core keeps its own predictions for every
+    uncommitted lyric unit, but a new interval may not begin before the previous
+    committed interval ends.  Only the overlapping left part is removed:
+
+    ``start = max(predicted_start, previous_end)``
+    ``end = max(predicted_end, start)``
+
+    This may collapse a fully overlapped interval to zero duration.  The row's
+    original current-window prediction and compression amount remain explicit
+    in the output.  ``seam_tolerance_sec`` is retained only for command-line and
+    result-schema compatibility; it is recorded as a diagnostic threshold and
+    never rejects or limits compression.
     """
     if seam_tolerance_sec < 0:
         raise ValueError("seam_tolerance_sec must be non-negative")
@@ -548,15 +563,13 @@ def append_strict_core_commits(
             )
         original_start = min(max(float(row["fixed_global_start_sec"]), 0.0), duration_sec)
         original_end = min(max(float(row["fixed_global_end_sec"]), original_start), duration_sec)
-        overlap = max(0.0, previous_end - original_start)
-        if overlap > seam_tolerance_sec + 1e-9:
-            raise RuntimeError(
-                "cross-core monotonic conflict exceeds seam tolerance: "
-                f"character={actual_index} overlap={overlap:.3f}s "
-                f"tolerance={seam_tolerance_sec:.3f}s"
-            )
-        start = max(original_start, previous_end)
+        compression_floor = previous_end
+        overlap = max(0.0, compression_floor - original_start)
+        start = max(original_start, compression_floor)
         end = max(original_end, start)
+        original_duration = max(0.0, original_end - original_start)
+        final_duration = max(0.0, end - start)
+        compressed = overlap > 1e-9
         row.update(
             {
                 "selected_start_sec": original_start,
@@ -568,10 +581,23 @@ def append_strict_core_commits(
                 "owner_window_index": int(window["window_index"]),
                 "owner_core_start_sec": float(window["core_start_sec"]),
                 "owner_core_end_sec": float(window["core_end_sec"]),
-                "ownership_rule": "character_start_in_core",
-                "seam_repaired": overlap > 1e-9,
+                "ownership_rule": "character_start_in_current_core_before_forward_compression",
+                "seam_repaired": compressed,
                 "seam_repair_sec": overlap,
                 "cross_window_repaired": False,
+                "overlap_compressed": compressed,
+                "overlap_compression_sec": overlap,
+                "overlap_compression_floor_sec": compression_floor,
+                "overlap_compression_original_start_sec": original_start,
+                "overlap_compression_original_end_sec": original_end,
+                "overlap_compression_original_duration_sec": original_duration,
+                "overlap_compression_final_duration_sec": final_duration,
+                "overlap_compression_collapsed_to_zero": (
+                    compressed and original_duration > 1e-9 and final_duration <= 1e-9
+                ),
+                "overlap_exceeds_legacy_seam_tolerance": (
+                    overlap > seam_tolerance_sec + 1e-9
+                ),
             }
         )
         result.append(row)

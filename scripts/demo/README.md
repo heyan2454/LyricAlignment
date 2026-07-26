@@ -49,20 +49,27 @@ scripts/demo/run_qwen_fa_batch.sh \
 
 ## Windowed policy
 
-`windowed` uses `hard_core_overlap_transcript_v3`:
+`windowed` uses `hard_core_forward_overlap_compression_v6`:
 
-- adjacent 60-second trusted cores;
-- 10 seconds of acoustic context on both sides when available;
-- the preceding window determines the next transcript at the next acoustic-input boundary;
-- a character cut by that boundary is excluded and input begins with the following complete character;
-- complete lyrics in the 10-second left overlap are re-input as context only;
-- character ownership is determined by start time;
-- a character crossing a core end belongs wholly to the preceding core;
-- committed characters are immutable;
-- no cross-window candidate competition or large cumulative monotonic flattening.
+- adjacent 60-second trusted cores with up to 10 seconds of acoustic context on both sides;
+- lyric-unit ownership is decided by the current window's predicted start time;
+- a unit starting before the core end belongs wholly to that core, even if its end crosses the boundary;
+- already committed overlap lyrics are context-only and can never be overwritten;
+- uncommitted current-window predictions are accepted even when they begin before the current core start;
+- when a new interval overlaps the frozen prefix, only its left overlap is removed: `start=max(predicted_start, previous_end)`, `end=max(predicted_end, start)`;
+- fully overlapped units may collapse to zero duration; later intervals are not shifted to preserve duration;
+- no previous-window lookahead replacement, no core-start rejection and no overlap-triggered rerun;
+- the previous window still determines the next transcript start at the next acoustic-input boundary.
 
-Important trace fields:
+Important result/trace fields:
 
+- `selected_start_sec` / `selected_end_sec`: current-window prediction before compression;
+- `overlap_compressed`;
+- `overlap_compression_sec`;
+- `overlap_compression_floor_sec`;
+- `overlap_compression_collapsed_to_zero`;
+- `overlap_compressed_character_count`;
+- `overlap_compression_max_sec`;
 - `next_window_input_character_start`;
 - `next_uncommitted_character_start`;
 - `input_boundary_cut_character`;

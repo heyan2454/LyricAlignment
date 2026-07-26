@@ -222,3 +222,130 @@ def test_spleeter_rejects_probe_without_weights(tmp_path: Path) -> None:
     _touch(model_dir / ".probe", "")
     with pytest.raises(FileNotFoundError, match="complete Spleeter model weights"):
         resolve_spleeter_model(tmp_path / "models")
+
+
+def _load_batch_script_module():
+    import importlib.util
+
+    script = ROOT / "scripts" / "demo" / "run_qwen_fa_batch.py"
+    spec = importlib.util.spec_from_file_location("qwen_fa_batch_script_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _batch_args(tmp_path: Path):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        model="model",
+        revision="revision",
+        local_files_only=True,
+        cache_dir=None,
+        device="cpu",
+        language="Chinese",
+        timestamp_segment_sec=0.08,
+        core_sec=60.0,
+        left_context_sec=10.0,
+        right_context_sec=10.0,
+        future_line_padding=1,
+        minimum_forward_characters=64,
+        future_character_ratio=1.35,
+        max_candidate_expansions=4,
+        boundary_start_tolerance_sec=0.32,
+        seam_tolerance_sec=0.16,
+        force_align=True,
+        output_dir=tmp_path / "outputs",
+        render_audio="source",
+        force_render=False,
+        subtitle_band_height=None,
+        audio_width=1280,
+        audio_height=720,
+    )
+
+
+def test_failed_alignment_writes_progress_and_failure_json(tmp_path: Path, monkeypatch) -> None:
+    from lyricalign.demo.batch import MediaJob
+
+    module = _load_batch_script_module()
+    lyrics = tmp_path / "song.txt"
+    lyrics.write_text("甲乙\n", encoding="utf-8")
+    audio = tmp_path / "song.wav"
+    audio.write_bytes(b"audio")
+    job = MediaJob("song", tmp_path, lyrics, None, audio)
+    args = _batch_args(tmp_path)
+    out_root = module._job_output_root(job, args)
+
+    class FakeDiagnosticError(RuntimeError):
+        diagnostic = {"kind": "test_boundary", "window_index": 2}
+
+    def fail_windowed(*args, progress_callback=None, **kwargs):
+        assert progress_callback is not None
+        progress_callback({"event": "attempt_rejected", "window_index": 2})
+        raise FakeDiagnosticError("synthetic boundary failure")
+
+    monkeypatch.setattr(module, "windowed_alignment", fail_windowed)
+    try:
+        module._write_alignment(
+            job=job,
+            out_root=out_root,
+            mode_spec=IndividualMode("r2", "vocal", "windowed"),
+            processor=object(),
+            model=object(),
+            decoded_audio=[0] * 16000,
+            audio_path=audio,
+            checkpoint_info={"checkpoint_kind": "test"},
+            args=args,
+        )
+    except FakeDiagnosticError:
+        pass
+    else:
+        raise AssertionError("alignment failure must propagate")
+
+    directory = out_root / "alignments" / "r2" / "vocal" / "windowed"
+    assert not (directory / "alignment.json").exists()
+    assert (directory / "alignment.progress.json").is_file()
+    failure = json.loads((directory / "alignment.failure.json").read_text(encoding="utf-8"))
+    assert failure["error"]["type"] == "FakeDiagnosticError"
+    assert failure["error"]["diagnostic"]["kind"] == "test_boundary"
+    assert failure["latest_progress"]["state"]["event"] == "attempt_rejected"
+
+
+def test_render_skips_missing_alignment_without_secondary_exception(tmp_path: Path) -> None:
+    from lyricalign.demo.batch import MediaJob, OutputPlan
+
+    module = _load_batch_script_module()
+    lyrics = tmp_path / "song.txt"
+    lyrics.write_text("甲乙\n", encoding="utf-8")
+    audio = tmp_path / "song.wav"
+    audio.write_bytes(b"audio")
+    job = MediaJob("song", tmp_path, lyrics, None, audio)
+    args = _batch_args(tmp_path)
+    spec = IndividualMode("r2", "vocal", "windowed")
+    plan = OutputPlan((spec,), (), ())
+    failure = (
+        module._job_output_root(job, args)
+        / "alignments" / "r2" / "vocal" / "windowed" / "alignment.failure.json"
+    )
+    failure.parent.mkdir(parents=True, exist_ok=True)
+    failure.write_text("{}", encoding="utf-8")
+
+    rows = module._render_job(
+        job=job,
+        prepared={"mix": audio, "vocal": audio},
+        plan=plan,
+        args=args,
+        font="Noto Sans",
+    )
+    assert rows == [
+        {
+            "kind": "individual",
+            "selection": spec.token,
+            "status": "skipped",
+            "reason": "alignment_failed_or_missing",
+            "alignment": str(failure.with_name("alignment.json")),
+            "diagnostic": str(failure),
+        }
+    ]

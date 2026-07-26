@@ -14,6 +14,7 @@ import os
 import shutil
 import subprocess
 import sys
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -49,6 +50,7 @@ from lyricalign.demo.karaoke import (  # noqa: E402
 )
 from lyricalign.training.qwen_fa_runtime import decode_audio  # noqa: E402
 from scripts.demo.align_qwen_fa_serial_demo import (  # noqa: E402
+    WINDOW_POLICY,
     checkpoint_identity,
     full_alignment,
     load_model,
@@ -56,7 +58,7 @@ from scripts.demo.align_qwen_fa_serial_demo import (  # noqa: E402
     windowed_alignment,
 )
 
-SCHEMA_VERSION = "qwen_fa_batch_alignment_v2_multilingual_units"
+SCHEMA_VERSION = "qwen_fa_batch_alignment_v4_forward_overlap_compression"
 DEFAULT_MODEL_ID = (
     "/root/autodl-tmp/AST_storage/Data/lyricalign/models/hf_cache/"
     "models--Qwen--Qwen3-ForcedAligner-0.6B-hf/snapshots/"
@@ -334,13 +336,15 @@ def _alignment_request(
             "core_sec": args.core_sec,
             "left_context_sec": args.left_context_sec,
             "right_context_sec": args.right_context_sec,
-            "policy": "hard_core_overlap_transcript_v3",
+            "policy": WINDOW_POLICY,
             "future_line_padding": args.future_line_padding,
             "minimum_forward_characters": args.minimum_forward_characters,
             "future_character_ratio": args.future_character_ratio,
             "max_candidate_expansions": args.max_candidate_expansions,
-            "boundary_start_tolerance_sec": args.boundary_start_tolerance_sec,
-            "seam_tolerance_sec": args.seam_tolerance_sec,
+            "overlap_resolution": "forward_compress_to_previous_committed_end",
+            "allows_zero_duration_after_compression": True,
+            "legacy_boundary_start_tolerance_sec_ignored": args.boundary_start_tolerance_sec,
+            "legacy_seam_tolerance_sec_diagnostic_only": args.seam_tolerance_sec,
         } if mode == "windowed" else None,
     }
 
@@ -393,17 +397,76 @@ def _write_alignment(
     output = (
         out_root / "alignments" / mode_spec.model / mode_spec.audio / mode_spec.mode / "alignment.json"
     )
+    progress_output = output.with_name("alignment.progress.json")
+    failure_output = output.with_name("alignment.failure.json")
     if not args.force_align and output_is_current(output, request_hash):
         _log({"skip_alignment": str(output), "reason": "identity_match"})
         return output
 
     align_args = _alignment_args(args)
-    if mode_spec.mode == "full":
-        rows, trace = full_alignment(processor, model, decoded_audio, document, align_args)
-    else:
-        rows, trace = windowed_alignment(processor, model, decoded_audio, document, align_args)
+    # A failed rerun must never leave an older successful alignment beside a
+    # new request identity.  Progress and failure artifacts preserve the exact
+    # state even when no final alignment.json can be produced.
+    output.unlink(missing_ok=True)
+    failure_output.unlink(missing_ok=True)
+
+    def write_progress(state: dict[str, Any]) -> None:
+        atomic_json(
+            progress_output,
+            {
+                "schema_version": "qwen_fa_alignment_progress_v1",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "identity": {**request, "request_hash": request_hash},
+                "state": state,
+            },
+        )
+
+    write_progress({"event": "alignment_started", "mode": mode_spec.mode})
+    try:
+        if mode_spec.mode == "full":
+            rows, trace = full_alignment(processor, model, decoded_audio, document, align_args)
+        else:
+            rows, trace = windowed_alignment(
+                processor,
+                model,
+                decoded_audio,
+                document,
+                align_args,
+                progress_callback=write_progress,
+            )
+    except Exception as exc:  # noqa: BLE001
+        latest_progress: dict[str, Any] | None = None
+        try:
+            latest_progress = json.loads(progress_output.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+        atomic_json(
+            failure_output,
+            {
+                "schema_version": "qwen_fa_alignment_failure_v1",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "identity": {**request, "request_hash": request_hash},
+                "error": {
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                    "traceback": traceback.format_exc(),
+                    "diagnostic": getattr(exc, "diagnostic", None),
+                },
+                "latest_progress": latest_progress,
+            },
+        )
+        raise
     repaired_count = sum(bool(row.get("cross_window_repaired")) for row in rows)
     seam_repaired_count = sum(bool(row.get("seam_repaired")) for row in rows)
+    overlap_compressed = [row for row in rows if row.get("overlap_compressed")]
+    overlap_collapsed = [
+        row for row in overlap_compressed
+        if row.get("overlap_compression_collapsed_to_zero")
+    ]
+    overlap_max_sec = max(
+        (float(row.get("overlap_compression_sec", 0.0)) for row in overlap_compressed),
+        default=0.0,
+    )
     payload = {
         "schema_version": SCHEMA_VERSION,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -419,7 +482,11 @@ def _write_alignment(
             "cross_window_repaired_character_rate": repaired_count / len(rows),
             "seam_repaired_character_count": seam_repaired_count,
             "seam_repaired_character_rate": seam_repaired_count / len(rows),
-            "window_policy": "hard_core_overlap_transcript_v3" if mode_spec.mode == "windowed" else None,
+            "overlap_compressed_character_count": len(overlap_compressed),
+            "overlap_compressed_character_rate": len(overlap_compressed) / len(rows),
+            "overlap_compression_collapsed_to_zero_count": len(overlap_collapsed),
+            "overlap_compression_max_sec": overlap_max_sec,
+            "window_policy": WINDOW_POLICY if mode_spec.mode == "windowed" else None,
             "window_count": len(trace) if mode_spec.mode == "windowed" else 1,
             "diagnostic_only": True,
             "uses_full_alignment_as_window_input": False,
@@ -429,6 +496,8 @@ def _write_alignment(
         "window_trace": trace,
     }
     atomic_json(output, payload)
+    progress_output.unlink(missing_ok=True)
+    failure_output.unlink(missing_ok=True)
     _log({"completed_alignment": str(output)})
     return output
 
@@ -506,11 +575,17 @@ def _align_all(
                             args=args,
                         )
                     except Exception as exc:  # noqa: BLE001
+                        failure_output = (
+                            _job_output_root(job, args)
+                            / "alignments" / model_name / spec.audio / spec.mode
+                            / "alignment.failure.json"
+                        )
                         row = {
                             "stage": "align",
                             "job": job.stem,
                             "mode": spec.token,
                             "error": f"{type(exc).__name__}: {exc}",
+                            "diagnostic": str(failure_output) if failure_output.is_file() else None,
                         }
                         failures.append(row)
                         _log({"failure": row})
@@ -549,7 +624,18 @@ def _render_job(
     for spec in plan.individuals:
         alignment = out_root / "alignments" / spec.model / spec.audio / spec.mode / "alignment.json"
         if not alignment.is_file():
-            raise FileNotFoundError(alignment)
+            failure = alignment.with_name("alignment.failure.json")
+            rows.append(
+                {
+                    "kind": "individual",
+                    "selection": spec.token,
+                    "status": "skipped",
+                    "reason": "alignment_failed_or_missing",
+                    "alignment": str(alignment),
+                    "diagnostic": str(failure) if failure.is_file() else None,
+                }
+            )
+            continue
         audio_track = prepared["mix"] if args.render_audio == "source" else prepared[spec.audio]
         stem = f"{spec.model}_{spec.audio}_{spec.mode}"
         result = render_media_video(
@@ -570,6 +656,19 @@ def _render_job(
 
     for audio, mode in plan.compare_models:
         specs = [IndividualMode(model, audio, mode) for model in MODELS]
+        missing = [spec.token for spec in specs if spec not in individual_results]
+        if missing:
+            rows.append(
+                {
+                    "kind": "compare_models",
+                    "audio": audio,
+                    "mode": mode,
+                    "status": "skipped",
+                    "reason": "missing_individual_render",
+                    "missing": missing,
+                }
+            )
+            continue
         result = render_composite(
             sources=[Path(individual_results[spec]["path"]) for spec in specs],
             source_hashes=[str(individual_results[spec]["request_hash"]) for spec in specs],
@@ -586,6 +685,18 @@ def _render_job(
             IndividualMode(model, "vocal", "full"),
             IndividualMode(model, "vocal", "windowed"),
         ]
+        missing = [spec.token for spec in specs if spec not in individual_results]
+        if missing:
+            rows.append(
+                {
+                    "kind": "compare_inputs",
+                    "model": model,
+                    "status": "skipped",
+                    "reason": "missing_individual_render",
+                    "missing": missing,
+                }
+            )
+            continue
         result = render_composite(
             sources=[Path(individual_results[spec]["path"]) for spec in specs],
             source_hashes=[str(individual_results[spec]["request_hash"]) for spec in specs],
@@ -651,8 +762,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--minimum-forward-characters", type=int, default=64)
     parser.add_argument("--future-character-ratio", type=float, default=1.35)
     parser.add_argument("--max-candidate-expansions", type=int, default=4)
-    parser.add_argument("--boundary-start-tolerance-sec", type=float, default=0.32)
-    parser.add_argument("--seam-tolerance-sec", type=float, default=0.16)
+    parser.add_argument(
+        "--boundary-start-tolerance-sec",
+        type=float,
+        default=0.32,
+        help="legacy compatibility only; v6 does not reject pre-core predictions",
+    )
+    parser.add_argument(
+        "--seam-tolerance-sec",
+        type=float,
+        default=0.16,
+        help="diagnostic legacy threshold only; v6 never limits overlap compression",
+    )
 
     parser.add_argument("--spleeter-model-root", type=Path, default=Path(os.environ.get("SPLEETER_MODEL_ROOT", Path.home() / ".cache/spleeter_models")))
     parser.add_argument("--spleeter-env", default=os.environ.get("SPLEETER_ENV", "spleeter"))

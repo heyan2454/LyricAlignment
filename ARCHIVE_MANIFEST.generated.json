@@ -3,28 +3,18 @@
   "entries": [
     {
       "path": ".gitignore",
-      "sha256": "fb3934c315a21503c3ec0e355188b155ef07702a077f148f00a14780564ac055",
-      "size": 664
+      "sha256": "46468c203a779a6410dd2c993939a58274abcc4677c48ad76ff03c08af5e3861",
+      "size": 734
     },
     {
       "path": "AI_SESSION_ENTRY.md",
-      "sha256": "9585452299fd968e5f87bf8ca2da0934bd1e3996e22522d4bb9f021aae84486f",
-      "size": 2145
-    },
-    {
-      "path": "ARCHIVE_METADATA.json",
-      "sha256": "29a272f522aa4965aab7e982e519e1a4c4d5a2fb468f2080da8d671dbe1de954",
-      "size": 913
-    },
-    {
-      "path": "ARCHIVE_REPORT.md",
-      "sha256": "108bb17620f172a38ad0932b516ff8329cd34d97e2fdd0b8bdf9742724a8e510",
-      "size": 3519
+      "sha256": "2727a6dbf2aa7f21bd2ce6b6cb36d2c575db74880e58f44ccabdd7a47e9b33ba",
+      "size": 2060
     },
     {
       "path": "README.md",
-      "sha256": "cc5ee4bd9738c18df5fe6cb4a0c2c745bdaf3f5aaf9a509f4e6d5b1b69b38742",
-      "size": 4070
+      "sha256": "a08a9f6789271c22eeb5cb0fdad65d7ae156ded24c41a664da898ea7c5092101",
+      "size": 4607
     },
     {
       "path": "configs/README.md",
@@ -207,9 +197,14 @@
       "size": 552
     },
     {
+      "path": "docs/archive/20260726_legacy_root_cleanup.md",
+      "sha256": "52a5e6eb8651c40dc5cb32efc986a9850a8710b6c9cc8b8b410891f879fd4967",
+      "size": 1412
+    },
+    {
       "path": "docs/manual/README.md",
-      "sha256": "3264a0a02ccb19a63ba625092adb6d8c1556578d92550bfc969e3a9cba80d6e7",
-      "size": 953
+      "sha256": "3529da7839d57e85ef77a4cf258c5f019f47043e670a11f358553a2e654df88d",
+      "size": 844
     },
     {
       "path": "docs/manual/annotation_schema.md",
@@ -253,13 +248,13 @@
     },
     {
       "path": "docs/manual/qwen_fa_120_quick_feedback_and_yessoda_demo.md",
-      "sha256": "e9fc39de02fc3fd160ca151da21d9ecfaa4a023f93da20d152ea334ace587a4a",
-      "size": 11774
+      "sha256": "b7509fd6ff136e1b4bb17237753d2cc7be1323e7379cd1320e5effbae06e2f4a",
+      "size": 11436
     },
     {
       "path": "docs/manual/qwen_fa_batch_demo.md",
-      "sha256": "2657384c508f6fff0296b9f16bd23e2baaf9262cbadb3f8ab42195fdd9bd3345",
-      "size": 11039
+      "sha256": "649b3c2c96115fa4c4b5ef1bbb9fd18930d6eab1e540615623530e5dc6177d43",
+      "size": 13001
     },
     {
       "path": "docs/manual/text_normalization.md",
@@ -363,8 +358,13 @@
     },
     {
       "path": "docs/sessions/20260726_demo_exploration_archive.md",
-      "sha256": "db4eb6737861b8dc61bb73f2a386a5d8c4c993cbd0836e447eda01185db03a97",
-      "size": 17026
+      "sha256": "82af92cd75866c2eb9550935dbed1a13cafd7c2249f3f9f910987d14efdc6cb0",
+      "size": 17793
+    },
+    {
+      "path": "docs/sessions/20260726_demo_v2_failure_diagnostics_and_pack_repair.md",
+      "sha256": "aeedf6378545d2db50c8e5f99990acdaf4397976f9daacac48f7b662a2a17057",
+      "size": 2373
     },
     {
       "path": "docs/sessions/README.md",
@@ -373,8 +373,8 @@
     },
     {
       "path": "docs/sessions/SESSION_INDEX.md",
-      "sha256": "add3c408db066475ead578ec7e20f9fe2895e94d0b8d7c96adfc1a35f817d97d",
-      "size": 3546
+      "sha256": "3010b7ec0316d2635a6c43ef54363733c30e11eb576c98edad7a3ccf4c98c2d3",
+      "size": 3315
     },
     {
       "path": "docs/sessions/_templates/NEXT_PROMPT_TEMPLATE.md",
@@ -408,13 +408,13 @@
     },
     {
       "path": "docs/status/next_execution_plan.md",
-      "sha256": "3240a0c60ab3c6e01c7e35cdda0f778ba0fd15a660104a1cb0dc637beaad99ae",
-      "size": 2216
+      "sha256": "5d269de3add9fff7e8fd6b06a1f84a194a200198ed2165247315792857550324",
+      "size": 2171
     },
     {
       "path": "docs/status/project_current.md",
-      "sha256": "db235653bfaea6e109b36b86e70be2de7fdc52ecae9b0850415fd27ad64cd069",
-      "size": 6177
+      "sha256": "df70a2ff052294d93c499df61dd69ba0fc88be5a9afbc2a25c2e470b96e6fba6",
+      "size": 6277
     },
     {
       "path": "pyproject.toml",
@@ -525,11 +525,6 @@
       "path": "reports/review/20260724_qwen_fa_followup_review.md",
       "sha256": "78c86e136ab82c5f5d9e513716c90693864129884006cca6d591e6501541b9c8",
       "size": 2430
-    },
-    {
-      "path": "reports/review/20260726_demo_batch_archive_validation.md",
-      "sha256": "fad7ddf9a5c85d113b975f9438c55d538b91ba5cb6636d0002760ca70e9f103b",
-      "size": 1093
     },
     {
       "path": "reports/review/20260726_demo_multilingual_patch_validation.md",
@@ -1177,11 +1172,6 @@
       "size": 56
     },
     {
-      "path": "runs/evaluation/20260726_demo_batch_archive/run_summary.json",
-      "sha256": "dde57b38bbf225653c811efe8c9c7d9dad1807d1f07f2e33a199e890e8f9dc71",
-      "size": 827
-    },
-    {
       "path": "runs/smoke/.gitkeep",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "size": 0
@@ -1308,13 +1298,13 @@
     },
     {
       "path": "scripts/demo/README.md",
-      "sha256": "ba906db2feed9ea3402505d3b76953bafbfba777accf2bf9eff031dbfc1ef7b0",
-      "size": 2404
+      "sha256": "a5f1618ae5b7364019de9cf66fbc44a8b79d4e5f2ebd4992ae99612738588039",
+      "size": 2787
     },
     {
       "path": "scripts/demo/align_qwen_fa_serial_demo.py",
-      "sha256": "fb083129394880e32542270ffd4edf1c19bf8c3ee78e94aa454eafea4677b7b4",
-      "size": 35268
+      "sha256": "55f5ed5fd340c1d1ad2a012559b8b4dcb2851468470d40faa9af78d96dd7ac53",
+      "size": 42961
     },
     {
       "path": "scripts/demo/align_qwen_fa_tail_windowed.py",
@@ -1328,8 +1318,8 @@
     },
     {
       "path": "scripts/demo/download_spleeter_model_resumable.sh",
-      "sha256": "52b6635573c32c8e79dc534c1287e4cda30796e31e3c8cfbb4ab937c22ac0eb2",
-      "size": 2232
+      "sha256": "87818ed61f7e70a414eb8c6e396838c6f9085a28e83e54901f8b558d075a0dda",
+      "size": 2302
     },
     {
       "path": "scripts/demo/render_qwen_fa_karaoke.py",
@@ -1343,8 +1333,8 @@
     },
     {
       "path": "scripts/demo/run_qwen_fa_batch.py",
-      "sha256": "1959df1c817f8f14f5916e255da308ee6fb769e01056911213946aa39c3ebd4b",
-      "size": 33683
+      "sha256": "b8b50031752d9bb18a5ec7cc84daa18d54078f1d544c087eacf0ca5c156d5897",
+      "size": 37590
     },
     {
       "path": "scripts/demo/run_qwen_fa_batch.sh",
@@ -1353,13 +1343,18 @@
     },
     {
       "path": "scripts/demo/run_yessoda_serial_demo.sh",
-      "sha256": "1c421c0d7336d00306466b481edaf225c1eeccaf73bbe94bbca0c836fc3202dd",
-      "size": 10742
+      "sha256": "0ca3507238fa4ddf75081bbc6aad0069eebbdea4c43f89dc6456e89eb7f7c579",
+      "size": 10832
     },
     {
       "path": "scripts/demo/run_yessoda_tail_windowed.sh",
       "sha256": "55c3bc102113452a2e7f70327bb4876c8c48be5f74157a71f328fc1f4cbc8b57",
       "size": 11230
+    },
+    {
+      "path": "scripts/demo/validate_spleeter_model.py",
+      "sha256": "968fccd7e76ea6ce2ba73171d563a1ca9850bb08d48d1811ff11d056fc7ca13e",
+      "size": 761
     },
     {
       "path": "scripts/environment/README.md",
@@ -1368,13 +1363,18 @@
     },
     {
       "path": "scripts/environment/build_archive.py",
-      "sha256": "2517206b51f3ad5b4b9419c3e5e52ddfb110e24117dd84bbdfe0766a9c562edb",
-      "size": 4716
+      "sha256": "a940836511145a697c4f44d89c39b60082fd3b2c59a2b45c401bd3c42787a8f2",
+      "size": 4417
     },
     {
       "path": "scripts/environment/capture_environment.py",
       "sha256": "4f4f4635ee6be8fe7082e9f40dc9dbd90f56fe2fba548c99a440fd8c0631e0c7",
       "size": 2498
+    },
+    {
+      "path": "scripts/environment/pack_lyricalignment.sh",
+      "sha256": "30ec61483eac4d82f34bcc1316208e7a54f5c16c1e4c743974604a28d800b92c",
+      "size": 1539
     },
     {
       "path": "scripts/evaluation/analyze_qwen_fa_error_blocks.py",
@@ -1643,13 +1643,18 @@
     },
     {
       "path": "src/lyricalign/demo/karaoke.py",
-      "sha256": "e1d137d626e249d0d5f6e1a63c7b3b814296a153b5bc3bd94d7e8d1d624f3213",
-      "size": 22160
+      "sha256": "b690b268cff2962bfaa3d69b865bf4775f0a61de776b2f68cb62f1c9fbb9c310",
+      "size": 23499
     },
     {
       "path": "src/lyricalign/demo/media_render.py",
       "sha256": "7b7d6106d0b907e2d3c6eae1a532482f127c189c4b8c6e01a0810bce5e105200",
       "size": 14852
+    },
+    {
+      "path": "src/lyricalign/demo/spleeter_model.py",
+      "sha256": "48a429d4318496e6662489d2fb9eae7b492937e161628733ce8b690559563bb4",
+      "size": 5978
     },
     {
       "path": "src/lyricalign/inference/README.md",
@@ -1708,8 +1713,8 @@
     },
     {
       "path": "tests/test_archive_builder.py",
-      "sha256": "e93fc7fd2ea961c14bb3f3efe86d6fc233f4a90ecd24160ca3849cbdfe98776a",
-      "size": 825
+      "sha256": "e22d3535d98c9c96e5568a5c92d89847a604c6cda806ef85450a9e50a306620e",
+      "size": 3645
     },
     {
       "path": "tests/test_asset_scripts.py",
@@ -1758,8 +1763,8 @@
     },
     {
       "path": "tests/test_qwen_fa_batch_demo.py",
-      "sha256": "84b2590e120b24b7474b54949c7d5d6208431f80d9771a2ef5987e0f1da9b4b1",
-      "size": 6587
+      "sha256": "b6ec68b479cc59481ae5b445f72d47e36d0e77219f1d09c2f00ded85fddc0572",
+      "size": 12627
     },
     {
       "path": "tests/test_qwen_fa_finalize_entrypoint.py",
@@ -1793,8 +1798,8 @@
     },
     {
       "path": "tests/test_qwen_fa_serial_demo.py",
-      "sha256": "73fae85a042e5be84c9862d23c52c57ac253aaf7eedca8e37dc274034b8cb16b",
-      "size": 10763
+      "sha256": "ecc1d176144afe59f556c80efc18c9d01bfee32c1f82761f94fba65a07790d96",
+      "size": 18709
     },
     {
       "path": "tests/test_qwen_fa_tail_windowed_demo.py",

@@ -11,7 +11,7 @@ scripts/demo/run_qwen_fa_batch.sh
 默认执行：
 
 ```text
-R2 + 分离人声输入 + hard_core_overlap_transcript_v3 串行分窗
+R2 + 分离人声输入 + hard_core_forward_overlap_compression_v6 串行分窗
 ```
 
 默认只生成这一组 alignment 和视频，不会像历史“夜苏打”入口一样自动跑
@@ -76,6 +76,38 @@ scripts/demo/run_qwen_fa_batch.sh /path/to/folder --recursive
 ```bash
 scripts/demo/run_qwen_fa_batch.sh /path/to/folder --name 歌曲A
 ```
+
+## 3.1 失败诊断文件
+
+每个 alignment 目录现在最多包含三类 JSON：
+
+```text
+alignment.json           # 仅成功时存在
+alignment.progress.json  # 执行中及失败后保留的最近窗口/尝试状态
+alignment.failure.json   # 失败类型、traceback、结构化边界诊断与请求 identity
+```
+
+重新执行不同请求时会先移除旧 `alignment.json`，避免失败后误用旧结果。
+若对齐失败，render 会记录 `alignment_failed_or_missing` 并跳过，不再追加一个
+掩盖原始原因的 `FileNotFoundError`。
+
+窗口策略 `hard_core_forward_overlap_compression_v6` 始终保留 nominal 左音频
+重叠。每个 60 秒核心完全采用当前窗预测：歌词单元只要开始时间早于核心末端，
+就由当前窗完整提交，即使结束时间跨过核心末端。下一窗重新输入的已提交歌词
+只作为上下文，不覆盖旧结果。
+
+对下一窗的首批未提交单元，不再要求其预测开始时间必须位于核心起点之后。合并
+时以上一已提交单元的最终结束时间作为下限，逐项执行：
+
+```text
+final_start = max(current_window_start, previous_final_end)
+final_end   = max(current_window_end, final_start)
+```
+
+因此只裁掉左侧重叠，不为保持时长而整体后移。完全落在冻结边界前的单元可以
+压缩成零时长。`selected_start_sec` / `selected_end_sec` 保留当前窗原始预测，
+`overlap_compression_*` 字段记录压缩量、下限和是否归零。旧的 core-start 拒绝、
+去掉左重叠重跑以及上一窗 lookahead 替换均不再使用。
 
 ## 4. 指定语种与对齐单位
 

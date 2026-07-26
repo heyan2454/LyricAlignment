@@ -99,6 +99,25 @@ def test_next_core_reinputs_left_overlap_lyrics_as_context_only() -> None:
     assert lookahead == []
 
 
+def test_next_core_accepts_uncommitted_predictions_before_core_start() -> None:
+    rows = [
+        _row(1, "で", 59.60, 59.80),  # already committed context
+        _row(2, "も", 59.80, 60.00),  # new unit predicted before the core start
+        _row(3, "木枯", 60.00, 60.20),
+    ]
+    context, committed, lookahead = split_core_commit_prefix(
+        rows,
+        expected_input_character_start=1,
+        committed_character_start=2,
+        core_start_sec=60.0,
+        core_end_sec=120.0,
+        final_core=False,
+    )
+    assert [row["global_character_index"] for row in context] == [1]
+    assert [row["global_character_index"] for row in committed] == [2, 3]
+    assert lookahead == []
+
+
 def test_next_input_start_excludes_only_character_cut_by_acoustic_boundary() -> None:
     rows = [
         _row(10, "甲", 48.0, 50.4),
@@ -119,28 +138,40 @@ def test_next_input_start_excludes_only_character_cut_by_acoustic_boundary() -> 
     assert silence_cut is None
 
 
-def test_hard_core_append_does_not_allow_large_cumulative_repair() -> None:
+def test_hard_core_append_forward_compresses_overlap_without_shifting_end() -> None:
     first = append_strict_core_commits(
         [],
-        [_row(0, "甲", 58.0, 60.4)],
+        [_row(0, "で", 59.60, 60.16)],
         window={"window_index": 0, "core_start_sec": 0.0, "core_end_sec": 60.0},
         duration_sec=130.0,
         seam_tolerance_sec=0.16,
     )
-    assert first[0]["owner_window_index"] == 0
-    assert first[0]["cross_window_repaired"] is False
-    try:
-        append_strict_core_commits(
-            first,
-            [_row(1, "乙", 59.0, 61.0)],
-            window={"window_index": 1, "core_start_sec": 60.0, "core_end_sec": 120.0},
-            duration_sec=130.0,
-            seam_tolerance_sec=0.16,
-        )
-    except RuntimeError as exc:
-        assert "seam tolerance" in str(exc)
-    else:
-        raise AssertionError("large cross-core conflict must hard fail")
+    merged = append_strict_core_commits(
+        first,
+        [
+            _row(1, "も", 59.80, 60.00),
+            _row(2, "木枯", 60.00, 60.20),
+            _row(3, "らし", 60.20, 61.00),
+        ],
+        window={"window_index": 1, "core_start_sec": 60.0, "core_end_sec": 120.0},
+        duration_sec=130.0,
+        seam_tolerance_sec=0.16,
+    )
+
+    assert [(row["start_sec"], row["end_sec"]) for row in merged] == [
+        (59.60, 60.16),
+        (60.16, 60.16),
+        (60.16, 60.20),
+        (60.20, 61.00),
+    ]
+    assert merged[1]["selected_start_sec"] == 59.80
+    assert merged[1]["selected_end_sec"] == 60.00
+    assert merged[1]["overlap_compression_collapsed_to_zero"] is True
+    assert abs(merged[1]["overlap_compression_sec"] - 0.36) < 1e-9
+    assert merged[1]["overlap_exceeds_legacy_seam_tolerance"] is True
+    assert merged[2]["overlap_compression_collapsed_to_zero"] is False
+    assert abs(merged[2]["overlap_compression_sec"] - 0.16) < 1e-9
+    assert merged[3]["overlap_compressed"] is False
 
 
 def test_windowed_alignment_is_strictly_serial_and_never_reinputs_boundary_character(monkeypatch) -> None:
@@ -272,3 +303,203 @@ def test_language_aliases_are_canonicalized() -> None:
     assert normalize_alignment_language("JA") == "Japanese"
     assert normalize_alignment_language("yue") == "Cantonese"
     assert normalize_alignment_language("中文") == "Chinese"
+
+
+def test_pretokenized_aligner_inputs_preserve_japanese_unit_boundaries() -> None:
+    import importlib.util
+
+    script = ROOT / "scripts" / "demo" / "align_qwen_fa_serial_demo.py"
+    spec = importlib.util.spec_from_file_location("pretokenized_demo_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    class FakeProcessor:
+        def __init__(self) -> None:
+            self.conversations = None
+
+        def apply_chat_template(self, conversations, **kwargs):
+            self.conversations = conversations
+            assert kwargs == {"tokenize": True, "return_dict": True}
+            return {"input_ids": "sentinel"}
+
+        def prepare_forced_aligner_inputs(self, *args, **kwargs):
+            raise AssertionError("the transcript must not be tokenized a second time")
+
+    processor = FakeProcessor()
+    units = ["木枯", "らし", "の", "中", "ぬくもり求め", "彷徨う"]
+    inputs, words = module.prepare_pretokenized_aligner_inputs(
+        processor,
+        audio="audio-sentinel",
+        alignment_units=units,
+    )
+    assert inputs == {"input_ids": "sentinel"}
+    assert words == [units]
+    content = processor.conversations[0][0]["content"]
+    assert content[0] == {"type": "audio", "audio": "audio-sentinel"}
+    assert [item["text"] for item in content[1:]] == units
+
+
+def test_windowed_alignment_keeps_harmless_unmatched_left_audio(monkeypatch) -> None:
+    import importlib.util
+    from types import SimpleNamespace
+
+    script = ROOT / "scripts" / "demo" / "align_qwen_fa_serial_demo.py"
+    spec = importlib.util.spec_from_file_location("matched_overlap_demo_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    document = parse_lyrics_text("甲乙丙丁\n")
+    absolute = {0: (10.0, 20.0), 1: (30.0, 40.0), 2: (130.0, 135.0), 3: (140.0, 145.0)}
+    offsets: list[float] = []
+
+    def fake_infer_slice(*, document, character_start, character_end, global_audio_offset_sec, **kwargs):
+        offsets.append(global_audio_offset_sec)
+        rows = []
+        for item in document.characters[character_start:character_end]:
+            start, end = absolute[item.global_index]
+            rows.append(
+                {
+                    "global_character_index": item.global_index,
+                    "line_index": item.line_index,
+                    "index_in_line": item.index_in_line,
+                    "character": item.text,
+                    "display_suffix": item.display_suffix,
+                    "fixed_local_start_sec": start - global_audio_offset_sec,
+                    "fixed_local_end_sec": end - global_audio_offset_sec,
+                    "fixed_global_start_sec": start,
+                    "fixed_global_end_sec": end,
+                    "raw_boundary_margin_mean": 1.0,
+                }
+            )
+        return rows, {"character_count": len(rows)}
+
+    class FakeAudio:
+        def __init__(self, samples: int):
+            self.samples = samples
+
+        def __len__(self) -> int:
+            return self.samples
+
+        def __getitem__(self, item):
+            start = 0 if item.start is None else item.start
+            stop = self.samples if item.stop is None else item.stop
+            return FakeAudio(max(0, stop - start))
+
+    monkeypatch.setattr(module, "infer_slice", fake_infer_slice)
+    args = SimpleNamespace(
+        core_sec=60.0,
+        left_context_sec=10.0,
+        right_context_sec=10.0,
+        minimum_forward_characters=64,
+        future_character_ratio=1.35,
+        future_line_padding=1,
+        max_candidate_expansions=4,
+        boundary_start_tolerance_sec=0.32,
+        seam_tolerance_sec=0.16,
+    )
+    rows, trace = module.windowed_alignment(
+        object(), object(), FakeAudio(150 * 16000), document, args
+    )
+
+    assert offsets == [0.0, 50.0, 110.0]
+    assert trace[1]["nominal_input_start_sec"] == 50.0
+    assert trace[1]["effective_input_start_sec"] == 50.0
+    assert trace[1]["left_context_trimmed"] is False
+    assert trace[1]["left_context_policy"] == "unmatched_left_context_retained"
+    assert trace[2]["nominal_input_start_sec"] == 110.0
+    assert trace[2]["effective_input_start_sec"] == 110.0
+    assert trace[2]["left_context_trimmed"] is False
+    assert trace[2]["left_context_policy"] == "unmatched_left_context_retained"
+    assert [row["global_character_index"] for row in rows] == [0, 1, 2, 3]
+
+
+def test_windowed_alignment_retains_overlap_and_forward_compresses_new_rows(monkeypatch) -> None:
+    import importlib.util
+    from types import SimpleNamespace
+
+    script = ROOT / "scripts" / "demo" / "align_qwen_fa_serial_demo.py"
+    spec = importlib.util.spec_from_file_location("forward_compression_demo_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    document = parse_lyrics_text("時でも木枯\n")
+    offsets: list[float] = []
+
+    def fake_infer_slice(*, document, character_start, character_end, global_audio_offset_sec, **kwargs):
+        offsets.append(global_audio_offset_sec)
+        first_window = global_audio_offset_sec == 0.0
+        predictions = (
+            {0: (58.80, 59.60), 1: (59.60, 60.16), 2: (60.16, 61.00), 3: (61.00, 62.00)}
+            if first_window
+            else {0: (58.20, 59.60), 1: (59.60, 59.80), 2: (59.80, 60.00), 3: (60.00, 60.20)}
+        )
+        rows = []
+        for item in document.characters[character_start:character_end]:
+            start, end = predictions[item.global_index]
+            rows.append(
+                {
+                    "global_character_index": item.global_index,
+                    "line_index": item.line_index,
+                    "index_in_line": item.index_in_line,
+                    "character": item.text,
+                    "display_suffix": item.display_suffix,
+                    "fixed_local_start_sec": start - global_audio_offset_sec,
+                    "fixed_local_end_sec": end - global_audio_offset_sec,
+                    "fixed_global_start_sec": start,
+                    "fixed_global_end_sec": end,
+                    "raw_boundary_margin_mean": 1.0,
+                }
+            )
+        return rows, {"character_count": len(rows)}
+
+    class FakeAudio:
+        def __init__(self, samples: int):
+            self.samples = samples
+
+        def __len__(self) -> int:
+            return self.samples
+
+        def __getitem__(self, item):
+            start = 0 if item.start is None else item.start
+            stop = self.samples if item.stop is None else item.stop
+            return FakeAudio(max(0, stop - start))
+
+    monkeypatch.setattr(module, "infer_slice", fake_infer_slice)
+    args = SimpleNamespace(
+        core_sec=60.0,
+        left_context_sec=10.0,
+        right_context_sec=10.0,
+        minimum_forward_characters=64,
+        future_character_ratio=1.35,
+        future_line_padding=1,
+        max_candidate_expansions=4,
+        boundary_start_tolerance_sec=0.32,
+        seam_tolerance_sec=0.16,
+    )
+    rows, trace = module.windowed_alignment(
+        object(), object(), FakeAudio(150 * 16000), document, args
+    )
+
+    assert offsets == [0.0, 50.0]
+    assert [row["owner_window_index"] for row in rows] == [0, 0, 1, 1]
+    assert [(row["start_sec"], row["end_sec"]) for row in rows] == [
+        (58.80, 59.60),
+        (59.60, 60.16),
+        (60.16, 60.16),
+        (60.16, 60.20),
+    ]
+    assert rows[2]["selected_start_sec"] == 59.80
+    assert rows[2]["overlap_compression_collapsed_to_zero"] is True
+    assert rows[3]["selected_start_sec"] == 60.00
+    assert rows[3]["selected_end_sec"] == 60.20
+    assert trace[1]["effective_input_start_sec"] == 50.0
+    assert trace[1]["left_context_trimmed"] is False
+    assert trace[1]["overlap_compressed_character_count"] == 2
+    assert trace[1]["overlap_compression_collapsed_to_zero_count"] == 1
+    assert abs(trace[1]["overlap_compression_max_sec"] - 0.36) < 1e-9

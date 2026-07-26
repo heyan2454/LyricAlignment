@@ -43,3 +43,6 @@ runs/**/large_outputs/
 
 # Standalone local demo assets and generated videos
 /夜苏打/
+
+# Generated only inside packaged ZIP files; never track as repository source.
+/ARCHIVE_MANIFEST.generated.json

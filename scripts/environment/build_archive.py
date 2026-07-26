@@ -5,14 +5,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib
 import json
 import subprocess
-import tempfile
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+GENERATED_MANIFEST = "ARCHIVE_MANIFEST.generated.json"
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -21,7 +20,12 @@ def sha256_bytes(value: bytes) -> str:
 
 def tracked_files() -> list[Path]:
     names = subprocess.check_output(["git", "-C", str(ROOT), "ls-files", "-z"], text=False).split(b"\0")
-    return [ROOT / name.decode("utf-8") for name in names if name]
+    paths = [ROOT / name.decode("utf-8") for name in names if name]
+    # A stale generated manifest may already be tracked in an older checkout.
+    # It is an archive output, never a source entry, and adding it here would
+    # create two ZIP members with the same name when the fresh manifest below
+    # is written.
+    return [path for path in paths if path.relative_to(ROOT).as_posix() != GENERATED_MANIFEST]
 
 
 def build(output: Path, root_name: str) -> dict:
@@ -34,18 +38,34 @@ def build(output: Path, root_name: str) -> dict:
             archive.writestr(f"{root_name}/{relative}", payload)
             entries.append({"path": relative, "size": len(payload), "sha256": sha256_bytes(payload)})
         manifest = {"schema_version": 1, "archive_root": root_name, "entries": entries}
-        archive.writestr(f"{root_name}/ARCHIVE_MANIFEST.generated.json", json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n")
+        archive.writestr(f"{root_name}/{GENERATED_MANIFEST}", json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n")
     return manifest
 
 
 def verify(archive_path: Path) -> dict:
     with zipfile.ZipFile(archive_path) as archive:
-        manifests = [name for name in archive.namelist() if name.endswith("/ARCHIVE_MANIFEST.generated.json")]
+        names = archive.namelist()
+        duplicates = sorted({name for name in names if names.count(name) > 1})
+        if duplicates:
+            raise ValueError(f"archive contains duplicate member names: {duplicates[:10]}")
+        manifests = [name for name in names if name.endswith(f"/{GENERATED_MANIFEST}")]
         if len(manifests) != 1:
             raise ValueError("archive must contain exactly one generated manifest")
         manifest = json.loads(archive.read(manifests[0]))
         root = str(manifest["archive_root"])
+        expected_manifest_name = f"{root}/{GENERATED_MANIFEST}"
+        if manifests[0] != expected_manifest_name:
+            raise ValueError(
+                f"generated manifest path disagrees with archive_root: {manifests[0]}"
+            )
+        if any(row.get("path") == GENERATED_MANIFEST for row in manifest["entries"]):
+            raise ValueError("generated manifest must not list itself as a source entry")
         expected = {f"{root}/{row['path']}": row for row in manifest["entries"]}
+        if len(expected) != len(manifest["entries"]):
+            raise ValueError("generated manifest contains duplicate source paths")
+        unexpected = sorted(set(names) - set(expected) - {expected_manifest_name})
+        if unexpected:
+            raise ValueError(f"archive contains unmanifested members: {unexpected[:10]}")
         for name, row in expected.items():
             info = archive.getinfo(name)
             payload = archive.read(name)

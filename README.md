@@ -43,7 +43,14 @@ scripts/demo/run_qwen_fa_batch.sh /path/to/media_or_folder
 - 音频：纯黑背景；
 - 默认最终音轨仍为原始歌曲，`vocal` 仅表示对齐输入；
 - 可选 R0/R1/R2、mix/vocal、full/windowed 单独或复合输出；
+- `hard_core_forward_overlap_compression_v6` 以歌词单元开始时间决定 60 秒核心归属；
+  当前核心内开始的单元完整提交，跨过核心末端也不截断；下一窗只把已提交
+  单元作为上下文，新的预测若与冻结前缀重叠，只裁掉左侧重叠部分，可压缩为
+  零时长，但不把结束时间整体后移；
 - `--language English` 使用英文词级输入；`--language Japanese` 使用 Nagisa 日文词级输入；
+- 日文解析后的词单元直接进入 forced-aligner chat template，不再二次分词；
+- 对齐失败保留 `alignment.progress.json` 与 `alignment.failure.json`，render
+  会跳过该项而不是追加一个缺失 `alignment.json` 的次生错误；
 - 中文/粤语按汉字字符并保留连续拉丁词，中英混杂不会再拆成英文字母；
 - 详细说明见 `docs/manual/qwen_fa_batch_demo.md`；
 - 实验讨论、失败实现与证据链见 `docs/sessions/20260726_demo_exploration_archive.md`。
