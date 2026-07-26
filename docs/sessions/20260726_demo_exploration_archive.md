@@ -517,3 +517,17 @@ The focused suite now covers:
 No real English/Japanese GPU song inference or ground-truth metric was available
 in the archive environment. The implementation claim is therefore interface and
 mapping correctness, not multilingual singing-alignment accuracy.
+
+### Explicit Spleeter weights without `.probe`
+
+The first generic batch implementation treated `2stems/.probe` as mandatory.
+A server run then demonstrated that a complete explicitly stored TensorFlow
+checkpoint could be present while this downloader-specific marker was absent.
+The marker therefore did not prove model completeness and incorrectly blocked a
+valid offline model.
+
+The corrected policy validates the actual checkpoint group (`*.index` plus
+`*.data-*`) or SavedModel group. `.probe` remains optional provenance from the
+resumable downloader. A marker without weights is rejected; weights without a
+marker are accepted. The resolved file inventory is included in separation
+identity so replacing the explicit weights invalidates the cached separation.

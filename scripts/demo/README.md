@@ -27,6 +27,12 @@ dependency installation:
 docs/manual/qwen_fa_batch_demo.md
 ```
 
+scripts/demo/run_qwen_fa_batch.sh \
+  /home/hyan/Data/lyricalign/test/Chinese \
+  --language Chinese \
+  --spleeter-model-root \
+  /root/autodl-tmp/AST_storage/Data/lyricalign/models/spleeter
+
 ## Historical fixed-song entries
 
 - `run_yessoda_serial_demo.sh`: 夜苏打完整 12-mode demo entry.

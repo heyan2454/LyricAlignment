@@ -53,7 +53,8 @@ mkdir -p "$STAGE"
 tar -xzf "$ARCHIVE" -C "$STAGE"
 [[ -n "$(find "$STAGE" -type f -print -quit)" ]] || fail "model archive extracted no files"
 
-# Spleeter uses this completion marker to decide whether a model is available.
+# Optional provenance marker for this downloader. Runtime validation uses the actual
+# TensorFlow checkpoint files and does not require this marker.
 touch "$STAGE/.probe"
 rm -rf "$TARGET.old"
 if [[ -e "$TARGET" ]]; then

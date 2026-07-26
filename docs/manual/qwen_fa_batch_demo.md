@@ -437,6 +437,39 @@ scripts/demo/run_qwen_fa_batch.sh /path/to/歌曲A --preset full-demo
 export SPLEETER_MODEL_ROOT=/root/autodl-tmp/AST_storage/Data/lyricalign/models/spleeter
 ```
 
+显式保存的权重可直接使用，不要求目录中存在 `.probe`。运行时会检查实际模型文件：
+
+- TensorFlow checkpoint：同一前缀的 `*.index` 与 `*.data-*`；
+- 或 SavedModel：`saved_model.pb` 与 `variables/variables.*`。
+
+可以传模型根目录：
+
+```bash
+--spleeter-model-root /root/.cache/spleeter_models
+```
+
+也可以直接传 `2stems` 模型目录：
+
+```bash
+--spleeter-model-root /path/to/spleeter_models/2stems
+```
+
+独立检查现有权重：
+
+```bash
+python scripts/demo/validate_spleeter_model.py \
+  --model-root /root/.cache/spleeter_models
+```
+
+输出中的 `marker_present` 只说明 `.probe` 是否存在，不决定模型是否可用。
+旧版本因缺少 `.probe` 报错时，可以临时执行：
+
+```bash
+touch /root/.cache/spleeter_models/2stems/.probe
+```
+
+但推荐应用新实现，让程序验证实际权重，而不是仅信任 marker。
+
 首次下载或损坏后重建：
 
 ```bash

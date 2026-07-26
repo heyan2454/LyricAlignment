@@ -41,6 +41,7 @@ from lyricalign.demo.media_render import (  # noqa: E402
     render_media_video,
     sha256,
 )
+from lyricalign.demo.spleeter_model import resolve_spleeter_model  # noqa: E402
 from lyricalign.demo.karaoke import (  # noqa: E402
     alignment_unit_mode,
     normalize_alignment_language,
@@ -166,11 +167,17 @@ def _prepare_vocals(
     accompaniment = work_audio / "accompaniment.wav"
     quality = work_audio / "separation_quality.json"
     identity = work_audio / "vocals.identity.json"
+    model_info = resolve_spleeter_model(args.spleeter_model_root, "2stems")
+    model_identity = model_info.as_dict()
     request = {
-        "schema_version": "qwen_fa_batch_spleeter_v1",
+        "schema_version": "qwen_fa_batch_spleeter_v2_explicit_weights",
         "mix_sha256": sha256(mix),
-        "model_root": str(args.spleeter_model_root.resolve()),
+        "model_root": str(model_info.model_root.resolve()),
+        "model_dir": str(model_info.model_dir.resolve()),
         "model_name": "2stems",
+        "model_identity_sha256": model_identity["identity_sha256"],
+        "model_layout": model_identity["layout"],
+        "model_marker_present": model_identity["marker_present"],
         "quality_policy": "reject_silent_or_near_copy_v1",
     }
     request_hash = canonical_hash(request)
@@ -186,13 +193,6 @@ def _prepare_vocals(
         except (OSError, json.JSONDecodeError):
             pass
 
-    probe = args.spleeter_model_root / "2stems" / ".probe"
-    if not probe.is_file():
-        raise FileNotFoundError(
-            f"Spleeter model completion marker is missing: {probe}. Run "
-            "scripts/demo/download_spleeter_model_resumable.sh first."
-        )
-
     stage = work_audio / ".spleeter_stage"
     shutil.rmtree(stage, ignore_errors=True)
     stage.mkdir(parents=True, exist_ok=True)
@@ -200,8 +200,8 @@ def _prepare_vocals(
         "separate", "-p", "spleeter:2stems", "-o", str(stage), str(mix),
     ]
     environment = os.environ.copy()
-    environment["MODEL_PATH"] = str(args.spleeter_model_root)
-    _log({"spleeter": command, "MODEL_PATH": environment["MODEL_PATH"]})
+    environment["MODEL_PATH"] = str(model_info.model_root)
+    _log({"spleeter": command, "MODEL_PATH": environment["MODEL_PATH"], "spleeter_model": model_identity})
     subprocess.run(command, check=True, env=environment)
     generated = stage / mix.stem
     generated_vocals = generated / "vocals.wav"

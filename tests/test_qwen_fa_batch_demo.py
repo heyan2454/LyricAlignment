@@ -180,3 +180,45 @@ def test_bottom_ass_uses_visible_word_text_not_model_only_tokens() -> None:
     ass = build_bottom_ass(alignment, label="English", font="Noto Sans", geometry=geometry)
     assert "{\\kf40}Hello, " in ass
     assert "{\\kf50}world!" in ass
+
+
+def _write_tf_checkpoint(model_dir: Path, *, marker: bool = False) -> None:
+    _touch(model_dir / "checkpoint", 'model_checkpoint_path: "model"\n')
+    _touch(model_dir / "model.index", "index")
+    _touch(model_dir / "model.data-00000-of-00001", "weights")
+    if marker:
+        _touch(model_dir / ".probe", "")
+
+
+def test_spleeter_explicit_checkpoint_does_not_require_probe(tmp_path: Path) -> None:
+    from lyricalign.demo.spleeter_model import resolve_spleeter_model
+
+    model_dir = tmp_path / "models" / "2stems"
+    _write_tf_checkpoint(model_dir, marker=False)
+    info = resolve_spleeter_model(tmp_path / "models")
+    assert info.model_dir == model_dir
+    assert info.model_root == tmp_path / "models"
+    assert info.layout == "tensorflow_checkpoint"
+    assert info.marker_present is False
+    assert info.as_dict()["identity_sha256"]
+
+
+def test_spleeter_accepts_explicit_2stems_directory(tmp_path: Path) -> None:
+    from lyricalign.demo.spleeter_model import resolve_spleeter_model
+
+    model_dir = tmp_path / "explicit" / "2stems"
+    _write_tf_checkpoint(model_dir, marker=True)
+    info = resolve_spleeter_model(model_dir)
+    assert info.model_dir == model_dir
+    assert info.model_root == model_dir.parent
+    assert info.marker_present is True
+
+
+def test_spleeter_rejects_probe_without_weights(tmp_path: Path) -> None:
+    import pytest
+    from lyricalign.demo.spleeter_model import resolve_spleeter_model
+
+    model_dir = tmp_path / "models" / "2stems"
+    _touch(model_dir / ".probe", "")
+    with pytest.raises(FileNotFoundError, match="complete Spleeter model weights"):
+        resolve_spleeter_model(tmp_path / "models")

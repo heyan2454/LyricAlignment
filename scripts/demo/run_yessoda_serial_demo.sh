@@ -81,6 +81,11 @@ spleeter_run() {
     rm -rf "$SPLEETER_MODEL_ROOT/2stems"
   fi
 
+  log "validate explicit Spleeter weights under $SPLEETER_MODEL_ROOT"
+  "$PYTHON_BIN" "$PROJECT/scripts/demo/validate_spleeter_model.py" \
+    --model-root "$SPLEETER_MODEL_ROOT" --model-name 2stems \
+    2>&1 | tee -a "$spleeter_log"
+
   log "Spleeter MODEL_PATH=$SPLEETER_MODEL_ROOT"
   if command -v spleeter >/dev/null 2>&1; then
     MODEL_PATH="$SPLEETER_MODEL_ROOT" \
@@ -93,9 +98,6 @@ spleeter_run() {
   else
     fail "Spleeter not found. Install a separate conda env named '$SPLEETER_ENV' or put spleeter on PATH."
   fi
-
-  [[ -f "$SPLEETER_MODEL_ROOT/2stems/.probe" ]] || \
-    fail "Spleeter model cache has no completion probe: $SPLEETER_MODEL_ROOT/2stems/.probe"
 
   local generated_vocals generated_accompaniment
   generated_vocals="$(find "$tmp" -type f -name vocals.wav -print -quit)"
