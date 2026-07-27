@@ -29,6 +29,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from lyricalign.demo.alignment_artifacts import stage_rows
 from lyricalign.demo.karaoke import parse_lyrics_text
+from lyricalign.demo.raw_guarded import build_runtime_anchor_rows, choose_runtime_anchor_policy, choose_anchor_pair
 from lyricalign.demo.realign_diagnostics import (
     TIMESTAMP_STEP_SEC,
     accepted_shadow_rows,
@@ -310,18 +311,38 @@ def anchor_modes_for_case(
             span_sec = float(oracle_right["selected_end_sec"]) - float(oracle_left["selected_start_sec"])
             if span_units <= args.max_anchor_span_units and span_sec <= args.max_anchor_span_sec:
                 modes.append(("gt_oracle", None, oracle_left, oracle_right, []))
-    anchors = evidence["anchor_rows"]
-    for ordinal, policy in enumerate(shortlist[: args.max_automatic_anchor_policies]):
-        left, right, rejected = select_anchor_pair(
-            anchors, policy, target_start, target_end,
+    if args.runtime_anchor_policy:
+        runtime_anchors = build_runtime_anchor_rows(
+            evidence["characters"], accepted_shadow_rows(evidence.get("window_trace", []))
+        )
+        policy = choose_runtime_anchor_policy(
+            runtime_anchors,
+            margin_quantile=args.runtime_anchor_margin_quantile,
+            overlap_tolerance_sec=args.runtime_anchor_overlap_tolerance_sec,
+            stability_tolerance_sec=args.runtime_anchor_stability_tolerance_sec,
+        )
+        left, right, rejected = choose_anchor_pair(
+            runtime_anchors, policy, target_start, target_end,
             max_distance_units=args.max_anchor_search_units,
             max_pair_span_units=args.max_anchor_span_units,
             max_pair_span_sec=args.max_anchor_span_sec,
             guard_units=args.anchor_guard_units,
         )
         if left is not None and right is not None:
-            role = str(policy.get("shortlist_role") or ("best_automatic" if ordinal == 0 else "strict_automatic"))
-            modes.append((role, policy, left, right, rejected))
+            modes.append(("runtime_A4", policy, left, right, rejected))
+    else:
+        anchors = evidence["anchor_rows"]
+        for ordinal, policy in enumerate(shortlist[: args.max_automatic_anchor_policies]):
+            left, right, rejected = select_anchor_pair(
+                anchors, policy, target_start, target_end,
+                max_distance_units=args.max_anchor_search_units,
+                max_pair_span_units=args.max_anchor_span_units,
+                max_pair_span_sec=args.max_anchor_span_sec,
+                guard_units=args.anchor_guard_units,
+            )
+            if left is not None and right is not None:
+                role = str(policy.get("shortlist_role") or ("best_automatic" if ordinal == 0 else "strict_automatic"))
+                modes.append((role, policy, left, right, rejected))
     return modes
 
 
@@ -367,6 +388,14 @@ def local_infer(
         "replace_start": left_index + 1, "replace_end": right_index - 1,
         "crop_start_sec": crop_start, "crop_end_sec": crop_end,
         "crop_mode": crop_mode, "padding_sec": padding_sec, "context_units": context_units,
+        "context_audit": {
+            "text_input_character_start": input_left_index,
+            "text_input_character_end": input_right_index,
+            "audio_crop_anchor_start_index": int(crop_left["global_character_index"]),
+            "audio_crop_anchor_end_index": int(crop_right["global_character_index"]),
+            "audio_and_text_context_expanded_together": crop_mode == "matched_context",
+            "audio_only_padding": crop_mode == "audio_only_padding",
+        },
         "raw_rows": stage_from_local_inference(rows, "local_raw"),
         "decoded_rows": stage_from_local_inference(rows, "local_decoded"),
         "inference_audit": audit, "wall_sec": time.perf_counter() - started,
@@ -461,6 +490,8 @@ def run_q2_case(
             trial_specs = [("matched_context", 0.0, 2)]
         elif args.q2_trial_profile == "plus4":
             trial_specs = [("matched_context", 0.0, 4)]
+        elif args.q2_trial_profile == "exact_plus2":
+            trial_specs = [("exact_anchor", 0.0, 0), ("matched_context", 0.0, 2)]
         elif args.q2_trial_profile == "all":
             trial_specs = [("exact_anchor", 0.0, 0)]
             trial_specs.extend(("audio_only_padding", float(padding), 0) for padding in args.padding_sec)
@@ -1204,13 +1235,17 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cache-dir", type=Path)
     p.add_argument("--local-files-only", action="store_true", default=os.environ.get("HF_HUB_OFFLINE") == "1")
     p.add_argument("--device", default="cuda")
-    p.add_argument("--decoder-kind", choices=("official", "gpu_tcn", "gpu_transformer"), default="official")
+    p.add_argument("--decoder-kind", choices=("raw", "official", "gpu_tcn", "gpu_transformer"), default="official")
     p.add_argument("--gpu-decoder-checkpoint", type=Path)
     p.add_argument("--q2-case-plan", type=Path, help="External decoder-union/escalation plan JSONL")
-    p.add_argument("--q2-trial-profile", choices=("exact", "plus2", "plus4", "all"), default="all")
+    p.add_argument("--q2-trial-profile", choices=("exact", "plus2", "plus4", "exact_plus2", "all"), default="all")
     p.add_argument("--q2-require-context-agreement", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--include-gt-anchor", action="store_true")
     p.add_argument("--max-automatic-anchor-policies", type=int, default=2)
+    p.add_argument("--runtime-anchor-policy", action="store_true", help="Use the no-GT conservative A4 runtime anchor policy")
+    p.add_argument("--runtime-anchor-margin-quantile", type=float, default=0.75)
+    p.add_argument("--runtime-anchor-overlap-tolerance-sec", type=float, default=0.16)
+    p.add_argument("--runtime-anchor-stability-tolerance-sec", type=float, default=0.08)
     p.add_argument("--timestamp-segment-sec", type=float, default=TIMESTAMP_STEP_SEC)
     p.add_argument("--demucs-model", default="htdemucs_ft")
     p.add_argument("--left-context-sec", type=float, default=10.0)
@@ -1228,13 +1263,26 @@ def parser() -> argparse.ArgumentParser:
     return p
 
 
+def validate_anchor_policy_args(args: argparse.Namespace) -> None:
+    if args.max_automatic_anchor_policies < 0:
+        raise ValueError("--max-automatic-anchor-policies must be non-negative")
+    if (
+        args.max_automatic_anchor_policies == 0
+        and not args.runtime_anchor_policy
+        and not args.include_gt_anchor
+    ):
+        raise ValueError(
+            "--max-automatic-anchor-policies=0 requires --runtime-anchor-policy "
+            "or --include-gt-anchor"
+        )
+
+
 def main() -> int:
     args = parser().parse_args()
     args.subset_root = args.subset_root.resolve()
     args.out_root = args.out_root.resolve()
     args.out_root.mkdir(parents=True, exist_ok=True)
-    if args.max_automatic_anchor_policies < 1:
-        raise ValueError("--max-automatic-anchor-policies must be positive")
+    validate_anchor_policy_args(args)
     args.gpu_decoder_runtime = None
     args.gpu_decoder_identity = None
     if args.decoder_kind in {"gpu_tcn", "gpu_transformer"}:

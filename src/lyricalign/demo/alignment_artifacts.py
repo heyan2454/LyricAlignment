@@ -84,7 +84,13 @@ def stage_rows(rows: Iterable[dict[str, Any]], stage: str) -> list[dict[str, Any
     for source in _ordered_rows(rows):
         row = dict(source)
         # Full-mode and legacy rows may not have selected_* before decoration.
-        if stage == "selected":
+        if stage == "processor_decoded" and row.get("official_fixed_global_start_sec") is not None:
+            # Multi-decoder runs keep the original Qwen processor output under
+            # official_fixed_* while fixed_* is the decoder actually used for
+            # serial ownership/commit decisions.
+            start = row.get("official_fixed_global_start_sec")
+            end = row.get("official_fixed_global_end_sec")
+        elif stage == "selected":
             start = row.get(start_key, row.get("fixed_global_start_sec"))
             end = row.get(end_key, row.get("fixed_global_end_sec"))
         else:

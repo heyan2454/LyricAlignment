@@ -230,7 +230,7 @@ def infer_slice(
         }
         if int(gpu_decoded_classes.shape[0]) != 2 * len(selected):
             raise RuntimeError("GPU decoder returned the wrong slot count")
-    elif decoder_kind != "official":
+    elif decoder_kind not in {"official", "raw"}:
         raise ValueError(f"unknown decoder_kind: {decoder_kind}")
 
     rows: list[dict[str, Any]] = []
@@ -250,8 +250,12 @@ def infer_slice(
             float(int(gpu_decoded_classes[end_slot])) * segment
             if gpu_decoded_classes is not None else None
         )
-        fixed_start = official_fixed_start if decoder_kind == "official" else float(gpu_fixed_start)
-        fixed_end = official_fixed_end if decoder_kind == "official" else float(gpu_fixed_end)
+        if decoder_kind == "official":
+            fixed_start, fixed_end = official_fixed_start, official_fixed_end
+        elif decoder_kind == "raw":
+            fixed_start, fixed_end = raw_start, raw_end
+        else:
+            fixed_start, fixed_end = float(gpu_fixed_start), float(gpu_fixed_end)
         rows.append(
             {
                 "global_character_index": meta.global_index,
@@ -768,7 +772,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--r1-checkpoint", type=Path, required=True)
     parser.add_argument("--r2-checkpoint", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--decoder-kind", choices=("official", "gpu_tcn", "gpu_transformer"), default="official")
+    parser.add_argument("--decoder-kind", choices=("raw", "official", "gpu_tcn", "gpu_transformer"), default="official")
     parser.add_argument("--gpu-decoder-checkpoint", type=Path)
     parser.add_argument("--language", type=normalize_alignment_language, default="Chinese")
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)

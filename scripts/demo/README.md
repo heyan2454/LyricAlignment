@@ -181,3 +181,83 @@ Execution details:
 ```text
 docs/manual/demo_realign_gpu_decoder_overnight.md
 ```
+
+## Raw guarded demo
+
+`align_qwen_fa_raw_guarded_demo.py` is the conservative standalone demo path
+selected after the 2026-07-27 decoder overnight:
+
+1. R2 Qwen timestamp-logit argmax is the baseline decoder;
+2. broad structural and cross-window anomalies are detected;
+3. only non-overlapping suspicious regions are considered;
+4. exact-anchor and `+2` lyric-context local inferences must agree within 160 ms;
+5. the bounded replacement must reduce the non-GT anomaly score and preserve
+   global non-overlap before it is committed;
+6. `+4` is not used by default because the overnight showed higher harm risk.
+
+The server defaults point to the current Qwen snapshot and R2 step-750
+checkpoint, while `MODEL_SOURCE`, `MODEL_REVISION`, `R2_CHECKPOINT`,
+`PYTHON_BIN`, and `RAW_GUARDED_OUT_ROOT` remain overridable.
+
+```bash
+bash scripts/demo/run_raw_guarded_demo.sh lyrics.txt demucs_vocals.wav
+```
+
+The output retains both `baseline_raw/alignment.json` and the guarded final
+`alignment.json`, plus `raw_guarded_realign.json` with every rejected or
+selected decision.
+
+For GT-backed development/held-out runs, compute detector and intervention
+metrics from the full (not compact) evidence and Q2 directories:
+
+```bash
+python scripts/demo/analyze_raw_detector_repair.py \
+  --baseline-root /path/to/raw_baseline \
+  --q2-root /path/to/raw_q2 \
+  --output /path/to/raw_detector_repair_metrics.json
+```
+
+To measure the actual raw detector and guarded intervention PRF on the MIR-1K
+GT subset with the same no-GT anchor policy as the standalone demo:
+
+```bash
+bash scripts/demo/run_raw_realign_prf_experiment.sh
+```
+
+This experiment runs only the raw baseline and the paired `exact +2` repair
+check. It does not run TCN, Transformer, `+4`, audio-source matrices, or window-
+length matrices. Set `ROLES=heldout` only after thresholds are frozen.
+
+### Full raw-guarded karaoke demo
+
+`run_raw_guarded_karaoke_demo.sh` restores the user-facing functionality of the
+historical demo while replacing only the alignment policy:
+
+1. extract the original mix from media;
+2. create and validate Spleeter vocal/accompaniment stems;
+3. align the vocal track with R2 raw timestamps;
+4. run conservative exact + matched-`+2` guarded realignment;
+5. render baseline and guarded-final karaoke videos over the original video;
+6. retain mix-audio primary videos, vocal diagnostics, and two-way comparisons.
+
+The default fixed-song paths still point to `夜苏打`, and all paths/weights are
+overridable:
+
+```bash
+bash scripts/demo/run_raw_guarded_karaoke_demo.sh
+
+SOURCE_MEDIA=/path/song.mp4 \
+LYRICS=/path/song.txt \
+OUT_ROOT=/path/output \
+  bash scripts/demo/run_raw_guarded_karaoke_demo.sh
+```
+
+The primary output is `raw_guarded_demo.mp4`. Stage resume uses
+`STAGE=prepare|align|render`; force flags are `FORCE_SEPARATE`, `FORCE_ALIGN`,
+and `FORCE_RENDER`.
+
+Follow-up detector/repair protocol:
+
+```text
+docs/sessions/20260727_raw_guarded_followup_experiment.md
+```

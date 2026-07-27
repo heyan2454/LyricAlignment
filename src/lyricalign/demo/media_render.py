@@ -334,9 +334,9 @@ def render_composite(
     layout: str,
     force: bool = False,
 ) -> dict[str, Any]:
-    if layout not in ("three", "four"):
+    if layout not in ("two", "three", "four"):
         raise ValueError(layout)
-    expected = 3 if layout == "three" else 4
+    expected = {"two": 2, "three": 3, "four": 4}[layout]
     if len(sources) != expected or len(source_hashes) != expected:
         raise ValueError(f"{layout} composite requires {expected} sources")
     request = {
@@ -354,7 +354,13 @@ def render_composite(
     command = ["ffmpeg", "-nostdin", "-y", "-v", "warning"]
     for source in sources:
         command.extend(["-i", str(source)])
-    if layout == "three":
+    if layout == "two":
+        filters = (
+            "[0:v]scale=960:540:force_original_aspect_ratio=decrease,pad=960:540:(ow-iw)/2:(oh-ih)/2:black[v0];"
+            "[1:v]scale=960:540:force_original_aspect_ratio=decrease,pad=960:540:(ow-iw)/2:(oh-ih)/2:black[v1];"
+            "[v0][v1]hstack=inputs=2[v]"
+        )
+    elif layout == "three":
         filters = (
             "[0:v]scale=960:540:force_original_aspect_ratio=decrease,pad=960:540:(ow-iw)/2:(oh-ih)/2:black[v0];"
             "[1:v]scale=960:540:force_original_aspect_ratio=decrease,pad=960:540:(ow-iw)/2:(oh-ih)/2:black[v1];"
