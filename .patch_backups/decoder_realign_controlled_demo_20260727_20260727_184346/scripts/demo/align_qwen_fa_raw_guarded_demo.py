@@ -69,11 +69,7 @@ def serial_args(args: argparse.Namespace) -> SimpleNamespace:
         boundary_start_tolerance_sec=args.boundary_start_tolerance_sec,
         seam_tolerance_sec=args.seam_tolerance_sec,
         capture_shadow_rows=True,
-        decoder_kind=args.decoder_kind,
-        serial_control_decoder_kind=args.serial_control_decoder_kind,
-        skip_silent_windows=args.skip_silent_windows,
-        silent_active_ratio_max=args.silent_active_ratio_max,
-        silent_peak_margin_db=args.silent_peak_margin_db,
+        decoder_kind="raw",
         gpu_decoder_runtime=None,
     )
 
@@ -114,9 +110,6 @@ def run_guarded_realign(
         overlap_tolerance_sec=args.anchor_overlap_tolerance_sec,
         stability_tolerance_sec=args.anchor_stability_tolerance_sec,
     )
-    policy["family"] = str(getattr(args, "anchor_policy_family", "A4"))
-    policy["policy_id"] = f"runtime_{policy['family']}_q{args.anchor_margin_quantile:g}"
-    policy["policy_role"] = "production_conservative" if policy["family"] == "A4" else "diagnostic_relaxed"
     current = stage_rows(baseline_rows, "final")
     decisions: list[dict[str, Any]] = []
     sargs = serial_args(args)
@@ -158,21 +151,17 @@ def run_guarded_realign(
             context_rows=stage_rows(baseline_rows, "selected"),
         )
         replacement_indices = list(range(int(exact["replace_start"]), int(exact["replace_end"]) + 1))
-        exact_local = exact["decoded_rows"]
-        plus2_local = plus2["decoded_rows"]
         agreement = agreement_between_trials(
-            exact_local, plus2_local, replacement_indices,
+            exact["raw_rows"], plus2["raw_rows"], target_indices,
             tolerance_sec=args.context_agreement_tolerance_sec,
         )
         exact_full, exact_splice = bounded_splice(
-            current, exact_local,
+            current, exact["raw_rows"],
             replace_start=int(exact["replace_start"]), replace_end=int(exact["replace_end"]), remerge=True,
-            projection=args.local_projection,
-            minimum_duration_sec=args.local_minimum_duration_sec,
         )
         acceptance = non_gt_acceptance(
-            current, exact_full, replacement_indices,
-            anchor_reproduction_max_sec=local_anchor_reproduction(exact_local, left, right).get("max_error_sec"),
+            current, exact_full, target_indices,
+            anchor_reproduction_max_sec=local_anchor_reproduction(exact["raw_rows"], left, right).get("max_error_sec"),
             tolerance_sec=args.anchor_reproduction_tolerance_sec,
         )
         change_max = max_boundary_change(current, exact_full, replacement_indices)
@@ -184,11 +173,6 @@ def run_guarded_realign(
             "context_agreement": agreement,
             "acceptance": acceptance,
             "splice": exact_splice,
-            "local_decoder_kind": args.decoder_kind,
-            "exact_local_raw_structural": structural_summary(exact["raw_rows"]),
-            "exact_local_decoded_structural": structural_summary(exact_local),
-            "plus2_local_raw_structural": structural_summary(plus2["raw_rows"]),
-            "plus2_local_decoded_structural": structural_summary(plus2_local),
             "max_boundary_change_sec": change_max,
         })
         if not agreement["supported"]:
@@ -200,13 +184,9 @@ def run_guarded_realign(
         elif change_max > args.max_repair_boundary_change_sec + 1e-9:
             decision["reason"] = "repair_change_exceeds_cap"
         else:
-            decision["would_select"] = True
-            if bool(getattr(args, "realign_shadow_only", False)):
-                decision["reason"] = "shadow_would_select_without_writeback"
-            else:
-                current = exact_full
-                decision["selected"] = True
-                decision["reason"] = "exact_supported_by_plus2_and_anomaly_reduced"
+            current = exact_full
+            decision["selected"] = True
+            decision["reason"] = "exact_supported_by_plus2_and_anomaly_reduced"
         decisions.append(decision)
 
     return current, {
@@ -214,8 +194,6 @@ def run_guarded_realign(
         "created_at": utc_now(),
         "candidate_count": len(candidates),
         "selected_repair_count": sum(bool(row["selected"]) for row in decisions),
-        "would_select_count": sum(bool(row.get("would_select")) for row in decisions),
-        "shadow_only": bool(getattr(args, "realign_shadow_only", False)),
         "anchor_policy": policy,
         "decisions": decisions,
         "final_structural": structural_summary(current),
@@ -235,11 +213,6 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cache-dir", type=Path)
     p.add_argument("--local-files-only", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--device", default="cuda")
-    p.add_argument("--decoder-kind", choices=("official", "raw"), default="official")
-    p.add_argument(
-        "--serial-control-decoder-kind", choices=("same", "official", "raw"), default="official",
-        help="use official to freeze the same ownership/cursor trajectory for decoder comparison",
-    )
     p.add_argument("--language", type=normalize_alignment_language, default="Chinese")
     p.add_argument("--timestamp-segment-sec", type=float, default=0.08)
     p.add_argument("--core-sec", type=float, default=30.0)
@@ -254,10 +227,6 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--max-target-units", type=int, default=8)
     p.add_argument("--disagreement-peak-threshold-sec", type=float, default=0.24)
     p.add_argument("--anchor-margin-quantile", type=float, default=0.75)
-    p.add_argument(
-        "--anchor-policy-family", choices=("A4", "A2"), default="A4",
-        help="A2 is a relaxed diagnostic policy; use with --realign-shadow-only",
-    )
     p.add_argument("--anchor-overlap-tolerance-sec", type=float, default=0.16)
     p.add_argument("--anchor-stability-tolerance-sec", type=float, default=0.08)
     p.add_argument("--anchor-guard-units", type=int, default=1)
@@ -267,21 +236,6 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--context-agreement-tolerance-sec", type=float, default=0.16)
     p.add_argument("--anchor-reproduction-tolerance-sec", type=float, default=0.16)
     p.add_argument("--max-repair-boundary-change-sec", type=float, default=0.80)
-    p.add_argument("--local-projection", choices=("isotonic", "forward"), default="isotonic")
-    p.add_argument(
-        "--local-minimum-duration-sec", type=float, default=0.0,
-        help="0 keeps gap-duration allocation out of this diagnostic patch",
-    )
-    p.add_argument(
-        "--skip-silent-windows", action=argparse.BooleanOptionalAction, default=True,
-        help="basic processing: skip essentially silent non-final vocal cores",
-    )
-    p.add_argument("--silent-active-ratio-max", type=float, default=0.01)
-    p.add_argument("--silent-peak-margin-db", type=float, default=3.0)
-    p.add_argument(
-        "--realign-shadow-only", action="store_true",
-        help="run and score repairs but never write them into the final alignment",
-    )
     p.add_argument("--disable-realign", action="store_true")
     p.add_argument("--force", action="store_true")
     return p
@@ -309,10 +263,6 @@ def main() -> int:
         "revision": args.revision,
         "checkpoint": checkpoint,
         "language": args.language,
-        "decoder": {
-            "output_kind": args.decoder_kind,
-            "serial_control_kind": args.serial_control_decoder_kind,
-        },
         "timestamp_segment_sec": args.timestamp_segment_sec,
         "window": {
             "core_sec": args.core_sec,
@@ -324,23 +274,16 @@ def main() -> int:
             "max_candidate_expansions": args.max_candidate_expansions,
             "boundary_start_tolerance_sec": args.boundary_start_tolerance_sec,
             "seam_tolerance_sec": args.seam_tolerance_sec,
-            "skip_silent_windows": args.skip_silent_windows,
-            "silent_active_ratio_max": args.silent_active_ratio_max,
-            "silent_peak_margin_db": args.silent_peak_margin_db,
         },
         "realign": {
             "enabled": not args.disable_realign,
             "max_target_units": args.max_target_units,
             "disagreement_peak_threshold_sec": args.disagreement_peak_threshold_sec,
             "anchor_margin_quantile": args.anchor_margin_quantile,
-            "anchor_policy_family": args.anchor_policy_family,
             "context_agreement_tolerance_sec": args.context_agreement_tolerance_sec,
             "anchor_reproduction_tolerance_sec": args.anchor_reproduction_tolerance_sec,
             "max_repair_boundary_change_sec": args.max_repair_boundary_change_sec,
             "contexts": ["exact", "matched_plus2_audio_and_text"],
-            "replacement_projection": args.local_projection,
-            "local_minimum_duration_sec": args.local_minimum_duration_sec,
-            "shadow_only": args.realign_shadow_only,
         },
     }
     request_hash = SERIAL.canonical_hash(request)
@@ -380,17 +323,14 @@ def main() -> int:
                 "request": request,
                 "model": str(args.model), "revision": args.revision,
                 "r2_checkpoint": str(args.r2_checkpoint),
-                "timestamp_decoder": args.decoder_kind,
-                "serial_control_decoder": args.serial_control_decoder_kind,
-                "realign_enabled": not args.disable_realign,
+                "timestamp_decoder": "raw", "realign_enabled": not args.disable_realign,
                 "realign_contexts": ["exact", "matched_plus2_audio_and_text"],
             },
             "summary": {
                 "audio_duration_sec": len(audio) / 16000.0,
                 "character_count": len(baseline_rows),
                 "window_count": len(trace),
-                "timestamp_decoder": args.decoder_kind,
-                "serial_control_decoder": args.serial_control_decoder_kind,
+                "timestamp_decoder": "raw",
             },
             "lines": [line.__dict__ for line in document.lines],
             "characters": baseline_rows,

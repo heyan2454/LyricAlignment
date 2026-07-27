@@ -369,14 +369,13 @@ def project_rows_for_decoder(
 
 def build_vocal_activity_profile(
     audio: Any, *, sample_rate: int = 16000, frame_sec: float = 0.04,
-    hop_sec: float = 0.02, sustained_window_sec: float = 0.80,
-    sustained_fraction: float = 0.30,
+    hop_sec: float = 0.02,
 ) -> dict[str, Any]:
-    """Build a song-adaptive vocal activity profile.
+    """Build a conservative song-adaptive activity profile for vocal stems.
 
-    In addition to frame energy, this records *sustained* activity.  The latter
-    is used for long intros/instrumental cores so isolated separator leakage
-    does not make an otherwise empty core eligible for lyric commitment.
+    The profile is used only to skip cores that are essentially silent.  It is
+    intentionally conservative: weak or ambiguous windows remain eligible for
+    model inference.
     """
     import numpy as np
 
@@ -394,32 +393,21 @@ def build_vocal_activity_profile(
     db = 20.0 * np.log10(rms + 1e-12)
     q20 = float(np.quantile(db, 0.20))
     q90 = float(np.quantile(db, 0.90))
+    # Vocal stems normally have a large separation between empty and active
+    # frames.  A narrow-range quiet song must not be classified as entirely
+    # silent merely because its noise-floor quantile is close to its q90.
     if q90 < -70.0:
         threshold = -65.0
     else:
         threshold = float(min(-35.0, q90 - 6.0, max(-55.0, q20 + 10.0)))
-    reliable_threshold = float(max(threshold, q90 - 12.0))
-    active = db >= reliable_threshold
-    sustained_frames = max(1, int(round(sustained_window_sec / hop_sec)))
-    kernel = np.ones(sustained_frames, dtype=np.float64)
-    rolling = np.convolve(active.astype(np.float64), kernel, mode="same") / sustained_frames
-    sustained = rolling >= float(sustained_fraction)
-    indices = np.flatnonzero(sustained)
-    first_sustained = None if len(indices) == 0 else float(indices[0] * hop_sec)
     return {
         "frame_sec": float(frame_sec),
         "hop_sec": float(hop_sec),
         "sample_rate": int(sample_rate),
         "frame_db": db,
-        "active": active,
-        "sustained": sustained,
         "threshold_db": threshold,
-        "reliable_threshold_db": reliable_threshold,
         "song_q20_db": q20,
         "song_q90_db": q90,
-        "first_sustained_activity_sec": first_sustained,
-        "sustained_window_sec": float(sustained_window_sec),
-        "sustained_fraction": float(sustained_fraction),
     }
 
 
@@ -429,33 +417,21 @@ def vocal_activity_for_interval(
     import numpy as np
 
     db = np.asarray(profile["frame_db"])
-    active_all = np.asarray(profile["active"], dtype=bool)
-    sustained_all = np.asarray(profile["sustained"], dtype=bool)
     hop = float(profile["hop_sec"])
     first = max(0, int(math.floor(start_sec / hop)))
     last = min(len(db), max(first + 1, int(math.ceil(end_sec / hop))))
     selected = db[first:last]
-    active = active_all[first:last]
-    sustained = sustained_all[first:last]
-    sustained_indices = np.flatnonzero(sustained)
-    first_sustained = None
-    if len(sustained_indices):
-        first_sustained = float((first + int(sustained_indices[0])) * hop)
+    threshold = float(profile["threshold_db"])
+    active = selected >= threshold
     return {
         "start_sec": float(start_sec),
         "end_sec": float(end_sec),
         "frame_count": int(len(selected)),
         "active_frame_count": int(active.sum()),
         "active_ratio": float(active.mean()) if len(selected) else 0.0,
-        "active_duration_sec": float(active.sum() * hop),
-        "sustained_frame_count": int(sustained.sum()),
-        "sustained_active_ratio": float(sustained.mean()) if len(selected) else 0.0,
-        "sustained_active_duration_sec": float(sustained.sum() * hop),
-        "first_sustained_activity_sec": first_sustained,
         "peak_db": float(selected.max()) if len(selected) else -math.inf,
         "q95_db": float(np.quantile(selected, 0.95)) if len(selected) else -math.inf,
-        "threshold_db": float(profile["threshold_db"]),
-        "reliable_threshold_db": float(profile["reliable_threshold_db"]),
+        "threshold_db": threshold,
     }
 
 
@@ -543,11 +519,6 @@ def windowed_alignment(
     skip_silent_windows = bool(getattr(args, "skip_silent_windows", False))
     silent_active_ratio_max = float(getattr(args, "silent_active_ratio_max", 0.01))
     silent_peak_margin_db = float(getattr(args, "silent_peak_margin_db", 3.0))
-    silent_min_sustained_sec = float(getattr(args, "silent_min_sustained_sec", 0.40))
-    startup_vocal_preroll_sec = float(getattr(args, "startup_vocal_preroll_sec", 2.0))
-    startup_minimum_forward_characters = int(
-        getattr(args, "startup_minimum_forward_characters", 24)
-    )
     activity_profile = build_vocal_activity_profile(audio) if skip_silent_windows else None
 
     for window_position, window in enumerate(windows):
@@ -563,12 +534,9 @@ def windowed_alignment(
         if activity_profile is not None:
             activity = vocal_activity_for_interval(activity_profile, core_start, core_end)
             essentially_silent = (
-                activity["sustained_active_duration_sec"] < silent_min_sustained_sec
-                and (
-                    activity["active_ratio"] <= silent_active_ratio_max + 1e-12
-                    or activity["peak_db"]
-                    <= activity["reliable_threshold_db"] + silent_peak_margin_db + 1e-12
-                )
+                activity["active_ratio"] <= silent_active_ratio_max + 1e-12
+                and activity["peak_db"]
+                <= activity["threshold_db"] + silent_peak_margin_db + 1e-12
             )
             # Never skip the final core while lyrics remain; doing so would hide
             # an incomplete alignment instead of surfacing it.
@@ -620,28 +588,15 @@ def windowed_alignment(
         # compresses only the overlapping left part instead of rejecting or
         # rerunning the window.
         has_matched_left_context = core_start <= 0.0 or input_cursor < committed_cursor
-        startup_trimmed_start = nominal_input_start
-        startup_onset = None
-        if activity_profile is not None and committed_cursor == 0:
-            startup_onset = activity_profile.get("first_sustained_activity_sec")
-            if startup_onset is not None and float(startup_onset) < input_end:
-                startup_trimmed_start = max(
-                    nominal_input_start,
-                    float(startup_onset) - startup_vocal_preroll_sec,
-                )
         input_variants = [
             {
-                "input_start_sec": startup_trimmed_start,
+                "input_start_sec": nominal_input_start,
                 "context_policy": (
-                    "startup_silence_trimmed"
-                    if startup_trimmed_start > nominal_input_start + 1e-9
-                    else (
-                        "matched_left_context"
-                        if has_matched_left_context
-                        else "unmatched_left_context_retained"
-                    )
+                    "matched_left_context"
+                    if has_matched_left_context
+                    else "unmatched_left_context_retained"
                 ),
-                "trimmed": startup_trimmed_start > nominal_input_start + 1e-9,
+                "trimmed": False,
             }
         ]
 
@@ -680,28 +635,11 @@ def windowed_alignment(
                 "left_context_trim_reason": None,
                 "left_context_policy": str(variant["context_policy"]),
                 "left_context_variant_index": variant_index,
-                "startup_vocal_onset_sec": startup_onset,
             }
             covered_input_sec = max(0.0, input_end - input_start)
-            budget_support_sec = covered_input_sec
-            input_activity = None
-            if activity_profile is not None:
-                input_activity = vocal_activity_for_interval(activity_profile, input_start, input_end)
-                # Estimate transcript demand from vocal-supporting time, not from
-                # a long instrumental prefix. Candidate expansion remains the
-                # recovery path when this conservative first estimate is small.
-                budget_support_sec = min(
-                    covered_input_sec,
-                    max(0.0, float(input_activity["sustained_active_duration_sec"])),
-                )
-            minimum_target = (
-                startup_minimum_forward_characters
-                if committed_cursor == 0
-                else int(args.minimum_forward_characters)
-            )
             target_count = max(
-                minimum_target,
-                int(math.ceil(characters_per_second * budget_support_sec * args.future_character_ratio)),
+                args.minimum_forward_characters,
+                int(math.ceil(characters_per_second * covered_input_sec * args.future_character_ratio)),
             )
             if final_core:
                 target_count = total_characters - input_cursor
@@ -787,8 +725,6 @@ def windowed_alignment(
                         "context_policy": str(variant["context_policy"]),
                         "status": "accepted" if boundary_observed else "expanded",
                         "target_character_count": target_count,
-                        "budget_support_sec": budget_support_sec,
-                        "input_vocal_activity": input_activity,
                         "candidate_character_start": char_start,
                         "candidate_character_end": char_end,
                         "context_character_count": len(context_rows),
@@ -1078,9 +1014,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--silent-active-ratio-max", type=float, default=0.01)
     parser.add_argument("--silent-peak-margin-db", type=float, default=3.0)
-    parser.add_argument("--silent-min-sustained-sec", type=float, default=0.40)
-    parser.add_argument("--startup-vocal-preroll-sec", type=float, default=2.0)
-    parser.add_argument("--startup-minimum-forward-characters", type=int, default=24)
     return parser
 
 

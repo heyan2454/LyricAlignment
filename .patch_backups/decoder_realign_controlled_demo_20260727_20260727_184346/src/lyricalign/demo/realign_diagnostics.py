@@ -628,15 +628,7 @@ def _policy_pass(row: dict[str, Any], policy: dict[str, Any]) -> bool:
         if overlap_tolerance is None or disagreement > float(overlap_tolerance) + 1e-9:
             return False
     if family in {"A3", "A4"}:
-        # ``0.0`` is the strongest possible stability evidence.  Using
-        # ``value or math.inf`` incorrectly converted it to infinity and made
-        # every perfectly stable A3/A4 anchor fail the policy gate.
-        movement = row.get("raw_decoded_movement_max_sec")
-        if (
-            stability_tolerance is None
-            or movement is None
-            or float(movement) > float(stability_tolerance) + 1e-9
-        ):
+        if stability_tolerance is None or float(row.get("raw_decoded_movement_max_sec") or math.inf) > float(stability_tolerance) + 1e-9:
             return False
     if family == "A4" and (bool(row.get("compressed")) or bool(row.get("collapsed"))):
         return False
@@ -875,8 +867,6 @@ def bounded_splice(
     replace_start: int,
     replace_end: int,
     remerge: bool,
-    projection: str = "forward",
-    minimum_duration_sec: float = 0.0,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Replace inclusive indices while preserving all non-target rows exactly.
 
@@ -894,104 +884,31 @@ def bounded_splice(
             "missing_indices": missing,
             "changed_indices": [],
         }
-    if projection not in {"forward", "isotonic"}:
-        raise ValueError(f"unknown bounded splice projection: {projection}")
-    if minimum_duration_sec < 0:
-        raise ValueError("minimum_duration_sec must be non-negative")
     output = {index: dict(row) for index, row in baseline.items()}
     previous_end = float(baseline[replace_start - 1]["end_sec"]) if replace_start - 1 in baseline else 0.0
     right_start = float(baseline[replace_end + 1]["start_sec"]) if replace_end + 1 in baseline else math.inf
     changed: list[int] = []
     clipped = 0
-    effective_minimum = float(minimum_duration_sec)
-    minimum_disabled_reason = None
-
-    if remerge and projection == "isotonic":
-        indices = list(range(replace_start, replace_end + 1))
-        source_boundaries: list[float] = []
-        offsets: list[float] = []
-        for position, index in enumerate(indices):
-            source_boundaries.extend((
-                float(replacement[index]["start_sec"]),
-                float(replacement[index]["end_sec"]),
-            ))
-            offsets.extend((position * effective_minimum, (position + 1) * effective_minimum))
-        required = len(indices) * effective_minimum
-        if math.isfinite(right_start) and right_start - previous_end < required - 1e-9:
-            # This patch deliberately does not invent a gap-repair policy.  If
-            # the anchor span cannot support the requested minimum duration,
-            # retain only non-decreasing/local-bound constraints.
-            effective_minimum = 0.0
-            offsets = [0.0 for _ in source_boundaries]
-            minimum_disabled_reason = "insufficient_anchor_span"
-
-        transformed = [value - offset for value, offset in zip(source_boundaries, offsets, strict=True)]
-        lower = previous_end
-        upper = right_start - offsets[-1] if math.isfinite(right_start) else math.inf
-        transformed = [max(lower, value) for value in transformed]
-        if math.isfinite(upper):
-            transformed = [min(upper, value) for value in transformed]
-
-        # Pool-adjacent-violators projection: least-squares non-decreasing
-        # sequence, unlike greedy forward compression which can amplify one bad
-        # boundary across the entire replacement span.
-        blocks: list[dict[str, Any]] = []
-        for position, value in enumerate(transformed):
-            blocks.append({"start": position, "end": position + 1, "weight": 1.0, "mean": float(value)})
-            while len(blocks) >= 2 and blocks[-2]["mean"] > blocks[-1]["mean"] + 1e-12:
-                right_block = blocks.pop()
-                left_block = blocks.pop()
-                weight = float(left_block["weight"] + right_block["weight"])
-                mean = (
-                    float(left_block["mean"]) * float(left_block["weight"])
-                    + float(right_block["mean"]) * float(right_block["weight"])
-                ) / weight
-                blocks.append({
-                    "start": left_block["start"], "end": right_block["end"],
-                    "weight": weight, "mean": mean,
-                })
-        projected = [0.0] * len(transformed)
-        for block in blocks:
-            for position in range(int(block["start"]), int(block["end"])):
-                projected[position] = float(block["mean"])
-        projected = [value + offset for value, offset in zip(projected, offsets, strict=True)]
-
-        for position, index in enumerate(indices):
-            row = dict(replacement[index])
-            source_start = float(row["start_sec"])
-            source_end = float(row["end_sec"])
-            start = float(projected[2 * position])
-            end = float(projected[2 * position + 1])
-            row["start_sec"] = start
-            row["end_sec"] = end
-            row["quick_realign_source_start_sec"] = source_start
-            row["quick_realign_source_end_sec"] = source_end
-            row["quick_realign_remerged"] = True
-            row["quick_realign_projection"] = "isotonic"
-            output[index] = row
-            changed.append(index)
-    else:
-        for index in range(replace_start, replace_end + 1):
-            row = dict(replacement[index])
-            start = float(row["start_sec"])
-            end = float(row["end_sec"])
-            source_start, source_end = start, end
-            if remerge:
-                start = max(start, previous_end)
-                end = max(end, start)
-                if index == replace_end and end > right_start:
-                    end = right_start
-                    start = min(start, end)
-                    clipped += 1
-            row["start_sec"] = start
-            row["end_sec"] = end
-            row["quick_realign_source_start_sec"] = source_start
-            row["quick_realign_source_end_sec"] = source_end
-            row["quick_realign_remerged"] = remerge
-            row["quick_realign_projection"] = projection
-            output[index] = row
-            previous_end = end
-            changed.append(index)
+    for index in range(replace_start, replace_end + 1):
+        row = dict(replacement[index])
+        start = float(row["start_sec"])
+        end = float(row["end_sec"])
+        source_start, source_end = start, end
+        if remerge:
+            start = max(start, previous_end)
+            end = max(end, start)
+            if index == replace_end and end > right_start:
+                end = right_start
+                start = min(start, end)
+                clipped += 1
+        row["start_sec"] = start
+        row["end_sec"] = end
+        row["quick_realign_source_start_sec"] = source_start
+        row["quick_realign_source_end_sec"] = source_end
+        row["quick_realign_remerged"] = remerge
+        output[index] = row
+        previous_end = end
+        changed.append(index)
     ordered = [output[index] for index in sorted(output)]
     structural = structural_summary(ordered)
     valid = structural["negative_duration_count"] == 0 and structural["inter_unit_overlap_count"] == 0
@@ -1000,10 +917,6 @@ def bounded_splice(
         "reason": None if valid else "structural_conflict_after_splice",
         "changed_indices": changed,
         "right_boundary_clip_count": clipped,
-        "projection": projection,
-        "requested_minimum_duration_sec": float(minimum_duration_sec),
-        "effective_minimum_duration_sec": effective_minimum,
-        "minimum_duration_disabled_reason": minimum_disabled_reason,
         "structural": structural,
     }
 

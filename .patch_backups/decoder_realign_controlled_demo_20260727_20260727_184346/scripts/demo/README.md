@@ -261,30 +261,3 @@ Follow-up detector/repair protocol:
 ```text
 docs/sessions/20260727_raw_guarded_followup_experiment.md
 ```
-
-### Controlled decoder × realign comparison Demo
-
-For current Demo development, use the controlled four-branch entry instead of
-interpreting the legacy raw-guarded output as a decoder ablation:
-
-```bash
-bash scripts/demo/run_decoder_realign_comparison_batch.sh /path/to/song.mp4 \
-  --lyrics /path/to/song.txt \
-  --language Chinese \
-  --r2-checkpoint /path/to/fixed-r2-checkpoint
-```
-
-It fixes official serial ownership/cursor control and compares O0/O1/R0/R1
-(official/raw argmax × realign off/on), all with 30-second cores and silent-core
-skipping. It renders comparison-only mix-audio videos. See:
-
-```text
-docs/manual/decoder_realign_comparison_demo.md
-```
-
-Bounded evidence collection:
-
-```bash
-python scripts/demo/collect_decoder_realign_evidence.py /path/to/test/root \
-  --output /path/to/evidence.tar.gz --max-total-mib 12
-```

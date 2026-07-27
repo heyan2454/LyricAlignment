@@ -330,135 +330,6 @@ def infer_slice(
     return rows, audit
 
 
-def project_rows_for_decoder(
-    rows: list[dict[str, Any]], decoder_kind: str,
-) -> list[dict[str, Any]]:
-    """Project saved multi-decoder boundaries into ``fixed_*`` fields.
-
-    Serial ownership and the user-visible timestamp decoder are separate
-    experimental variables.  In particular, a raw-argmax branch may reuse the
-    official decoder's window ownership/cursor trajectory while committing raw
-    timestamps.  This helper performs only that projection; it does not change
-    the raw/official evidence retained on each row.
-    """
-    if decoder_kind in {"same", "output"}:
-        return [dict(row) for row in rows]
-    if decoder_kind not in {"official", "raw"}:
-        raise ValueError(f"unsupported serial control decoder: {decoder_kind}")
-    result: list[dict[str, Any]] = []
-    for source in rows:
-        row = dict(source)
-        if decoder_kind == "official":
-            local_start = row["official_fixed_local_start_sec"]
-            local_end = row["official_fixed_local_end_sec"]
-            global_start = row["official_fixed_global_start_sec"]
-            global_end = row["official_fixed_global_end_sec"]
-        else:
-            local_start = row["raw_local_start_sec"]
-            local_end = row["raw_local_end_sec"]
-            global_start = row["raw_global_start_sec"]
-            global_end = row["raw_global_end_sec"]
-        row["fixed_local_start_sec"] = float(local_start)
-        row["fixed_local_end_sec"] = float(local_end)
-        row["fixed_global_start_sec"] = float(global_start)
-        row["fixed_global_end_sec"] = float(global_end)
-        row["serial_control_decoder_kind"] = decoder_kind
-        result.append(row)
-    return result
-
-
-def build_vocal_activity_profile(
-    audio: Any, *, sample_rate: int = 16000, frame_sec: float = 0.04,
-    hop_sec: float = 0.02, sustained_window_sec: float = 0.80,
-    sustained_fraction: float = 0.30,
-) -> dict[str, Any]:
-    """Build a song-adaptive vocal activity profile.
-
-    In addition to frame energy, this records *sustained* activity.  The latter
-    is used for long intros/instrumental cores so isolated separator leakage
-    does not make an otherwise empty core eligible for lyric commitment.
-    """
-    import numpy as np
-
-    values = np.asarray(audio, dtype=np.float32)
-    frame = max(1, int(round(frame_sec * sample_rate)))
-    hop = max(1, int(round(hop_sec * sample_rate)))
-    if len(values) < frame:
-        values = np.pad(values, (0, frame - len(values)))
-    count = 1 + (len(values) - frame) // hop
-    starts = np.arange(count, dtype=np.int64) * hop
-    squared = np.square(values.astype(np.float64, copy=False))
-    cumulative = np.concatenate((np.zeros(1, dtype=np.float64), np.cumsum(squared)))
-    sums = cumulative[starts + frame] - cumulative[starts]
-    rms = np.sqrt(sums / frame + 1e-12)
-    db = 20.0 * np.log10(rms + 1e-12)
-    q20 = float(np.quantile(db, 0.20))
-    q90 = float(np.quantile(db, 0.90))
-    if q90 < -70.0:
-        threshold = -65.0
-    else:
-        threshold = float(min(-35.0, q90 - 6.0, max(-55.0, q20 + 10.0)))
-    reliable_threshold = float(max(threshold, q90 - 12.0))
-    active = db >= reliable_threshold
-    sustained_frames = max(1, int(round(sustained_window_sec / hop_sec)))
-    kernel = np.ones(sustained_frames, dtype=np.float64)
-    rolling = np.convolve(active.astype(np.float64), kernel, mode="same") / sustained_frames
-    sustained = rolling >= float(sustained_fraction)
-    indices = np.flatnonzero(sustained)
-    first_sustained = None if len(indices) == 0 else float(indices[0] * hop_sec)
-    return {
-        "frame_sec": float(frame_sec),
-        "hop_sec": float(hop_sec),
-        "sample_rate": int(sample_rate),
-        "frame_db": db,
-        "active": active,
-        "sustained": sustained,
-        "threshold_db": threshold,
-        "reliable_threshold_db": reliable_threshold,
-        "song_q20_db": q20,
-        "song_q90_db": q90,
-        "first_sustained_activity_sec": first_sustained,
-        "sustained_window_sec": float(sustained_window_sec),
-        "sustained_fraction": float(sustained_fraction),
-    }
-
-
-def vocal_activity_for_interval(
-    profile: dict[str, Any], start_sec: float, end_sec: float,
-) -> dict[str, Any]:
-    import numpy as np
-
-    db = np.asarray(profile["frame_db"])
-    active_all = np.asarray(profile["active"], dtype=bool)
-    sustained_all = np.asarray(profile["sustained"], dtype=bool)
-    hop = float(profile["hop_sec"])
-    first = max(0, int(math.floor(start_sec / hop)))
-    last = min(len(db), max(first + 1, int(math.ceil(end_sec / hop))))
-    selected = db[first:last]
-    active = active_all[first:last]
-    sustained = sustained_all[first:last]
-    sustained_indices = np.flatnonzero(sustained)
-    first_sustained = None
-    if len(sustained_indices):
-        first_sustained = float((first + int(sustained_indices[0])) * hop)
-    return {
-        "start_sec": float(start_sec),
-        "end_sec": float(end_sec),
-        "frame_count": int(len(selected)),
-        "active_frame_count": int(active.sum()),
-        "active_ratio": float(active.mean()) if len(selected) else 0.0,
-        "active_duration_sec": float(active.sum() * hop),
-        "sustained_frame_count": int(sustained.sum()),
-        "sustained_active_ratio": float(sustained.mean()) if len(selected) else 0.0,
-        "sustained_active_duration_sec": float(sustained.sum() * hop),
-        "first_sustained_activity_sec": first_sustained,
-        "peak_db": float(selected.max()) if len(selected) else -math.inf,
-        "q95_db": float(np.quantile(selected, 0.95)) if len(selected) else -math.inf,
-        "threshold_db": float(profile["threshold_db"]),
-        "reliable_threshold_db": float(profile["reliable_threshold_db"]),
-    }
-
-
 def decorate_final_rows(rows: list[dict[str, Any]], document: LyricDocument) -> list[dict[str, Any]]:
     by_index = {int(row["global_character_index"]): row for row in rows}
     missing = [item.global_index for item in document.characters if item.global_index not in by_index]
@@ -539,16 +410,6 @@ def windowed_alignment(
     traces: list[dict[str, Any]] = []
     previous_committed_count = 0
     previous_core_duration = 0.0
-    control_decoder_kind = str(getattr(args, "serial_control_decoder_kind", "same"))
-    skip_silent_windows = bool(getattr(args, "skip_silent_windows", False))
-    silent_active_ratio_max = float(getattr(args, "silent_active_ratio_max", 0.01))
-    silent_peak_margin_db = float(getattr(args, "silent_peak_margin_db", 3.0))
-    silent_min_sustained_sec = float(getattr(args, "silent_min_sustained_sec", 0.40))
-    startup_vocal_preroll_sec = float(getattr(args, "startup_vocal_preroll_sec", 2.0))
-    startup_minimum_forward_characters = int(
-        getattr(args, "startup_minimum_forward_characters", 24)
-    )
-    activity_profile = build_vocal_activity_profile(audio) if skip_silent_windows else None
 
     for window_position, window in enumerate(windows):
         if committed_cursor >= total_characters:
@@ -559,89 +420,21 @@ def windowed_alignment(
         core_end = float(window["core_end_sec"])
         final_core = math.isclose(core_end, duration, abs_tol=1e-9)
 
-        activity = None
-        if activity_profile is not None:
-            activity = vocal_activity_for_interval(activity_profile, core_start, core_end)
-            essentially_silent = (
-                activity["sustained_active_duration_sec"] < silent_min_sustained_sec
-                and (
-                    activity["active_ratio"] <= silent_active_ratio_max + 1e-12
-                    or activity["peak_db"]
-                    <= activity["reliable_threshold_db"] + silent_peak_margin_db + 1e-12
-                )
-            )
-            # Never skip the final core while lyrics remain; doing so would hide
-            # an incomplete alignment instead of surfacing it.
-            if essentially_silent and not final_core:
-                trace = {
-                    **window,
-                    "serial_policy": WINDOW_POLICY,
-                    "status": "skipped_silent_core",
-                    "silent_core_skipped": True,
-                    "vocal_activity": activity,
-                    "input_character_start_before": input_cursor,
-                    "committed_cursor_before": committed_cursor,
-                    "committed_cursor_after": committed_cursor,
-                    "next_window_character_start": input_cursor,
-                    "next_uncommitted_character_start": committed_cursor,
-                    "attempts": [],
-                }
-                traces.append(trace)
-                if progress_callback is not None:
-                    progress_callback(
-                        {
-                            "event": "silent_window_skipped",
-                            "window": window,
-                            "committed_cursor": committed_cursor,
-                            "input_cursor": input_cursor,
-                            "completed_windows": traces,
-                        }
-                    )
-                print(
-                    json.dumps(
-                        {
-                            "window": int(window["window_index"]),
-                            "windows_total": len(windows),
-                            "core": [core_start, core_end],
-                            "status": "skipped_silent_core",
-                            "vocal_activity": activity,
-                            "committed_cursor": committed_cursor,
-                            "input_cursor": input_cursor,
-                        },
-                        ensure_ascii=False,
-                    ),
-                    flush=True,
-                )
-                continue
-
         # Always retain the nominal acoustic overlap.  Already committed lyrics
         # are re-input only as immutable context.  If the current window places
         # a new lyric before the frozen prefix ends, append_strict_core_commits
         # compresses only the overlapping left part instead of rejecting or
         # rerunning the window.
         has_matched_left_context = core_start <= 0.0 or input_cursor < committed_cursor
-        startup_trimmed_start = nominal_input_start
-        startup_onset = None
-        if activity_profile is not None and committed_cursor == 0:
-            startup_onset = activity_profile.get("first_sustained_activity_sec")
-            if startup_onset is not None and float(startup_onset) < input_end:
-                startup_trimmed_start = max(
-                    nominal_input_start,
-                    float(startup_onset) - startup_vocal_preroll_sec,
-                )
         input_variants = [
             {
-                "input_start_sec": startup_trimmed_start,
+                "input_start_sec": nominal_input_start,
                 "context_policy": (
-                    "startup_silence_trimmed"
-                    if startup_trimmed_start > nominal_input_start + 1e-9
-                    else (
-                        "matched_left_context"
-                        if has_matched_left_context
-                        else "unmatched_left_context_retained"
-                    )
+                    "matched_left_context"
+                    if has_matched_left_context
+                    else "unmatched_left_context_retained"
                 ),
-                "trimmed": startup_trimmed_start > nominal_input_start + 1e-9,
+                "trimmed": False,
             }
         ]
 
@@ -661,7 +454,6 @@ def windowed_alignment(
         accepted_next_input_cut_character: dict[str, Any] | None = None
         accepted_effective_window: dict[str, Any] | None = None
         accepted_shadow_rows: list[dict[str, Any]] | None = None
-        accepted_control_committed: list[dict[str, Any]] | None = None
 
         next_input_boundary = None
         if not final_core and window_position + 1 < len(windows):
@@ -680,28 +472,11 @@ def windowed_alignment(
                 "left_context_trim_reason": None,
                 "left_context_policy": str(variant["context_policy"]),
                 "left_context_variant_index": variant_index,
-                "startup_vocal_onset_sec": startup_onset,
             }
             covered_input_sec = max(0.0, input_end - input_start)
-            budget_support_sec = covered_input_sec
-            input_activity = None
-            if activity_profile is not None:
-                input_activity = vocal_activity_for_interval(activity_profile, input_start, input_end)
-                # Estimate transcript demand from vocal-supporting time, not from
-                # a long instrumental prefix. Candidate expansion remains the
-                # recovery path when this conservative first estimate is small.
-                budget_support_sec = min(
-                    covered_input_sec,
-                    max(0.0, float(input_activity["sustained_active_duration_sec"])),
-                )
-            minimum_target = (
-                startup_minimum_forward_characters
-                if committed_cursor == 0
-                else int(args.minimum_forward_characters)
-            )
             target_count = max(
-                minimum_target,
-                int(math.ceil(characters_per_second * budget_support_sec * args.future_character_ratio)),
+                args.minimum_forward_characters,
+                int(math.ceil(characters_per_second * covered_input_sec * args.future_character_ratio)),
             )
             if final_core:
                 target_count = total_characters - input_cursor
@@ -734,14 +509,11 @@ def windowed_alignment(
                     decorated.update(effective_window)
                     decorated["candidate_character_start"] = char_start
                     decorated["candidate_character_end"] = char_end
-                    decorated["inference_source"] = "strict_serial_window"
-                    decorated["timestamp_decoder"] = str(getattr(args, "decoder_kind", "official"))
+                    decorated["inference_source"] = "strict_serial_window_raw"
                     decorated_rows.append(decorated)
 
-                control_rows = project_rows_for_decoder(decorated_rows, control_decoder_kind)
-
-                control_context_rows, control_core_committed, control_lookahead = split_core_commit_prefix(
-                    control_rows,
+                context_rows, core_committed, lookahead = split_core_commit_prefix(
+                    decorated_rows,
                     expected_input_character_start=input_cursor,
                     committed_character_start=committed_cursor,
                     core_start_sec=core_start,
@@ -749,28 +521,13 @@ def windowed_alignment(
                     final_core=final_core,
                     start_tolerance_sec=args.boundary_start_tolerance_sec,
                 )
-                by_output_index = {
-                    int(row["global_character_index"]): row for row in decorated_rows
-                }
-                context_rows = [
-                    by_output_index[int(row["global_character_index"])]
-                    for row in control_context_rows
-                ]
-                core_committed = [
-                    by_output_index[int(row["global_character_index"])]
-                    for row in control_core_committed
-                ]
-                lookahead = [
-                    by_output_index[int(row["global_character_index"])]
-                    for row in control_lookahead
-                ]
                 core_boundary_observed = final_core or bool(lookahead) or char_end == total_characters
 
                 next_input_candidate: int | None = total_characters if final_core else None
                 next_input_cut_character: dict[str, Any] | None = None
                 if next_input_boundary is not None:
                     next_input_candidate, next_input_cut_character = next_window_transcript_start(
-                        control_rows,
+                        decorated_rows,
                         input_boundary_sec=next_input_boundary,
                         total_characters=total_characters,
                     )
@@ -787,8 +544,6 @@ def windowed_alignment(
                         "context_policy": str(variant["context_policy"]),
                         "status": "accepted" if boundary_observed else "expanded",
                         "target_character_count": target_count,
-                        "budget_support_sec": budget_support_sec,
-                        "input_vocal_activity": input_activity,
                         "candidate_character_start": char_start,
                         "candidate_character_end": char_end,
                         "context_character_count": len(context_rows),
@@ -799,8 +554,6 @@ def windowed_alignment(
                         "next_input_boundary_observed": next_input_boundary_observed,
                         "next_window_input_character_start": next_input_candidate,
                         "boundary_observed": boundary_observed,
-                        "output_decoder_kind": str(getattr(args, "decoder_kind", "official")),
-                        "serial_control_decoder_kind": control_decoder_kind,
                         **audit,
                     }
                 )
@@ -823,19 +576,8 @@ def windowed_alignment(
                     accepted_next_input_cursor = next_input_candidate
                     accepted_next_input_cut_character = next_input_cut_character
                     accepted_effective_window = effective_window
-                    accepted_control_committed = control_core_committed
                     if bool(getattr(args, "capture_shadow_rows", False)):
-                        control_by_index = {
-                            int(row["global_character_index"]): row for row in control_rows
-                        }
-                        accepted_shadow_rows = []
-                        for source in decorated_rows:
-                            row = dict(source)
-                            control = control_by_index[int(row["global_character_index"])]
-                            row["control_fixed_global_start_sec"] = float(control["fixed_global_start_sec"])
-                            row["control_fixed_global_end_sec"] = float(control["fixed_global_end_sec"])
-                            row["serial_control_decoder_kind"] = control_decoder_kind
-                            accepted_shadow_rows.append(row)
+                        accepted_shadow_rows = [dict(row) for row in decorated_rows]
                     break
 
                 target_count = max(
@@ -859,7 +601,6 @@ def windowed_alignment(
             or accepted_lookahead is None
             or accepted_range is None
             or accepted_next_input_cursor is None
-            or accepted_control_committed is None
         ):
             diagnostic = {
                 "kind": "window_boundary_not_observed",
@@ -915,8 +656,8 @@ def windowed_alignment(
             input_cursor = accepted_next_input_cursor
 
         core_boundary_character = None
-        if accepted_control_committed:
-            last = accepted_control_committed[-1]
+        if accepted_committed:
+            last = accepted_committed[-1]
             if float(last["fixed_global_end_sec"]) > core_end:
                 core_boundary_character = {
                     "global_character_index": int(last["global_character_index"]),
@@ -965,10 +706,6 @@ def windowed_alignment(
                 "core_boundary_character": core_boundary_character,
                 "next_uncommitted_character": next_uncommitted_character,
                 "attempts": attempts,
-                "output_decoder_kind": str(getattr(args, "decoder_kind", "official")),
-                "serial_control_decoder_kind": control_decoder_kind,
-                "silent_core_skipped": False,
-                "vocal_activity": activity,
                 **({"shadow_rows": accepted_shadow_rows or []} if bool(getattr(args, "capture_shadow_rows", False)) else {}),
             }
         )
@@ -1036,10 +773,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--r2-checkpoint", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--decoder-kind", choices=("raw", "official", "gpu_tcn", "gpu_transformer"), default="official")
-    parser.add_argument(
-        "--serial-control-decoder-kind", choices=("same", "official", "raw"), default="same",
-        help="decoder used only for core ownership and the next-window lyric cursor",
-    )
     parser.add_argument("--gpu-decoder-checkpoint", type=Path)
     parser.add_argument("--language", type=normalize_alignment_language, default="Chinese")
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)
@@ -1072,15 +805,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--capture-shadow-rows", action="store_true",
         help="retain all accepted-window candidate rows in window_trace for quick diagnostics",
     )
-    parser.add_argument(
-        "--skip-silent-windows", action=argparse.BooleanOptionalAction, default=False,
-        help="skip non-final cores that are essentially silent in the vocal stem",
-    )
-    parser.add_argument("--silent-active-ratio-max", type=float, default=0.01)
-    parser.add_argument("--silent-peak-margin-db", type=float, default=3.0)
-    parser.add_argument("--silent-min-sustained-sec", type=float, default=0.40)
-    parser.add_argument("--startup-vocal-preroll-sec", type=float, default=2.0)
-    parser.add_argument("--startup-minimum-forward-characters", type=int, default=24)
     return parser
 
 
@@ -1153,7 +877,6 @@ def main() -> None:
                     "mode": mode,
                     "decoder": {
                         "kind": args.decoder_kind,
-                        "serial_control_kind": args.serial_control_decoder_kind,
                         "gpu_checkpoint": (
                             None if args.gpu_decoder_checkpoint is None
                             else str(args.gpu_decoder_checkpoint.resolve())
@@ -1173,9 +896,6 @@ def main() -> None:
                         "allows_zero_duration_after_compression": True,
                         "legacy_boundary_start_tolerance_sec_ignored": args.boundary_start_tolerance_sec,
                         "legacy_seam_tolerance_sec_diagnostic_only": args.seam_tolerance_sec,
-                        "skip_silent_windows": args.skip_silent_windows,
-                        "silent_active_ratio_max": args.silent_active_ratio_max,
-                        "silent_peak_margin_db": args.silent_peak_margin_db,
                     } if mode == "windowed" else None,
                 }
                 request_hash = canonical_hash(request)
