@@ -208,6 +208,31 @@ def infer_slice(
     if len(decoded) != len(selected):
         raise RuntimeError(f"decode mismatch: decoded={len(decoded)} units={len(selected)}")
 
+    decoder_kind = str(getattr(args, "decoder_kind", "official"))
+    gpu_decoded_classes = None
+    gpu_decoder_diagnostic = None
+    if decoder_kind in {"gpu_tcn", "gpu_transformer"}:
+        runtime = getattr(args, "gpu_decoder_runtime", None)
+        if runtime is None:
+            raise RuntimeError(f"decoder_kind={decoder_kind} requires a loaded gpu_decoder_runtime")
+        expected_architecture = decoder_kind.removeprefix("gpu_")
+        if runtime.config.architecture != expected_architecture:
+            raise RuntimeError(
+                f"decoder checkpoint architecture mismatch: kind={decoder_kind} "
+                f"checkpoint={runtime.config.architecture}"
+            )
+        gpu_decoder_diagnostic = runtime.decode(slot_logits)
+        gpu_decoded_classes = gpu_decoder_diagnostic["classes"].detach().cpu()
+        gpu_decoder_diagnostic = {
+            **gpu_decoder_diagnostic,
+            "classes": gpu_decoded_classes,
+            "gate": gpu_decoder_diagnostic["gate"].detach().cpu(),
+        }
+        if int(gpu_decoded_classes.shape[0]) != 2 * len(selected):
+            raise RuntimeError("GPU decoder returned the wrong slot count")
+    elif decoder_kind != "official":
+        raise ValueError(f"unknown decoder_kind: {decoder_kind}")
+
     rows: list[dict[str, Any]] = []
     segment = float(args.timestamp_segment_sec)
     for local_index, (meta, item) in enumerate(zip(selected, decoded, strict=True)):
@@ -215,8 +240,18 @@ def infer_slice(
         end_slot = start_slot + 1
         raw_start = int(raw_classes[start_slot]) * segment
         raw_end = int(raw_classes[end_slot]) * segment
-        fixed_start = float(item["start_time"])
-        fixed_end = float(item["end_time"])
+        official_fixed_start = float(item["start_time"])
+        official_fixed_end = float(item["end_time"])
+        gpu_fixed_start = (
+            float(int(gpu_decoded_classes[start_slot])) * segment
+            if gpu_decoded_classes is not None else None
+        )
+        gpu_fixed_end = (
+            float(int(gpu_decoded_classes[end_slot])) * segment
+            if gpu_decoded_classes is not None else None
+        )
+        fixed_start = official_fixed_start if decoder_kind == "official" else float(gpu_fixed_start)
+        fixed_end = official_fixed_end if decoder_kind == "official" else float(gpu_fixed_end)
         rows.append(
             {
                 "global_character_index": meta.global_index,
@@ -232,6 +267,15 @@ def infer_slice(
                 "raw_local_end_sec": raw_end,
                 "raw_global_start_sec": raw_start + global_audio_offset_sec,
                 "raw_global_end_sec": raw_end + global_audio_offset_sec,
+                "decoder_kind": decoder_kind,
+                "official_fixed_local_start_sec": official_fixed_start,
+                "official_fixed_local_end_sec": official_fixed_end,
+                "official_fixed_global_start_sec": official_fixed_start + global_audio_offset_sec,
+                "official_fixed_global_end_sec": official_fixed_end + global_audio_offset_sec,
+                "gpu_fixed_local_start_sec": gpu_fixed_start,
+                "gpu_fixed_local_end_sec": gpu_fixed_end,
+                "gpu_fixed_global_start_sec": None if gpu_fixed_start is None else gpu_fixed_start + global_audio_offset_sec,
+                "gpu_fixed_global_end_sec": None if gpu_fixed_end is None else gpu_fixed_end + global_audio_offset_sec,
                 "fixed_local_start_sec": fixed_start,
                 "fixed_local_end_sec": fixed_end,
                 "fixed_global_start_sec": fixed_start + global_audio_offset_sec,
@@ -247,6 +291,14 @@ def infer_slice(
                 "raw_boundary_margin_mean": float(
                     (top_values[start_slot, 0] - top_values[start_slot, 1]
                      + top_values[end_slot, 0] - top_values[end_slot, 1]) / 2.0
+                ),
+                "gpu_decoder_start_gate": (
+                    None if gpu_decoder_diagnostic is None
+                    else float(gpu_decoder_diagnostic["gate"][start_slot])
+                ),
+                "gpu_decoder_end_gate": (
+                    None if gpu_decoder_diagnostic is None
+                    else float(gpu_decoder_diagnostic["gate"][end_slot])
                 ),
             }
         )
@@ -265,6 +317,11 @@ def infer_slice(
         "timestamp_logit_class_count": int(slot_logits.shape[-1]),
         "audio_sample_count": int(len(audio)),
         "audio_duration_sec": float(len(audio) / 16000.0),
+        "decoder_kind": decoder_kind,
+        "gpu_decoder_identity": (
+            None if decoder_kind == "official"
+            else getattr(getattr(args, "gpu_decoder_runtime", None), "identity", None)
+        ),
     }
     return rows, audit
 
@@ -711,6 +768,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--r1-checkpoint", type=Path, required=True)
     parser.add_argument("--r2-checkpoint", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--decoder-kind", choices=("official", "gpu_tcn", "gpu_transformer"), default="official")
+    parser.add_argument("--gpu-decoder-checkpoint", type=Path)
     parser.add_argument("--language", type=normalize_alignment_language, default="Chinese")
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)
     parser.add_argument("--core-sec", type=float, default=60.0)
@@ -747,6 +806,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
+    args.gpu_decoder_runtime = None
+    args.gpu_decoder_identity = None
+    if args.decoder_kind in {"gpu_tcn", "gpu_transformer"}:
+        if args.gpu_decoder_checkpoint is None:
+            raise ValueError(f"--decoder-kind {args.decoder_kind} requires --gpu-decoder-checkpoint")
+        from lyricalign.demo.gpu_boundary_decoder import GpuBoundaryDecoderRuntime
+        args.gpu_decoder_runtime = GpuBoundaryDecoderRuntime(
+            args.gpu_decoder_checkpoint.resolve(), device=args.device
+        )
+        args.gpu_decoder_identity = args.gpu_decoder_runtime.identity
     for path in (args.lyrics, args.mix_audio, args.vocal_audio):
         if not path.is_file():
             raise FileNotFoundError(path)
@@ -802,6 +871,13 @@ def main() -> None:
                     "audio_name": audio_name,
                     "audio": audio_info,
                     "mode": mode,
+                    "decoder": {
+                        "kind": args.decoder_kind,
+                        "gpu_checkpoint": (
+                            None if args.gpu_decoder_checkpoint is None
+                            else str(args.gpu_decoder_checkpoint.resolve())
+                        ),
+                    },
                     "timestamp_segment_sec": args.timestamp_segment_sec,
                     "window": {
                         "core_sec": args.core_sec,

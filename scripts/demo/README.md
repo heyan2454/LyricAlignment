@@ -153,3 +153,31 @@ post-design overnight smoke.  Execution and collection guide:
 ```text
 docs/manual/demo_realign_quick_execution.md
 ```
+
+## GPU decoder + paired realignment smoke/overnight
+
+```text
+run_demo_realign_smoke.sh
+run_demo_realign_overnight.sh
+run_demo_realign_overnight.py
+cache_gpu_decoder_features.py
+train_gpu_decoder.py
+evaluate_gpu_decoder.py
+build_realign_funnel.py
+collect_demo_realign_overnight.py
+```
+
+The path is GPU-first. M4Singer Qwen evidence is cached once as compact
+float16 slot features, then both a CUDA residual TCN and a CUDA bidirectional
+Transformer refine raw timestamp classes. MIR-1K baseline and realignment are
+paired across official, TCN, and Transformer decoders. Cases follow an
+`exact -> +2 -> +4` escalation funnel; the controller does not execute the full
+decoder × context × audio × window Cartesian product. The deployment default is
+Demucs/30 s. Add `--audio-variants official_vocal` only for a targeted diagnostic
+upper-bound run.
+
+Execution details:
+
+```text
+docs/manual/demo_realign_gpu_decoder_overnight.md
+```

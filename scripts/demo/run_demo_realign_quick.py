@@ -133,6 +133,8 @@ def inference_args(args: argparse.Namespace, core_sec: float) -> SimpleNamespace
         boundary_start_tolerance_sec=args.boundary_start_tolerance_sec,
         seam_tolerance_sec=args.seam_tolerance_sec,
         capture_shadow_rows=True,
+        decoder_kind=getattr(args, "decoder_kind", "official"),
+        gpu_decoder_runtime=getattr(args, "gpu_decoder_runtime", None),
     )
 
 
@@ -166,6 +168,12 @@ def run_evidence(
                     "model": args.model,
                     "revision": args.revision,
                     "timestamp_segment_sec": args.timestamp_segment_sec,
+                    "decoder_kind": args.decoder_kind,
+                    "gpu_decoder_checkpoint": (
+                        str(args.gpu_decoder_checkpoint.resolve())
+                        if args.gpu_decoder_checkpoint is not None else None
+                    ),
+                    "gpu_decoder_identity": getattr(args, "gpu_decoder_identity", None),
                 }
                 request_hash = canonical_hash(request)
                 if not args.force and path.is_file():
@@ -295,14 +303,15 @@ def anchor_modes_for_case(
     target_start = int(candidate["dependency_character_start"])
     target_end = int(candidate["dependency_character_end"])
     modes: list[tuple[str, dict[str, Any] | None, dict[str, Any], dict[str, Any], list[dict[str, Any]]]] = []
-    oracle_left, oracle_right = oracle_anchor_pair(evidence["ground_truth"], target_start, target_end, guard_units=args.anchor_guard_units)
-    if oracle_left is not None and oracle_right is not None:
-        span_units = int(oracle_right["global_character_index"]) - int(oracle_left["global_character_index"]) + 1
-        span_sec = float(oracle_right["selected_end_sec"]) - float(oracle_left["selected_start_sec"])
-        if span_units <= args.max_anchor_span_units and span_sec <= args.max_anchor_span_sec:
-            modes.append(("gt_oracle", None, oracle_left, oracle_right, []))
+    if args.include_gt_anchor:
+        oracle_left, oracle_right = oracle_anchor_pair(evidence["ground_truth"], target_start, target_end, guard_units=args.anchor_guard_units)
+        if oracle_left is not None and oracle_right is not None:
+            span_units = int(oracle_right["global_character_index"]) - int(oracle_left["global_character_index"]) + 1
+            span_sec = float(oracle_right["selected_end_sec"]) - float(oracle_left["selected_start_sec"])
+            if span_units <= args.max_anchor_span_units and span_sec <= args.max_anchor_span_sec:
+                modes.append(("gt_oracle", None, oracle_left, oracle_right, []))
     anchors = evidence["anchor_rows"]
-    for ordinal, policy in enumerate(shortlist[:2]):
+    for ordinal, policy in enumerate(shortlist[: args.max_automatic_anchor_policies]):
         left, right, rejected = select_anchor_pair(
             anchors, policy, target_start, target_end,
             max_distance_units=args.max_anchor_search_units,
@@ -446,9 +455,18 @@ def run_q2_case(
 
     local_trials: list[dict[str, Any]] = []
     for anchor_mode, policy, left, right, rejected in anchor_modes_for_case(args, evidence, candidate, shortlist):
-        trial_specs = [("exact_anchor", 0.0, 0)]
-        trial_specs.extend(("audio_only_padding", float(padding), 0) for padding in args.padding_sec)
-        trial_specs.extend(("matched_context", 0.0, int(units)) for units in args.matched_context_units)
+        if args.q2_trial_profile == "exact":
+            trial_specs = [("exact_anchor", 0.0, 0)]
+        elif args.q2_trial_profile == "plus2":
+            trial_specs = [("matched_context", 0.0, 2)]
+        elif args.q2_trial_profile == "plus4":
+            trial_specs = [("matched_context", 0.0, 4)]
+        elif args.q2_trial_profile == "all":
+            trial_specs = [("exact_anchor", 0.0, 0)]
+            trial_specs.extend(("audio_only_padding", float(padding), 0) for padding in args.padding_sec)
+            trial_specs.extend(("matched_context", 0.0, int(units)) for units in args.matched_context_units)
+        else:
+            raise ValueError(args.q2_trial_profile)
         for crop_mode, padding, context_units in trial_specs:
             trial = local_infer(
                 processor=processor, model=model, audio=audio, document=document, serial_args=serial_args,
@@ -508,7 +526,7 @@ def run_q2_case(
 
     final_selection = select_single_repair_candidate(
         repair_candidates,
-        require_context_agreement=True,
+        require_context_agreement=args.q2_require_context_agreement,
         context_agreement_tolerance_sec=args.selection_consensus_tolerance_sec,
         excluded_anchor_modes=("gt_oracle", "gt_oracle_fallback"),
     )
@@ -531,6 +549,40 @@ def run_q2_case(
     }
 
 
+def load_external_q2_plan(path: Path | None) -> dict[tuple[str, str, float], list[dict[str, Any]]]:
+    if path is None:
+        return {}
+    grouped: dict[tuple[str, str, float], list[dict[str, Any]]] = defaultdict(list)
+    for row in read_jsonl(path):
+        key = (str(row["item_id"]), str(row["audio_variant"]), float(row["core_sec"]))
+        grouped[key].append(row)
+    return grouped
+
+
+def external_candidate(row: dict[str, Any]) -> dict[str, Any]:
+    start = int(row["target_start"])
+    end = int(row["target_end"])
+    if start < 0 or end < start:
+        raise ValueError(f"invalid external q2 span: {row}")
+    return {
+        "case_id": str(row.get("case_id") or row.get("pair_id")),
+        "pair_id": str(row.get("pair_id") or row.get("case_id")),
+        "candidate_type": "external_decoder_union",
+        "observed_character_start": start,
+        "observed_character_end": end,
+        "dependency_character_start": start,
+        "dependency_character_end": end,
+        "character_indices": list(range(start, end + 1)),
+        "target_unit_count": end - start + 1,
+        "trigger_counts": dict(row.get("trigger_counts") or {}),
+        "trigger_flags_by_index": dict(row.get("trigger_flags_by_index") or {}),
+        "constraint_dependency_trace": list(row.get("constraint_dependency_trace") or []),
+        "severity_score": float(row.get("severity_score") or 0.0),
+        "source_decoders": list(row.get("source_decoders") or []),
+        "funnel_stage": row.get("funnel_stage"),
+    }
+
+
 def run_q2(
     args: argparse.Namespace, evidence: list[dict[str, Any]], processor: Any, model: Any,
 ) -> None:
@@ -539,19 +591,30 @@ def run_q2(
     requested = 0
     completed = 0
     refreshed_candidate_rows: list[dict[str, Any]] = []
+    external_plan = load_external_q2_plan(args.q2_case_plan)
     for item in evidence:
-        shadow = accepted_shadow_rows(item.get("window_trace", []))
-        refreshed_candidates = mine_natural_candidates(
-            item["characters"], shadow,
-            item_id=str(item["request"]["item_id"]),
-            audio_variant=str(item["request"]["audio_variant"]),
-            max_target_units=args.max_target_units,
-            disagreement_peak_threshold_sec=args.disagreement_peak_threshold_sec,
-            timestamp_step_sec=args.timestamp_segment_sec,
+        evidence_key = (
+            str(item["request"]["item_id"]),
+            str(item["request"]["audio_variant"]),
+            float(item["request"]["core_sec"]),
         )
+        if external_plan:
+            refreshed_candidates = [external_candidate(row) for row in external_plan.get(evidence_key, [])]
+        else:
+            shadow = accepted_shadow_rows(item.get("window_trace", []))
+            refreshed_candidates = mine_natural_candidates(
+                item["characters"], shadow,
+                item_id=str(item["request"]["item_id"]),
+                audio_variant=str(item["request"]["audio_variant"]),
+                max_target_units=args.max_target_units,
+                disagreement_peak_threshold_sec=args.disagreement_peak_threshold_sec,
+                timestamp_step_sec=args.timestamp_segment_sec,
+            )
+            for candidate in refreshed_candidates:
+                candidate["core_sec"] = float(item["request"]["core_sec"])
+                candidate["case_id"] = f"{candidate['case_id']}_core{float(item['request']['core_sec']):g}"
         for candidate in refreshed_candidates:
             candidate["core_sec"] = float(item["request"]["core_sec"])
-            candidate["case_id"] = f"{candidate['case_id']}_core{float(item['request']['core_sec']):g}"
             refreshed_candidate_rows.append({**candidate, "evidence_path": item["evidence_path"]})
         for candidate in refreshed_candidates:
             requested += 1
@@ -565,6 +628,9 @@ def run_q2(
                 "anchor_limits": [args.anchor_guard_units, args.max_anchor_span_units, args.max_anchor_span_sec],
                 "candidate_limits": [args.max_target_units, args.disagreement_peak_threshold_sec],
                 "quick_revision": "2.1",
+                "decoder_kind": args.decoder_kind,
+                "q2_trial_profile": args.q2_trial_profile,
+                "q2_require_context_agreement": args.q2_require_context_agreement,
                 "rollback_predecessor_units": args.rollback_predecessor_units,
                 "selection_consensus_tolerance_sec": args.selection_consensus_tolerance_sec,
                 "excluded_automatic_anchor_modes": ["gt_oracle", "gt_oracle_fallback"],
@@ -601,8 +667,10 @@ def run_q2(
         "refreshed_candidate_count": len(refreshed_candidate_rows),
         "selector": {
             "ground_truth_anchor_modes_excluded": True,
-            "requires_second_reasonable_input_agreement": True,
+            "requires_second_reasonable_input_agreement": args.q2_require_context_agreement,
             "agreement_tolerance_sec": args.selection_consensus_tolerance_sec,
+            "trial_profile": args.q2_trial_profile,
+            "decoder_kind": args.decoder_kind,
         },
     })
     atomic_json(args.out_root / "q2_natural_realign" / "comparison.json", comparison)
@@ -1073,8 +1141,10 @@ def build_plan(args: argparse.Namespace, items: list[dict[str, Any]], checkpoint
         "matched_context_units": args.matched_context_units,
         "selection": {
             "ground_truth_anchor_modes_excluded": True,
-            "requires_second_reasonable_input_agreement": True,
+            "requires_second_reasonable_input_agreement": args.q2_require_context_agreement,
             "agreement_tolerance_sec": args.selection_consensus_tolerance_sec,
+            "trial_profile": args.q2_trial_profile,
+            "decoder_kind": args.decoder_kind,
         },
         "rollback_predecessor_units": args.rollback_predecessor_units,
         "natural_candidate_limits": {
@@ -1088,6 +1158,17 @@ def build_plan(args: argparse.Namespace, items: list[dict[str, Any]], checkpoint
             "max_pair_span_sec": args.max_anchor_span_sec,
         },
         "model": args.model, "revision": args.revision,
+        "decoder": {
+            "kind": args.decoder_kind,
+            "gpu_checkpoint": None if args.gpu_decoder_checkpoint is None else str(args.gpu_decoder_checkpoint.resolve()),
+        },
+        "q2_execution": {
+            "trial_profile": args.q2_trial_profile,
+            "case_plan": None if args.q2_case_plan is None else str(args.q2_case_plan.resolve()),
+            "require_context_agreement": args.q2_require_context_agreement,
+            "include_gt_anchor": args.include_gt_anchor,
+            "max_automatic_anchor_policies": args.max_automatic_anchor_policies,
+        },
         "checkpoint_identity": checkpoint_identity,
         "q3": {"song_count": args.q3_song_count, "seams_per_song": args.q3_seams_per_song},
     }
@@ -1123,6 +1204,13 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cache-dir", type=Path)
     p.add_argument("--local-files-only", action="store_true", default=os.environ.get("HF_HUB_OFFLINE") == "1")
     p.add_argument("--device", default="cuda")
+    p.add_argument("--decoder-kind", choices=("official", "gpu_tcn", "gpu_transformer"), default="official")
+    p.add_argument("--gpu-decoder-checkpoint", type=Path)
+    p.add_argument("--q2-case-plan", type=Path, help="External decoder-union/escalation plan JSONL")
+    p.add_argument("--q2-trial-profile", choices=("exact", "plus2", "plus4", "all"), default="all")
+    p.add_argument("--q2-require-context-agreement", action=argparse.BooleanOptionalAction, default=True)
+    p.add_argument("--include-gt-anchor", action="store_true")
+    p.add_argument("--max-automatic-anchor-policies", type=int, default=2)
     p.add_argument("--timestamp-segment-sec", type=float, default=TIMESTAMP_STEP_SEC)
     p.add_argument("--demucs-model", default="htdemucs_ft")
     p.add_argument("--left-context-sec", type=float, default=10.0)
@@ -1145,6 +1233,18 @@ def main() -> int:
     args.subset_root = args.subset_root.resolve()
     args.out_root = args.out_root.resolve()
     args.out_root.mkdir(parents=True, exist_ok=True)
+    if args.max_automatic_anchor_policies < 1:
+        raise ValueError("--max-automatic-anchor-policies must be positive")
+    args.gpu_decoder_runtime = None
+    args.gpu_decoder_identity = None
+    if args.decoder_kind in {"gpu_tcn", "gpu_transformer"}:
+        if args.gpu_decoder_checkpoint is None:
+            raise ValueError(f"--decoder-kind {args.decoder_kind} requires --gpu-decoder-checkpoint")
+        from lyricalign.demo.gpu_boundary_decoder import GpuBoundaryDecoderRuntime
+        args.gpu_decoder_runtime = GpuBoundaryDecoderRuntime(
+            args.gpu_decoder_checkpoint.resolve(), device=args.device
+        )
+        args.gpu_decoder_identity = args.gpu_decoder_runtime.identity
     phases = set(args.phase)
     if "all" in phases:
         phases = {"evidence", "q1", "q2", "q3", "collect"}
