@@ -3,6 +3,19 @@
 面向普通话歌声的已知歌词强制对齐研究项目。仓库根目录固定为
 `LyricAlignment/`；日期后缀只用于 archive、run 和报告。
 
+
+Raw + guarded Demucs karaoke demo:
+
+```text
+docs/manual/raw_guarded_karaoke_demo.md
+```
+
+The corresponding detector/repair experiments E0-E5 are launched with:
+
+```bash
+bash scripts/demo/run_raw_guarded_experiment_suite.sh
+```
+
 ## 当前状态（2026-07-26）
 
 Qwen Forced Aligner 首轮 LoRA 实验链已经完成并归档：

@@ -155,3 +155,29 @@ or DALI data should not be mixed into the primary Chinese detector experiment.
 Choose detector triggers, agreement tolerance, and boundary-change cap on
 MIR-1K development only. Write a configuration identity before held-out. Run
 held-out once; no threshold changes after seeing it.
+
+## Implemented entries
+
+The protocol is executable through:
+
+```bash
+bash scripts/demo/run_raw_guarded_experiment_suite.sh
+```
+
+Analysis outputs:
+
+```text
+mir1k/analysis/e0_raw_baseline_census.json
+mir1k/analysis/e1_detector_trigger_ablation.json
+mir1k/analysis/e2_guard_ablation.json
+mir1k/analysis/e3_repair_oracle.json
+mir1k/analysis/e4_clean_control.json
+mir1k/analysis/experiment_suite_summary.{json,md}
+m4singer_long/bucket_{60,120,240}/e5_long_propagation.json
+```
+
+E2 reports both independent-case evaluation and a severity-first global
+non-overlap replay. Only the latter matches the production intervention policy.
+E4 `clean_forced_repair` now genuinely bypasses anomaly reduction and context
+agreement while still requiring a spliceable non-GT candidate; it is a harm
+upper-bound diagnostic and must never be enabled in the demo.

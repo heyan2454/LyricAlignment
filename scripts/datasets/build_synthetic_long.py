@@ -26,7 +26,7 @@ def main() -> None:
     parser.add_argument("--annotations", type=Path, required=True)
     parser.add_argument("--audio-root", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--bucket-sec", type=float, choices=(20, 30, 60, 180), required=True)
+    parser.add_argument("--bucket-sec", type=float, choices=(20, 30, 60, 120, 180, 240), required=True)
     parser.add_argument("--split", default=None, help="Restrict sources to one frozen split, for example test.")
     parser.add_argument("--max-candidates", type=int, default=0, help="Deterministic cap for smoke; 0 means all.")
     args = parser.parse_args()
@@ -47,7 +47,7 @@ def main() -> None:
                 if segment_order(candidate["item_id"]) != segment_order(chosen[-1]["item_id"]) + 1:
                     break
                 chosen.append(candidate)
-                minimum = {20: 20, 30: 30, 60: 45, 180: 150}[int(args.bucket_sec)]
+                minimum = {20: 20, 30: 30, 60: 45, 120: 100, 180: 150, 240: 210}[int(args.bucket_sec)]
                 if sum(float(row["duration_sec"]) for row in chosen) >= minimum:
                     candidates.append(chosen)
                     break

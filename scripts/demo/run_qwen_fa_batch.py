@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import gc
 import hashlib
+import importlib.util
 import json
 import os
 import shutil
@@ -237,15 +238,25 @@ def _prepare_spleeter_vocals(
 
 
 def _demucs_command(args: argparse.Namespace) -> list[str]:
+    """Resolve Demucs without silently falling back to Spleeter.
+
+    The active environment is preferred. Some installations expose the Python
+    module but not a console-script on PATH, so ``python -m demucs`` is checked
+    before the named conda environment fallback.
+    """
     if args.demucs_command:
         return shlex.split(args.demucs_command)
-    if shutil.which("demucs"):
-        return ["demucs"]
+    executable = shutil.which("demucs")
+    if executable:
+        return [executable]
+    if importlib.util.find_spec("demucs") is not None:
+        return [sys.executable, "-m", "demucs"]
     if shutil.which("conda"):
-        return ["conda", "run", "-n", args.demucs_env, "demucs"]
+        return ["conda", "run", "-n", args.demucs_env, "python", "-m", "demucs"]
     raise RuntimeError(
-        "Demucs is required for --separator demucs. Install demucs==4.1.0 in PATH "
-        "or provide --demucs-command/--demucs-env."
+        "Demucs is required for --separator demucs. Install demucs==4.1.0 in the "
+        "active environment, activate the configured conda environment, or provide "
+        "--demucs-command explicitly. Spleeter is not used as an automatic fallback."
     )
 
 
@@ -925,7 +936,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="diagnostic legacy threshold only; v6 never limits overlap compression",
     )
 
-    parser.add_argument("--separator", choices=("spleeter", "demucs"), default=os.environ.get("LYRICALIGN_SEPARATOR", "spleeter"))
+    parser.add_argument("--separator", choices=("spleeter", "demucs"), default=os.environ.get("LYRICALIGN_SEPARATOR", "demucs"))
     parser.add_argument("--spleeter-model-root", type=Path, default=Path(os.environ.get("SPLEETER_MODEL_ROOT", Path.home() / ".cache/spleeter_models")))
     parser.add_argument("--spleeter-model-name", default="2stems")
     parser.add_argument("--spleeter-env", default=os.environ.get("SPLEETER_ENV", "spleeter"))

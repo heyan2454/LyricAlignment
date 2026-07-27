@@ -15,7 +15,7 @@ R2 + vocal + windowed
 
 It supports single files, basenames, folders, optional output roots, arbitrary
 individual modes, model/input composites, stage-specific resume and strict
-Spleeter quality checks.  `--language` now controls language-aware alignment
+audio-separation quality checks. Demucs is the default separator; Spleeter is explicit legacy compatibility only.  `--language` now controls language-aware alignment
 units: English uses words, Japanese uses Nagisa words, and Chinese/Cantonese use
 CJK characters plus contiguous Latin words.  Language and unit mode are part of
 the cache identity.

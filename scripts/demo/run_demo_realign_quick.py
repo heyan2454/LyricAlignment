@@ -839,6 +839,47 @@ def _remap_source_timings(
     return perturbed, {"mapping": mapping, "splice": splice}
 
 
+def forced_clean_control_selection(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    """Choose one deterministic local candidate while bypassing safety gates.
+
+    This is a diagnostic harm upper bound only. It excludes direct-trust and GT
+    anchors, prefers exact-anchor/local-raw bounded remerge, and then chooses the
+    smallest mean boundary movement. No anomaly-reduction or context-agreement
+    requirement is applied.
+    """
+    eligible: list[tuple[tuple[int, int, float, int], int, dict[str, Any]]] = []
+    for ordinal, candidate in enumerate(candidates):
+        if "direct_trust" in str(candidate.get("mode", "")):
+            continue
+        if str(candidate.get("anchor_mode")) in {"gt_oracle", "gt_oracle_fallback"}:
+            continue
+        if not (candidate.get("splice") or {}).get("valid"):
+            continue
+        crop_priority = 0 if candidate.get("crop_mode") == "exact_anchor" else 1
+        stage_priority = 0 if str(candidate.get("mode", "")).startswith("local_raw") else 1
+        mean_change = ((candidate.get("modification_summary") or {}).get("boundary_change_abs_sec") or {}).get("mean")
+        eligible.append(((crop_priority, stage_priority, float(mean_change or 0.0), ordinal), ordinal, candidate))
+    if not eligible:
+        return {
+            "selected": False,
+            "decision": "keep_baseline",
+            "reason": "forced_clean_control_has_no_structurally_spliceable_candidate",
+            "forced_write_back_control": True,
+        }
+    _, ordinal, candidate = min(eligible, key=lambda row: row[0])
+    return {
+        "selected": True,
+        "decision": "replace",
+        "reason": "forced_clean_control_bypasses_anomaly_and_agreement_gates",
+        "forced_write_back_control": True,
+        "candidate_ordinal": ordinal,
+        "mode": candidate.get("mode"),
+        "anchor_mode": candidate.get("anchor_mode"),
+        "crop_mode": candidate.get("crop_mode"),
+        "context_units": candidate.get("context_units"),
+    }
+
+
 def run_q3_case(
     args: argparse.Namespace, evidence: dict[str, Any], seam: dict[str, Any], condition: dict[str, Any],
     processor: Any, model: Any, shortlist: list[dict[str, Any]],
@@ -926,11 +967,14 @@ def run_q3_case(
         args, evidence, perturbed, target_start, target_end, processor, model, shortlist,
         force_repair=(family == "clean_forced_repair"),
     ) if family != "clean_detector" else []
-    final_selection = select_single_repair_candidate(
-        repairs,
-        require_context_agreement=False,
-        excluded_anchor_modes=("gt_oracle", "gt_oracle_fallback"),
-    )
+    if family == "clean_forced_repair":
+        final_selection = forced_clean_control_selection(repairs)
+    else:
+        final_selection = select_single_repair_candidate(
+            repairs,
+            require_context_agreement=False,
+            excluded_anchor_modes=("gt_oracle", "gt_oracle_fallback"),
+        )
     return {
         "schema_version": "demo_realign_q3_case_v2", "status": "complete", "created_at": utc_now(),
         "case_id": condition["case_id"], "family": family, "item_id": item_id,

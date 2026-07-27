@@ -38,6 +38,7 @@ PYTHONUNBUFFERED=1 "$PYTHON_BIN" scripts/demo/analyze_raw_detector_repair.py \
   --baseline-root "$RAW_PRF_OUT_ROOT" \
   --q2-root "$RAW_PRF_OUT_ROOT" \
   --output "$RAW_PRF_OUT_ROOT/raw_detector_repair_metrics.json" \
+  --markdown-output "$RAW_PRF_OUT_ROOT/raw_detector_repair_metrics.md" \
   2>&1 | tee -a "$LOG"
 
 echo "complete: $RAW_PRF_OUT_ROOT/raw_detector_repair_metrics.json"

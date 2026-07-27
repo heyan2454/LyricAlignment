@@ -83,6 +83,7 @@ def main() -> int:
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--tolerances-sec", nargs="+", type=float, default=[0.08, 0.16, 0.24])
     p.add_argument("--meaningful-change-sec", type=float, default=0.04)
+    p.add_argument("--markdown-output", type=Path, help="optional concise human-readable summary")
     args = p.parse_args()
 
     units, detected, cases = collect_evidence(args.baseline_root)
@@ -204,6 +205,13 @@ def main() -> int:
             },
             "modified_unit_outcome": {
                 "meaningfully_modified": meaningful_modified,
+                "meaningfully_modified_observations": meaningful_modified,
+                "unique_meaningfully_modified_units": len(modified_keys),
+                "duplicate_modified_observations": meaningful_modified - len(modified_keys),
+                "counting_note": (
+                    "Q2 cases are evaluated independently; overlapping selected cases may observe the same unit more than once. "
+                    "Use the experiment-suite global_nonoverlap_replay for production-like totals."
+                ),
                 "modified_previously_correct": modified_correct,
                 "harmful_modified_previously_correct": harmful_correct,
                 "harmful_rate_within_modified_correct": harmful_correct / modified_correct if modified_correct else 0.0,
@@ -214,6 +222,36 @@ def main() -> int:
         }
 
     atomic_json(args.output, report)
+    if args.markdown_output is not None:
+        lines = [
+            "# Raw detector and guarded intervention metrics",
+            "",
+            f"- evaluated units: {report['unit_count']}",
+            f"- detected units: {report['detected_unit_count']}",
+            f"- natural cases: {report['natural_case_count']}",
+            f"- independently selected cases: {report['selected_case_count']}",
+            "",
+        ]
+        for tolerance, row in report["by_tolerance"].items():
+            detector = row["detector_unit_prf"]
+            intervention = row["intervention_correction_prf"]
+            outcome = row["modified_unit_outcome"]
+            lines.extend([
+                f"## {float(tolerance) * 1000:.0f} ms",
+                "",
+                f"- error prevalence: {row['population']['error_prevalence']:.2%}",
+                f"- detector P/R/F1: {detector['precision']:.3f} / {detector['recall']:.3f} / {detector['f1']:.3f}",
+                f"- correct but detected and unmodified: {row['correct_units_false_detected_but_unmodified_count']}",
+                f"- correct and actually modified: {row['correct_units_false_detected_and_modified_count']}",
+                f"- intervention P/R/F1: {intervention['precision']:.3f} / {intervention['recall']:.3f} / {intervention['f1']:.3f}",
+                f"- unique meaningfully modified units: {outcome['unique_meaningfully_modified_units']}",
+                f"- duplicate independent-case observations: {outcome['duplicate_modified_observations']}",
+                f"- improved erroneous observations: {outcome['improved_previously_erroneous']}",
+                f"- worsened erroneous observations: {outcome['worsened_previously_erroneous']}",
+                "",
+            ])
+        args.markdown_output.parent.mkdir(parents=True, exist_ok=True)
+        args.markdown_output.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
 
