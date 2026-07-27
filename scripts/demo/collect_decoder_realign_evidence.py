@@ -131,6 +131,10 @@ def compact_window(song: str, branch: str, row: dict[str, Any]) -> dict[str, Any
         "status": row.get("status"),
         "core_start": row.get("core_start_sec"),
         "core_end": row.get("core_end_sec"),
+        "core_duration": row.get("core_duration_sec"),
+        "window_plan_policy": row.get("window_plan_policy"),
+        "core_start_silence_id": row.get("core_start_silence_id"),
+        "core_end_silence_id": row.get("core_end_silence_id"),
         "input_start": row.get("input_start_sec"),
         "input_end": row.get("input_end_sec"),
         "effective_input_start": row.get("effective_input_start_sec"),
@@ -226,6 +230,7 @@ def build_staging(
             "batch_plan": read_json(song_root / "batch_plan.json"),
             "batch_manifest": read_json(song_root / "batch_manifest.json"),
             "render_manifest": read_json(song_root / "render_manifest.json"),
+            "window_plan": read_json(align_root / "window_plan.json"),
         }
         for branch in BRANCHES:
             path = branch_alignment(song_root, branch)

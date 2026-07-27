@@ -203,18 +203,79 @@ def test_activity_profile_reports_sustained_onset_after_long_intro() -> None:
     assert vocal["sustained_active_duration_sec"] > 1.0
 
 
-def test_comparison_branches_use_their_own_serial_decoder() -> None:
+def test_comparison_uses_raw_shared_planner_design() -> None:
     module = load_script(
-        "decoder_realign_comparison_own_trajectory_test_module",
+        "decoder_realign_comparison_shared_planner_test_module",
         "align_qwen_fa_decoder_realign_comparison.py",
     )
     args = module.parser().parse_args([
         "--lyrics", "/tmp/x.txt", "--audio", "/tmp/x.wav", "--out-root", "/tmp/out",
     ])
-    official = module.branch_args(args, "official")
     raw = module.branch_args(args, "raw")
-    assert official.serial_control_decoder_kind == "same"
+    assert raw.decoder_kind == "raw"
     assert raw.serial_control_decoder_kind == "same"
+
+
+def test_shared_trace_replay_changes_decoder_not_ownership() -> None:
+    module = load_script(
+        "decoder_realign_comparison_replay_test_module",
+        "align_qwen_fa_decoder_realign_comparison.py",
+    )
+    document = type("Document", (), {
+        "characters": [
+            type("Char", (), {
+                "global_index": 0, "text": "甲", "unit_type": "cjk_character",
+                "line_index": 0, "index_in_line": 0, "display_prefix": "",
+                "display_text": "甲", "display_suffix": "",
+            })(),
+            type("Char", (), {
+                "global_index": 1, "text": "乙", "unit_type": "cjk_character",
+                "line_index": 0, "index_in_line": 1, "display_prefix": "",
+                "display_text": "乙", "display_suffix": "",
+            })(),
+        ],
+    })()
+    base_rows = []
+    for index in range(2):
+        base_rows.append({
+            "global_character_index": index,
+            "character": "甲乙"[index],
+            "raw_local_start_sec": float(index),
+            "raw_local_end_sec": float(index) + 0.5,
+            "raw_global_start_sec": float(index),
+            "raw_global_end_sec": float(index) + 0.5,
+            "official_fixed_local_start_sec": 0.0,
+            "official_fixed_local_end_sec": 0.0 if index == 0 else 1.5,
+            "official_fixed_global_start_sec": 0.0,
+            "official_fixed_global_end_sec": 0.0 if index == 0 else 1.5,
+            "fixed_local_start_sec": float(index),
+            "fixed_local_end_sec": float(index) + 0.5,
+            "fixed_global_start_sec": float(index),
+            "fixed_global_end_sec": float(index) + 0.5,
+        })
+    trace = [{
+        "window_index": 0,
+        "core_start_sec": 0.0,
+        "core_end_sec": 30.0,
+        "committed_character_start": 0,
+        "committed_character_end": 2,
+        "shadow_rows": base_rows,
+        "silent_core_skipped": False,
+    }]
+    raw_trace = module.project_trace_for_decoder(trace, "raw")
+    official_trace = module.project_trace_for_decoder(trace, "official")
+    raw = module.replay_decoder_on_shared_trace(
+        raw_trace, decoder_kind="raw", document=document,
+        duration_sec=30.0, seam_tolerance_sec=0.16,
+    )
+    official = module.replay_decoder_on_shared_trace(
+        official_trace, decoder_kind="official", document=document,
+        duration_sec=30.0, seam_tolerance_sec=0.16,
+    )
+    assert [row["owner_window_index"] for row in raw] == [0, 0]
+    assert [row["owner_window_index"] for row in official] == [0, 0]
+    assert raw[0]["end_sec"] == 0.5
+    assert official[0]["end_sec"] == 0.0
 
 
 def test_pairwise_rendering_is_opt_in() -> None:
@@ -226,3 +287,77 @@ def test_pairwise_rendering_is_opt_in() -> None:
         "--alignment-root", "/tmp/a", "--mix-audio", "/tmp/m.wav", "--out-root", "/tmp/o",
     ])
     assert args.render_pairs is False
+
+
+def _profile_from_sustained(mask: list[bool], hop_sec: float = 1.0) -> dict:
+    import numpy as _np
+    values = _np.asarray(mask, dtype=bool)
+    return {
+        "hop_sec": hop_sec,
+        "sustained": values,
+        "active": values,
+        "frame_db": _np.where(values, -20.0, -80.0),
+        "threshold_db": -40.0,
+        "reliable_threshold_db": -35.0,
+    }
+
+
+def test_silence_aware_plan_skips_long_intro_and_keeps_anchor() -> None:
+    from lyricalign.demo.window_planning import build_silence_aware_window_plan
+
+    profile = _profile_from_sustained([False] * 40 + [True] * 70)
+    plan = build_silence_aware_window_plan(
+        110.0, profile, target_core_sec=30.0,
+        left_context_sec=10.0, right_context_sec=10.0,
+        min_silence_sec=0.8, leading_silence_min_sec=2.0,
+        tail_min_core_sec=18.0,
+    )
+    assert plan["active_span_start_sec"] == 40.0
+    assert plan["leading_silence_skipped"]["start_sec"] == 0.0
+    assert plan["leading_silence_skipped"]["end_sec"] == 40.0
+    assert plan["windows"][0]["core_start_sec"] == 40.0
+    assert plan["windows"][0]["input_start_sec"] == 30.0
+
+
+def test_short_tail_is_shared_by_two_previous_windows() -> None:
+    from lyricalign.demo.window_planning import build_silence_aware_window_plan
+
+    profile = _profile_from_sustained([False] * 10 + [True] * 70)
+    plan = build_silence_aware_window_plan(
+        80.0, profile, target_core_sec=30.0,
+        left_context_sec=10.0, right_context_sec=10.0,
+        boundary_search_sec=0.0, tail_min_core_sec=18.0,
+    )
+    assert plan["initial_boundaries_sec"] == [10.0, 40.0, 70.0, 80.0]
+    assert plan["final_boundaries_sec"] == [10.0, 45.0, 80.0]
+    assert [row["core_duration_sec"] for row in plan["windows"]] == [35.0, 35.0]
+    assert plan["tail_adjustment"]["action"] == "distribute_tail_across_two_previous_windows"
+
+
+def test_short_tail_with_one_previous_window_is_merged() -> None:
+    from lyricalign.demo.window_planning import build_silence_aware_window_plan
+
+    profile = _profile_from_sustained([True] * 40)
+    plan = build_silence_aware_window_plan(
+        40.0, profile, target_core_sec=30.0,
+        left_context_sec=10.0, right_context_sec=10.0,
+        boundary_search_sec=0.0, tail_min_core_sec=18.0,
+    )
+    assert plan["final_boundaries_sec"] == [0.0, 40.0]
+    assert plan["tail_adjustment"]["action"] == "merge_tail_with_only_previous_window"
+
+
+def test_strong_silence_marks_adjacent_character_anchors() -> None:
+    from lyricalign.demo.raw_guarded import attach_silence_anchor_evidence
+
+    rows = [
+        {"global_character_index": 0, "selected_start_sec": 0.0, "selected_end_sec": 1.0, "collapsed": False},
+        {"global_character_index": 1, "selected_start_sec": 3.0, "selected_end_sec": 4.0, "collapsed": False},
+    ]
+    marked = attach_silence_anchor_evidence(rows, [{
+        "silence_id": "s0", "start_sec": 1.0, "end_sec": 3.0,
+        "duration_sec": 2.0, "strength": "strong",
+    }])
+    assert marked[0]["silence_anchor_after"]["silence_id"] == "s0"
+    assert marked[1]["silence_anchor_before"]["silence_id"] == "s0"
+    assert marked[0]["silence_anchor_strength"] == "strong"

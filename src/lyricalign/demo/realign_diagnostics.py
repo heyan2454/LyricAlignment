@@ -611,6 +611,12 @@ def build_anchor_rows(
 
 def _policy_pass(row: dict[str, Any], policy: dict[str, Any]) -> bool:
     family = str(policy["family"])
+    if (
+        row.get("silence_anchor_strength") == "strong"
+        and not bool(row.get("compressed"))
+        and not bool(row.get("collapsed"))
+    ):
+        return True
     margin_threshold = policy.get("confidence_margin_min")
     overlap_tolerance = policy.get("overlap_tolerance_sec")
     stability_tolerance = policy.get("stability_tolerance_sec")

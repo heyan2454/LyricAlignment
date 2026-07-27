@@ -1,6 +1,6 @@
 # Project Current
 
-**Snapshot date:** 2026-07-27  
+**Snapshot date:** 2026-07-27
 **Stage:** first Qwen Forced Aligner LoRA cycle archived; reusable v6 demo and stage-separated evidence implemented; MIR-1K context/separator/propagation diagnosis is next
 
 ## Completed experiment chain
@@ -184,3 +184,104 @@ Current limits:
 - structural quality is not alignment accuracy;
 - Demucs and multilingual behavior have not yet been executed on the server;
 - MIR-1K is OOD test-only and its development subset cannot select a checkpoint.
+
+## 2026-07-27 decoder × realign silence-aware Demo archive
+
+Current development comparison is no longer the earlier raw-guarded baseline.
+It now uses one shared raw-argmax serial planner and replays official/raw
+timestamps on the same accepted windows, lyric slices, ownership, and cursor.
+The four branches are O0/O1/R0/R1 = official/raw × realign off/on.
+
+Windowing is planned once for the whole vocal stem:
+
+- target core is 30 s;
+- long leading silence is excluded from ownership but retained as a silence anchor;
+- internal boundaries prefer nearby sustained silence;
+- a short final core is merged if it has one predecessor, otherwise its duration
+  is split equally across the two preceding windows;
+- all detected silence intervals are saved in `window_plan.json` and can promote
+  adjacent non-collapsed characters as realign anchors.
+
+Focused tests pass, but real Qwen/R2 GPU inference for this archived state has
+not yet been run.  No claim of qualitative improvement is made before the new
+window plan and realign funnel are reviewed.
+
+Canonical record:
+
+```text
+docs/sessions/20260727_realign_demo_silence_aware_window_archive.md
+docs/manual/decoder_realign_comparison_demo.md
+```
+
+## 2026-07-27 inline-realign shadow / official baseline archive
+
+The earlier shared-raw four-way Demo is retained as historical decoder evidence,
+but it is no longer assumed to represent the best official production path.
+The current executable follow-up adds:
+
+- B0/B1/B2 official self-controlled 60 s fixed, 30 s fixed and 30 s
+  silence-aware baselines;
+- B3 shared raw control + official output as the controlled comparison;
+- precommit collapse, tail-pileup and active-zero-progress shadow diagnostics;
+- compact candidate-text expansion probes;
+- stable *segments* without a hard two-window, character-count, line-count or
+  time-span requirement;
+- future-lookahead observations excluded from true repeated-context evidence;
+- previous-window stable-suffix reproduction diagnostics;
+- exact/+2 inline local inference in shadow mode within one or two adjacent
+  windows;
+- Demo, M4Singer validation and MIR-1K development manifest preparation;
+- bounded evidence collection and one-click smoke/formal runners;
+- official O0/O1 one-pass rendering, with raw 2x2 opt-in.
+
+No automatic inline writeback, pending seam state, tail rollback or incomplete
+output policy is enabled yet.  These remain gated on GT-backed smoke/formal
+evidence.  Actual Qwen/R2 GPU smoke is still a server task; local code and
+regression tests do not establish model-quality improvement.
+
+Canonical records:
+
+```text
+docs/sessions/20260727_inline_realign_discussion_and_experiment_plan.md
+docs/sessions/20260727_inline_realign_smoke_formal_archive.md
+docs/manual/inline_realign_smoke_formal.md
+```
+
+## 2026-07-28 inline-realign follow-up implementation
+
+The first inline formal run supported stable segments but did not exercise local
+realign: old tail-pileup logic counted future lookahead near the full input end
+and then marked the whole committed window as the anomaly. This often made the
+target start at character zero and mechanically produced `no_left_stable_segment`.
+
+The current follow-up implementation replaces that behavior with:
+
+- localized spans for zero-duration runs, equal-boundary stacks, committed
+  characters piled near the core end, and active-core zero progress;
+- future lookahead excluded from realign tail-pileup triggers;
+- GT-oracle error spans on M4Singer/MIR-1K so local-realign capability is tested
+  even before the automatic detector is mature;
+- stable segments actively proposing next-window transcript starts and safe
+  commit cursors, followed by bounded active reruns when suggestions differ;
+- forced +25%/+50% future-text experiments;
+- raw/official planner divergence scans, with B3 run on official-primary items
+  only when split decisions actually differ;
+- clearly labelled constructed incomplete outputs that preserve only the
+  resolved prefix instead of forcing the tail;
+- expanded formal defaults: Demo 12, MIR-1K development+spare 16, M4 native 24,
+  M4 synthetic-long 12; held-out remains excluded;
+- Demo required by the wrappers, all alignment completed before rendering, and
+  a single `items/<id>/render/official.mp4` output per Demo;
+- compact JSON/Markdown result summaries before bounded evidence collection.
+
+Automatic local writeback and cross-window pending confirmation are still not
+enabled. GT oracle, automatic candidates, stable-window assistance, synthetic
+long audio, Demo listening, and constructed incomplete artifacts must remain
+separate in interpretation.
+
+Canonical records:
+
+```text
+docs/sessions/20260728_inline_realign_followup_experiments.md
+docs/manual/inline_realign_smoke_formal.md
+```

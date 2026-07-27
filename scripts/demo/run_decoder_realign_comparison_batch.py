@@ -38,7 +38,9 @@ def output_root(job: Any, args: argparse.Namespace, job_count: int) -> Path:
 def run_command(command: list[str], *, log_path: Path, env: dict[str, str] | None = None) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log({"command": command, "log": str(log_path)})
-    with log_path.open("a", encoding="utf-8") as handle:
+    # Each invocation represents one complete align/render stage.  Replace the
+    # previous log so forced reruns cannot mix old and new window traces.
+    with log_path.open("w", encoding="utf-8") as handle:
         subprocess.run(command, check=True, stdout=handle, stderr=subprocess.STDOUT, env=env)
 
 
@@ -70,7 +72,14 @@ def align_job(job: Any, out_root: Path, prepared: dict[str, Path], args: argpars
         "--silent-min-sustained-sec", str(args.silent_min_sustained_sec),
         "--startup-vocal-preroll-sec", str(args.startup_vocal_preroll_sec),
         "--startup-minimum-forward-characters", str(args.startup_minimum_forward_characters),
+        "--silence-boundary-min-sec", str(args.silence_boundary_min_sec),
+        "--strong-silence-anchor-sec", str(args.strong_silence_anchor_sec),
+        "--silence-boundary-search-sec", str(args.silence_boundary_search_sec),
+        "--leading-silence-min-sec", str(args.leading_silence_min_sec),
+        "--tail-min-core-sec", str(args.tail_min_core_sec),
+        "--minimum-core-sec", str(args.minimum_core_sec),
     ]
+    command.append("--silence-aware-window-plan" if args.silence_aware_window_plan else "--no-silence-aware-window-plan")
     command.append("--local-files-only" if args.local_files_only else "--no-local-files-only")
     if args.force_align:
         command.append("--force")
@@ -99,8 +108,9 @@ def render_job(job: Any, out_root: Path, prepared: dict[str, Path], align_root: 
         command.extend(["--visual-source", str(job.video)])
     if args.subtitle_band_height is not None:
         command.extend(["--subtitle-band-height", str(args.subtitle_band_height)])
-    if args.render_pairs:
-        command.append("--render-pairs")
+    command.extend(["--profile", args.render_profile])
+    if args.render_four_way or args.render_pairs:
+        command.append("--four-way")
     if args.force_render:
         command.append("--force")
     run_command(command, log_path=out_root / "render.log")
@@ -131,7 +141,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--silent-min-sustained-sec", type=float, default=0.40)
     p.add_argument("--startup-vocal-preroll-sec", type=float, default=2.0)
     p.add_argument("--startup-minimum-forward-characters", type=int, default=24)
-    p.add_argument("--render-pairs", action="store_true", help="also render optional pairwise comparisons")
+    p.add_argument("--silence-aware-window-plan", action=argparse.BooleanOptionalAction, default=True)
+    p.add_argument("--silence-boundary-min-sec", type=float, default=0.8)
+    p.add_argument("--strong-silence-anchor-sec", type=float, default=1.5)
+    p.add_argument("--silence-boundary-search-sec", type=float, default=6.0)
+    p.add_argument("--leading-silence-min-sec", type=float, default=2.0)
+    p.add_argument("--tail-min-core-sec", type=float, default=18.0)
+    p.add_argument("--minimum-core-sec", type=float, default=12.0)
+    p.add_argument("--render-profile", choices=("review", "final"), default="review")
+    p.add_argument("--render-four-way", action="store_true", help="render raw diagnostic panels in addition to the default official pair")
+    p.add_argument("--render-pairs", action="store_true", help=argparse.SUPPRESS)
     p.add_argument(
         "--reuse-prepared-suffix",
         help="reuse <song><suffix>/work/audio/{mix,vocals,accompaniment}.wav without copying",
@@ -172,10 +191,11 @@ def main() -> int:
             for job in jobs
         ],
         "design": {
-            "fixed": "same R2 checkpoint + same vocal + 30s core; each decoder owns its production trajectory",
-            "branches": ["O0 official", "O1 official+realign", "R0 raw", "R1 raw+realign"],
+            "fixed": "same R2 checkpoint + same vocal + 30s core + shared raw serial planner",
+            "branches": ["O0 official timestamps", "O1 official+realign", "R0 raw timestamps", "R1 raw+realign"],
+            "window_planning": "whole-song silence-aware; long intro skipped, silence anchors retained, short tail redistributed",
             "silent_window_skip": "enabled for all branches; not an ablation variable",
-            "render": "2x2 comparison only by default, mix audio, no individual/vocal videos",
+            "render": "official O0/O1 direct one-pass review by default; raw 2x2 only with --render-four-way",
             "gap_repair": "disabled",
         },
         "weights": {

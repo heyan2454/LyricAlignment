@@ -258,10 +258,17 @@ def render_media_video(
     subtitle_band_height: int | None = None,
     audio_width: int = 1280,
     audio_height: int = 720,
+    profile: str = "final",
 ) -> dict[str, Any]:
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
         raise RuntimeError("ffmpeg and ffprobe are required")
     alignment = json.loads(alignment_path.read_text(encoding="utf-8"))
+    settings = {
+        "review": {"fps": 24, "preset": "veryfast", "crf": 28, "audio_bitrate": "96k"},
+        "final": {"fps": 30, "preset": "veryfast", "crf": 20, "audio_bitrate": "192k"},
+    }.get(profile)
+    if settings is None:
+        raise ValueError(f"unsupported render profile: {profile}")
     geometry = (
         probe_video(visual_source, subtitle_band_height=subtitle_band_height)
         if visual_source is not None
@@ -277,6 +284,8 @@ def render_media_video(
         "label": label,
         "font": font,
         "geometry": geometry.__dict__,
+        "profile": profile,
+        "encoding": settings,
     }
     request_hash = canonical_hash(request)
     identity_path = output_path.with_suffix(output_path.suffix + ".identity.json")
@@ -296,7 +305,7 @@ def render_media_video(
         command = [
             "ffmpeg", "-nostdin", "-y", "-v", "warning",
             "-f", "lavfi", "-i",
-            f"color=c=black:s={geometry.width}x{geometry.canvas_height}:r=30:d={duration:.6f}",
+            f"color=c=black:s={geometry.width}x{geometry.canvas_height}:r={settings['fps']}:d={duration:.6f}",
             "-i", str(audio_track),
             "-vf", f"ass={ass_path.name}",
             "-map", "0:v:0", "-map", "1:a:0",
@@ -315,8 +324,9 @@ def render_media_video(
         ]
     command.extend(
         [
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart",
+            "-r", str(settings["fps"]),
+            "-c:v", "libx264", "-preset", str(settings["preset"]), "-crf", str(settings["crf"]), "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", str(settings["audio_bitrate"]), "-shortest", "-movflags", "+faststart",
             str(temporary),
         ]
     )
@@ -388,3 +398,162 @@ def render_composite(
     temporary.replace(output_path)
     atomic_json(identity_path, {**request, "request_hash": request_hash})
     return {"path": str(output_path), "request_hash": request_hash, "skipped": False}
+
+
+def render_alignment_comparison(
+    *,
+    alignment_paths: Sequence[Path],
+    labels: Sequence[str],
+    visual_source: Path | None,
+    audio_track: Path,
+    output_path: Path,
+    ass_root: Path,
+    font: str,
+    layout: str,
+    profile: str = "review",
+    force: bool = False,
+) -> dict[str, Any]:
+    """Render 2 or 4 alignments directly in one ffmpeg encoding pass.
+
+    Unlike render_media_video + render_composite, this decodes the source once,
+    applies each ASS subtitle stream inside one filter graph, and encodes only
+    the final comparison. No intermediate panel videos or duplicate audio
+    encodes are created.
+    """
+    expected = {"two": 2, "four": 4}.get(layout)
+    if expected is None:
+        raise ValueError(f"unsupported direct comparison layout: {layout}")
+    if len(alignment_paths) != expected or len(labels) != expected:
+        raise ValueError(f"{layout} comparison requires {expected} alignments and labels")
+    if profile not in {"review", "final"}:
+        raise ValueError(f"unsupported render profile: {profile}")
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg is required")
+
+    settings = {
+        "review": {
+            "panel_width": 640, "panel_height": 360, "fps": 24,
+            "preset": "veryfast", "crf": 28, "audio_bitrate": "96k",
+        },
+        "final": {
+            "panel_width": 960, "panel_height": 540, "fps": 30,
+            "preset": "veryfast", "crf": 22, "audio_bitrate": "160k",
+        },
+    }[profile]
+    panel_width = int(settings["panel_width"])
+    panel_height = int(settings["panel_height"])
+    band_height = max(120, int(round(panel_height * 0.34)))
+    band_height += band_height % 2
+    source_height = panel_height - band_height
+    source_height -= source_height % 2
+    geometry = VideoGeometry(
+        width=panel_width,
+        source_height=source_height,
+        canvas_height=panel_height,
+        subtitle_band_height=panel_height - source_height,
+        fps=float(settings["fps"]),
+    )
+
+    alignments = [json.loads(path.read_text(encoding="utf-8")) for path in alignment_paths]
+    duration = max(float(payload["summary"]["audio_duration_sec"]) for payload in alignments)
+    alignment_identities = [
+        {
+            "path": str(path.resolve()),
+            "content_sha256": sha256(path),
+            "alignment_request_hash": payload.get("identity", {}).get("request_hash"),
+            "label": label,
+        }
+        for path, payload, label in zip(alignment_paths, alignments, labels)
+    ]
+    request = {
+        "schema_version": RENDER_SCHEMA_VERSION + "_direct_comparison_v1",
+        "alignments": alignment_identities,
+        "visual_source": str(visual_source.resolve()) if visual_source else None,
+        "visual_source_sha256": sha256(visual_source) if visual_source else None,
+        "audio_track": str(audio_track.resolve()),
+        "audio_track_sha256": sha256(audio_track),
+        "layout": layout,
+        "profile": profile,
+        "font": font,
+        "geometry": geometry.__dict__,
+        "settings": settings,
+    }
+    request_hash = canonical_hash(request)
+    identity_path = output_path.with_suffix(output_path.suffix + ".identity.json")
+    if not force and _output_is_current(output_path, identity_path, request_hash):
+        return {
+            "path": str(output_path), "request_hash": request_hash,
+            "skipped": True, "encoding_passes": 0,
+        }
+
+    ass_root.mkdir(parents=True, exist_ok=True)
+    ass_names: list[str] = []
+    for index, (payload, label) in enumerate(zip(alignments, labels)):
+        ass_path = ass_root / f"panel_{index}.ass"
+        ass_path.write_text(
+            build_bottom_ass(payload, label=label, font=font, geometry=geometry),
+            encoding="utf-8",
+        )
+        ass_names.append(ass_path.name)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output_path.with_suffix(".tmp.mp4")
+    fps = int(settings["fps"])
+    command = ["ffmpeg", "-nostdin", "-y", "-v", "warning"]
+    if visual_source is None:
+        command.extend([
+            "-f", "lavfi", "-i",
+            f"color=c=black:s={panel_width}x{panel_height}:r={fps}:d={duration:.6f}",
+            "-i", str(audio_track),
+        ])
+        base_filter = f"[0:v]fps={fps},format=yuv420p[base]"
+    else:
+        command.extend(["-i", str(visual_source), "-i", str(audio_track)])
+        base_filter = (
+            f"[0:v]fps={fps},scale={panel_width}:{source_height}:force_original_aspect_ratio=decrease,"
+            f"pad={panel_width}:{source_height}:(ow-iw)/2:(oh-ih)/2:black,"
+            f"pad={panel_width}:{panel_height}:0:0:black,format=yuv420p[base]"
+        )
+    split_outputs = "".join(f"[b{index}]" for index in range(expected))
+    filters = [base_filter, f"[base]split={expected}{split_outputs}"]
+    for index, ass_name in enumerate(ass_names):
+        filters.append(f"[b{index}]ass={ass_name}[v{index}]")
+    if layout == "two":
+        filters.append("[v0][v1]hstack=inputs=2[v]")
+    else:
+        filters.append("[v0][v1][v2][v3]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0:fill=black[v]")
+    command.extend([
+        "-filter_complex", ";".join(filters),
+        "-map", "[v]", "-map", "1:a:0",
+        "-c:v", "libx264", "-preset", str(settings["preset"]),
+        "-crf", str(settings["crf"]), "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", str(settings["audio_bitrate"]),
+        "-shortest", "-movflags", "+faststart", str(temporary),
+    ])
+    _run(command, cwd=ass_root)
+    temporary.replace(output_path)
+    atomic_json(identity_path, {**request, "request_hash": request_hash})
+    return {
+        "path": str(output_path), "request_hash": request_hash,
+        "skipped": False, "encoding_passes": 1,
+    }
+
+
+def link_or_copy(source: Path, destination: Path) -> str:
+    """Create a no-duplicate entry point when possible, with a portable fallback."""
+    import os
+
+    source = source.resolve()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.unlink(missing_ok=True)
+    try:
+        os.link(source, destination)
+        return "hardlink"
+    except OSError:
+        pass
+    try:
+        destination.symlink_to(Path(os.path.relpath(source, destination.parent)))
+        return "symlink"
+    except OSError:
+        shutil.copy2(source, destination)
+        return "copy_fallback"

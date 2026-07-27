@@ -158,3 +158,43 @@ def summarize_interventions(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "mean_boundary_change_sec": statistics.fmean(changes) if changes else None,
         "max_boundary_change_sec": max(changes, default=None),
     }
+
+
+def attach_silence_anchor_evidence(
+    anchor_rows: Sequence[dict[str, Any]],
+    silence_intervals: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Promote characters adjacent to sustained silence as stable anchors.
+
+    The silence interval remains explicit evidence; this helper does not invent
+    timestamps or create virtual lyric units.  It only marks the nearest
+    non-collapsed character on each side of a detected silence interval.
+    """
+    result = [dict(row) for row in anchor_rows]
+    for interval in silence_intervals:
+        start = float(interval["start_sec"])
+        end = float(interval["end_sec"])
+        left_candidates = [
+            row for row in result
+            if not bool(row.get("collapsed")) and float(row["selected_end_sec"]) <= start + 1e-9
+        ]
+        right_candidates = [
+            row for row in result
+            if not bool(row.get("collapsed")) and float(row["selected_start_sec"]) >= end - 1e-9
+        ]
+        evidence = {
+            "silence_id": interval.get("silence_id"),
+            "silence_start_sec": start,
+            "silence_end_sec": end,
+            "silence_duration_sec": float(interval.get("duration_sec", end - start)),
+            "silence_strength": interval.get("strength", "normal"),
+        }
+        if left_candidates:
+            row = max(left_candidates, key=lambda item: float(item["selected_end_sec"]))
+            row["silence_anchor_after"] = evidence
+            row["silence_anchor_strength"] = evidence["silence_strength"]
+        if right_candidates:
+            row = min(right_candidates, key=lambda item: float(item["selected_start_sec"]))
+            row["silence_anchor_before"] = evidence
+            row["silence_anchor_strength"] = evidence["silence_strength"]
+    return result

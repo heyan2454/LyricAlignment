@@ -30,6 +30,7 @@ from lyricalign.demo.karaoke import normalize_alignment_language, parse_lyrics_t
 from lyricalign.demo.raw_guarded import (
     agreement_between_trials,
     build_runtime_anchor_rows,
+    attach_silence_anchor_evidence,
     choose_anchor_pair,
     choose_runtime_anchor_policy,
     nonoverlapping_candidates,
@@ -108,6 +109,9 @@ def run_guarded_realign(
     )
     candidates = nonoverlapping_candidates(candidates)
     anchor_rows = build_runtime_anchor_rows(baseline_rows, shadow)
+    anchor_rows = attach_silence_anchor_evidence(
+        anchor_rows, list(getattr(args, "silence_intervals", []) or [])
+    )
     policy = choose_runtime_anchor_policy(
         anchor_rows,
         margin_quantile=args.anchor_margin_quantile,

@@ -80,7 +80,7 @@ def _iter_candidate_files(directory: Path, *, recursive: bool) -> Iterable[Path]
     for path in iterator:
         if not path.is_file() or path.name.startswith("."):
             continue
-        if any(part.endswith("_qwen_fa") for part in path.parts):
+        if any("_qwen_fa" in part for part in path.parts):
             continue
         if path.suffix.lower() in VIDEO_EXTENSIONS + AUDIO_EXTENSIONS + LYRICS_EXTENSIONS:
             yield path

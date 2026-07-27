@@ -34,9 +34,14 @@ from lyricalign.demo.karaoke import (
     normalize_alignment_language,
 )
 from lyricalign.training.qwen_fa_runtime import decode_audio, move_inputs
+from lyricalign.demo.window_planning import build_silence_aware_window_plan
+from lyricalign.demo.inline_realign import (
+    analyze_precommit_trial, attempt_probe_rows, compare_attempt_probes,
+    reproduce_segment, stable_segments,
+)
 
-SCHEMA_VERSION = "qwen_fa_serial_demo_v6_forward_overlap_compression"
-WINDOW_POLICY = "hard_core_forward_overlap_compression_v6"
+SCHEMA_VERSION = "qwen_fa_serial_demo_v7_silence_aware_windows"
+WINDOW_POLICY = "silence_aware_global_core_plan_v7"
 
 
 class SerialWindowAlignmentError(RuntimeError):
@@ -526,12 +531,34 @@ def windowed_alignment(
     the previous committed end, without shifting the original end forward.
     """
     duration = float(len(audio) / 16000.0)
-    windows = build_serial_windows(
-        duration,
-        core_sec=args.core_sec,
-        left_context_sec=args.left_context_sec,
-        right_context_sec=args.right_context_sec,
-    )
+    use_silence_plan = bool(getattr(args, "silence_aware_window_plan", False))
+    need_activity = bool(getattr(args, "skip_silent_windows", False)) or use_silence_plan
+    activity_profile = build_vocal_activity_profile(audio) if need_activity else None
+    window_plan = None
+    if use_silence_plan:
+        assert activity_profile is not None
+        window_plan = build_silence_aware_window_plan(
+            duration,
+            activity_profile,
+            target_core_sec=float(args.core_sec),
+            left_context_sec=float(args.left_context_sec),
+            right_context_sec=float(args.right_context_sec),
+            min_silence_sec=float(getattr(args, "silence_boundary_min_sec", 0.8)),
+            strong_silence_sec=float(getattr(args, "strong_silence_anchor_sec", 1.5)),
+            boundary_search_sec=float(getattr(args, "silence_boundary_search_sec", 6.0)),
+            leading_silence_min_sec=float(getattr(args, "leading_silence_min_sec", 2.0)),
+            tail_min_core_sec=float(getattr(args, "tail_min_core_sec", 18.0)),
+            minimum_core_sec=float(getattr(args, "minimum_core_sec", 12.0)),
+        )
+        windows = list(window_plan["windows"])
+        setattr(args, "generated_window_plan", window_plan)
+    else:
+        windows = build_serial_windows(
+            duration,
+            core_sec=args.core_sec,
+            left_context_sec=args.left_context_sec,
+            right_context_sec=args.right_context_sec,
+        )
     total_characters = len(document.characters)
     committed_cursor = 0
     input_cursor = 0
@@ -548,7 +575,35 @@ def windowed_alignment(
     startup_minimum_forward_characters = int(
         getattr(args, "startup_minimum_forward_characters", 24)
     )
-    activity_profile = build_vocal_activity_profile(audio) if skip_silent_windows else None
+    # Activity may already have been built for the global window plan.
+    if activity_profile is None and skip_silent_windows:
+        activity_profile = build_vocal_activity_profile(audio)
+    alignment_span_sec = (
+        float(window_plan["active_span_duration_sec"])
+        if window_plan is not None else duration
+    )
+    capture_attempt_probes = bool(getattr(args, "capture_attempt_probes", False))
+    attempt_probe_max_rows = int(getattr(args, "attempt_probe_max_rows", 48))
+    stable_segment_min_units = int(getattr(args, "stable_segment_min_units", 2))
+    stable_segment_confidence_quantile = float(
+        getattr(args, "stable_segment_confidence_quantile", 0.50)
+    )
+    stable_raw_official_tolerance_sec = float(
+        getattr(args, "stable_raw_official_tolerance_sec", 0.16)
+    )
+    stable_context_tolerance_sec = float(
+        getattr(args, "stable_context_tolerance_sec", 0.24)
+    )
+    stable_prefix_reproduction_tolerance_sec = float(
+        getattr(args, "stable_prefix_reproduction_tolerance_sec", 0.24)
+    )
+    stable_prefix_minimum_observed_units = int(
+        getattr(args, "stable_prefix_minimum_observed_units", 2)
+    )
+    stable_prefix_minimum_observed_ratio = float(
+        getattr(args, "stable_prefix_minimum_observed_ratio", 0.50)
+    )
+    previous_stable_suffix: dict[str, Any] | None = None
 
     for window_position, window in enumerate(windows):
         if committed_cursor >= total_characters:
@@ -557,7 +612,7 @@ def windowed_alignment(
         input_end = float(window["input_end_sec"])
         core_start = float(window["core_start_sec"])
         core_end = float(window["core_end_sec"])
-        final_core = math.isclose(core_end, duration, abs_tol=1e-9)
+        final_core = bool(window.get("is_final_core", math.isclose(core_end, duration, abs_tol=1e-9)))
 
         activity = None
         if activity_profile is not None:
@@ -645,7 +700,7 @@ def windowed_alignment(
             }
         ]
 
-        global_rate = total_characters / duration
+        global_rate = total_characters / max(alignment_span_sec, 1e-9)
         recent_rate = (
             previous_committed_count / previous_core_duration
             if previous_committed_count > 0 and previous_core_duration > 0
@@ -779,6 +834,15 @@ def windowed_alignment(
                 next_input_boundary_observed = final_core or next_input_candidate is not None
                 boundary_observed = core_boundary_observed and next_input_boundary_observed
 
+                probe_rows = (
+                    attempt_probe_rows(
+                        control_rows,
+                        core_end_sec=core_end,
+                        next_input_boundary_sec=next_input_boundary,
+                        max_rows=attempt_probe_max_rows,
+                    )
+                    if capture_attempt_probes else []
+                )
                 attempts.append(
                     {
                         "attempt_index": attempt_index,
@@ -801,6 +865,7 @@ def windowed_alignment(
                         "boundary_observed": boundary_observed,
                         "output_decoder_kind": str(getattr(args, "decoder_kind", "official")),
                         "serial_control_decoder_kind": control_decoder_kind,
+                        **({"probe_rows": probe_rows} if capture_attempt_probes else {}),
                         **audit,
                     }
                 )
@@ -877,13 +942,31 @@ def windowed_alignment(
 
         committed_cursor_before = committed_cursor
         input_cursor_before = input_cursor
-        committed_rows = append_strict_core_commits(
+        stable_prefix_reproduction = reproduce_segment(
+            previous_stable_suffix,
+            accepted_shadow_rows or accepted_committed,
+            tolerance_sec=stable_prefix_reproduction_tolerance_sec,
+            minimum_observed_units=stable_prefix_minimum_observed_units,
+            minimum_observed_ratio=stable_prefix_minimum_observed_ratio,
+        )
+        trial_committed_rows = append_strict_core_commits(
             committed_rows,
             accepted_committed,
             window=effective_window,
             duration_sec=duration,
             seam_tolerance_sec=args.seam_tolerance_sec,
         )
+        precommit_diagnostic = analyze_precommit_trial(
+            existing_rows=committed_rows,
+            candidate_rows=accepted_committed,
+            all_candidate_rows=accepted_shadow_rows or accepted_committed,
+            trial_rows=trial_committed_rows,
+            window=effective_window,
+            vocal_activity=activity,
+            uncommitted_character_index=committed_cursor,
+        )
+        expansion_stability = compare_attempt_probes(attempts)
+        committed_rows = trial_committed_rows
         committed_cursor += len(accepted_committed)
         newly_committed_rows = committed_rows[committed_cursor_before:committed_cursor]
         window_overlap_compressed = [
@@ -899,6 +982,19 @@ def windowed_alignment(
         )
         previous_committed_count = len(accepted_committed)
         previous_core_duration = max(core_end - core_start, 1e-9)
+        window_stable_segments = stable_segments(
+            newly_committed_rows,
+            accepted_shadow_rows or accepted_committed,
+            window_indices={int(window["window_index"])},
+            min_units=stable_segment_min_units,
+            confidence_quantile=stable_segment_confidence_quantile,
+            raw_official_tolerance_sec=stable_raw_official_tolerance_sec,
+            repeated_context_tolerance_sec=stable_context_tolerance_sec,
+        )
+        previous_stable_suffix = (
+            max(window_stable_segments, key=lambda row: int(row["character_end"]))
+            if window_stable_segments else None
+        )
 
         if not final_core:
             if accepted_next_input_cursor > committed_cursor:
@@ -969,6 +1065,11 @@ def windowed_alignment(
                 "serial_control_decoder_kind": control_decoder_kind,
                 "silent_core_skipped": False,
                 "vocal_activity": activity,
+                "precommit_diagnostic": precommit_diagnostic,
+                "attempt_expansion_stability": expansion_stability,
+                "stable_prefix_reproduction": stable_prefix_reproduction,
+                "stable_suffix_candidate": previous_stable_suffix,
+                "stable_segment_count": len(window_stable_segments),
                 **({"shadow_rows": accepted_shadow_rows or []} if bool(getattr(args, "capture_shadow_rows", False)) else {}),
             }
         )
@@ -988,6 +1089,8 @@ def windowed_alignment(
                 {
                     "window": int(window["window_index"]),
                     "windows_total": len(windows),
+                    "window_plan_policy": window.get("window_plan_policy"),
+                    "core_duration_sec": window.get("core_duration_sec", core_end - core_start),
                     "core": [core_start, core_end],
                     "nominal_input": [nominal_input_start, input_end],
                     "effective_input": [input_start, input_end],
@@ -1073,6 +1176,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="retain all accepted-window candidate rows in window_trace for quick diagnostics",
     )
     parser.add_argument(
+        "--capture-attempt-probes", action="store_true",
+        help="retain compact boundary probes for candidate-text expansion stability",
+    )
+    parser.add_argument("--attempt-probe-max-rows", type=int, default=48)
+    parser.add_argument("--stable-segment-min-units", type=int, default=2)
+    parser.add_argument("--stable-segment-confidence-quantile", type=float, default=0.50)
+    parser.add_argument("--stable-raw-official-tolerance-sec", type=float, default=0.16)
+    parser.add_argument("--stable-context-tolerance-sec", type=float, default=0.24)
+    parser.add_argument("--stable-prefix-reproduction-tolerance-sec", type=float, default=0.24)
+    parser.add_argument(
         "--skip-silent-windows", action=argparse.BooleanOptionalAction, default=False,
         help="skip non-final cores that are essentially silent in the vocal stem",
     )
@@ -1081,6 +1194,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--silent-min-sustained-sec", type=float, default=0.40)
     parser.add_argument("--startup-vocal-preroll-sec", type=float, default=2.0)
     parser.add_argument("--startup-minimum-forward-characters", type=int, default=24)
+    parser.add_argument(
+        "--silence-aware-window-plan", action=argparse.BooleanOptionalAction, default=False,
+        help="plan the whole song around sustained silence before serial inference",
+    )
+    parser.add_argument("--silence-boundary-min-sec", type=float, default=0.8)
+    parser.add_argument("--strong-silence-anchor-sec", type=float, default=1.5)
+    parser.add_argument("--silence-boundary-search-sec", type=float, default=6.0)
+    parser.add_argument("--leading-silence-min-sec", type=float, default=2.0)
+    parser.add_argument("--tail-min-core-sec", type=float, default=18.0)
+    parser.add_argument("--minimum-core-sec", type=float, default=12.0)
     return parser
 
 
@@ -1174,6 +1297,13 @@ def main() -> None:
                         "legacy_boundary_start_tolerance_sec_ignored": args.boundary_start_tolerance_sec,
                         "legacy_seam_tolerance_sec_diagnostic_only": args.seam_tolerance_sec,
                         "skip_silent_windows": args.skip_silent_windows,
+                        "silence_aware_window_plan": args.silence_aware_window_plan,
+                        "silence_boundary_min_sec": args.silence_boundary_min_sec,
+                        "strong_silence_anchor_sec": args.strong_silence_anchor_sec,
+                        "silence_boundary_search_sec": args.silence_boundary_search_sec,
+                        "leading_silence_min_sec": args.leading_silence_min_sec,
+                        "tail_min_core_sec": args.tail_min_core_sec,
+                        "minimum_core_sec": args.minimum_core_sec,
                         "silent_active_ratio_max": args.silent_active_ratio_max,
                         "silent_peak_margin_db": args.silent_peak_margin_db,
                     } if mode == "windowed" else None,

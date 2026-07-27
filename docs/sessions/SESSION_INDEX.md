@@ -8,6 +8,9 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-07-28 | `20260728_inline_realign_followup_experiments.md` | hot | Localized anomaly ranges, GT-oracle local realign, stable-segment window/cursor assistance with active reruns, forced future-text expansion, fail-closed incomplete outputs, expanded Demo/MIR-1K/M4Singer coverage, align-all-then-render discipline. |
+| 2026-07-27 | `20260727_inline_realign_smoke_formal_archive.md` | hot | Official-controlled B0–B3 baselines, precommit shadow diagnostics, stable segments/prefix, inline shadow realign, bounded evidence, one-click smoke/formal, and direct one-pass rendering. |
+| 2026-07-27 | `20260727_realign_demo_silence_aware_window_archive.md` | hot | Decoder/realign failure diagnosis, shared raw planner, silence-aware global windows, short-tail redistribution, silence anchors, and next experiments. |
 | 2026-07-27 | `20260727_mir1k_demo_diagnostic_experiment.md` | hot | MIR-1K data-only subset selection, independent context/separator probes, v6 propagation diagnosis, held-out freeze, and artifact protocol. |
 | 2026-07-25 | `20260725_qwen_fa_quick_feedback_and_yessoda_demo_patch.md` | hot | Dense 120s quick probes plus standalone 夜苏打 serial-window KTV demo implementation and execution guide. |
 | 2026-07-25 | `20260725_qwen_fa_long_diagnostic_plan.md` | hot | Long-context mechanism hypotheses, raw/fixed timestamp evidence requirements and staged diagnostic design. |

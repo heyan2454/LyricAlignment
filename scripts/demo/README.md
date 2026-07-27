@@ -288,3 +288,44 @@ Bounded evidence collection:
 python scripts/demo/collect_decoder_realign_evidence.py /path/to/test/root \
   --output /path/to/evidence.tar.gz --max-total-mib 12
 ```
+
+## Decoder × realign controlled comparison
+
+The current development entry is `run_decoder_realign_comparison_batch.py`.
+It uses one shared raw planner, official/raw timestamp replay, and O0/O1/R0/R1
+branches.  A whole-song silence-aware `window_plan.json` skips long leading
+silence, retains silence anchors, snaps safe boundaries, and redistributes a
+short tail across the two preceding windows (or merges it when only one exists).
+Default rendering is one mix-audio 2×2 comparison.
+
+Guide:
+
+```text
+docs/manual/decoder_realign_comparison_demo.md
+```
+
+## Official baseline / inline-realign smoke and formal
+
+The current follow-up no longer treats shared raw planning or post-hoc local
+repair as the production answer.  It runs official-controlled B0–B3 baselines,
+collects precommit collapse/pileup diagnostics, verifies stable segments and the
+previous-window stable suffix, and executes exact/+2 local repair in shadow
+mode within one or two adjacent windows.
+
+```bash
+bash scripts/demo/run_inline_realign_smoke.sh
+bash scripts/demo/run_inline_realign_formal.sh
+```
+
+MIR-1K held-out is excluded unless `--include-heldout` is explicitly appended.
+The collection stage is capped at 8 MiB by default and excludes audio, video,
+weights and full logs.  See:
+
+```text
+docs/manual/inline_realign_smoke_formal.md
+docs/sessions/20260727_inline_realign_smoke_formal_archive.md
+```
+
+Comparison rendering now defaults to the official O0/O1 pair and encodes the
+final comparison directly in one ffmpeg pass. Use `--four-way` only when raw
+panels are needed, and `--profile final` only for a stage closeout deliverable.

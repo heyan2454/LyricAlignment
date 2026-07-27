@@ -241,9 +241,20 @@ def materialize(
     selection: list[dict[str, Any]],
     characters_by_item: dict[str, list[dict[str, Any]]],
     *, mir1k_root: Path, out_dir: Path, units_per_line: int, force: bool,
+    materialize_roles: set[str] | None = None,
 ) -> None:
+    """Materialize selected MIR-1K assets.
+
+    Historical subset preparation intentionally left ``spare`` rows as metadata
+    only.  Callers that explicitly want spare/design-expansion rows may pass
+    ``materialize_roles``.  The default preserves the original split behavior.
+    """
     for row in selection:
-        if row["selection_role"] == "spare":
+        role = str(row.get("selection_role", ""))
+        if materialize_roles is None:
+            if role == "spare":
+                continue
+        elif role not in materialize_roles:
             continue
         item_id = str(row["item_id"])
         song_id = str(row["song_id"])
