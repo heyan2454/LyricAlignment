@@ -94,3 +94,41 @@ def test_repository_root_has_no_obsolete_patch_or_archive_copies() -> None:
     present = sorted(name for name in forbidden if (ROOT / name).exists())
     assert present == []
     assert not (ROOT / "docs" / "archive" / "legacy_root_artifacts_20260726").exists()
+
+
+def test_build_falls_back_to_filesystem_without_git(tmp_path: Path) -> None:
+    import zipfile
+
+    root = tmp_path / "snapshot"
+    required = [
+        "src/lyricalign/datasets/m4singer.py",
+        "src/lyricalign/datasets/mir1k.py",
+        "scripts/datasets/audit_m4singer.py",
+    ]
+    for relative in required:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# test\n", encoding="utf-8")
+    (root / "README.md").write_text("snapshot\n", encoding="utf-8")
+    (root / "__pycache__").mkdir()
+    (root / "__pycache__" / "bad.pyc").write_bytes(b"bad")
+    (root / "audio.wav").write_bytes(b"not source")
+    (root / "change.bak_prearchive").write_text("old", encoding="utf-8")
+
+    original_root = MODULE.ROOT
+    MODULE.ROOT = root
+    try:
+        archive = tmp_path / "fallback.zip"
+        manifest = MODULE.build(archive, "LyricAlignment")
+        result = MODULE.verify(archive)
+    finally:
+        MODULE.ROOT = original_root
+
+    assert result["status"] == "passed"
+    paths = {row["path"] for row in manifest["entries"]}
+    assert "README.md" in paths
+    assert "audio.wav" not in paths
+    assert "change.bak_prearchive" not in paths
+    assert not any("__pycache__" in path for path in paths)
+    with zipfile.ZipFile(archive) as handle:
+        assert "LyricAlignment/README.md" in handle.namelist()

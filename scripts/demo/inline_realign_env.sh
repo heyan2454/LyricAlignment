@@ -9,10 +9,13 @@ R2_CHECKPOINT="${R2_CHECKPOINT:-/home/hyan/Data/lyricalign/runs/20260724_qwen_fa
 M4_LABELS="${M4_LABELS:-/home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/labels/m4singer_qwen_fa_labels.jsonl}"
 M4_AUDIO_ROOT="${M4_AUDIO_ROOT:-/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer}"
 MIR1K_SUBSET_ROOT="${MIR1K_SUBSET_ROOT:-/home/hyan/Data/lyricalign/demo_diagnostics/mir1k_subset_v1}"
-DEMO_ROOT="${DEMO_ROOT:-/home/hyan/LyricAlignment}"
-DEMO_PREPARED_SUFFIXES="${DEMO_PREPARED_SUFFIXES:-_qwen_fa_decoder_realign,_qwen_fa_raw_guarded,_qwen_fa}"
+DEMO_ROOT="${DEMO_ROOT:-/home/hyan/Data/lyricalign/test}"
+DEMO_PREPARED_SUFFIXES="${DEMO_PREPARED_SUFFIXES:-_qwen_fa,_qwen_fa_decoder_realign,_qwen_fa_raw_guarded}"
 DEVICE="${DEVICE:-cuda}"
 EVIDENCE_CAP_MIB="${EVIDENCE_CAP_MIB:-8}"
+DEMO_PUBLISH_LAYOUT="${DEMO_PUBLISH_LAYOUT:-central}"
+DEMO_PUBLISH_ROOT="${DEMO_PUBLISH_ROOT:-}"
+M4_LONG_TARGET_SECS="${M4_LONG_TARGET_SECS:-60,120,180}"
 
 resolve_model_source() {
   if [[ -n "$MODEL_SOURCE" && -f "$MODEL_SOURCE/model.safetensors" ]]; then
@@ -76,5 +79,13 @@ validate_inline_realign_inputs() {
   fi
   export REPO_ROOT PYTHON_BIN MODEL_REVISION MODEL_SOURCE R2_CHECKPOINT
   export M4_LABELS M4_AUDIO_ROOT MIR1K_SUBSET_ROOT DEMO_ROOT DEMO_PREPARED_SUFFIXES
-  export DEVICE EVIDENCE_CAP_MIB
+  case "$DEMO_PUBLISH_LAYOUT" in
+    central|adjacent|directory) ;;
+    *) echo "ERROR: DEMO_PUBLISH_LAYOUT must be central, adjacent, or directory" >&2; return 2 ;;
+  esac
+  if [[ "$DEMO_PUBLISH_LAYOUT" == "directory" && -z "$DEMO_PUBLISH_ROOT" ]]; then
+    echo "ERROR: DEMO_PUBLISH_ROOT is required when DEMO_PUBLISH_LAYOUT=directory" >&2
+    return 2
+  fi
+  export DEVICE EVIDENCE_CAP_MIB DEMO_PUBLISH_LAYOUT DEMO_PUBLISH_ROOT M4_LONG_TARGET_SECS
 }

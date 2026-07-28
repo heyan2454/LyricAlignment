@@ -1,6 +1,6 @@
 # LyricAlignment
 
-面向普通话歌声的已知歌词强制对齐研究项目。仓库根目录固定为
+中文优先、正在扩展多语言歌声的已知歌词强制对齐研究项目。仓库根目录固定为
 `LyricAlignment/`；日期后缀只用于 archive、run 和报告。
 
 
@@ -43,6 +43,32 @@ Primary song-macro penalized boundary MAE:
 当前不应立即扩展 LoRA；下一步是定位 approximately 150-second 序列中的
 局部对齐崩溃。
 
+
+## 当前 Demo / inline-realign 执行入口（2026-07-28）
+
+当前开发主线是多语言 Test Demo 与 official inline-realign shadow：
+
+```bash
+bash scripts/demo/run_inline_realign_smoke.sh
+bash scripts/demo/run_inline_realign_formal.sh
+```
+
+formal 默认纳入全部递归发现且已具备 prepared vocal 的 Test Demo；当前
+各语言歌曲数仅记录在输入审计中，不写死为上限。所有歌曲先完成 align 和
+shadow 实验，再统一 render。输出可保留在统一运行目录，也可用符号链接发布
+到歌曲旁或指定目录，不复制视频。
+
+当前实现包含 detector/GT-oracle/clean-control、exact/+2/+4 一致性、
+future-text expansion、stable-prefix guard、pending/tail rollback/incomplete
+shadow、历史 r2 行为比较和 M4Singer 60/120/180 秒分层；自动写回仍关闭。
+
+详见：
+
+```text
+docs/sessions/20260728_multilingual_inline_realign_completion_archive.md
+docs/manual/inline_realign_smoke_formal.md
+docs/status/next_execution_plan.md
+```
 
 ## 通用 Demo 入口
 

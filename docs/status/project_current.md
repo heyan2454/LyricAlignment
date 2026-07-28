@@ -1,7 +1,7 @@
 # Project Current
 
-**Snapshot date:** 2026-07-27
-**Stage:** first Qwen Forced Aligner LoRA cycle archived; reusable v6 demo and stage-separated evidence implemented; MIR-1K context/separator/propagation diagnosis is next
+**Snapshot date:** 2026-07-28
+**Stage:** multilingual Test Demo and complete inline-realign shadow suite implemented; server GPU smoke/formal evidence is next
 
 ## Completed experiment chain
 
@@ -268,8 +268,10 @@ The current follow-up implementation replaces that behavior with:
   only when split decisions actually differ;
 - clearly labelled constructed incomplete outputs that preserve only the
   resolved prefix instead of forcing the tail;
-- expanded formal defaults: Demo 12, MIR-1K development+spare 16, M4 native 24,
-  M4 synthetic-long 12; held-out remains excluded;
+- the historical follow-up package used bounded Demo/M4 caps; this is superseded by
+  the multilingual completion archive, where formal uses all discovered+prepared
+  Test Demo songs and records current counts only as runtime metadata; held-out
+  remains excluded;
 - Demo required by the wrappers, all alignment completed before rendering, and
   a single `items/<id>/render/official.mp4` output per Demo;
 - compact JSON/Markdown result summaries before bounded evidence collection.
@@ -285,3 +287,72 @@ Canonical records:
 docs/sessions/20260728_inline_realign_followup_experiments.md
 docs/manual/inline_realign_smoke_formal.md
 ```
+
+## 2026-07-28 multilingual Test Demo and complete shadow-suite archive
+
+The follow-up evidence changed the main interpretation:
+
+- fixed 30-second B1 can match fixed 60-second B0 on the observed Demo;
+- silence-aware B2 can collapse when candidate text is expanded and immediately committed;
+- B3 raw-controlled planning remains diagnostic-only;
+- stable segments are reliable references but direct stable-cursor replacement is a negative result;
+- GT-oracle local realign has demonstrated repair capability, while the automatic detector still needs formal recall/precision measurement;
+- exact/+2 alone may reject useful repairs, so exact/+2/+4 2-of-3 consensus is now evaluated;
+- no automatic writeback is enabled.
+
+Current code now:
+
+- discovers all prepared Test Demo songs for formal runs without hard-coding the current number per language;
+- samples one item per discovered language for smoke;
+- parses language per item and groups metrics by language and alignment-unit mode;
+- fixes local-rerun `start_sec/end_sec` schema;
+- isolates stable-window and expansion failures;
+- evaluates detector-to-GT overlap, clean-control harm, three-context consensus,
+  pending-confirmation shadow, severe-tail two-window rollback shadow,
+  automatic incomplete shadow, historical R2 behavior, and M4Singer seam-near/far metrics;
+- builds M4Singer synthetic-long buckets at 60/120/180 seconds under one total cap;
+- supports central canonical outputs and optional adjacent/directory symlink views;
+- still completes all alignments before rendering any Demo.
+
+Canonical record:
+
+```text
+docs/sessions/20260728_multilingual_inline_realign_completion_archive.md
+```
+
+Production state remains unchanged: B2 official is the current experimental
+primary branch; pending, rollback, incomplete replacement, and local writeback
+are shadow-only until server GPU evidence supports them.
+
+## 2026-07-28 long-range visual / detector / stable / deferred archive
+
+Current implementation now treats Qwen Forced Aligner as a strong short-range
+operator and studies how to extend it to full songs through global planning and
+bounded local execution.
+
+Implemented for the next server smoke/formal run:
+
+- dynamic all-discovered multilingual Demo manifest with path-derived short IDs;
+- B0/B1/B2 plus raw full-song comparison for every long-serial item;
+- corrected stable-inclusive S1/S2/S3 full-song shadow alignments;
+- R0/R1/R2/R3 no/immediate/deferred/combined realign shadow alignments;
+- per-item timeline, signed-error, duration-distribution and inconsistency plots;
+- every Demo receives main, stable and realign four-way K-song videos plus one
+  behavior explanation video;
+- YAML-backed one-click smoke/formal, resolved configuration and layered cache
+  identity;
+- manifest-bounded summary/evidence collection, grouped plus total metrics,
+  clean-control counterfactual gate reporting and stale-item diagnostics;
+- live terminal status and bounded compact evidence.
+
+Canonical record:
+
+```text
+docs/sessions/20260728_long_range_visual_detector_stable_deferred_experiment_implementation.md
+docs/manual/inline_realign_smoke_formal.md
+```
+
+The new suite has passed local static/focused tests and synthetic FFmpeg render
+checks. Real Qwen GPU smoke/formal results are not included in this archive.
+R1/R2/R3 remain shadow simulations over the complete serial trace; online
+writeback into the production serial cursor is intentionally not claimed.

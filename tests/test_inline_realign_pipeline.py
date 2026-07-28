@@ -317,7 +317,8 @@ def test_forced_expansion_trials_actively_run_larger_text(monkeypatch) -> None:
     monkeypatch.setattr(module, "_attempt_rows_for_rerun", lambda **kwargs: (rows[:kwargs["character_end"]], {"ok": True}))
     result = module.run_forced_expansion_trials(
         args=_experiment_args(), processor=None, model=None, audio=[0] * 64000,
-        document=SimpleNamespace(characters=list(range(10))), gt=[], trace=trace,
+        document=SimpleNamespace(characters=list(range(10))), gt=[], rows=rows, trace=trace,
+        assistance=None,
     )
     assert result["window_count"] == 1
     assert result["variant_run_count"] == 2
@@ -534,3 +535,227 @@ def test_mir1k_missing_assets_fail_early_when_auto_materialization_disabled(tmp_
         assert "spare_1" in str(exc)
     else:
         raise AssertionError("expected missing MIR-1K assets to fail before experiment execution")
+
+
+def test_canonical_final_rows_projects_infer_slice_schema() -> None:
+    module = load_script("inline_canonical_rows", "run_inline_realign_experiment.py")
+    inferred = [{
+        "global_character_index": 0,
+        "character": "甲",
+        "fixed_global_start_sec": 1.0,
+        "fixed_global_end_sec": 1.2,
+        "official_fixed_global_start_sec": 1.0,
+        "official_fixed_global_end_sec": 1.2,
+        "raw_global_start_sec": 1.0,
+        "raw_global_end_sec": 1.2,
+    }]
+    rows = module.canonical_final_rows(inferred)
+    assert rows[0]["start_sec"] == 1.0
+    assert rows[0]["end_sec"] == 1.2
+
+
+def test_demo_manifest_infers_language_and_balances_cap(tmp_path: Path) -> None:
+    module = load_script("inline_manifest_multilingual", "build_inline_realign_manifest.py")
+    fixtures = [
+        ("Chinese", "中文歌"),
+        ("English", "English Song"),
+        ("Japanese", "日本語曲"),
+        ("Cantonese", "粵語歌"),
+    ]
+    for language, stem in fixtures:
+        parent = tmp_path / language
+        parent.mkdir(parents=True)
+        (parent / f"{stem}.txt").write_text("lyrics", encoding="utf-8")
+        (parent / f"{stem}.mp3").write_bytes(b"media")
+        prepared = parent / f"{stem}_qwen_fa" / "work" / "audio"
+        prepared.mkdir(parents=True)
+        (prepared / "vocals.wav").write_bytes(b"wav")
+    args = module.parser().parse_args([
+        "--mode", "smoke", "--out-root", str(tmp_path / "out"),
+        "--demo-root", str(tmp_path), "--demo-recursive",
+    ])
+    audit = {}
+    rows = module.demo_rows(args, 4, audit)
+    assert {row["language"] for row in rows} == {"Chinese", "English", "Japanese", "Cantonese"}
+    assert len({row["item_id"] for row in rows}) == 4
+    assert audit["demo"]["selected_by_language"] == {
+        "Cantonese": 1, "Chinese": 1, "English": 1, "Japanese": 1,
+    }
+    assert all(row["prepared_root"].endswith("_qwen_fa") for row in rows)
+
+
+def test_branch_request_identity_includes_item_language(tmp_path: Path) -> None:
+    module = load_script("inline_branch_language", "run_inline_realign_experiment.py")
+    lyrics = tmp_path / "lyrics.txt"; lyrics.write_text("hello", encoding="utf-8")
+    audio = tmp_path / "audio.wav"; audio.write_bytes(b"wav")
+    args = SimpleNamespace(
+        model="model", revision="rev", left_context_sec=10.0, right_context_sec=10.0,
+        future_character_ratio=1.35, max_candidate_expansions=4,
+        max_case_preview_rows=64, stable_prefix_minimum_observed_units=2,
+        stable_prefix_minimum_observed_ratio=0.5, stable_segment_min_units=2,
+        stable_segment_confidence_quantile=0.5, stable_raw_official_tolerance_sec=0.16,
+        stable_context_tolerance_sec=0.24,
+    )
+    item = {
+        "item_id": "demo_English_x", "dataset": "demo", "profile": "long_serial",
+        "language": "English", "lyrics_path": str(lyrics), "audio_path": str(audio),
+    }
+    request = module.branch_request(
+        args, item, "B2_30_silence_official", module.VARIANTS["B2_30_silence_official"],
+        {"kind": "checkpoint"},
+    )
+    assert request["language"] == "English"
+    assert "gt_path" not in request
+    assert "gt_sha256" not in request
+
+
+def test_evaluation_identity_changes_with_gt_without_changing_inference(tmp_path: Path) -> None:
+    module = load_script("inline_evaluation_identity", "run_inline_realign_experiment.py")
+    gt_a = tmp_path / "a.jsonl"
+    gt_b = tmp_path / "b.jsonl"
+    gt_a.write_text('{"character_index":0,"start_sec":0.0,"end_sec":1.0}\n', encoding="utf-8")
+    gt_b.write_text('{"character_index":0,"start_sec":0.1,"end_sec":1.1}\n', encoding="utf-8")
+    first = module.evaluation_request({"gt_path": str(gt_a)}, "same-inference")
+    second = module.evaluation_request({"gt_path": str(gt_b)}, "same-inference")
+    assert first["inference_request_hash"] == second["inference_request_hash"]
+    assert first["gt_sha256"] != second["gt_sha256"]
+    assert module.canonical_hash(first) != module.canonical_hash(second)
+
+
+def test_detector_gt_available_is_independent_of_error_count() -> None:
+    module = load_script("inline_detector_gt_available", "run_inline_realign_experiment.py")
+    result = module.detector_gt_overlap_summary([], [], total_units=10, gt_available=True)
+    assert result["gt_available"] is True
+    assert result["gt_error_case_count"] == 0
+    assert result["case_precision"] is None
+    assert result["case_recall"] is None
+
+
+def test_formal_demo_default_consumes_all_discovered_items(tmp_path: Path) -> None:
+    module = load_script("inline_manifest_all_demo", "build_inline_realign_manifest.py")
+    for language, count in (("Chinese", 5), ("English", 3)):
+        parent = tmp_path / language
+        parent.mkdir(parents=True)
+        for index in range(count):
+            stem = f"song_{index}"
+            (parent / f"{stem}.txt").write_text("lyrics", encoding="utf-8")
+            (parent / f"{stem}.mp3").write_bytes(b"media")
+            prepared = parent / f"{stem}_qwen_fa" / "work" / "audio"
+            prepared.mkdir(parents=True)
+            (prepared / "vocals.wav").write_bytes(b"wav")
+    args = module.parser().parse_args([
+        "--mode", "formal", "--out-root", str(tmp_path / "out"),
+        "--demo-root", str(tmp_path), "--demo-recursive",
+    ])
+    assert args.demo_cap is None
+    assert args.demo_per_language_cap is None
+    audit = {}
+    rows = module.demo_rows(args, None, audit)
+    assert len(rows) == 8
+    assert audit["demo"]["selection_policy"] == "all_discovered_items"
+
+
+def test_smoke_demo_default_is_dynamic_one_per_discovered_language(tmp_path: Path) -> None:
+    module = load_script("inline_manifest_smoke_dynamic", "build_inline_realign_manifest.py")
+    args = module.parser().parse_args(["--mode", "smoke", "--out-root", str(tmp_path / "out")])
+    # main() assigns the dynamic default; no hard total song count is encoded in the parser.
+    assert args.demo_cap is None
+    assert args.demo_per_language_cap is None
+
+
+def test_detector_gt_overlap_reports_case_and_unit_metrics() -> None:
+    module = load_script("inline_detector_overlap", "run_inline_realign_experiment.py")
+    automatic = [
+        {"character_start": 2, "character_end": 4},
+        {"character_start": 10, "character_end": 11},
+    ]
+    oracle = [
+        {"character_start": 3, "character_end": 5},
+        {"character_start": 20, "character_end": 21},
+    ]
+    result = module.detector_gt_overlap_summary(automatic, oracle, total_units=30)
+    assert result["automatic_case_hit_count"] == 1
+    assert result["gt_error_case_detected_count"] == 1
+    assert result["case_precision"] == 0.5
+    assert result["case_recall"] == 0.5
+    assert result["overlap_unit_count"] == 2
+
+
+def test_three_context_consensus_accepts_plus2_plus4_when_exact_disagrees(monkeypatch) -> None:
+    module = load_script("inline_three_context", "run_inline_realign_experiment.py")
+
+    def fake_agreement(left, right, indices, *, tolerance_sec):
+        left_name = left[0]["trial"]
+        right_name = right[0]["trial"]
+        supported = {left_name, right_name} == {"plus2", "plus4"}
+        return {"supported": supported, "max_boundary_delta_sec": 0.0 if supported else 1.0}
+
+    monkeypatch.setattr(module, "agreement_between_trials", fake_agreement)
+    trials = {
+        name: {"decoded_rows": [{"trial": name}]}
+        for name in ("exact", "plus2", "plus4")
+    }
+    result = module.three_context_consensus(trials, [0], tolerance_sec=0.24)
+    assert result["supported"] is True
+    assert result["selected_trial"] == "plus2"
+    assert result["supported_pairs"] == [["plus2", "plus4"]]
+
+
+def test_clean_control_spans_are_interior_and_bounded() -> None:
+    module = load_script("inline_clean_controls", "run_inline_realign_experiment.py")
+    rows = [row(index, index * 0.4, index * 0.4 + 0.2) for index in range(18)]
+    gt = [
+        {"character_index": index, "start_sec": source["start_sec"], "end_sec": source["end_sec"]}
+        for index, source in enumerate(rows)
+    ]
+    spans = module.clean_control_spans(rows, gt, threshold_sec=0.08, minimum_units=2, limit=2)
+    assert spans
+    assert all(span["candidate_source"] == "clean_control" for span in spans)
+    assert all(span["character_start"] > 0 for span in spans)
+    assert all(span["character_end"] < len(rows) - 1 for span in spans)
+
+
+def test_publish_demo_outputs_uses_symlinks_without_duplicate_video(tmp_path: Path) -> None:
+    module = load_script("inline_publish", "publish_inline_realign_demo_outputs.py")
+    experiment = tmp_path / "experiment"
+    item = experiment / "items" / "demo_English_song"
+    alignment = item / "branches" / "B2_30_silence_official" / "alignment.json"
+    render = item / "render" / "official.mp4"
+    alignment.parent.mkdir(parents=True)
+    render.parent.mkdir(parents=True)
+    alignment.write_text("{}", encoding="utf-8")
+    render.write_bytes(b"video")
+    (item / "item_summary.json").write_text("{}", encoding="utf-8")
+    (experiment / "experiment_summary.json").write_text("{}", encoding="utf-8")
+    source = tmp_path / "test" / "English"
+    source.mkdir(parents=True)
+    manifest = experiment / "experiment_manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "dataset": "demo", "item_id": "demo_English_song", "language": "English",
+        "demo_source_directory": str(source), "demo_source_stem": "song",
+        "source_media_path": str(source / "song.mp3"),
+    }) + "\n", encoding="utf-8")
+    old_argv = module.argparse.sys.argv if hasattr(module.argparse, "sys") else None
+    import sys
+    previous = sys.argv
+    try:
+        sys.argv = [
+            "publish", "--manifest", str(manifest), "--experiment-root", str(experiment),
+            "--layout", "adjacent",
+        ]
+        assert module.main() == 0
+    finally:
+        sys.argv = previous
+    published = source / "song_inline_realign" / "official.mp4"
+    assert published.is_symlink()
+    assert published.resolve() == render.resolve()
+    assert (source / "song_inline_realign" / "publish_manifest.json").is_file()
+
+
+def test_m4_long_targets_are_multiple_duration_buckets() -> None:
+    module = load_script("inline_m4_targets", "build_inline_realign_manifest.py")
+    args = module.parser().parse_args([
+        "--mode", "formal", "--out-root", "/tmp/o",
+        "--m4-long-target-secs", "60,120,180,120",
+    ])
+    assert module._m4_long_targets(args) == [60.0, 120.0, 180.0]

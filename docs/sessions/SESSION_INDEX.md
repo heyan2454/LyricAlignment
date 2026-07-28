@@ -8,6 +8,8 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-07-28 | `20260728_long_range_visual_detector_stable_deferred_experiment_implementation.md` | hot | Full-Demo visual experiment suite, four-way K-song videos, zero/short-duration distributions, corrected stable-anchor S1–S3, immediate/deferred realign R1–R3, YAML one-click execution, live status and bounded evidence. |
+| 2026-07-28 | `20260728_multilingual_inline_realign_completion_archive.md` | hot | Dynamic all-discovered multilingual Test Demo, completed stable/expansion trials, detector P/R, clean harm, exact/+2/+4 consensus, pending/tail rollback/incomplete shadows, legacy R2 comparison, multi-duration M4Singer and link-only publishing. |
 | 2026-07-28 | `20260728_inline_realign_followup_experiments.md` | hot | Localized anomaly ranges, GT-oracle local realign, stable-segment window/cursor assistance with active reruns, forced future-text expansion, fail-closed incomplete outputs, expanded Demo/MIR-1K/M4Singer coverage, align-all-then-render discipline. |
 | 2026-07-27 | `20260727_inline_realign_smoke_formal_archive.md` | hot | Official-controlled B0–B3 baselines, precommit shadow diagnostics, stable segments/prefix, inline shadow realign, bounded evidence, one-click smoke/formal, and direct one-pass rendering. |
 | 2026-07-27 | `20260727_realign_demo_silence_aware_window_archive.md` | hot | Decoder/realign failure diagnosis, shared raw planner, silence-aware global windows, short-tail redistribution, silence anchors, and next experiments. |

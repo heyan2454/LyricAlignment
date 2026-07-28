@@ -1,177 +1,121 @@
-# Inline Realign Follow-up：Smoke / Formal 一条龙执行说明
+# 长范围 Inline Realign：Smoke / Formal 一条龙说明
 
-## 1. 这轮实验回答什么
+## 1. 目标与当前边界
 
-本入口不直接启用自动写回，而是先回答五个具体问题：
+Qwen Forced Aligner 被视为一个短范围内效果良好的对齐工具。本实验研究如何通过窗口、串行 decoder、stable anchor、detector 和局部 realign，把短范围可靠性扩展到完整歌曲。
 
-1. 旧版“找不到稳定段”是否主要来自异常区间定位错误；
-2. 已知错误段两侧的连续稳定段，能否支持 local realign；
-3. 稳定段能否帮助确定下一窗口从哪里重新输入歌词、当前窗口安全提交到哪里；
-4. 增加未来歌词后，原有区域是否发生大片重排、堆积或坍缩；
-5. raw 与 official 是否真的在窗口推进上产生不同决定，以及差异是否影响 GT 或 Demo 听感。
+所有 realign 仍为 **shadow experiment**：会实际推理、生成完整对比 alignment、图片和 Demo 视频，但不会覆盖正式 B2 输出。
 
-当前 local realign 仍是 **shadow-only**：会实际执行局部推理、比较 exact 与 `+2` 上下文、计算 GT/结构变化，但不会修改正式串行结果。
+当前三个研究主体：
 
-## 2. 相比上一版的关键修正
+1. raw decoder 与 official decoder 的行为差异；
+2. detector 对零时长、极短时长、结构坍塌和时间漂移的探测能力；
+3. immediate / deferred local realign 以及 stable anchor 的使用方式。
 
-### 2.1 异常区间不再等于整窗提交范围
+## 2. 数据与选择
 
-自动检测只把以下连续局部范围作为候选：
+### Demo
 
-- 连续零时长；
-- 连续同时间边界堆叠；
-- 当前核心区末端、且本窗实际准备提交的字符大量堆积；
-- 核心区有明显人声但歌词完全没有推进。
+Formal 递归发现并使用 `DEMO_ROOT` 中全部可配对的已准备 Demo。当前 17+6+6+6 只是数据状态，不写死在代码中。Smoke 默认每种发现到的语言取一首。
 
-未来歌词在右侧输入上下文末端的自然堆积不再触发 realign。异常范围会从真实连续异常开始和结束，不再从整窗第一个字开始，因此不会机械地产生 `no_left_stable_segment`。
+Demo ID 保留语言和歌曲名，并附相对源路径的 8 位短哈希。运行时把发现结果冻结到 `experiment_manifest.jsonl`；汇总和证据收集只接受该 manifest 中的 item，旧目录仅报告为 stale，不参与当前结论。
 
-### 2.2 GT 错误段主动测试 local realign
+### GT 数据
 
-M4Singer 和 MIR-1K 有 GT。除自动候选外，程序会主动选择边界误差明显的连续区域作为 `gt_oracle` 候选，并实际运行 local realign。
+- MIR-1K：自然长音频；formal 默认使用全部非 held-out 角色，held-out 仍需显式启用。
+- M4Singer native：短范围 GT。
+- M4Singer synthetic-long：60/120/180 秒长范围传播和接缝诊断。
 
-两类结果必须分开解释：
+全部 long-serial 样本运行 B0–B3。M4Singer native 只运行主分支，因为短片段通常不能有效比较 30/60 秒窗口。
 
-- 自动候选：回答检测器是否能找到可修问题；
-- GT oracle：回答即使检测器暂时不完善，稳定段约束下 local realign 本身有没有修复能力。
+## 3. 基线与实验分支
 
-Oracle 改善不能报告成自动生产效果。
+### 窗口基线
 
-### 2.3 稳定段真正参与窗口分配实验
+- `RAW_B2`：B2 每窗原始模型输出。
+- `B0_60_fixed_official`：60 秒固定切窗 baseline。
+- `B1_30_fixed_official`：30 秒固定切窗。
+- `B2_30_silence_official`：30 秒 silence-aware 当前主方案。
+- `B3_30_silence_raw_control`：raw cursor 控制，仅作行为诊断。
 
-程序不再只统计“稳定段准确率”，还会针对相邻窗口计算：
+`fixed` 按目标时间直接切窗；`silence-aware` 在目标切点附近优先选择静音边界，并保留尾窗重新分配规则。
 
-- 基线下一窗歌词起点；
-- 基于下一窗左侧可听范围内稳定子段建议的歌词起点；
-- 基线提交终点；
-- 基于当前窗核心区内最后稳定子段建议的安全提交终点；
-- 在有 GT 时，两种决定距离 GT 理想位置各差多少字。
+### Stable-anchor 消融
 
-若稳定段建议与基线不同，程序会按建议起点实际重新运行下一窗口，检查稳定前缀是否复现以及重跑结果的 GT/结构表现。
+- `S1_stable_inclusive`：下一窗从 stable 区起点开始，输入包含 stable 本身。
+- `S2_stable_left_overlap`：包含 stable，并保留少量 stable 前文本上下文。
+- `S3_stable_frozen_overlap`：输入同 S2，shadow splice 时冻结 stable 对应。
 
-稳定段只使用下一窗左侧音频实际可听到的局部连续子段，不会因为某个稳定段很长就从很早的歌词位置重新输入大量旧歌词。
+此前“直接 stable cursor”负结果不能代表这三个纠正后的设计。
 
-### 2.4 强制未来歌词扩展对照
+### Realign 消融
 
-不再等待自然运行偶然触发扩展。每个选中窗口主动运行：
+- `R0`：B2，不 realign。
+- `R1_immediate_inline`：对当前已具有足够约束的异常区做即时 inline shadow realign。
+- `R2_deferred`：等待后续恢复右 stable anchor 后，对被两侧锚点夹住的困难区 realign。
+- `R3_inline_deferred`：R1 与 R2 组合。
 
-- 基础候选歌词；
-- 未来歌词增加到约 125%；
-- 未来歌词增加到约 150%。
+当前实现是**完整串行 trace 上的可复现 shadow 模拟**，用于公平比较和生成全曲视频；它尚未把 realign 写回正式在线串行 cursor。目标算法是“即时修复 + 锚点恢复后的延迟修复 + 结束时只处理剩余 bounded 区间”，不是整首重新对齐。
 
-只保留有限探针行，比较原有区域最大/中位边界移动、零时长和 GT，不保存三份完整逐字重复结果。
+## 4. 可视化与 Demo 视频
 
-### 2.5 构造 fail-closed 未完成结果
+### 每个 item 的静态图
 
-清单会选择一个 Demo 和一个 GT 样本，构造明确标注的 incomplete 输出：
+`items/<item_id>/visuals/` 包含：
 
-- 仅保留异常前已完成前缀；
-- 记录首个未解决字符、剩余字数和触发原因；
-- 不把剩余歌词强行塞入尾窗；
-- `constructed_for_validation` 明确说明这是失败保护演练，不是自动判断该歌曲必然未完成。
+- 分页多轨时间轴：GT（若有）、raw、B0/B1/B2、stable 和 realign 分支；
+- GT unit 两端的延长虚线；
+- 窗口、stable、detector 等模型行为标记；
+- onset/offset signed error 图；
+- 正时长直方图和 ECDF，零时长比例单独标注；
+- B2 相对其他尺度/阶段的不一致图；
+- `visual_analysis.json` 中的时长分位数、局部时长比、zero burst 与 GT timing metric。
 
-## 3. 数据集和默认规模
+不使用 waveform / vocal-energy 主轨。
 
-### Smoke
+### 每个 Demo 的视频
 
-| 数据 | 默认上限 | 用途 |
-|---|---:|---|
-| Demo | 2 | 真实全曲、听感、尾部和传播 |
-| MIR-1K development | 3 | 自然长音频 GT |
-| M4Singer native | 4 | 干净短片段 GT、稳定段与 local oracle |
-| M4Singer synthetic-long | 2 | 多窗口和人工接缝压力 |
+不会生成无对比的普通单路视频。每首 Demo 生成：
 
-Smoke 中除 M4Singer native 外，长音频样本运行 B0–B3 基线矩阵。
+1. `comparison_main_2x2.mp4`：RAW / B0 / B1 / B2 四路同步 K 歌对比；
+2. `comparison_stable_2x2.mp4`：B2 / S1 / S2 / S3；
+3. `comparison_realign_2x2.mp4`：R0 / R1 / R2 / R3；
+4. `behavior_current.mp4`：B2 K 歌字幕，同时显示当前窗口、输入/提交 cursor、raw/official 文本、detector、stable、零时长和播放进度。
 
-### Formal
+没有内置人工标签。每个 item 仅创建 `visuals/HUMAN_REVIEW.md` 入口，用户可自行记录或把视频交给 AI 讨论。
 
-| 数据 | 默认上限 | B0–B3 矩阵上限 |
-|---|---:|---:|
-| Demo | 12 | 4 |
-| MIR-1K 全部非 held-out 角色 | 最多 16（当前通常 13） | 8 |
-| M4Singer native | 24 | 0，只运行主分支 B2 |
-| M4Singer synthetic-long | 12 | 4 |
+## 5. Zero / short-duration 分析
 
-Formal 默认不使用 MIR-1K held-out。只有规则和阈值冻结后才显式追加：
+零时长单独统计。极短非零时长不预设 20/40 ms 为最终阈值，而使用：
 
-```bash
---include-heldout
-```
+- 5 ms 细 bin 的正时长分布图；
+- ECDF；
+- p0.1/p0.5/p1/p2.5/p5/p10…分位数；
+- 相对局部中位时长比；
+- zero/low-tail 连续 burst；
+- 与 GT error、窗口边界和跨尺度不一致的关系。
 
-M4Singer native 使用跨歌曲均匀选择，避免大量样本都来自同一首歌。Synthetic-long 只使用同歌材料，但人工接缝必须单独报告。
+固定毫秒值可作为读图查询点，但 detector 阈值必须由 GT 区分能力决定。
 
-可通过参数进一步扩大或缩小：
+## 6. 配置、缓存和结果身份
 
-```bash
---demo-cap 16 \
---mir1k-cap 17 \
---m4-native-cap 40 \
---m4-long-cap 16
-```
+YAML 是规范配置源：
 
-扩大数据量时，优先增加歌曲数量和不同错误类型，而不是重复增加同一歌曲的相邻短片段。
+- `configs/experiments/inline_realign_multilingual_smoke_20260728.yaml`
+- `configs/experiments/inline_realign_multilingual_formal_20260728.yaml`
 
-## 4. Demo 输入发现
+wrapper 只传数据、模型和输出路径。显式 CLI 参数可以覆盖 YAML，最终有效值写入 `resolved_config.json`。
 
-默认递归搜索 Demo，并识别以下已有准备目录：
+缓存分层维护：
 
-```text
-_qwen_fa_decoder_realign
-_qwen_fa_raw_guarded
-_qwen_fa
-```
+- baseline inference identity：音频/歌词/model/checkpoint/完整行为参数；
+- diagnostic identity：baseline hash、detector/stable/realign 参数；
+- evaluation identity：alignment hash、GT hash、metric schema；
+- render identity：alignment/audio/video/font/profile。
 
-每个 Demo 需要能够配对：
+行为语义变化时提升 schema version。只改 GT 不应重跑模型；只改字体不应重跑 alignment。
 
-- 歌词文本；
-- 原始媒体或音频；
-- 已准备的人声 `work/audio/vocals.wav`。
-
-Smoke/Formal 默认传入 `--require-demo`。没有找到 Demo 时会直接失败，而不是悄悄生成一个不包含 Demo 的 formal 结果。
-
-
-## 4.1 MIR-1K 元数据行自动物化
-
-历史 `mir1k_subset_v1` 为了冻结 held-out 和节省空间，只物化了 development、held-out 以及后来显式提升的 quick-v2-extra；`spare` 行只存在于 `selection.jsonl`，默认没有：
-
-```text
-items/<item_id>/lyrics.txt
-items/<item_id>/ground_truth.characters.jsonl
-items/<item_id>/audio/official_vocal.wav
-items/<item_id>/audio/mix.wav
-```
-
-Formal 为扩大设计数据会读取所有非 held-out 角色：
-
-```text
-development,quick_v2_extra,spare
-```
-
-清单构建阶段现在会先审计所选 MIR-1K 样本。若发现 metadata-only 行，会读取：
-
-```text
-<subset_root>/selection.json
-  source_characters
-  mir1k_root
-  units_per_line
-```
-
-然后自动补齐缺失歌词、字符 GT、official vocal、mix 和 accompaniment，再写实验 manifest。修复记录保存在：
-
-```text
-input_audit.json -> mir1k_asset_repair
-```
-
-字段包括修复前后缺失数量、被物化的 item_id 和原始数据路径。若源字符标注或原始 MIR-1K 路径已经移动，程序会在模型加载前给出明确路径错误，不会再到样本推理阶段才报 `lyrics.txt` 缺失。
-
-需要只审计而禁止自动写入子集目录时，可运行：
-
-```bash
-bash scripts/demo/run_inline_realign_formal.sh --no-materialize-missing-mir1k
-```
-
-正常恢复本次失败只需重新执行原 formal 命令。已有成功分支按 request hash 复用；manifest 阶段会先补齐 spare 数据。
-
-## 5. 一条龙运行
+## 7. 一条龙执行
 
 ### Smoke
 
@@ -183,7 +127,7 @@ bash scripts/demo/run_inline_realign_smoke.sh
 默认输出：
 
 ```text
-/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v2_20260728
+/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v3_20260728
 ```
 
 ### Formal
@@ -196,162 +140,97 @@ bash scripts/demo/run_inline_realign_formal.sh
 默认输出：
 
 ```text
-/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v2_20260728
+/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v3_20260728
 ```
 
-环境路径位于：
-
-```text
-scripts/demo/inline_realign_env.sh
-```
-
-常用覆盖：
+覆盖路径示例：
 
 ```bash
-DEMO_ROOT=/home/hyan/LyricAlignment \
-OUT_ROOT=/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v2_custom \
+DEMO_ROOT=/home/hyan/Data/lyricalign/test \
+OUT_ROOT=/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v3_custom \
   bash scripts/demo/run_inline_realign_formal.sh
 ```
 
-## 6. 强制执行顺序：全部 align 后统一 render
+同一命令可恢复。`--force` 才强制重算匹配分支。
 
-流水线顺序固定为：
+## 8. 实时状态
 
-```text
-01_manifest
-→ 02_experiment：所有 Demo/MIR-1K/M4Singer 全部完成 align 和补充推理
-→ 03_render_demo_after_all_alignments：只渲染 Demo
-→ 04_summarize
-→ 05_collect
-```
-
-`03_render_demo_after_all_alignments` 只有在 `experiment_summary.json` 已存在后才启动。因此不会出现每完成一首 Demo 就立刻渲染、GPU/CPU 反复切换的情况。
-
-### Demo 文件夹不重复
-
-每个 Demo 只使用一套实验目录：
-
-```text
-items/<demo_item_id>/
-├── branches/B2_30_silence_official/alignment.json
-├── incomplete_guard/alignment.json          # 仅构造/触发时存在
-└── render/official.mp4
-```
-
-不会再次创建 `<歌名>_qwen_fa_*` 输出树，也不会复制一个同体积根目录别名视频。
-
-默认只渲染 official B2：
-
-- review：24 fps、CRF 28、AAC 96 kbps；
-- final：30 fps、CRF 20、AAC 192 kbps。
-
-阶段性成品使用：
+pipeline 会把子阶段 stdout 实时回显并写日志。另一个终端运行：
 
 ```bash
-bash scripts/demo/run_inline_realign_formal.sh --render-profile final
+python scripts/demo/watch_inline_realign_status.py \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v3_20260728
 ```
 
-构造的 incomplete 默认不渲染；需要检查失败保护画面时显式加：
+状态页显示：
+
+- 当前 pipeline stage；
+- 当前 item 和 branch；
+- manifest / complete / failed 数；
+- visualization 与 Demo render 进度；
+- 输出目录大小；
+- 当前阶段日志尾部。
+
+## 9. 覆盖与清理
+
+更新代码后直接覆盖源码目录即可。输出目录建议先执行：
 
 ```bash
---render-incomplete
+bash scripts/demo/cleanup_inline_realign_overwrite.sh <OUT_ROOT> derived
 ```
 
-## 7. 输出结构
+它删除旧 summary、visual、render 和 experimental shadow，保留可按 request hash 复用的 baseline branches。
+
+其他模式：
+
+```bash
+# 只删除不属于当前 manifest 的旧 item
+bash scripts/demo/cleanup_inline_realign_overwrite.sh <OUT_ROOT> stale
+
+# 完全重新开始
+bash scripts/demo/cleanup_inline_realign_overwrite.sh <OUT_ROOT> all
+```
+
+若 Demo ID 从旧版无哈希变为新版带哈希，旧 item 不会混入结果，但可用 `stale` 回收空间。
+
+## 10. 阶段顺序与输出
 
 ```text
-pipeline_request.json
-pipeline_status.jsonl
-pipeline_complete.json / pipeline_failure.json
-input_audit.json
+01 manifest
+→ 02 全部 alignment 与 shadow experiment
+→ 03 全部静态可视化
+→ 03 全部 Demo 多路视频
+→ 04 total + grouped summary
+→ 05 bounded evidence
+```
+
+核心文件：
+
+```text
+resolved_config.json
+live_status.json
+experiment_live_status.json
 experiment_manifest.jsonl
 experiment_summary.json
+visualization_summary.json
+demo_render_summary.json
 followup_analysis_summary.json
 followup_analysis_summary.md
-demo_render_summary.json
 inline_realign_evidence.tar.gz
-items/<item_id>/
-├── item_summary.json
-├── failure.json                            # 仅失败时
-├── branches/<B0-B3>/alignment.json
-├── inline_realign_shadow.json
-├── stable_window_assistance.json
-├── stable_window_assistance_trials.json
-├── forced_expansion_trials.json
-├── incomplete_guard/alignment.json
-└── render/official.mp4                     # 仅 Demo
+items/<item_id>/...
 ```
 
-## 8. 机器可读总表
+## 11. 分组与证据控制
 
-`followup_analysis_summary.json` 汇总：
+同时输出总指标和以下分组：
 
-- 自动候选与 GT oracle 候选分别多少；
-- 有多少候选真正执行 local inference；
-- exact 与 `+2` 上下文一致多少；
-- GT 改善和 shadow would-write 多少；
-- 稳定段建议在多少窗口改变了输入 cursor；
-- 与 GT 理想 cursor 相比，建议改善、持平、恶化多少；
-- 主动重跑是否复现稳定前缀；
-- +25%/+50% 文本扩展最大移动分布；
-- raw/official planner 真正分歧的窗口；
-- B2/B3 在分歧样本上的逐字时间、归属和 GT 差异；
-- incomplete 输出数量和剩余歌词规模；
-- Demo 渲染完成/失败数量。
+- dataset；
+- profile；
+- language；
+- alignment unit mode；
+- duration bucket；
+- variant。
 
-`followup_analysis_summary.md` 是同一结果的便于阅读版本。
+GT 报告 micro 与 item-macro。Demo 只提供结构、行为和主观对比，不伪装成精确 metric。
 
-## 9. 证据大小控制
-
-默认上限 8 MiB。超限时依次缩减：
-
-```text
-full → anomaly only → severe only
-```
-
-保留：
-
-- 汇总和状态；
-- 自动/GT oracle realign 决策；
-- 稳定段辅助分窗和主动重跑；
-- 强制扩展的有限探针；
-- planner 真正分歧窗口；
-- incomplete 摘要；
-- 异常附近有限逐字记录。
-
-不包含：
-
-- 音频、视频和 ASS；
-- 模型权重；
-- 完整 stdout；
-- 所有扩展推理的全量重复逐字输出；
-- 正常区域的无限量逐字数据。
-
-## 10. 中断恢复和失败处理
-
-- 基线、shadow、稳定段辅助、主动重跑和扩展实验都有 request hash；相同输入与参数可复用。
-- 重新执行同一命令即可恢复。
-- `--force` 才会强制重算。
-- 单个 item 失败时保存 `failure.json` 并继续其他 item。
-- 只要 `experiment_summary.json` 已生成，后续 render、summary 和 bounded collection 仍会执行；最终状态为 `partial_failure` 并返回非零码。
-- incomplete 输出是显式失败保护，不等于运行异常。
-
-## 11. 判读顺序
-
-1. `input_audit.json`：确认 Demo、MIR-1K、M4Singer 数量和角色；
-2. `pipeline_complete.json`：确认阶段是否完整或 partial；
-3. `followup_analysis_summary.md`：看总体结论；
-4. GT oracle：local realign 本身是否有修复上限；
-5. 自动候选：定位修正后检测器是否能找到同类问题；
-6. 稳定段辅助 cursor：是否比基线更接近 GT，以及主动重跑是否稳定；
-7. 强制文本扩展：是否出现大范围移动；
-8. planner divergence：只有真正分歧的 B2/B3 才有解释价值；
-9. Demo `render/official.mp4`：最后进行听感检查。
-
-不能混淆：
-
-- GT oracle 与自动生产能力；
-- Demo 听感与 GT 准确率；
-- M4Singer synthetic-long 与自然 MIR-1K；
-- 结构异常减少与时间准确率提高；
-- 构造 incomplete 与自动检测 incomplete。
+默认 evidence 上限 8 MiB，按 `full → anomaly → severe → minimal` 自动缩减。保留汇总、状态、有限 case、visual/render 索引和实验分支摘要；不收集音频、视频、模型权重、完整日志或全部 alignment。需要深度复查时再针对指定 item 单独收集大证据。

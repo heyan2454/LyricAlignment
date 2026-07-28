@@ -16,3 +16,5 @@
 - `text_normalization.md`
 
 当某项约定仍在讨论时，应先写入 session 或 status，不应提前写成稳定 manual。
+
+- `inline_realign_smoke_formal.md`: 长范围 inline realign 的 smoke/formal、可视化、视频、缓存、状态与证据说明。

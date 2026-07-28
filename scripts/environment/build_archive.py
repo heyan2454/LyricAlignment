@@ -18,8 +18,92 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+_IGNORED_DIRECTORY_NAMES = {
+    ".git",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    ".cache",
+}
+_IGNORED_ROOT_DIRECTORY_NAMES = {
+    "external_data",
+    "datasets",
+    "models",
+    "checkpoints",
+    "outputs",
+    "wandb",
+    "夜苏打",
+}
+_IGNORED_SUFFIXES = {
+    ".pyc",
+    ".pyo",
+    ".wav",
+    ".mp3",
+    ".mp4",
+    ".m4a",
+    ".flac",
+    ".ckpt",
+    ".safetensors",
+    ".pt",
+    ".pth",
+    ".zip",
+    ".tar",
+    ".gz",
+}
+_IGNORED_EXACT_RELATIVE_PATHS = {
+    GENERATED_MANIFEST,
+    "local_paths.yaml",
+    "configs/paths/local_paths.yaml",
+    "configs/assets/assets.local.yaml",
+    "configs/assets/smoke_samples.local.yaml",
+}
+
+
+def _filesystem_source_files() -> list[Path]:
+    """Fallback for portable source snapshots without a .git directory.
+
+    The fallback intentionally mirrors the repository's tracked-source policy:
+    source/config/docs/tests and lightweight evidence are included, while
+    caches, local paths, media, model artifacts and generated archives are not.
+    """
+
+    paths: list[Path] = []
+    for path in ROOT.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(ROOT)
+        relative_posix = relative.as_posix()
+        if relative_posix in _IGNORED_EXACT_RELATIVE_PATHS:
+            continue
+        if relative.parts and relative.parts[0] in _IGNORED_ROOT_DIRECTORY_NAMES:
+            continue
+        if any(part in _IGNORED_DIRECTORY_NAMES or part.endswith(".egg-info") for part in relative.parts[:-1]):
+            continue
+        if path.name.endswith(".bak_prearchive"):
+            continue
+        if path.suffix.lower() in _IGNORED_SUFFIXES:
+            continue
+        if relative.parts[:2] in {("runs", "raw_audio"), ("runs", "large_outputs")}:
+            continue
+        if "raw_audio" in relative.parts or "large_outputs" in relative.parts:
+            continue
+        paths.append(path)
+    return sorted(paths, key=lambda value: value.relative_to(ROOT).as_posix())
+
+
 def tracked_files() -> list[Path]:
-    names = subprocess.check_output(["git", "-C", str(ROOT), "ls-files", "-z"], text=False).split(b"\0")
+    try:
+        names = subprocess.check_output(
+            ["git", "-C", str(ROOT), "ls-files", "-z"],
+            text=False,
+            stderr=subprocess.DEVNULL,
+        ).split(b"\0")
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return _filesystem_source_files()
     paths = [ROOT / name.decode("utf-8") for name in names if name]
     # A stale generated manifest may already be tracked in an older checkout.
     # It is an archive output, never a source entry, and adding it here would

@@ -31,6 +31,37 @@ def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> int:
     return len(materialized)
 
 
+
+def read_manifest(path: Path) -> list[dict[str, Any]]:
+    if not path.is_file():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def compact_followup_payload(filename: str, payload: dict[str, Any], *, mode: str, max_cases: int) -> dict[str, Any]:
+    """Keep stage evidence useful without copying large per-attempt diagnostic bodies."""
+    if mode == "full":
+        return payload
+    result = {key: value for key, value in payload.items() if key not in {
+        "trials", "windows", "cases", "decisions", "audit", "processor_units",
+        "replacement_preview", "anchor_diagnostics", "rows",
+    }}
+    list_key = next((key for key in ("trials", "windows", "cases", "decisions") if isinstance(payload.get(key), list)), None)
+    if list_key is not None:
+        rows = list(payload.get(list_key) or [])
+        compact_rows: list[dict[str, Any]] = []
+        for row in rows[:max_cases]:
+            compact_rows.append({
+                key: value for key, value in row.items()
+                if key not in {"decoded_rows", "baseline_rows", "processor_units", "audit", "attempts", "replacement_preview"}
+            })
+        result[list_key] = compact_rows
+        result[f"{list_key}_total_count"] = len(rows)
+        result[f"{list_key}_truncated"] = len(rows) > len(compact_rows)
+    result["evidence_compaction"] = {"mode": mode, "source": filename}
+    return result
+
+
 def compact_stable_segment(segment: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in segment.items() if key != "rows"}
 
@@ -127,8 +158,9 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
         "input_audit.json", "experiment_manifest.jsonl", "experiment_summary.json",
         "complete.json", "run_status.jsonl", "pipeline_request.json",
         "pipeline_status.jsonl", "pipeline_complete.json", "pipeline_failure.json",
-        "demo_render_summary.json", "followup_analysis_summary.json",
-        "followup_analysis_summary.md",
+        "demo_render_summary.json", "demo_publish_summary.json", "followup_analysis_summary.json",
+        "followup_analysis_summary.md", "resolved_config.json", "visualization_summary.json",
+        "live_status.json", "experiment_live_status.json",
     ):
         source = root / filename
         if source.is_file():
@@ -137,7 +169,12 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
     window_rows: list[dict[str, Any]] = []
     case_rows: list[dict[str, Any]] = []
     item_summaries: list[dict[str, Any]] = []
-    item_roots = sorted(path for path in (root / "items").glob("*") if path.is_dir())
+    manifest_rows = read_manifest(root / "experiment_manifest.jsonl")
+    manifest_ids = [str(row.get("item_id")) for row in manifest_rows]
+    all_item_roots = sorted(path for path in (root / "items").glob("*") if path.is_dir())
+    stale_item_ids = [path.name for path in all_item_roots if path.name not in set(manifest_ids)]
+    item_roots = [root / "items" / item_id for item_id in manifest_ids if (root / "items" / item_id).is_dir()]
+    visual_index: list[dict[str, Any]] = []
     for item_root in item_roots:
         item_id = item_root.name
         item_summary = read_json(item_root / "item_summary.json")
@@ -157,10 +194,25 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
             "stable_window_assistance.json",
             "stable_window_assistance_trials.json",
             "forced_expansion_trials.json",
+            "pending_confirmation_shadow.json",
+            "tail_two_window_rollback_shadow.json",
+            "legacy_r2_comparison.json",
+            "synthetic_seam_gt_summary.json",
         ):
             payload = read_json(item_root / filename)
             if payload:
-                write_json(staging / "followup_experiments" / item_id / filename, payload)
+                write_json(
+                    staging / "followup_experiments" / item_id / filename,
+                    compact_followup_payload(filename, payload, mode=mode, max_cases=max_cases),
+                )
+        automatic_incomplete = read_json(item_root / "automatic_incomplete_shadow" / "alignment.json")
+        if automatic_incomplete:
+            write_json(staging / "automatic_incomplete_shadows" / f"{item_id}.json", {
+                "item_id": item_id,
+                "summary": automatic_incomplete.get("summary"),
+                "unresolved": automatic_incomplete.get("unresolved"),
+                "automatic_shadow_only": automatic_incomplete.get("automatic_shadow_only"),
+            })
         incomplete = read_json(item_root / "incomplete_guard" / "alignment.json")
         if incomplete:
             write_json(staging / "incomplete_guards" / f"{item_id}.json", {
@@ -168,6 +220,33 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
                 "summary": incomplete.get("summary"),
                 "unresolved": incomplete.get("unresolved"),
                 "constructed_for_validation": incomplete.get("constructed_for_validation"),
+            })
+        visual = read_json(item_root / "visuals" / "visual_analysis.json")
+        if visual:
+            visual_index.append({
+                "item_id": item_id,
+                "tracks": visual.get("tracks"),
+                "metrics": visual.get("metrics"),
+                "inconsistency": visual.get("inconsistency"),
+                "detector_span_count": visual.get("detector_span_count"),
+                "available_visual_files": [
+                    str(path.relative_to(root)) for path in sorted((item_root / "visuals").rglob("*")) if path.is_file()
+                ],
+                "available_render_files": [
+                    str(path.relative_to(root)) for path in sorted((item_root / "render").rglob("*.mp4")) if path.is_file()
+                ],
+            })
+        experimental_summaries: list[dict[str, Any]] = []
+        for alignment_path in sorted((item_root / "experimental_alignments").glob("*/alignment.json")):
+            payload = read_json(alignment_path)
+            experimental_summaries.append({
+                "variant": alignment_path.parent.name,
+                "summary": payload.get("summary"),
+                "experimental": payload.get("experimental"),
+            })
+        if experimental_summaries:
+            write_json(staging / "experimental_alignment_summaries" / f"{item_id}.json", {
+                "item_id": item_id, "variants": experimental_summaries,
             })
         for branch_root in sorted((item_root / "branches").glob("*")):
             alignment_path = branch_root / "alignment.json"
@@ -199,21 +278,35 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
                     if float(row["end_sec"]) - float(row["start_sec"]) <= 1e-9
                     or bool(row.get("overlap_compression_collapsed_to_zero"))
                 ]
+            if mode == "minimal":
+                selected = selected[:32]
             character_rows.extend(compact_character(item_id, branch, row) for row in selected)
+            selected_windows = list(payload.get("window_trace", []))
+            if mode == "minimal":
+                selected_windows = [row for row in selected_windows if (row.get("precommit_diagnostic") or {}).get("triggered")][:8]
             window_rows.extend(
                 compact_window(item_id, branch, row, include_probes=mode == "full")
-                for row in payload.get("window_trace", [])
+                for row in selected_windows
             )
             summary = read_json(branch_root / "summary.json")
             if summary:
                 write_json(staging / "branch_summaries" / item_id / f"{branch}.json", summary)
     write_json(staging / "item_summaries.json", item_summaries)
+    write_json(staging / "visual_index.json", visual_index)
+    write_json(staging / "stale_item_report.json", {
+        "manifest_item_count": len(manifest_ids),
+        "collected_item_count": len(item_roots),
+        "stale_item_directory_count": len(stale_item_ids),
+        "stale_item_directories": stale_item_ids,
+    })
     character_count = write_jsonl(staging / "characters.jsonl", character_rows)
     window_count = write_jsonl(staging / "windows.jsonl", window_rows)
     case_count = write_jsonl(staging / "inline_realign_cases.jsonl", case_rows)
     return {
         "mode": mode,
         "item_count": len(item_roots),
+        "manifest_item_count": len(manifest_ids),
+        "stale_item_directory_count": len(stale_item_ids),
         "character_row_count": character_count,
         "window_row_count": window_count,
         "case_row_count": case_count,
@@ -251,6 +344,7 @@ def main() -> int:
         ("full", args.max_cases_per_item, None),
         ("anomaly", min(args.max_cases_per_item, 8), "full_evidence_exceeded_cap"),
         ("severe", min(args.max_cases_per_item, 4), "anomaly_evidence_exceeded_cap"),
+        ("minimal", min(args.max_cases_per_item, 2), "severe_evidence_exceeded_cap"),
     )
     size = 0
     metadata: dict[str, Any] = {}
@@ -261,7 +355,7 @@ def main() -> int:
             staging.mkdir(parents=True)
             metadata = collect(root, staging, mode=mode, max_cases=max_cases)
             write_json(staging / "collection_manifest.json", {
-                "schema_version": "inline_realign_evidence_collection_v1",
+                "schema_version": "inline_realign_evidence_collection_v2",
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "input_root": str(root),
                 "max_total_bytes": cap,

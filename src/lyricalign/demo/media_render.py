@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -44,17 +46,180 @@ def atomic_json(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
-def detect_font(preferred: str) -> str:
+def _register_matplotlib_font(font_path: Path) -> str | None:
+    """Register one concrete, non-collection font face for Matplotlib."""
+    try:
+        from matplotlib import font_manager
+
+        font_manager.fontManager.addfont(str(font_path))
+        name = font_manager.FontProperties(fname=str(font_path)).get_name().strip()
+        return name or None
+    except (ImportError, OSError, RuntimeError, ValueError):
+        return None
+
+
+def _font_family_from_ttfont(font: Any) -> str | None:
+    """Read the typographic/family name from a fontTools TTFont instance."""
+    name_table = font.get("name")
+    if name_table is None:
+        return None
+    for name_id in (16, 1):
+        value = name_table.getDebugName(name_id)
+        if value and value.strip():
+            return value.strip()
+    return None
+
+
+def _extract_collection_face_for_matplotlib(
+    collection_path: Path,
+    *,
+    face_index: int,
+    expected_family: str,
+) -> Path:
+    """Extract the exact TTC/OTC face selected by fontconfig.
+
+    Matplotlib's ``fontManager.addfont(path_to_ttc)`` registers only the first
+    face of a collection in affected versions.  Debian's Noto CJK collection is
+    ordered JP, KR, SC, TC, HK, so registering the TTC path without its
+    fontconfig index silently turns an SC request into JP.  Matplotlib does not
+    expose a collection-index argument; extracting only the selected face is
+    therefore required.
+    """
+    try:
+        import matplotlib
+        from fontTools.ttLib import TTCollection
+    except ImportError as exc:
+        raise RuntimeError(
+            "An indexed TTC/OTC font was selected, but fontTools is unavailable. "
+            "Install the Matplotlib dependency 'fonttools'; do not substitute a different CJK region."
+        ) from exc
+
+    collection_path = collection_path.resolve()
+    stat = collection_path.stat()
+    cache_root = Path(matplotlib.get_cachedir()) / "lyricalign_font_faces"
+    cache_root.mkdir(parents=True, exist_ok=True)
+    safe_family = re.sub(r"[^A-Za-z0-9._-]+", "_", expected_family).strip("_") or "font"
+
+    collection = TTCollection(str(collection_path), lazy=False)
+    try:
+        if face_index < 0 or face_index >= len(collection.fonts):
+            raise RuntimeError(
+                f"fontconfig selected invalid face index {face_index} for {collection_path}; "
+                f"collection has {len(collection.fonts)} faces"
+            )
+        font = collection.fonts[face_index]
+        actual_family = _font_family_from_ttfont(font)
+        if actual_family and actual_family.casefold() != expected_family.casefold():
+            raise RuntimeError(
+                "fontconfig/TTC face mismatch: "
+                f"requested face {face_index} should be {expected_family!r}, "
+                f"but the collection contains {actual_family!r}"
+            )
+        suffix = ".otf" if getattr(font, "sfntVersion", None) == "OTTO" else ".ttf"
+        output = cache_root / (
+            f"{safe_family}.index{face_index}.size{stat.st_size}.mtime{stat.st_mtime_ns}{suffix}"
+        )
+        if output.is_file() and output.stat().st_size > 0:
+            return output
+
+        temporary = output.with_name(f".{output.name}.tmp.{os.getpid()}")
+        try:
+            font.save(str(temporary))
+            if not temporary.is_file() or temporary.stat().st_size <= 0:
+                raise RuntimeError(f"failed to extract font face {face_index} from {collection_path}")
+            os.replace(temporary, output)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return output
+    finally:
+        collection.close()
+
+
+def _fontconfig_match(preferred: str) -> tuple[Path, int, str, str]:
+    """Return fontconfig's exact file, collection index, family, and style."""
     if not shutil.which("fc-match"):
-        return preferred
+        raise RuntimeError("fc-match is required to resolve named fonts")
+    separator = "\x1f"
     result = subprocess.run(
-        ["fc-match", "-f", "%{family}\n", preferred],
+        [
+            "fc-match",
+            "-f",
+            f"%{{file}}{separator}%{{index}}{separator}%{{family}}{separator}%{{style}}\\n",
+            preferred,
+        ],
         check=True,
         text=True,
         capture_output=True,
     )
-    return result.stdout.splitlines()[0].split(",")[0].strip() or preferred
+    first_line = next((line for line in result.stdout.splitlines() if line.strip()), "")
+    fields = first_line.split(separator)
+    if len(fields) != 4:
+        raise RuntimeError(f"could not parse fc-match result for {preferred!r}: {first_line!r}")
+    file_value, index_value, family_value, style_value = (field.strip() for field in fields)
+    matched_file = Path(file_value).expanduser()
+    if not matched_file.is_file():
+        raise RuntimeError(f"fontconfig returned a missing font file for {preferred!r}: {matched_file}")
+    try:
+        face_index = int(index_value or "0")
+    except ValueError as exc:
+        raise RuntimeError(
+            f"fontconfig returned an invalid collection index for {preferred!r}: {index_value!r}"
+        ) from exc
+    family = family_value.split(",", 1)[0].strip()
+    style = style_value.split(",", 1)[0].strip()
+    if not family:
+        raise RuntimeError(f"fontconfig returned no family for {preferred!r}")
+    return matched_file.resolve(), face_index, family, style
 
+
+def detect_font(preferred: str) -> str:
+    """Resolve and register the exact requested font face.
+
+    For an SC request this function must return and register an SC face.  It
+    never treats JP as an acceptable substitute.  With Debian's
+    ``NotoSansCJK-Regular.ttc``, fontconfig selects index 2 for SC; that face is
+    extracted to Matplotlib's cache and registered as a standalone OpenType
+    font, while the returned family remains ``Noto Sans CJK SC`` for libass.
+    """
+    requested_path = Path(preferred).expanduser()
+    if requested_path.is_file():
+        if requested_path.suffix.casefold() in {".ttc", ".otc"}:
+            raise ValueError(
+                "A TTC/OTC path is ambiguous because it contains multiple regional faces. "
+                "Pass the exact family name, for example 'Noto Sans CJK SC'."
+            )
+        registered = _register_matplotlib_font(requested_path.resolve())
+        if not registered:
+            raise RuntimeError(f"Matplotlib could not register font file: {requested_path}")
+        return registered
+
+    matched_file, face_index, family, _style = _fontconfig_match(preferred)
+    if "cjk sc" in preferred.casefold() and family.casefold() != preferred.casefold():
+        raise RuntimeError(
+            f"fontconfig did not resolve the requested Simplified Chinese face: "
+            f"requested={preferred!r}, matched={family!r}"
+        )
+
+    registration_path = matched_file
+    if matched_file.suffix.casefold() in {".ttc", ".otc"}:
+        registration_path = _extract_collection_face_for_matplotlib(
+            matched_file,
+            face_index=face_index,
+            expected_family=family,
+        )
+    registered = _register_matplotlib_font(registration_path)
+    if not registered:
+        raise RuntimeError(
+            f"Matplotlib could not register the resolved font face: "
+            f"family={family!r}, file={matched_file}, index={face_index}"
+        )
+    if registered.casefold() != family.casefold():
+        raise RuntimeError(
+            "Matplotlib registered a different font face than fontconfig selected: "
+            f"fontconfig={family!r}, matplotlib={registered!r}, "
+            f"file={matched_file}, index={face_index}"
+        )
+    return family
 
 def _parse_rate(value: str) -> float:
     if "/" in value:

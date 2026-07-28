@@ -329,3 +329,35 @@ docs/sessions/20260727_inline_realign_smoke_formal_archive.md
 Comparison rendering now defaults to the official O0/O1 pair and encodes the
 final comparison directly in one ffmpeg pass. Use `--four-way` only when raw
 panels are needed, and `--profile final` only for a stage closeout deliverable.
+
+## Multilingual inline-realign completion archive (2026-07-28)
+
+The canonical wrappers now discover every prepared Test Demo for formal runs;
+current per-language song counts are runtime metadata rather than fixed caps.
+Smoke selects one item per discovered language. Per-item language controls lyric
+parsing, model input, cache identity and grouped reporting.
+
+The completed shadow suite adds exact/+2/+4 local context consensus, GT-clean
+controls, detector precision/recall, stable-prefix future-text guards,
+cross-window pending confirmation, severe-tail two-window rollback, automatic
+incomplete shadows, legacy R2 behavioral comparison, and 60/120/180-second
+M4Singer synthetic-long buckets. None of these shadow experiments changes B2.
+
+Canonical outputs remain under the run root. Optional link-only views can be
+published beside each song or into a separate directory:
+
+```bash
+DEMO_PUBLISH_LAYOUT=adjacent bash scripts/demo/run_inline_realign_formal.sh
+
+DEMO_PUBLISH_LAYOUT=directory \
+DEMO_PUBLISH_ROOT=/home/hyan/Data/lyricalign/test_inline_results \
+  bash scripts/demo/run_inline_realign_formal.sh
+```
+
+See:
+
+```text
+docs/sessions/20260728_multilingual_inline_realign_completion_archive.md
+configs/experiments/inline_realign_multilingual_smoke_20260728.yaml
+configs/experiments/inline_realign_multilingual_formal_20260728.yaml
+```
