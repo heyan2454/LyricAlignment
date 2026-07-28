@@ -356,3 +356,36 @@ The new suite has passed local static/focused tests and synthetic FFmpeg render
 checks. Real Qwen GPU smoke/formal results are not included in this archive.
 R1/R2/R3 remain shadow simulations over the complete serial trace; online
 writeback into the production serial cursor is intentionally not claimed.
+
+## 2026-07-28 Inline Realign v4 full mechanism implementation
+
+The current executable suite supersedes the earlier v3 visual/stable/deferred implementation for new runs.
+
+Key corrections and additions:
+
+- strict run/stage/item/visual/render resume identity;
+- analysis completion separated from slow video rendering;
+- 30/60-second fixed, silence-snap and strict-silence windows;
+- reversible all-silence-compression diagnostic branches;
+- synchronized stable audio/text crops instead of the invalid asynchronous cursor experiment;
+- under/exact/over text dosage trials;
+- anomaly-nonincrease and zero-duration-relaxed shadow gates;
+- exact/+2/+4 execution pages and median fusion;
+- split oracle/automatic/manual/deferred acceptance fields;
+- raw negative/nonnegative/minimal-monotonic decoder stages;
+- canonical tolerant metrics over all GT reference characters;
+- Chinese character-level PMF/timeline/inconsistency/behavior render suite;
+- exact `Noto Sans CJK SC` TTC face handling without JP substitution.
+
+All realign variants remain shadow-only. No production automatic writeback is enabled.
+
+Canonical current records:
+
+```text
+docs/sessions/20260728_inline_realign_v4_full_implementation_archive.md
+docs/experiments/20260728_inline_realign_full_mechanism_design.md
+docs/manual/inline_realign_smoke_formal.md
+docs/status/next_execution_plan.md
+```
+
+The source has focused local validation, but real Qwen GPU smoke/formal and full server rendering remain pending.

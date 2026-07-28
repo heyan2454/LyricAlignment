@@ -1,228 +1,172 @@
 # Next Execution Plan
 
 **Date:** 2026-07-28  
-**Goal:** run the V3 long-range visual/detector/stable/deferred suite first as smoke and then formal, using all currently prepared Test Demo in formal and preserving compact, reviewable evidence.
+**Goal:** validate and execute Inline Realign v4 full mechanism suite with strict resume, large inference coverage and postposed rendering.
 
-## 0. Current research contract
+## 1. Source deployment
 
-Qwen Forced Aligner is treated as a strong short-range operator. The long-range
-system must extend it through window planning, serial decoding, stable anchors,
-detector signals and bounded local realign.
+The archive root is `LyricAlignment/` and can be extracted directly over:
 
-Demo participates throughout E1–E7. It is not only a final presentation set.
-Demo has no built-in artificial human labels; every item receives a blank
-`visuals/HUMAN_REVIEW.md` entry for optional notes or later AI-assisted review.
+```text
+/home/hyan/LyricAlignment
+```
 
-All stable/realign outputs remain shadow experiments. They generate full
-alignments, figures and comparison videos but do not overwrite canonical B2.
+No source file must be deleted before overlay. Old v3 result directories are not compatible with v4 run identity. Use the new v4 default roots, or delete an old result root completely:
 
-## 1. Before running
+```bash
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OLD_OUT_ROOT all
+```
+
+Do not clean an interrupted v4 run that should be resumed.
+
+## 2. Preflight
 
 ```bash
 cd /home/hyan/LyricAlignment
-source scripts/demo/inline_realign_env.sh
-validate_inline_realign_inputs
+bash scripts/demo/verify_inline_realign_v4.sh
 ```
 
-Confirm:
-
-- complete Qwen snapshot and intended checkpoint;
-- recursive Demo root containing every current 17+6+6+6 prepared song;
-- same-stem lyrics and reusable prepared vocal for each Demo;
-- Japanese `nagisa` in the actual execution environment;
-- M4Singer labels/audio and MIR-1K materialization source;
-- FFmpeg/FFprobe, Matplotlib and a CJK font such as `Noto Sans CJK SC`.
-
-If reusing an old output root after overwriting the source tree:
-
-```bash
-bash scripts/demo/cleanup_inline_realign_overwrite.sh <OUT_ROOT> derived
-```
-
-This preserves matching baseline branch caches and removes summaries, figures,
-videos and shadow results that must be regenerated. After the new manifest is
-written, `stale` mode can remove item directories no longer in that manifest.
-Use `all` only for a deliberately clean rerun.
-
-## 2. Smoke one-click run
-
-```bash
-bash scripts/demo/run_inline_realign_smoke.sh
-```
-
-Smoke dynamically chooses one prepared Demo per discovered language and bounded
-GT examples. It must exercise the complete pipeline:
+Required result:
 
 ```text
-manifest
-→ baseline/raw alignment and shadow experiments
-→ all-item static visualizations
-→ all selected Demo multi-way K-song and behavior videos
-→ total + grouped summary
-→ compact bounded evidence
+VERIFY_OK: Inline Realign v4 implementation and exact SC font face are ready.
 ```
 
-Monitor in another terminal:
+The font report must show `Noto Sans CJK SC` for both fontconfig and Matplotlib. JP substitution is a failure.
+
+## 3. Smoke: analysis first
 
 ```bash
-python scripts/demo/watch_inline_realign_status.py \
-  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v3_20260728
+cd /home/hyan/LyricAlignment
+RENDER_MODE=skip bash scripts/demo/run_inline_realign_smoke.sh
 ```
 
-Smoke acceptance:
+Default root:
 
-- every discovered language is represented;
-- resolved configuration and frozen manifest exist;
-- B0/B1/B2/B3 complete for every long-serial smoke item;
-- S1/S2/S3 and R0/R1/R2/R3 artifacts are present or have explicit isolated failures;
-- all selected Demo have main/stable/realign 2×2 K-song videos and a behavior video;
-- visual pages, duration analysis and signed-error figures are produced;
-- current-manifest item count equals summarized item count;
-- stale directories are reported but excluded;
-- compact evidence remains within the configured 8 MiB cap.
-
-Do not start formal if videos are unreadable, CJK glyphs are missing, branch
-identity is inconsistent, or the status page cannot identify the current item.
-
-## 3. Formal one-click run
-
-```bash
-bash scripts/demo/run_inline_realign_formal.sh
+```text
+/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v4_full_20260728
 ```
-
-Canonical formal policy:
-
-- all discovered and prepared Demo, with no fixed current song-count contract;
-- all natural/synthetic long-serial GT items run B0–B3;
-- M4Singer native short clips run the primary branch and local diagnostics;
-- MIR-1K held-out remains excluded unless explicitly enabled after rules freeze;
-- all Demo generate the complete comparison-video set.
 
 Monitor:
 
 ```bash
-python scripts/demo/watch_inline_realign_status.py \
-  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v3_20260728
+/root/autodl-tmp/AST_storage/conda/envs/lyricalign-qwen/bin/python \
+  scripts/demo/watch_inline_realign_status.py \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v4_full_20260728
 ```
 
-The terminal also receives live tee output, while `live_status.json` and
-`experiment_live_status.json` provide machine-readable stage/item/branch state.
+Smoke analysis acceptance:
 
-## 4. Required experiment reading
+- `analysis_complete.json` status is `complete`;
+- experiment, visualization and evidence failure counts are zero;
+- every configured variant is recognized;
+- all expected S0–S3, R1–R4, D0–D6 and text-dosage artifacts exist for eligible items;
+- canonical metric schema is `character_interval_metrics_v3_tolerant`;
+- `actual_writeback` remains zero;
+- representative static figures contain Chinese characters, negative/zero durations and realign execution pages;
+- no item is silently marked complete while an expected artifact is missing.
 
-### E1 — Raw / baseline / current visual audit
+## 4. Smoke render
 
-Use all-item timelines and all-Demo RAW/B0/B1/B2 videos to identify whether a
-failure first appears in raw Qwen output, official decoding, window planning or
-serial propagation. Report raw and each official branch with the same GT metric
-schema where GT exists.
+```bash
+bash scripts/demo/run_inline_realign_render_only.sh \
+  smoke \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v4_full_20260728
+```
 
-### E2 — Zero and short-duration pathology
+Each Demo must have five videos. Check at least:
 
-Do not begin with a universal 20/40 ms threshold. Use zero rate, fine positive-
-duration histograms, ECDF, percentiles, local median ratios and burst length.
-Compare clean/error regions and raw/B0/B1/B2/realign stages.
+- one high-speed Chinese case;
+- one Japanese high-zero-duration case;
+- one English collapse case;
+- one Cantonese case;
+- one clean control;
+- one exact/+2/+4 disagreement case;
+- one deferred case.
 
-### E3 — Detector capability
+Do not start formal if the fixed-scale pointer, window boundaries, stable candidates or realign execution cannot be understood visually.
 
-Overlay every detector component in GT figures and Demo behavior videos. Report
-case/unit recall only on the same GT population. Precision is `null` when there
-are no automatic positives. Separate automatic, GT-oracle and clean-control
-reasons.
+## 5. Resume
 
-### E4 — Multi-scale inconsistency
+Interrupted analysis:
 
-Measure 30/60-second, exact/+2/+4, raw/official and cross-window-overlap boundary
-dispersion. Determine whether inconsistency correlates with GT error and whether
-it appears before zero-duration collapse. In Demo, inspect highlighted
-inconsistent intervals for audible/visible jumps and recovery.
+```bash
+OUT_ROOT=/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v4_full_20260728 \
+RESUME=1 RENDER_MODE=skip \
+  bash scripts/demo/run_inline_realign_smoke.sh
+```
 
-### E5 — Corrected stable-anchor comparison
+Interrupted rendering:
 
-Compare B2/S1/S2/S3 on GT and every Demo video:
+```bash
+bash scripts/demo/run_inline_realign_render_only.sh \
+  smoke \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v4_full_20260728
+```
 
-- S1 includes the stable segment itself;
-- S2 also retains left transcript overlap;
-- S3 freezes the stable overlap during the shadow splice.
+Retry failed items only:
 
-The old stable-cursor negative control must not be used as evidence against
-these corrected designs.
+```bash
+OUT_ROOT=... RESUME=1 RETRY_FAILED_ONLY=1 RENDER_MODE=skip \
+  bash scripts/demo/run_inline_realign_smoke.sh
+```
 
-### E6 — Immediate and deferred realign
+Restart explicit items:
 
-Compare R0/R1/R2/R3 on GT and every Demo:
+```bash
+OUT_ROOT=... RESUME=1 RESTART_ITEM='ITEM_A,ITEM_B' RENDER_MODE=skip \
+  bash scripts/demo/run_inline_realign_smoke.sh
+```
 
-- R1: bounded immediate inline-realign shadow;
-- R2: anchor-recovered deferred realign plus bounded final residual sweep;
-- R3: R1 followed by R2 logic.
+If run identity differs, resume must fail. Use a new root rather than bypassing the identity gate.
 
-Current implementation is a reproducible full-trace shadow simulation for fair
-comparison. It is not yet a production decoder that writes corrections into the
-online cursor. Evaluate whether final sweep handles only a small residual set;
-large final modifications imply insufficient online detection/recovery.
+## 6. Formal analysis
 
-### E7 — Candidate selection and non-GT gate
+After smoke acceptance:
 
-For GT-oracle, automatic and clean-control candidates, report:
+```bash
+cd /home/hyan/LyricAlignment
+RENDER_MODE=skip nohup bash scripts/demo/run_inline_realign_formal.sh \
+  > /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728.launcher.log \
+  2>&1 &
+```
 
-- `would_pass_non_gt_gate`;
-- GT improvement/worsening where available;
-- counterfactual false accept;
-- exact/+2/+4 agreement;
-- stable preservation and splice validity.
-
-Clean controls remain ineligible for actual writeback, but their counterfactual
-gate result must be measured.
-
-## 5. Demo output contract
-
-Every formal Demo must have:
+Default root:
 
 ```text
-comparison_main_2x2.mp4     RAW / B0 / B1 / B2
-comparison_stable_2x2.mp4   B2 / S1 / S2 / S3
-comparison_realign_2x2.mp4  R0 / R1 / R2 / R3
-behavior_current.mp4        B2 karaoke + current-window model behavior
+/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728
 ```
 
-No unpaired ordinary raw/baseline/current video is required. Optional human or
-AI review belongs in `items/<item_id>/visuals/HUMAN_REVIEW.md` or a separate
-project document; the pipeline does not require manual annotation.
+Formal uses all discovered prepared Demo, MIR-1K roles under cap 17, M4Singer native under cap 32 and synthetic-long under cap 18 across 60/120/180 seconds. Current counts are metadata, not fixed contracts.
 
-## 6. Result and evidence policy
+## 7. Formal render
 
-Primary reports must contain total and grouped results by:
+After `analysis_complete.json` exists:
 
-- dataset;
-- profile;
-- language;
-- alignment unit mode;
-- duration bucket;
-- variant.
+```bash
+nohup bash scripts/demo/run_inline_realign_render_only.sh \
+  formal \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728 \
+  > /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728.render.log \
+  2>&1 &
+```
 
-GT results distinguish unit-micro and item-macro. Demo contributes structural,
-behavioral and listening evidence, not invented accuracy.
+Rendering is post-analysis. A render failure must set render status to failed but must not invalidate completed model and metric evidence.
 
-The default evidence collector excludes media, complete alignments, weights and
-full logs. It keeps resolved config, manifest identity, summaries, bounded cases,
-status, visual/video indexes and experimental alignment summaries. If a later
-review needs full data, collect only the named items separately instead of
-inflating the canonical evidence archive.
+## 8. Reading order
 
-## 7. Decision order after formal
+1. Input audit and resolved config;
+2. branch/canonical metric summary;
+3. decoder stage D0–D6;
+4. duration PMF and inconsistency figures;
+5. window/core/silence comparison;
+6. text dosage under/exact/over;
+7. synchronized stable S0–S3;
+8. immediate/deferred realign gates and clean controls;
+9. Demo behavior and execution videos.
 
-1. Verify result identity, complete Demo coverage and visual readability.
-2. Decide whether raw decoder, detector or realign is the dominant bottleneck.
-3. Select the stable design only after GT and full-Demo paired comparison.
-4. Decide whether multi-scale inconsistency belongs in detector.
-5. Decide whether R1, R2 or R3 deserves an actual online writeback implementation.
-6. Freeze detector/gate/range rules before any held-out MIR-1K run.
+Automatic detector metrics are secondary. Main realign evidence comes from GT-oracle, manual Demo cases, explicit zero-duration candidates and clean controls.
 
-## 8. Still prohibited as a claimed production result
+## 9. Evidence handoff
 
-- automatic modification of canonical B2;
-- claiming R1/R2/R3 are already integrated into the live serial cursor;
-- whole-song Qwen realignment after the serial pass;
-- treating Demo listening as GT metric;
-- tuning on MIR-1K held-out;
-- assuming a universal short-duration threshold before E2/E3 evidence.
+Default compact evidence is bounded and excludes audio, video, model weights, full logs and full alignments. If deeper analysis needs large logits, full window traces or all alignments, create a separate targeted collector rather than enlarging the routine handoff archive.

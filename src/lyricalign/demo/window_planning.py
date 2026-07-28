@@ -215,3 +215,271 @@ def build_silence_aware_window_plan(
             "right_context_sec": float(right_context_sec),
         },
     }
+
+
+def _active_regions_from_strict_silence(
+    duration_sec: float,
+    intervals: Sequence[dict[str, Any]],
+    *,
+    strict_silence_sec: float,
+) -> tuple[list[dict[str, float]], list[dict[str, Any]]]:
+    """Return active regions separated by silences that are strict boundaries."""
+    strict = [
+        dict(row) for row in intervals
+        if float(row["duration_sec"]) + 1e-9 >= strict_silence_sec
+    ]
+    strict.sort(key=lambda row: float(row["start_sec"]))
+    regions: list[dict[str, float]] = []
+    cursor = 0.0
+    for silence in strict:
+        start = max(cursor, float(silence["start_sec"]))
+        end = min(duration_sec, float(silence["end_sec"]))
+        if start > cursor + 1e-6:
+            regions.append({"start_sec": cursor, "end_sec": start})
+        cursor = max(cursor, end)
+    if cursor < duration_sec - 1e-6:
+        regions.append({"start_sec": cursor, "end_sec": float(duration_sec)})
+    return regions, strict
+
+
+def _subdivide_region(
+    start_sec: float,
+    end_sec: float,
+    *,
+    target_core_sec: float,
+    minimum_core_sec: float,
+    tail_min_core_sec: float,
+) -> list[float]:
+    boundaries = [float(start_sec)]
+    cursor = float(start_sec) + float(target_core_sec)
+    while cursor < end_sec - 1e-9:
+        boundaries.append(cursor)
+        cursor += float(target_core_sec)
+    boundaries.append(float(end_sec))
+    if len(boundaries) > 2:
+        boundaries, _ = _rebalance_short_tail(boundaries, minimum_tail_sec=tail_min_core_sec)
+    # Avoid creating a tiny first/only core after strict-silence trimming.
+    if len(boundaries) > 2 and boundaries[1] - boundaries[0] < minimum_core_sec:
+        boundaries.pop(1)
+    return boundaries
+
+
+def build_strict_silence_boundary_window_plan(
+    duration_sec: float,
+    profile: dict[str, Any],
+    *,
+    target_core_sec: float,
+    left_context_sec: float,
+    right_context_sec: float,
+    min_silence_sec: float = 0.8,
+    strong_silence_sec: float = 1.5,
+    strict_silence_sec: float | None = None,
+    tail_min_core_sec: float = 18.0,
+    minimum_core_sec: float = 12.0,
+) -> dict[str, Any]:
+    """Build windows whose model inputs never cross a strong-silence boundary.
+
+    Unlike the ordinary silence-aware planner, this planner treats sufficiently
+    long silence as a hard acoustic boundary.  The silent gap remains on the
+    global timeline, but neither neighboring model input contains its body.
+    Consequently each input interval and its transcript can be cropped from the
+    same active region without orphan audio from the opposite side.
+    """
+    if duration_sec <= 0 or target_core_sec <= 0:
+        raise ValueError("duration_sec and target_core_sec must be positive")
+    strict_threshold = float(strict_silence_sec or strong_silence_sec)
+    intervals = detect_silence_intervals(
+        profile,
+        duration_sec=duration_sec,
+        min_silence_sec=min_silence_sec,
+        strong_silence_sec=strong_silence_sec,
+    )
+    regions, strict = _active_regions_from_strict_silence(
+        duration_sec, intervals, strict_silence_sec=strict_threshold,
+    )
+    windows: list[dict[str, Any]] = []
+    region_diagnostics: list[dict[str, Any]] = []
+    for region_index, region in enumerate(regions):
+        region_start = float(region["start_sec"])
+        region_end = float(region["end_sec"])
+        if region_end <= region_start + 1e-6:
+            continue
+        boundaries = _subdivide_region(
+            region_start,
+            region_end,
+            target_core_sec=target_core_sec,
+            minimum_core_sec=minimum_core_sec,
+            tail_min_core_sec=tail_min_core_sec,
+        )
+        region_diagnostics.append({
+            "region_index": region_index,
+            "start_sec": region_start,
+            "end_sec": region_end,
+            "boundaries_sec": boundaries,
+        })
+        for local_index, (core_start, core_end) in enumerate(zip(boundaries[:-1], boundaries[1:], strict=True)):
+            windows.append({
+                "window_index": len(windows),
+                "region_index": region_index,
+                "region_window_index": local_index,
+                "core_start_sec": float(core_start),
+                "core_end_sec": float(core_end),
+                "core_duration_sec": float(core_end - core_start),
+                "input_start_sec": max(region_start, float(core_start) - left_context_sec),
+                "input_end_sec": min(region_end, float(core_end) + right_context_sec),
+                "is_final_core": False,
+                "is_final_region_core": local_index == len(boundaries) - 2,
+                "strict_boundary_cursor_policy": "continue_from_committed_cursor_after_region",
+                "window_plan_policy": "strict_silence_boundary_v1",
+                "strict_region_start_sec": region_start,
+                "strict_region_end_sec": region_end,
+                "context_crosses_strict_silence": False,
+            })
+    if windows:
+        windows[-1]["is_final_core"] = True
+    return {
+        "schema_version": "strict_silence_boundary_window_plan_v1",
+        "policy": "hard_split_at_strong_silence_and_clip_context",
+        "duration_sec": float(duration_sec),
+        "target_core_sec": float(target_core_sec),
+        "active_span_start_sec": float(regions[0]["start_sec"]) if regions else 0.0,
+        "active_span_end_sec": float(regions[-1]["end_sec"]) if regions else float(duration_sec),
+        "active_span_duration_sec": float(sum(float(region["end_sec"])-float(region["start_sec"]) for region in regions)),
+        "strict_silence_sec": strict_threshold,
+        "silence_intervals": intervals,
+        "strict_silence_intervals": strict,
+        "active_regions": regions,
+        "region_diagnostics": region_diagnostics,
+        "windows": windows,
+        "parameters": {
+            "min_silence_sec": float(min_silence_sec),
+            "strong_silence_sec": float(strong_silence_sec),
+            "strict_silence_sec": strict_threshold,
+            "left_context_sec": float(left_context_sec),
+            "right_context_sec": float(right_context_sec),
+            "tail_min_core_sec": float(tail_min_core_sec),
+            "minimum_core_sec": float(minimum_core_sec),
+        },
+    }
+
+
+def compress_silence_audio(
+    audio: Any,
+    profile: dict[str, Any],
+    *,
+    sample_rate: int = 16000,
+    min_silence_sec: float = 0.8,
+    strong_silence_sec: float = 1.5,
+    remove_silence_sec: float | None = None,
+    keep_edge_padding_sec: float = 0.20,
+) -> tuple[Any, dict[str, Any]]:
+    """Remove long-silence interiors and return a reversible time mapping.
+
+    This is a diagnostic counterfactual, not the production window policy.  A
+    short edge padding is retained on both sides of each removed interval to
+    avoid cutting directly into vocal activity.
+    """
+    import numpy as np
+
+    samples = np.asarray(audio)
+    duration_sec = float(len(samples) / sample_rate)
+    threshold = float(remove_silence_sec or strong_silence_sec)
+    detected = detect_silence_intervals(
+        profile,
+        duration_sec=duration_sec,
+        min_silence_sec=min_silence_sec,
+        strong_silence_sec=strong_silence_sec,
+    )
+    removed: list[dict[str, float]] = []
+    for row in detected:
+        if float(row["duration_sec"]) + 1e-9 < threshold:
+            continue
+        start = min(float(row["end_sec"]), float(row["start_sec"]) + keep_edge_padding_sec)
+        end = max(start, float(row["end_sec"]) - keep_edge_padding_sec)
+        if end > start + 1e-6:
+            removed.append({"start_sec": start, "end_sec": end, "duration_sec": end - start})
+    kept_segments: list[dict[str, float]] = []
+    cursor = 0.0
+    compressed_cursor = 0.0
+    pieces: list[Any] = []
+    for interval in removed:
+        start = float(interval["start_sec"])
+        end = float(interval["end_sec"])
+        if start > cursor + 1e-9:
+            sample_start = int(round(cursor * sample_rate))
+            sample_end = int(round(start * sample_rate))
+            piece = samples[sample_start:sample_end]
+            pieces.append(piece)
+            length = float(len(piece) / sample_rate)
+            kept_segments.append({
+                "compressed_start_sec": compressed_cursor,
+                "compressed_end_sec": compressed_cursor + length,
+                "original_start_sec": cursor,
+                "original_end_sec": start,
+            })
+            compressed_cursor += length
+        cursor = max(cursor, end)
+    if cursor < duration_sec - 1e-9:
+        sample_start = int(round(cursor * sample_rate))
+        piece = samples[sample_start:]
+        pieces.append(piece)
+        length = float(len(piece) / sample_rate)
+        kept_segments.append({
+            "compressed_start_sec": compressed_cursor,
+            "compressed_end_sec": compressed_cursor + length,
+            "original_start_sec": cursor,
+            "original_end_sec": duration_sec,
+        })
+        compressed_cursor += length
+    compressed = np.concatenate(pieces) if pieces else samples[:0].copy()
+    return compressed, {
+        "schema_version": "silence_compression_mapping_v1",
+        "original_duration_sec": duration_sec,
+        "compressed_duration_sec": float(len(compressed) / sample_rate),
+        "removed_duration_sec": duration_sec - float(len(compressed) / sample_rate),
+        "removed_intervals": removed,
+        "kept_segments": kept_segments,
+        "parameters": {
+            "remove_silence_sec": threshold,
+            "keep_edge_padding_sec": float(keep_edge_padding_sec),
+            "sample_rate": int(sample_rate),
+        },
+    }
+
+
+def map_compressed_time_to_original(
+    value: float, mapping: dict[str, Any], *, boundary_side: str = "right",
+) -> float:
+    """Map a compressed timestamp to the original clock.
+
+    A silence-removal splice has two valid original times at the same compressed
+    coordinate: the previous kept segment's end and the next segment's start.
+    Interval starts therefore use a right-continuous mapping, while interval
+    ends use a left-continuous mapping.
+    """
+    if boundary_side not in {"left", "right"}:
+        raise ValueError(f"unsupported boundary_side: {boundary_side}")
+    segments = sorted(
+        list(mapping.get("kept_segments", [])),
+        key=lambda row: float(row["compressed_start_sec"]),
+    )
+    if not segments:
+        return float(value)
+    value = float(value)
+    tolerance = 1e-9
+    candidates = [
+        segment for segment in segments
+        if float(segment["compressed_start_sec"]) - tolerance
+        <= value
+        <= float(segment["compressed_end_sec"]) + tolerance
+    ]
+    if candidates:
+        segment = candidates[0] if boundary_side == "left" else candidates[-1]
+        left = float(segment["compressed_start_sec"])
+        original_start = float(segment["original_start_sec"])
+        original_end = float(segment["original_end_sec"])
+        mapped = original_start + max(0.0, value - left)
+        return min(original_end, mapped)
+    if value < float(segments[0]["compressed_start_sec"]):
+        return float(segments[0]["original_start_sec"])
+    return float(segments[-1]["original_end_sec"])

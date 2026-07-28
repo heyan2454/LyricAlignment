@@ -31,12 +31,52 @@ def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> int:
     return len(materialized)
 
 
+def copy_evidence_file(source: Path, destination: Path) -> None:
+    """Copy one evidence file after creating its relative destination tree.
+
+    State records live below nested paths such as ``state/items/<item>.json``.
+    A fresh temporary staging directory contains none of those parents, so raw
+    ``shutil.copy2`` raises ``FileNotFoundError`` unless the collector creates
+    them explicitly.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+
 
 def read_manifest(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
+
+
+_HEAVY_KEYS = {
+    "decoded_rows", "baseline_rows", "processor_units", "audit", "attempts",
+    "replacement_preview", "fused_replacement_rows", "rows", "audio", "waveform",
+    "logits", "hidden_states", "full_alignment",
+}
+
+def recursively_compact(value: Any, *, depth: int = 0, max_list: int = 24) -> Any:
+    """Bound nested evidence such as context trials without losing decisions."""
+    if depth > 8:
+        return {"truncated": True, "reason": "maximum_compaction_depth"}
+    if isinstance(value, dict):
+        result: dict[str, Any] = {}
+        for key, child in value.items():
+            if key in _HEAVY_KEYS:
+                if isinstance(child, list):
+                    result[f"{key}_count"] = len(child)
+                elif child is not None:
+                    result[f"{key}_omitted"] = True
+                continue
+            result[key] = recursively_compact(child, depth=depth + 1, max_list=max_list)
+        return result
+    if isinstance(value, list):
+        compacted = [recursively_compact(child, depth=depth + 1, max_list=max_list) for child in value[:max_list]]
+        if len(value) > max_list:
+            compacted.append({"truncated": True, "total_count": len(value), "kept_count": max_list})
+        return compacted
+    return value
 
 def compact_followup_payload(filename: str, payload: dict[str, Any], *, mode: str, max_cases: int) -> dict[str, Any]:
     """Keep stage evidence useful without copying large per-attempt diagnostic bodies."""
@@ -51,10 +91,7 @@ def compact_followup_payload(filename: str, payload: dict[str, Any], *, mode: st
         rows = list(payload.get(list_key) or [])
         compact_rows: list[dict[str, Any]] = []
         for row in rows[:max_cases]:
-            compact_rows.append({
-                key: value for key, value in row.items()
-                if key not in {"decoded_rows", "baseline_rows", "processor_units", "audit", "attempts", "replacement_preview"}
-            })
+            compact_rows.append(recursively_compact(row, max_list=max(8, max_cases * 4)))
         result[list_key] = compact_rows
         result[f"{list_key}_total_count"] = len(rows)
         result[f"{list_key}_truncated"] = len(rows) > len(compact_rows)
@@ -160,11 +197,17 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
         "pipeline_status.jsonl", "pipeline_complete.json", "pipeline_failure.json",
         "demo_render_summary.json", "demo_publish_summary.json", "followup_analysis_summary.json",
         "followup_analysis_summary.md", "resolved_config.json", "visualization_summary.json",
-        "live_status.json", "experiment_live_status.json",
+        "live_status.json", "experiment_live_status.json", "analysis_complete.json",
+        "render_complete.json",
     ):
         source = root / filename
         if source.is_file():
-            shutil.copy2(source, staging / filename)
+            copy_evidence_file(source, staging / filename)
+    state_root = root / "state"
+    for source in sorted(state_root.rglob("*.json")) if state_root.is_dir() else []:
+        relative = source.relative_to(root)
+        # State files are compact identities/status records and are essential for resume audit.
+        copy_evidence_file(source, staging / relative)
     character_rows: list[dict[str, Any]] = []
     window_rows: list[dict[str, Any]] = []
     case_rows: list[dict[str, Any]] = []
@@ -186,13 +229,14 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
         shadow = read_json(item_root / "inline_realign_shadow.json")
         decisions = sorted(
             shadow.get("decisions", []),
-            key=lambda row: (not bool(row.get("would_write")), -int((row.get("trigger") or {}).get("severity", 0))),
+            key=lambda row: (not bool(row.get("automatic_gate_accepted_shadow") or row.get("gt_oracle_improved_shadow") or row.get("manual_gate_accepted_shadow")), -int((row.get("trigger") or {}).get("severity", 0))),
         )[:max_cases]
         for decision in decisions:
-            case_rows.append({"item_id": item_id, **decision})
+            case_rows.append({"item_id": item_id, **recursively_compact(decision, max_list=max(8, max_cases * 4))})
         for filename in (
             "stable_window_assistance.json",
             "stable_window_assistance_trials.json",
+            "text_dosage_trials.json",
             "forced_expansion_trials.json",
             "pending_confirmation_shadow.json",
             "tail_two_window_rollback_shadow.json",
@@ -225,15 +269,16 @@ def collect(root: Path, staging: Path, *, mode: str, max_cases: int) -> dict[str
         if visual:
             visual_index.append({
                 "item_id": item_id,
-                "tracks": visual.get("tracks"),
-                "metrics": visual.get("metrics"),
+                "pages": visual.get("pages"),
+                "duration_distributions": visual.get("duration_distributions"),
+                "structural": visual.get("structural"),
                 "inconsistency": visual.get("inconsistency"),
                 "detector_span_count": visual.get("detector_span_count"),
                 "available_visual_files": [
                     str(path.relative_to(root)) for path in sorted((item_root / "visuals").rglob("*")) if path.is_file()
                 ],
                 "available_render_files": [
-                    str(path.relative_to(root)) for path in sorted((item_root / "render").rglob("*.mp4")) if path.is_file()
+                    str(path.relative_to(root)) for path in sorted((item_root / "renders").rglob("*.mp4")) if path.is_file()
                 ],
             })
         experimental_summaries: list[dict[str, Any]] = []

@@ -46,26 +46,50 @@ Primary song-macro penalized boundary MAE:
 
 ## 当前 Demo / inline-realign 执行入口（2026-07-28）
 
-当前开发主线是多语言 Test Demo 与 official inline-realign shadow：
+当前执行版本为 **Inline Realign v4 full mechanism**。正式运行前：
 
 ```bash
-bash scripts/demo/run_inline_realign_smoke.sh
-bash scripts/demo/run_inline_realign_formal.sh
+cd /home/hyan/LyricAlignment
+bash scripts/demo/verify_inline_realign_v4.sh
 ```
 
-formal 默认纳入全部递归发现且已具备 prepared vocal 的 Test Demo；当前
-各语言歌曲数仅记录在输入审计中，不写死为上限。所有歌曲先完成 align 和
-shadow 实验，再统一 render。输出可保留在统一运行目录，也可用符号链接发布
-到歌曲旁或指定目录，不复制视频。
+推荐先完成推理、指标、静态诊断和 compact evidence，再单独渲染：
 
-当前实现包含 detector/GT-oracle/clean-control、exact/+2/+4 一致性、
-future-text expansion、stable-prefix guard、pending/tail rollback/incomplete
-shadow、历史 r2 行为比较和 M4Singer 60/120/180 秒分层；自动写回仍关闭。
+```bash
+RENDER_MODE=skip bash scripts/demo/run_inline_realign_smoke.sh
+bash scripts/demo/run_inline_realign_render_only.sh smoke \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v4_full_20260728
+```
+
+Smoke 通过后运行 formal：
+
+```bash
+RENDER_MODE=skip bash scripts/demo/run_inline_realign_formal.sh
+bash scripts/demo/run_inline_realign_render_only.sh formal \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728
+```
+
+普通中断不清理目录，使用相同 `OUT_ROOT` 和 `RESUME=1` 重跑。Run、stage、experiment item、visual item 和 render item 都具有独立身份与完整性检查。
+
+当前套件包括：
+
+- 30/60 秒固定、静音吸附和严格静音边界；
+- 全静音压缩诊断；
+- Raw→processor→selected→final 及最小修复；
+- stable 音频—歌词同步 exact/−2/−4 裁剪；
+- 少给、正确给和多给歌词的文本剂量实验；
+- exact/+2/+4、结构不升、零时长宽松和中位融合 realign；
+- canonical tolerant GT 指标；
+- 中文字符 timeline、完整离散时长 PMF、三层 inconsistency 图；
+- 每个 Demo 的窗口、realign、realign 执行、decoder 和 behavior 五类视频。
+
+所有 realign 仍为 shadow-only，`actual_writeback` 必须保持 0。
 
 详见：
 
 ```text
-docs/sessions/20260728_multilingual_inline_realign_completion_archive.md
+docs/sessions/20260728_inline_realign_v4_full_implementation_archive.md
+docs/experiments/20260728_inline_realign_full_mechanism_design.md
 docs/manual/inline_realign_smoke_formal.md
 docs/status/next_execution_plan.md
 ```

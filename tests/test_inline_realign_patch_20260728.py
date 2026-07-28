@@ -45,8 +45,9 @@ def test_watcher_reads_actual_visual_and_render_summary_fields(tmp_path: Path) -
     write_json(tmp_path / "visualization_summary.json", {"complete_count": 1, "failed_count": 0})
     write_json(tmp_path / "demo_render_summary.json", {"rendered_item_count": 1, "failed_item_count": 0})
     output = module.render(tmp_path)
-    assert "visuals complete/failed: 1/0" in output
-    assert "demo comparison videos complete/failed: 1/0" in output
+    assert "静态图汇总：合计完成 1" in output
+    assert "视频汇总：合计完成 1" in output
+    assert "失败 0" in output
 
 
 def test_visualization_missing_experimental_alignments_fails_stage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -74,8 +74,8 @@ validate_inline_realign_inputs() {
     return 2
   fi
   if [[ ! -d "$DEMO_ROOT" ]]; then
-    echo "WARN: Demo root missing; Demo items will be skipped: $DEMO_ROOT" >&2
-    DEMO_ROOT=""
+    echo "ERROR: Demo root missing; smoke/formal wrappers require Demo input: $DEMO_ROOT" >&2
+    return 2
   fi
   export REPO_ROOT PYTHON_BIN MODEL_REVISION MODEL_SOURCE R2_CHECKPOINT
   export M4_LABELS M4_AUDIO_ROOT MIR1K_SUBSET_ROOT DEMO_ROOT DEMO_PREPARED_SUFFIXES

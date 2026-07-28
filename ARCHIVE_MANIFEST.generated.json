@@ -12,9 +12,29 @@
       "size": 4899
     },
     {
+      "path": "CHANGES_20260728_INLINE_REALIGN_V4.md",
+      "sha256": "cfe9a279365035dbba1311c79e6324cb61abe43da43326cb48a715a565624388",
+      "size": 1799
+    },
+    {
+      "path": "IMPLEMENTATION_VALIDATION_20260728.md",
+      "sha256": "3a4bdd2629e52743d29b2f8ca00f6e1417ba8bf55bbadbd6d9c391e914a3a5a5",
+      "size": 3236
+    },
+    {
+      "path": "PATCH_NOTES_20260728_CONTROL_VISUAL_COLLECTION_FIX.md",
+      "sha256": "81b602dd5ea1b587ad3e064163a1b19546d2c20742c3227babc1bc860a1dfa92",
+      "size": 5061
+    },
+    {
+      "path": "PATCH_README_mir1k_import_fix.md",
+      "sha256": "c28edbb5b13262e66bdfd3566e425c214cd24984520a3c5c6a2b046743d5b905",
+      "size": 202
+    },
+    {
       "path": "README.md",
-      "sha256": "b010b1ed57a09aca39b7215fea014b9b9956a37d8875005bea8208f51e408cab",
-      "size": 5961
+      "sha256": "8be540c5ee654817bdb7dac1d46a0d4702a5d458bc1942bc3fde55ac5ed254e7",
+      "size": 6794
     },
     {
       "path": "configs/README.md",
@@ -68,13 +88,13 @@
     },
     {
       "path": "configs/experiments/inline_realign_multilingual_formal_20260728.yaml",
-      "sha256": "43d2cd1a02f3b21f09b4b882852a270f3034c4aed6a97f394cf2590ca68ba091",
-      "size": 2226
+      "sha256": "ca08e8c9f9b2f5f880b50fcf35332fae3f306df6982d32f663f1773a3f81c820",
+      "size": 2876
     },
     {
       "path": "configs/experiments/inline_realign_multilingual_smoke_20260728.yaml",
-      "sha256": "a515ae40184dcafc8f112e28303cd05bf8c3f5d845b47ef6614f10e7c26e479b",
-      "size": 1948
+      "sha256": "60249370e714db4a251392e5ebaf82ec653063a69fe622b7fbdb715c5541ce81",
+      "size": 2719
     },
     {
       "path": "configs/experiments/inline_realign_shadow_formal_20260727.yaml",
@@ -237,6 +257,11 @@
       "size": 2980
     },
     {
+      "path": "docs/archive/20260728_inline_realign_v4_full_mechanism_handoff.md",
+      "sha256": "072673759fc372163a7774ab7f20d7f8ed96c9adb5d8cd857042bb3645a3c683",
+      "size": 4172
+    },
+    {
       "path": "docs/archive/20260728_long_range_visual_realign_handoff.json",
       "sha256": "3f2a200ec574d06176b0e137d44dc4f8f2a9408f78aa15f5892f3a5e0fce1fb4",
       "size": 4130
@@ -255,6 +280,11 @@
       "path": "docs/archive/20260728_multilingual_inline_realign_completion_validation.md",
       "sha256": "b2e70dfbdfa342ca03a9865495e6eafb2b058de1e72a7956209ec06af5528083",
       "size": 3869
+    },
+    {
+      "path": "docs/experiments/20260728_inline_realign_full_mechanism_design.md",
+      "sha256": "a78d2056aa2ad0e535debcaa1f2adb86afa38fecf583ac2007b7fa5fac07811f",
+      "size": 5415
     },
     {
       "path": "docs/manual/README.md",
@@ -313,8 +343,8 @@
     },
     {
       "path": "docs/manual/inline_realign_smoke_formal.md",
-      "sha256": "3b6601b85ef5318479a081beb9f4d55d9c149e46cdd38f28a3ca90706890bd33",
-      "size": 8397
+      "sha256": "7f6eceb8cbac834bf192286ba40fecbc58b56cd31df180c698c70d73117e15d1",
+      "size": 15381
     },
     {
       "path": "docs/manual/metric_definitions.md",
@@ -350,6 +380,11 @@
       "path": "docs/principles.md",
       "sha256": "23b0f1253d8d716cc08b3f800853ce62b8ba1bb1341b0f328cac00e356c6e792",
       "size": 3891
+    },
+    {
+      "path": "docs/reports/20260728_inline_realign_formal_v3_data_discussion.md",
+      "sha256": "d8299e1aadd42d3216fef934a01b767a9dc165290bbac420034e72fa6a9cdb97",
+      "size": 3816
     },
     {
       "path": "docs/sessions/20260719_asset_preparation_and_raw_smoke_scope.md",
@@ -517,6 +552,11 @@
       "size": 2180
     },
     {
+      "path": "docs/sessions/20260728_inline_realign_v4_full_implementation_archive.md",
+      "sha256": "e4efc403a55538bdf041a761cacfa59edd624830ca2fa2e4ff3a4f7fbd86b579",
+      "size": 21634
+    },
+    {
       "path": "docs/sessions/20260728_long_range_visual_detector_stable_deferred_experiment_implementation.md",
       "sha256": "f2ce3f197fd4bad0a0aa817bf852d1746f3f369d9980565397b22238cf46be87",
       "size": 9467
@@ -533,8 +573,8 @@
     },
     {
       "path": "docs/sessions/SESSION_INDEX.md",
-      "sha256": "abf306fb140cf2c743b47173b636968505923a5e0a478522878169da197f6fbb",
-      "size": 5006
+      "sha256": "75e997191201aeb261fb337bcaa970ea6d18356f3409820b908b0b8ff61d8b76",
+      "size": 5318
     },
     {
       "path": "docs/sessions/_templates/NEXT_PROMPT_TEMPLATE.md",
@@ -568,13 +608,13 @@
     },
     {
       "path": "docs/status/next_execution_plan.md",
-      "sha256": "b2ae857f1832b5e76a49afb036f9fff0c52f5f09203c6d110f84c47f86e363a3",
-      "size": 8493
+      "sha256": "e6ad3d66dd9a41ccda8a6fad5844da6efc49adbf711eec0e832ef8daeebdaa81",
+      "size": 5293
     },
     {
       "path": "docs/status/project_current.md",
-      "sha256": "02b5d4c0314f101fc038280f18441ac0f1255f3ff8eaf9c4a56142fba03e3430",
-      "size": 16269
+      "sha256": "92033f18bd64c41aeeb39411ae0c1ab93ee576798446e6336ecaac6fe2441716",
+      "size": 17742
     },
     {
       "path": "pyproject.toml",
@@ -1483,8 +1523,8 @@
     },
     {
       "path": "scripts/demo/align_qwen_fa_serial_demo.py",
-      "sha256": "157a8989631de16ab0915c7d1418a37a0d4f6ff3b33faee3083db8e2d95cab9f",
-      "size": 70872
+      "sha256": "db14ed04fafa59f6ec0911764cdd3b132bfce01b92d3556e907350b60e46b374",
+      "size": 77892
     },
     {
       "path": "scripts/demo/align_qwen_fa_tail_windowed.py",
@@ -1493,8 +1533,8 @@
     },
     {
       "path": "scripts/demo/analyze_inline_realign_visuals.py",
-      "sha256": "5506596dcbbf081f7c547d3ea52aee71b69c7c6fae50a60e8afb6d7e0848ff24",
-      "size": 20234
+      "sha256": "dee175f853980546bf8890729157e02239109d985da3d78873d1246f24dbdd24",
+      "size": 35963
     },
     {
       "path": "scripts/demo/analyze_raw_detector_repair.py",
@@ -1538,8 +1578,8 @@
     },
     {
       "path": "scripts/demo/cleanup_inline_realign_overwrite.sh",
-      "sha256": "c3e8a1e6d744524ea93520c48500133cb98b95138ccf98ba95a98e781ac9ac50",
-      "size": 2351
+      "sha256": "1045e39a7afc7816b493dc9fb594a86a016fe6940f58f552a09c72517114f3f7",
+      "size": 4231
     },
     {
       "path": "scripts/demo/collect_decoder_realign_evidence.py",
@@ -1563,8 +1603,8 @@
     },
     {
       "path": "scripts/demo/collect_inline_realign_evidence.py",
-      "sha256": "ce52bd1ba0a957983cd1d6695a08b42e68d83762c4fedd6e2de584ebb445a27a",
-      "size": 18251
+      "sha256": "68f5b194de26c6b259856e0fef61cbe1328ca1b274b07ced94c2c41bae7c8647",
+      "size": 20547
     },
     {
       "path": "scripts/demo/demo_realign_overnight_env.sh",
@@ -1583,8 +1623,8 @@
     },
     {
       "path": "scripts/demo/inline_realign_env.sh",
-      "sha256": "cee7fa1b294d3a14a4deaf4fb875f590ce0d47a376537fcf08f02dd17a262d0a",
-      "size": 4401
+      "sha256": "0a0c76d325ed4c1b6a75134223d288c36bd126fe50955c55999c8f719d816fcc",
+      "size": 4412
     },
     {
       "path": "scripts/demo/materialize_synthetic_long_demo_subset.py",
@@ -1623,8 +1663,8 @@
     },
     {
       "path": "scripts/demo/render_inline_realign_demo_batch.py",
-      "sha256": "835e834ed26d7e7aecfac824b4a450fd3037e85ea181c4a50317a3f7f1f479a9",
-      "size": 9155
+      "sha256": "b35738c65edbf7b0ea77e3b4bc1cad0719d151f4f55bba866d3de7ab387c97c5",
+      "size": 10689
     },
     {
       "path": "scripts/demo/render_qwen_fa_karaoke.py",
@@ -1683,23 +1723,28 @@
     },
     {
       "path": "scripts/demo/run_inline_realign_experiment.py",
-      "sha256": "d268cc4e139101b506ac7b3aab8f684a50bc155f9724b5a51229f2a93544e974",
-      "size": 125874
+      "sha256": "1530930980b67772536e519a8dcb1af5acfa87da39fe6770671d41faf5bd8a4f",
+      "size": 165146
     },
     {
       "path": "scripts/demo/run_inline_realign_formal.sh",
-      "sha256": "d858dd49885d165a718d0a64fbc4ebef576a15bf1c0b6c518a62f6787d7fc7fc",
-      "size": 1414
+      "sha256": "97c52d126bfa6247a714812d804f9f25bc53bf2953ac010979adfe7627c44987",
+      "size": 2294
     },
     {
       "path": "scripts/demo/run_inline_realign_pipeline.py",
-      "sha256": "9c63b4f97482deeef205fe6910e2ae2bf78fd76926f4c69a2e6ad79c9a6f333b",
-      "size": 26606
+      "sha256": "f713d6b879824996eaa9971eb3cc33f7f559204da40dc47b15d8c37f6910573d",
+      "size": 38313
+    },
+    {
+      "path": "scripts/demo/run_inline_realign_render_only.sh",
+      "sha256": "e5f783905f50b11620e587f6c7041d69a5045562caa64a87459f9da4cfdfe288",
+      "size": 541
     },
     {
       "path": "scripts/demo/run_inline_realign_smoke.sh",
-      "sha256": "25001575b3e0ee9d048a0bbebeb9d5779bde580d782161a372e624dd380b077d",
-      "size": 1320
+      "sha256": "746c9e0c709cdbd7d064005ebf90f303937e9d0f2d2ae640eaf7d6ed9c9ebb29",
+      "size": 2311
     },
     {
       "path": "scripts/demo/run_mir1k_demo_diagnostics.py",
@@ -1758,8 +1803,8 @@
     },
     {
       "path": "scripts/demo/summarize_inline_realign_followup.py",
-      "sha256": "07a6ae086ad056d07c38ddffa5cd0593798611a9c6823012b7290835ccb25ee9",
-      "size": 43430
+      "sha256": "b8ed30b751d9f617f0b1a424ddd5aa882ac3d6d1d535d0907cd310732eeb62c3",
+      "size": 25968
     },
     {
       "path": "scripts/demo/train_gpu_decoder.py",
@@ -1772,9 +1817,14 @@
       "size": 761
     },
     {
+      "path": "scripts/demo/verify_inline_realign_v4.sh",
+      "sha256": "a689b5f2c0d1f05ddc86dfa1aee4a09b492bd387f30634212969b811eec93cf4",
+      "size": 4116
+    },
+    {
       "path": "scripts/demo/watch_inline_realign_status.py",
-      "sha256": "6bc1c3547ec5193da2bcb5285bce898eff9c6aa789dd3a83a8a1a97672c6c3c6",
-      "size": 4423
+      "sha256": "528a2af7aac885b516c59a8c4bb3829fd11fa5b23724cde5e7c704c89d00c969",
+      "size": 5079
     },
     {
       "path": "scripts/demo/watch_inline_realign_status.sh",
@@ -2093,8 +2143,8 @@
     },
     {
       "path": "src/lyricalign/demo/media_render.py",
-      "sha256": "accc9dca9cc9b7cbc25e3627394a2077040cce4ec889f26bf768edd78dc345ca",
-      "size": 22070
+      "sha256": "c56fa9541bc6c75330a2e790b961953d9319e8c5cd637abead8da2465553d80e",
+      "size": 29234
     },
     {
       "path": "src/lyricalign/demo/raw_guarded.py",
@@ -2107,14 +2157,29 @@
       "size": 67377
     },
     {
+      "path": "src/lyricalign/demo/run_state.py",
+      "sha256": "42536d62cec21f52046897aaac371ad1b478adddc042888570f92542dab8b9a3",
+      "size": 9833
+    },
+    {
       "path": "src/lyricalign/demo/spleeter_model.py",
       "sha256": "48a429d4318496e6662489d2fb9eae7b492937e161628733ce8b690559563bb4",
       "size": 5978
     },
     {
+      "path": "src/lyricalign/demo/timeline_video.py",
+      "sha256": "c50ac2a8d3001d17f31bbbdc962c5991cb37a954b64ce6c4f33fccc9db8954c2",
+      "size": 4538
+    },
+    {
+      "path": "src/lyricalign/demo/visual_diagnostics.py",
+      "sha256": "3a2220d84964d7471b9f834328a8bf20c64f9e2711a0d7110240864cca35bbe1",
+      "size": 23220
+    },
+    {
       "path": "src/lyricalign/demo/window_planning.py",
-      "sha256": "793f2609ecbd332136eda305248237250c3f2c49b742e431366c813eba245cf2",
-      "size": 9669
+      "sha256": "acb7167e70e4cdfff703c1f5ad8e46d16b8fb3414866d5af35c822166ccc3c21",
+      "size": 20841
     },
     {
       "path": "src/lyricalign/inference/README.md",
@@ -2222,6 +2287,21 @@
       "size": 2096
     },
     {
+      "path": "tests/test_inline_realign_control_plane_visual_patch_20260728.py",
+      "sha256": "443792a9263b5f77d32c274b4d1a260c0191d70f3e901be20c1660a24a0b9c5f",
+      "size": 6659
+    },
+    {
+      "path": "tests/test_inline_realign_full_timeline_patch_20260728.py",
+      "sha256": "95fbbb1efd0c7834e4732ad6502ca4783c2d9625ddd2b33ae89e7c0ff0b2a59a",
+      "size": 2548
+    },
+    {
+      "path": "tests/test_inline_realign_patch_20260728.py",
+      "sha256": "b19bcd10efb0579ad1404546a9fa93f79facc652d2a8b4e72d5ab268d758044e",
+      "size": 6171
+    },
+    {
       "path": "tests/test_inline_realign_pipeline.py",
       "sha256": "96630868a72ef89e7558f8dc20c3f46123e36032384e29c86bfe5cc6748a5a7f",
       "size": 34398
@@ -2230,6 +2310,11 @@
       "path": "tests/test_inline_realign_v3_visual_config.py",
       "sha256": "69a8781cf56d88bc1f15e953490a503925693a7fd873e9f4a7a26ec728c4287a",
       "size": 4468
+    },
+    {
+      "path": "tests/test_inline_realign_v4_full_mechanism.py",
+      "sha256": "76a5826fd0ca1cc6ce00c2347c6dfdc1268a28d7292c1dba1c0f7b8c7eea3f68",
+      "size": 17439
     },
     {
       "path": "tests/test_m4singer_preparation.py",

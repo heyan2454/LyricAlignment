@@ -15,6 +15,7 @@ import math
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 import sys
 from typing import Any, Callable
 
@@ -34,7 +35,12 @@ from lyricalign.demo.karaoke import (
     normalize_alignment_language,
 )
 from lyricalign.training.qwen_fa_runtime import decode_audio, move_inputs
-from lyricalign.demo.window_planning import build_silence_aware_window_plan
+from lyricalign.demo.window_planning import (
+    build_silence_aware_window_plan,
+    build_strict_silence_boundary_window_plan,
+    compress_silence_audio,
+    map_compressed_time_to_original,
+)
 from lyricalign.demo.inline_realign import (
     analyze_precommit_trial, attempt_probe_rows, compare_attempt_probes,
     reproduce_segment, stable_segments,
@@ -513,6 +519,65 @@ def full_alignment(
     return decorate_final_rows(repaired, document), [{"mode": "full", **audit}]
 
 
+def _remap_compressed_alignment(
+    rows: list[dict[str, Any]], traces: list[dict[str, Any]], mapping: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Map compressed-timeline outputs back to the original song clock.
+
+    Start-like fields use the post-silence side of a splice and end-like fields
+    use the pre-silence side.  The conversion is recursive so audit rows,
+    candidate probes, stable segments and boundary diagnostics remain on the
+    same original clock as final characters.
+    """
+    start_time_keys = {
+        "start_sec", "raw_global_start_sec", "official_fixed_global_start_sec",
+        "fixed_global_start_sec", "selected_start_sec", "core_start_sec",
+        "input_start_sec", "effective_input_start_sec",
+        "nominal_input_start_sec", "next_input_boundary_sec",
+        "lookahead_start_sec", "startup_vocal_onset_sec",
+        "first_sustained_activity_sec",
+    }
+    end_time_keys = {
+        "end_sec", "raw_global_end_sec", "official_fixed_global_end_sec",
+        "fixed_global_end_sec", "selected_end_sec", "core_end_sec",
+        "input_end_sec", "effective_input_end_sec", "lookahead_end_sec",
+        "last_sustained_activity_sec",
+    }
+
+    def convert(value: Any) -> Any:
+        if isinstance(value, list):
+            return [convert(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        result: dict[str, Any] = {}
+        for key, child in value.items():
+            if isinstance(child, (dict, list)):
+                result[key] = convert(child)
+                continue
+            if key in start_time_keys and isinstance(child, (int, float)) and math.isfinite(float(child)):
+                result[f"compressed_{key}"] = float(child)
+                result[key] = map_compressed_time_to_original(
+                    float(child), mapping, boundary_side="right",
+                )
+                continue
+            if key in end_time_keys and isinstance(child, (int, float)) and math.isfinite(float(child)):
+                result[f"compressed_{key}"] = float(child)
+                result[key] = map_compressed_time_to_original(
+                    float(child), mapping, boundary_side="left",
+                )
+                continue
+            result[key] = child
+        result["silence_compressed_diagnostic"] = True
+        return result
+
+    mapped_rows = convert(rows)
+    mapped_trace = convert(traces)
+    for trace in mapped_trace:
+        trace["silence_compression_mapping"] = mapping
+        trace["window_plan_policy"] = "silence_compressed_diagnostic_v1"
+    return mapped_rows, mapped_trace
+
+
 def windowed_alignment(
     processor: Any,
     model: Any,
@@ -531,11 +596,54 @@ def windowed_alignment(
     the previous committed end, without shifting the original end forward.
     """
     duration = float(len(audio) / 16000.0)
+    compress_mode = bool(getattr(args, "compress_silence_audio", False))
+    if compress_mode and not bool(getattr(args, "_silence_compression_inner", False)):
+        activity_profile = build_vocal_activity_profile(audio)
+        compressed_audio, mapping = compress_silence_audio(
+            audio, activity_profile,
+            min_silence_sec=float(getattr(args, "silence_boundary_min_sec", 0.8)),
+            strong_silence_sec=float(getattr(args, "strong_silence_anchor_sec", 1.5)),
+            remove_silence_sec=float(getattr(args, "silence_compression_min_sec", getattr(args, "strong_silence_anchor_sec", 1.5))),
+            keep_edge_padding_sec=float(getattr(args, "silence_compression_padding_sec", 0.20)),
+        )
+        inner_args = SimpleNamespace(**vars(args))
+        inner_args.compress_silence_audio = False
+        inner_args._silence_compression_inner = True
+        inner_args.silence_aware_window_plan = False
+        inner_args.strict_silence_boundary_plan = False
+        rows, traces = windowed_alignment(
+            processor, model, compressed_audio, document, inner_args, progress_callback=progress_callback,
+        )
+        mapped_rows, mapped_traces = _remap_compressed_alignment(rows, traces, mapping)
+        setattr(args, "generated_silence_compression_mapping", mapping)
+        return mapped_rows, mapped_traces
+
     use_silence_plan = bool(getattr(args, "silence_aware_window_plan", False))
-    need_activity = bool(getattr(args, "skip_silent_windows", False)) or use_silence_plan
+    use_strict_silence_plan = bool(getattr(args, "strict_silence_boundary_plan", False))
+    need_activity = (
+        bool(getattr(args, "skip_silent_windows", False))
+        or use_silence_plan
+        or use_strict_silence_plan
+    )
     activity_profile = build_vocal_activity_profile(audio) if need_activity else None
     window_plan = None
-    if use_silence_plan:
+    if use_strict_silence_plan:
+        assert activity_profile is not None
+        window_plan = build_strict_silence_boundary_window_plan(
+            duration,
+            activity_profile,
+            target_core_sec=float(args.core_sec),
+            left_context_sec=float(args.left_context_sec),
+            right_context_sec=float(args.right_context_sec),
+            min_silence_sec=float(getattr(args, "silence_boundary_min_sec", 0.8)),
+            strong_silence_sec=float(getattr(args, "strong_silence_anchor_sec", 1.5)),
+            strict_silence_sec=float(getattr(args, "strict_silence_boundary_sec", getattr(args, "strong_silence_anchor_sec", 1.5))),
+            tail_min_core_sec=float(getattr(args, "tail_min_core_sec", 18.0)),
+            minimum_core_sec=float(getattr(args, "minimum_core_sec", 12.0)),
+        )
+        windows = list(window_plan["windows"])
+        setattr(args, "generated_window_plan", window_plan)
+    elif use_silence_plan:
         assert activity_profile is not None
         window_plan = build_silence_aware_window_plan(
             duration,
@@ -613,6 +721,7 @@ def windowed_alignment(
         core_start = float(window["core_start_sec"])
         core_end = float(window["core_end_sec"])
         final_core = bool(window.get("is_final_core", math.isclose(core_end, duration, abs_tol=1e-9)))
+        final_region_core = bool(window.get("is_final_region_core", False))
 
         activity = None
         if activity_profile is not None:
@@ -819,11 +928,24 @@ def windowed_alignment(
                     by_output_index[int(row["global_character_index"])]
                     for row in control_lookahead
                 ]
-                core_boundary_observed = final_core or bool(lookahead) or char_end == total_characters
+                # A hard-silence region ends before the next region's acoustic
+                # input begins, so the current inference cannot observe that
+                # future input boundary.  At such a boundary the only causal and
+                # transcript-consistent cursor is the cursor immediately after
+                # the rows committed from this region.
+                core_boundary_observed = (
+                    final_core or final_region_core or bool(lookahead)
+                    or char_end == total_characters
+                )
 
-                next_input_candidate: int | None = total_characters if final_core else None
+                if final_core:
+                    next_input_candidate: int | None = total_characters
+                elif final_region_core:
+                    next_input_candidate = committed_cursor + len(control_core_committed)
+                else:
+                    next_input_candidate = None
                 next_input_cut_character: dict[str, Any] | None = None
-                if next_input_boundary is not None:
+                if next_input_boundary is not None and not final_region_core:
                     next_input_candidate, next_input_cut_character = next_window_transcript_start(
                         control_rows,
                         input_boundary_sec=next_input_boundary,
@@ -831,7 +953,9 @@ def windowed_alignment(
                     )
                     if next_input_candidate is None and char_end == total_characters:
                         next_input_candidate = total_characters
-                next_input_boundary_observed = final_core or next_input_candidate is not None
+                next_input_boundary_observed = (
+                    final_core or final_region_core or next_input_candidate is not None
+                )
                 boundary_observed = core_boundary_observed and next_input_boundary_observed
 
                 probe_rows = (
@@ -859,6 +983,11 @@ def windowed_alignment(
                         "committed_prefix_count": len(core_committed),
                         "lookahead_count": len(lookahead),
                         "core_boundary_observed": core_boundary_observed,
+                        "final_region_core": final_region_core,
+                        "strict_boundary_cursor_policy": (
+                            "continue_from_committed_cursor_after_region"
+                            if final_region_core and not final_core else None
+                        ),
                         "next_input_boundary_sec": next_input_boundary,
                         "next_input_boundary_observed": next_input_boundary_observed,
                         "next_window_input_character_start": next_input_candidate,
@@ -1200,6 +1329,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--silence-boundary-min-sec", type=float, default=0.8)
     parser.add_argument("--strong-silence-anchor-sec", type=float, default=1.5)
+    parser.add_argument("--strict-silence-boundary-plan", action="store_true",
+                        help="split model inputs at long strong-silence intervals; no window crosses the boundary")
+    parser.add_argument("--strict-silence-boundary-sec", type=float, default=1.5)
+    parser.add_argument("--compress-silence-audio", action="store_true",
+                        help="diagnostic: remove long silence interiors, align compressed audio, then map timestamps back")
+    parser.add_argument("--silence-compression-min-sec", type=float, default=1.5)
+    parser.add_argument("--silence-compression-padding-sec", type=float, default=0.20)
     parser.add_argument("--silence-boundary-search-sec", type=float, default=6.0)
     parser.add_argument("--leading-silence-min-sec", type=float, default=2.0)
     parser.add_argument("--tail-min-core-sec", type=float, default=18.0)

@@ -1,236 +1,496 @@
-# 长范围 Inline Realign：Smoke / Formal 一条龙说明
+# Inline Realign v4：全机制 smoke / formal 运行手册
 
-## 1. 目标与当前边界
+## 1. 这套入口解决什么问题
 
-Qwen Forced Aligner 被视为一个短范围内效果良好的对齐工具。本实验研究如何通过窗口、串行 decoder、stable anchor、detector 和局部 realign，把短范围可靠性扩展到完整歌曲。
+本版本用于同时研究以下问题，而不是只生成一套 KTV 字幕：
 
-所有 realign 仍为 **shadow experiment**：会实际推理、生成完整对比 alignment、图片和 Demo 视频，但不会覆盖正式 B2 输出。
+1. 30 秒与 60 秒核心窗口的差异；
+2. 固定窗口、静音吸附、严格静音边界和全静音压缩诊断；
+3. Raw、processor decoded、window selected、final committed 各阶段发生了什么；
+4. Stable 是否能作为同步音频—歌词裁剪边界或冻结锚点；
+5. Exact、前后各加 2 字、前后各加 4 字的局部 realign 是否一致；
+6. 结构异常必须下降、结构异常不升、零时长宽松门和中位融合的差异；
+7. Immediate 与 Deferred realign 的区别；
+8. 少给、恰好给足和多给歌词时模型的反应；
+9. 如何在推理、静态分析和慢视频渲染之间正确 resume。
 
-当前三个研究主体：
+所有 realign 仍为 shadow-only：默认不会修改 resolved primary alignment；当前默认 primary 为 B2。
 
-1. raw decoder 与 official decoder 的行为差异；
-2. detector 对零时长、极短时长、结构坍塌和时间漂移的探测能力；
-3. immediate / deferred local realign 以及 stable anchor 的使用方式。
+## 2. 输出阶段
 
-## 2. 数据与选择
+流水线顺序固定为：
 
-### Demo
+```text
+manifest
+→ model experiment
+→ numerical summary
+→ static diagnostics
+→ compact evidence collection
+→ analysis_complete.json
+→ slow Demo rendering
+→ render_complete.json
+```
 
-Formal 递归发现并使用 `DEMO_ROOT` 中全部可配对的已准备 Demo。当前 17+6+6+6 只是数据状态，不写死在代码中。Smoke 默认每种发现到的语言取一首。
+因此：
 
-Demo ID 保留语言和歌曲名，并附相对源路径的 8 位短哈希。运行时把发现结果冻结到 `experiment_manifest.jsonl`；汇总和证据收集只接受该 manifest 中的 item，旧目录仅报告为 stale，不参与当前结论。
+- `analysis_complete.json` 出现后，模型推理、指标、静态图和证据包已经可用；
+- 视频仍在渲染时，不影响前述结果；
+- `render_complete.json` 单独记录视频状态；
+- `pipeline_complete.json` 汇总两部分状态。
 
-### GT 数据
+## 3. 首次运行
 
-- MIR-1K：自然长音频；formal 默认使用全部非 held-out 角色，held-out 仍需显式启用。
-- M4Singer native：短范围 GT。
-- M4Singer synthetic-long：60/120/180 秒长范围传播和接缝诊断。
-
-全部 long-serial 样本运行 B0–B3。M4Singer native 只运行主分支，因为短片段通常不能有效比较 30/60 秒窗口。
-
-## 3. 基线与实验分支
-
-### 窗口基线
-
-- `RAW_B2`：B2 每窗原始模型输出。
-- `B0_60_fixed_official`：60 秒固定切窗 baseline。
-- `B1_30_fixed_official`：30 秒固定切窗。
-- `B2_30_silence_official`：30 秒 silence-aware 当前主方案。
-- `B3_30_silence_raw_control`：raw cursor 控制，仅作行为诊断。
-
-`fixed` 按目标时间直接切窗；`silence-aware` 在目标切点附近优先选择静音边界，并保留尾窗重新分配规则。
-
-### Stable-anchor 消融
-
-- `S1_stable_inclusive`：下一窗从 stable 区起点开始，输入包含 stable 本身。
-- `S2_stable_left_overlap`：包含 stable，并保留少量 stable 前文本上下文。
-- `S3_stable_frozen_overlap`：输入同 S2，shadow splice 时冻结 stable 对应。
-
-此前“直接 stable cursor”负结果不能代表这三个纠正后的设计。
-
-### Realign 消融
-
-- `R0`：B2，不 realign。
-- `R1_immediate_inline`：对当前已具有足够约束的异常区做即时 inline shadow realign。
-- `R2_deferred`：等待后续恢复右 stable anchor 后，对被两侧锚点夹住的困难区 realign。
-- `R3_inline_deferred`：R1 与 R2 组合。
-
-当前实现是**完整串行 trace 上的可复现 shadow 模拟**，用于公平比较和生成全曲视频；它尚未把 realign 写回正式在线串行 cursor。目标算法是“即时修复 + 锚点恢复后的延迟修复 + 结束时只处理剩余 bounded 区间”，不是整首重新对齐。
-
-## 4. 可视化与 Demo 视频
-
-### 每个 item 的静态图
-
-`items/<item_id>/visuals/` 包含：
-
-- 分页多轨时间轴：GT（若有）、raw、B0/B1/B2、stable 和 realign 分支；
-- GT unit 两端的延长虚线；
-- 窗口、stable、detector 等模型行为标记；
-- onset/offset signed error 图；
-- 正时长直方图和 ECDF，零时长比例单独标注；
-- B2 相对其他尺度/阶段的不一致图；
-- `visual_analysis.json` 中的时长分位数、局部时长比、zero burst 与 GT timing metric。
-
-不使用 waveform / vocal-energy 主轨。
-
-### 每个 Demo 的视频
-
-不会生成无对比的普通单路视频。每首 Demo 生成：
-
-1. `comparison_main_2x2.mp4`：RAW / B0 / B1 / B2 四路同步 K 歌对比；
-2. `comparison_stable_2x2.mp4`：B2 / S1 / S2 / S3；
-3. `comparison_realign_2x2.mp4`：R0 / R1 / R2 / R3；
-4. `behavior_current.mp4`：B2 K 歌字幕，同时显示当前窗口、输入/提交 cursor、raw/official 文本、detector、stable、零时长和播放进度。
-
-没有内置人工标签。每个 item 仅创建 `visuals/HUMAN_REVIEW.md` 入口，用户可自行记录或把视频交给 AI 讨论。
-
-## 5. Zero / short-duration 分析
-
-零时长单独统计。极短非零时长不预设 20/40 ms 为最终阈值，而使用：
-
-- 5 ms 细 bin 的正时长分布图；
-- ECDF；
-- p0.1/p0.5/p1/p2.5/p5/p10…分位数；
-- 相对局部中位时长比；
-- zero/low-tail 连续 burst；
-- 与 GT error、窗口边界和跨尺度不一致的关系。
-
-固定毫秒值可作为读图查询点，但 detector 阈值必须由 GT 区分能力决定。
-
-## 6. 配置、缓存和结果身份
-
-YAML 是规范配置源：
-
-- `configs/experiments/inline_realign_multilingual_smoke_20260728.yaml`
-- `configs/experiments/inline_realign_multilingual_formal_20260728.yaml`
-
-wrapper 只传数据、模型和输出路径。显式 CLI 参数可以覆盖 YAML，最终有效值写入 `resolved_config.json`。
-
-缓存分层维护：
-
-- baseline inference identity：音频/歌词/model/checkpoint/完整行为参数；
-- diagnostic identity：baseline hash、detector/stable/realign 参数；
-- evaluation identity：alignment hash、GT hash、metric schema；
-- render identity：alignment/audio/video/font/profile。
-
-行为语义变化时提升 schema version。只改 GT 不应重跑模型；只改字体不应重跑 alignment。
-
-## 7. 一条龙执行
-
-### Smoke
+### 3.1 Smoke
 
 ```bash
 cd /home/hyan/LyricAlignment
+
 bash scripts/demo/run_inline_realign_smoke.sh
 ```
 
 默认输出：
 
 ```text
-/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v3_20260728
+/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_smoke_v4_full_20260728
 ```
 
-### Formal
+Smoke 并非只跑一两首：它按语种选择代表 Demo，并包含 MIR-1K、M4Singer native 和 synthetic-long，同时运行完整机制链。
+
+### 3.2 Formal
+
+仅在 smoke 的 `analysis_complete.json` 为 complete 且失败项已处理后运行：
 
 ```bash
 cd /home/hyan/LyricAlignment
+
 bash scripts/demo/run_inline_realign_formal.sh
 ```
 
 默认输出：
 
 ```text
-/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v3_20260728
+/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728
 ```
 
-覆盖路径示例：
+Formal 使用当前发现的全部 prepared Demo；Demo 数量是运行时发现结果，不写死为某个固定数量。
+
+## 4. 渲染后置
+
+推理与静态分析完成后再渲染：
 
 ```bash
-DEMO_ROOT=/home/hyan/Data/lyricalign/test \
-OUT_ROOT=/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v3_custom \
+OUT_ROOT=/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728 \
+RENDER_MODE=skip \
   bash scripts/demo/run_inline_realign_formal.sh
 ```
 
-同一命令可恢复。`--force` 才强制重算匹配分支。
-
-## 8. 实时状态
-
-pipeline 会把子阶段 stdout 实时回显并写日志。另一个终端运行：
-
-```bash
-python scripts/demo/watch_inline_realign_status.py \
-  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v3_20260728
-```
-
-状态页显示：
-
-- 当前 pipeline stage；
-- 当前 item 和 branch；
-- manifest / complete / failed 数；
-- visualization 与 Demo render 进度；
-- 输出目录大小；
-- 当前阶段日志尾部。
-
-## 9. 覆盖与清理
-
-更新代码后直接覆盖源码目录即可。输出目录建议先执行：
-
-```bash
-bash scripts/demo/cleanup_inline_realign_overwrite.sh <OUT_ROOT> derived
-```
-
-它删除旧 summary、visual、render 和 experimental shadow，保留可按 request hash 复用的 baseline branches。
-
-其他模式：
-
-```bash
-# 只删除不属于当前 manifest 的旧 item
-bash scripts/demo/cleanup_inline_realign_overwrite.sh <OUT_ROOT> stale
-
-# 完全重新开始
-bash scripts/demo/cleanup_inline_realign_overwrite.sh <OUT_ROOT> all
-```
-
-若 Demo ID 从旧版无哈希变为新版带哈希，旧 item 不会混入结果，但可用 `stale` 回收空间。
-
-## 10. 阶段顺序与输出
+此时应先得到：
 
 ```text
-01 manifest
-→ 02 全部 alignment 与 shadow experiment
-→ 03 全部静态可视化
-→ 03 全部 Demo 多路视频
-→ 04 total + grouped summary
-→ 05 bounded evidence
-```
-
-核心文件：
-
-```text
-resolved_config.json
-live_status.json
-experiment_live_status.json
-experiment_manifest.jsonl
-experiment_summary.json
-visualization_summary.json
-demo_render_summary.json
-followup_analysis_summary.json
-followup_analysis_summary.md
+analysis_complete.json
 inline_realign_evidence.tar.gz
-items/<item_id>/...
+followup_analysis_summary.json
+visualization_summary.json
 ```
 
-## 11. 分组与证据控制
+之后只补视频：
 
-同时输出总指标和以下分组：
+```bash
+bash scripts/demo/run_inline_realign_render_only.sh \
+  formal \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728
+```
 
-- dataset；
-- profile；
-- language；
-- alignment unit mode；
-- duration bucket；
-- variant。
+也可以把 render-only 命令放到另一终端或共享同一存储的机器执行，但应避免两个进程同时写同一个 Demo item。
 
-GT 报告 micro 与 item-macro。Demo 只提供结构、行为和主观对比，不伪装成精确 metric。
+## 5. 正确 resume
 
-默认 evidence 上限 8 MiB，按 `full → anomaly → severe → minimal` 自动缩减。保留汇总、状态、有限 case、visual/render 索引和实验分支摘要；不收集音频、视频、模型权重、完整日志或全部 alignment。需要深度复查时再针对指定 item 单独收集大证据。
+### 5.1 普通中断
+
+不要执行 cleanup，不要使用 `--force`。直接重跑同一入口：
+
+```bash
+OUT_ROOT=/home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728 \
+RESUME=1 \
+  bash scripts/demo/run_inline_realign_formal.sh
+```
+
+Resume 只有在以下身份完全一致时才被接受：
+
+- resolved config；
+- manifest/input selection；
+- model/revision/checkpoint；
+- 输入音频、歌词和 GT hash；
+- 关键实现代码 hash；
+- item 和 stage 的预期产物。
+
+身份不一致时会拒绝 resume，避免把不同实验混在同一目录。
+
+### 5.2 只重试失败项
+
+```bash
+OUT_ROOT=... \
+RESUME=1 \
+RETRY_FAILED_ONLY=1 \
+  bash scripts/demo/run_inline_realign_formal.sh
+```
+
+### 5.3 重启指定 item
+
+```bash
+OUT_ROOT=... \
+RESUME=1 \
+RESTART_ITEM='demo_Chinese_xxx,m4singer_long_xxx' \
+  bash scripts/demo/run_inline_realign_formal.sh
+```
+
+### 5.4 从某个 stage 继续
+
+```bash
+OUT_ROOT=... \
+RESUME=1 \
+FROM_STAGE=visualization \
+  bash scripts/demo/run_inline_realign_formal.sh
+```
+
+可用 stage：
+
+```text
+manifest experiment summary visualization collection render
+```
+
+### 5.5 仅使某 stage 失效
+
+例如只重画图和重渲染：
+
+```bash
+OUT_ROOT=... \
+RESUME=1 \
+INVALIDATE_STAGE='visualization,collection,render' \
+FROM_STAGE=visualization \
+  bash scripts/demo/run_inline_realign_formal.sh
+```
+
+## 6. 进度观测
+
+另一终端执行：
+
+```bash
+/root/autodl-tmp/AST_storage/conda/envs/lyricalign-qwen/bin/python \
+  scripts/demo/watch_inline_realign_status.py \
+  /home/hyan/Data/lyricalign/demo_diagnostics/inline_realign_formal_v4_full_20260728
+```
+
+一次性打印：
+
+```bash
+python scripts/demo/watch_inline_realign_status.py OUT_ROOT --once
+```
+
+状态文件：
+
+```text
+state/run_state.json
+state/stages/*.json
+state/items/*.json
+state/render_items/*.json
+pipeline_status.jsonl
+experiment_live_status.json
+analysis_complete.json
+render_complete.json
+pipeline_complete.json
+```
+
+## 7. 窗口与静音条件
+
+长序列运行以下条件：
+
+| ID | Core | 静音策略 | 解释 |
+|---|---:|---|---|
+| B0 | 60 s | 固定 | 旧长窗参考 |
+| B1 | 30 s | 固定 | 短窗参考 |
+| B2 | 30 s | 静音吸附 | 当前主 reference；音频上下文仍连续 |
+| B3 | 30 s | 静音吸附 | Raw 自己控制串行 cursor |
+| B4 | 60 s | 静音吸附 | Core 长度对照 |
+| B5 | 30 s | 严格静音边界 | 模型输入不跨越强静音 |
+| B6 | 60 s | 严格静音边界 | 长 core 的严格边界 |
+| C0 | 30 s | 全静音压缩 | 诊断对照，不作为生产方案 |
+| C1 | 60 s | 全静音压缩 | 诊断对照，不作为生产方案 |
+
+严格静音边界保留原始全局时间轴，但将强静音前后划为不同 active region，左右输入上下文都不能跨越静音主体。
+
+全静音压缩会删除长静音内部、保留少量边缘 padding，再把预测通过 piecewise mapping 映射回原时间轴。该条件只用于理解模型机制。
+
+## 8. Stable 同步裁剪
+
+旧实现曾保持早期音频起点，却把歌词起点跳到 stable 附近，导致音频和歌词不对应。该实现已废弃。
+
+当前条件：
+
+- `S0_stable_anchor_only`：按原窗口音频和歌词范围重新运行，仅冻结稳定锚点；
+- `S1_stable_sync_exact`：音频与歌词均从 stable 起点开始；
+- `S2_stable_sync_minus2`：音频和歌词均从 stable 前 2 个单位对应位置开始；
+- `S3_stable_sync_minus4`：同理，向前 4 个单位。
+
+裁剪音频起止来自 baseline 中相同歌词单位的时间范围，输出中 stable 本身被冻结，不允许 rerun 改写。
+
+## 9. Realign gate
+
+每个目标区间执行：
+
+```text
+Exact
+前后各加 2 个单位
+前后各加 4 个单位
+三上下文逐字中位融合
+```
+
+同时记录四类 gate：
+
+1. `strict_decrease_gate`：结构异常分数严格下降，仅作旧控制；
+2. `structure_nonincrease_consensus`：三上下文一致、硬安全通过、结构分数不升；
+3. `zero_duration_relaxed`：原区间含零时长，候选减少零时长且不新增负时长、回退或重叠；允许三条完整路径不一致；
+4. `context_median_fusion`：对三次边界逐字取中位数后做最小单调投影。
+
+输出字段严格拆分：
+
+```text
+gt_oracle_improved_shadow
+automatic_gate_accepted_shadow
+manual_gate_accepted_shadow
+deferred_gate_accepted_shadow
+actual_writeback
+```
+
+不再使用含义混乱的 `would_write` 作为主汇总字段。
+
+## 10. 文本剂量实验
+
+固定声学窗口，仅改变歌词范围：
+
+- 文本终点：`-8,-4,-2,0,+2,+4,+8,+16`；
+- 文本起点：`-4,-2,0,+2,+4`；
+- 继续保留 `1.25×/1.5×` 未来歌词扩张作为历史对照。
+
+负终点偏移可能删掉窗口内实际唱到的歌词；正偏移增加未来歌词。两类结果必须分开解释。
+
+## 11. Raw / decoder 消融
+
+同一 B2 窗口和 cursor 下保存：
+
+```text
+D0 raw argmax
+D1 processor decoded
+D2 window selected
+D4 final committed
+D5 raw nonnegative only
+D6 raw minimal monotonic
+```
+
+Raw 的 start/end 独立 argmax，因此可以出现负时长、零时长、回退和重叠。主汇总同时报告这些结构指标和 canonical v3 tolerant GT 指标。
+
+B3 则是另一问题：Raw 自己控制下一窗歌词推进。不能将 D0 的局部时间质量与 B3 的串行稳定性混为一谈。
+
+## 12. 图和视频
+
+### Timeline
+
+- 每个字符都画出，并按全局歌词序号使用稳定彩虹色；
+- 零时长画竖线；负时长画反向虚线箭头；
+- 重叠字符使用 lane packing；
+- 固定时间比例，长歌分页；
+- 输入范围、核心范围、静音区和严格边界明显区分；
+- Realign 显示目标区间、左右锚点、Exact/±2/±4、融合结果和接受/拒绝原因。
+
+### Duration PMF
+
+完整离散分布使用同一个分母：
+
+```text
+<0, =0, (0,20], (20,40], (40,80], (80,120],
+(120,200], (200,400], (400,800], >800 ms
+```
+
+负时长和零时长均为真实柱子，不使用只对正时长重新归一化的条件分布，也不生成 cumulative 图。
+
+### Inconsistency
+
+每张图包括：
+
+1. 歌词序号—起点/终点二维折线；
+2. 每个字符的 onset/offset 最大差；
+3. 窗口或阶段 × 歌词序号热力图。
+
+### Behavior / Comparison 视频
+
+- 中央区域为窗口字符 timeline；
+- 底部为压扁字幕带；
+- 指针按固定时间比例匀速移动；
+- 机制说明使用中文；
+- Raw、official、stable 和 realign 不使用会省略的长文本列表；
+- 视频由静态 PNG 页面复用生成，单个 Demo 可独立 resume。
+
+## 13. 指标口径
+
+主指标：
+
+```text
+character_interval_metrics_v3_tolerant
+```
+
+它对 invalid/missing 单位进行惩罚，并报告 coverage。旧的匹配单位 signed-error 只保留在：
+
+```text
+matched_only_diagnostic
+```
+
+不得把 matched-only MAE 当作主结果，否则漏掉困难字符可能造成虚假改善。
+
+Demo 无 GT，只支持结构和听感结论。M4Singer synthetic-long 与自然数据必须分开报告；拼接 seam 附近和远离 seam 的指标也分开。
+
+## 14. 证据包
+
+默认生成：
+
+```text
+inline_realign_evidence.tar.gz
+```
+
+只收集适量 JSON/JSONL/Markdown：
+
+- 请求和 resolved config；
+- run/stage/item resume state；
+- 汇总与失败记录；
+- 少量代表 realign/stable/text-dosage case；
+- 异常字符和窗口 trace；
+- 静态图/视频文件索引。
+
+不包含音频、视频、模型权重、完整日志和大规模 decoded rows。后续若需要大量原始数据，再使用专门收集脚本，不扩大默认 evidence 包。
+
+## 15. 清理与覆盖
+
+正常 resume 不清理。
+
+升级旧 v3 到本 v4 时，由于窗口、stable、gate、指标和状态 schema 都变了，推荐使用新默认输出目录。必须复用旧目录时，先完整删除：
+
+```bash
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OLD_OUT_ROOT all
+```
+
+其他清理模式：
+
+```bash
+# 只删视频，保留静态图和分析
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT render
+
+# 删除静态图和视频，保留模型结果
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT visual
+
+# 删除 shadow/汇总/图/视频，保留 branch 推理缓存
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT analysis
+
+# 删除不在 manifest 中的旧 item
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT stale
+```
+
+对于代码/schema 大升级，不要使用 `analysis` 混用旧 run identity，应使用 `all` 或新目录。
+
+## 16. 应用归档后的服务器预检
+
+直接解压覆盖后先运行：
+
+```bash
+cd /home/hyan/LyricAlignment
+bash scripts/demo/verify_inline_realign_v4.sh
+```
+
+验证包含：
+
+- Python compile；
+- shell 入口语法；
+- FFmpeg/FFprobe；
+- 模型、checkpoint、MIR-1K、M4Singer 和 Demo 输入；
+- focused regression tests；
+- `Noto Sans CJK SC` 的 fontconfig family、TTC face index 和 Matplotlib 实际 family。
+
+以下结果均视为失败：
+
+```text
+Noto Sans CJK JP
+DejaVu Sans
+findfont fallback
+Glyph ... missing
+```
+
+预检只确认输入和代码，不替代 GPU smoke。
+
+## 17. Resume 的具体边界
+
+### Experiment item
+
+每个 item 保存 request identity、预期输出及 SHA-256 输出快照。已完成 item 只有在输入、配置、代码和输出均未变化时才跳过。
+
+### Static visualization item
+
+每个 item 的所有 branch、stable、realign、配置 JSON 均进入 visual request identity。修改任何上游结果后，旧 PNG 页不会被错误复用。静态图中断后重跑时，只补未完成或失效 item。
+
+### Render item
+
+每个 Demo 的 5 个 MP4 独立恢复。为避免 resume 时重新读取并哈希所有大型视频，渲染状态校验：
+
+- MP4 文件状态；
+- 每个 MP4 的 `.identity.json` 请求身份侧车及其 SHA-256。
+
+如果页面、音频、字体或 profile 变化，请求身份会变化并重新渲染。
+
+## 18. 每个 Demo 的预期视频
+
+```text
+items/<ITEM_ID>/renders/behavior_current.mp4
+items/<ITEM_ID>/renders/comparison_window_mechanism.mp4
+items/<ITEM_ID>/renders/comparison_realign_mechanism.mp4
+items/<ITEM_ID>/renders/comparison_realign_execution.mp4
+items/<ITEM_ID>/renders/comparison_decoder_stages.mp4
+```
+
+含义：
+
+1. `behavior_current`：按时间播放当前窗口、stable 和 realign 行为；
+2. `comparison_window_mechanism`：30/60 秒及不同静音策略；
+3. `comparison_realign_mechanism`：baseline、immediate、deferred、combined/fusion；
+4. `comparison_realign_execution`：实际 exact、前后各加 2/4 字、融合和 gate；
+5. `comparison_decoder_stages`：raw 到 final 的阶段变化。
+
+## 19. 后置与并行渲染
+
+推荐先用 `RENDER_MODE=skip` 完成分析，再启动 render-only。出现 `analysis_complete.json` 后，后续视频渲染不会改变模型推理和主指标。
+
+`RENDER_MODE=skip` 只跳过 MP4 视频渲染；summary、静态可视化、evidence collection 和 `analysis_complete.json` 仍会执行。上述阶段报错均应视为 pipeline 失败，而不是 skip 模式的正常行为。
+
+可以在另一个终端或另一台共享同一输出存储的机器执行 render-only，但必须满足：
+
+- 静态页面已经完整；
+- 输入音频路径可访问；
+- 同一个 Demo item 不能被两个 render writer 同时处理；
+- 使用相同字体和 render profile；
+- 不在渲染期间删除 visual 页面。
+
+最安全的并行方式是把不同 item 显式分配给不同进程；当前一条龙入口默认单 render writer，避免输出竞争。
+
+## 20. 清理模式
+
+```bash
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT all
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT stale
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT analysis
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT visual
+bash scripts/demo/cleanup_inline_realign_overwrite.sh OUT_ROOT render
+```
+
+- `all`：删除完整输出目录，用于 v3→v4 或明确从零运行；
+- `stale`：只删除不在当前 manifest 中的 item；
+- `analysis`：保留 branch inference cache，删除 shadow、指标、图和视频；仅用于明确失效旧派生结果，不用于普通 resume；
+- `visual`：保留模型和指标，删除静态图、视频及其 item state；
+- `render`：只删除每个 item 的视频和 render state。
+
+普通中断恢复时不要运行任何 cleanup。

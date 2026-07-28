@@ -52,25 +52,50 @@ from lyricalign.demo.realign_diagnostics import (
     structural_summary,
 )
 from lyricalign.training.qwen_fa_runtime import decode_audio
+from lyricalign.metrics.character import evaluate_tolerant
+from lyricalign.demo.run_state import RunState
 
 VARIANTS: dict[str, dict[str, Any]] = {
     "B0_60_fixed_official": {
-        "core_sec": 60.0, "silence_aware": False, "serial_control": "same",
-        "meaning": "old-style 60 s fixed window; official controls its own lyric progress",
+        "core_sec": 60.0, "silence_mode": "fixed", "serial_control": "same",
+        "meaning": "60 秒固定窗口；official 控制歌词推进",
     },
     "B1_30_fixed_official": {
-        "core_sec": 30.0, "silence_aware": False, "serial_control": "same",
-        "meaning": "30 s fixed window; official controls its own lyric progress",
+        "core_sec": 30.0, "silence_mode": "fixed", "serial_control": "same",
+        "meaning": "30 秒固定窗口；official 控制歌词推进",
     },
     "B2_30_silence_official": {
-        "core_sec": 30.0, "silence_aware": True, "serial_control": "same",
-        "meaning": "30 s silence-aware window; official controls its own lyric progress",
+        "core_sec": 30.0, "silence_mode": "snap", "serial_control": "same",
+        "meaning": "30 秒静音吸附窗口；音频上下文仍连续",
     },
     "B3_30_silence_raw_control": {
-        "core_sec": 30.0, "silence_aware": True, "serial_control": "raw",
-        "meaning": "30 s silence-aware window; raw controls ownership/cursor, official supplies output time",
+        "core_sec": 30.0, "silence_mode": "snap", "serial_control": "raw",
+        "meaning": "30 秒静音吸附窗口；raw 控制歌词推进",
+    },
+    "B4_60_silence_official": {
+        "core_sec": 60.0, "silence_mode": "snap", "serial_control": "same",
+        "meaning": "60 秒静音吸附窗口",
+    },
+    "B5_30_strict_silence_official": {
+        "core_sec": 30.0, "silence_mode": "strict", "serial_control": "same",
+        "meaning": "30 秒严格静音边界；模型输入不跨越强静音",
+    },
+    "B6_60_strict_silence_official": {
+        "core_sec": 60.0, "silence_mode": "strict", "serial_control": "same",
+        "meaning": "60 秒严格静音边界；模型输入不跨越强静音",
+    },
+    "C0_30_silence_compressed_diagnostic": {
+        "core_sec": 30.0, "silence_mode": "compressed", "serial_control": "same",
+        "meaning": "30 秒全静音压缩诊断；输出映射回原时间轴",
+        "diagnostic_only": True,
+    },
+    "C1_60_silence_compressed_diagnostic": {
+        "core_sec": 60.0, "silence_mode": "compressed", "serial_control": "same",
+        "meaning": "60 秒全静音压缩诊断；输出映射回原时间轴",
+        "diagnostic_only": True,
     },
 }
+
 
 
 def utc_now() -> str:
@@ -127,11 +152,65 @@ def canonical_final_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]
 
 
 def metrics_without_details(rows: list[dict[str, Any]], gt: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Return canonical tolerant metrics plus signed-error diagnostics.
+
+    The previous implementation only evaluated the common/matched character set.
+    That can make an alignment look better after dropping or invalidating difficult
+    units.  The primary fields now follow
+    ``character_interval_metrics_v3_tolerant`` and penalize invalid/missing units.
+    Signed-error diagnostics are retained under ``matched_only_diagnostic`` for
+    mechanism analysis, but they are not the primary score.
+    """
     if not gt:
         return None
-    result = evaluate_rows(canonical_final_rows(rows), gt)
-    result.pop("details", None)
-    return result
+    prediction_rows = canonical_final_rows(rows)
+    gt_by_index = {
+        int(row.get("character_index", row.get("global_character_index"))): dict(row)
+        for row in gt
+    }
+    reference: list[dict[str, Any]] = []
+    for index, row in sorted(gt_by_index.items()):
+        reference.append({
+            "item_id": "item",
+            "song_id": "item",
+            "character_index": index,
+            "normalized_character": row.get("normalized_character") or row.get("character") or str(index),
+            "start_sec": float(row["start_sec"]),
+            "end_sec": float(row["end_sec"]),
+        })
+    prediction: list[dict[str, Any]] = []
+    for row in prediction_rows:
+        index = int(row.get("global_character_index", row.get("character_index")))
+        prediction.append({
+            "item_id": "item",
+            "song_id": "item",
+            "character_index": index,
+            "normalized_character": (
+                gt_by_index.get(index, {}).get("normalized_character")
+                or gt_by_index.get(index, {}).get("character")
+                or row.get("normalized_character")
+                or row.get("character")
+                or str(index)
+            ),
+            "start_sec": float(row["start_sec"]),
+            "end_sec": float(row["end_sec"]),
+        })
+    canonical = evaluate_tolerant(reference, prediction)
+    diagnostic = evaluate_rows(prediction_rows, gt)
+    diagnostic.pop("details", None)
+    return {
+        **canonical,
+        # Compatibility aliases now point to the all-reference canonical score.
+        "boundary_mae_sec": canonical["all_item_penalized_boundary_mae_sec"],
+        "requested_unit_count": canonical["character_count"],
+        "matched_unit_count": canonical["valid_prediction_count"],
+        "missing_unit_count": canonical["missing_prediction_count"],
+        "matched_only_diagnostic": diagnostic,
+        "primary_metric_note": (
+            "Primary MAE penalizes invalid/missing predictions. "
+            "matched_only_diagnostic is auxiliary and must not be used as the main score."
+        ),
+    }
 
 
 def stable_segment_gt_summary(
@@ -211,7 +290,12 @@ def serial_args(args: argparse.Namespace, variant: dict[str, Any]) -> SimpleName
         silent_min_sustained_sec=value("silent_min_sustained_sec", 0.40),
         startup_vocal_preroll_sec=value("startup_vocal_preroll_sec", 2.0),
         startup_minimum_forward_characters=value("startup_minimum_forward_characters", 24),
-        silence_aware_window_plan=bool(variant["silence_aware"]),
+        silence_aware_window_plan=str(variant.get("silence_mode", "fixed")) == "snap",
+        strict_silence_boundary_plan=str(variant.get("silence_mode", "fixed")) == "strict",
+        strict_silence_boundary_sec=value("strict_silence_boundary_sec", 1.5),
+        compress_silence_audio=str(variant.get("silence_mode", "fixed")) == "compressed",
+        silence_compression_min_sec=value("silence_compression_min_sec", 1.5),
+        silence_compression_padding_sec=value("silence_compression_padding_sec", 0.20),
         silence_boundary_min_sec=value("silence_boundary_min_sec", 0.8),
         strong_silence_anchor_sec=value("strong_silence_anchor_sec", 1.5),
         silence_boundary_search_sec=value("silence_boundary_search_sec", 6.0),
@@ -335,7 +419,8 @@ def evaluation_request(item: dict[str, Any], inference_request_hash: str) -> dic
         "inference_request_hash": inference_request_hash,
         "gt_available": bool(gt_path and gt_path.is_file()),
         "gt_sha256": None if gt_path is None or not gt_path.is_file() else SERIAL.sha256(gt_path),
-        "metric_schema_version": "character_boundary_metrics_v2_onset_offset_signed_absolute",
+        "metric_schema_version": "character_interval_metrics_v3_tolerant",
+        "matched_only_diagnostic_schema_version": "character_boundary_metrics_v2_onset_offset_signed_absolute",
         "stable_segment_metric_schema_version": "stable_segment_joint_0p16_v1",
     }
 
@@ -828,28 +913,75 @@ def stable_window_assistance_summary(
 def _attempt_rows_for_rerun(
     *, processor: Any, model: Any, audio: Any, document: Any, args: argparse.Namespace,
     trace_row: dict[str, Any], character_start: int, character_end: int,
+    audio_start_sec: float | None = None, audio_end_sec: float | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    input_start = float(trace_row.get("effective_input_start_sec", trace_row.get("input_start_sec", 0.0)))
-    input_end = float(trace_row.get("input_end_sec", trace_row.get("effective_input_end_sec", 0.0)))
+    """Run one local window with an explicitly matched audio/text crop."""
+    input_start = (
+        float(audio_start_sec) if audio_start_sec is not None
+        else float(trace_row.get("effective_input_start_sec", trace_row.get("input_start_sec", 0.0)))
+    )
+    input_end = (
+        float(audio_end_sec) if audio_end_sec is not None
+        else float(trace_row.get("input_end_sec", trace_row.get("effective_input_end_sec", 0.0)))
+    )
+    if character_end <= character_start:
+        raise ValueError(f"empty transcript crop {character_start}:{character_end}")
+    if input_end <= input_start + 1e-6:
+        raise ValueError(f"empty audio crop {input_start:.6f}:{input_end:.6f}")
     sample_start = max(0, int(round(input_start * 16000)))
     sample_end = min(len(audio), int(round(input_end * 16000)))
+    if sample_end <= sample_start:
+        raise ValueError("matched audio crop has no samples")
     inferred_rows, audit = SERIAL.infer_slice(
         processor=processor, model=model, audio=audio[sample_start:sample_end], document=document,
         character_start=character_start, character_end=character_end,
         global_audio_offset_sec=input_start, args=local_serial_args(args),
     )
-    return canonical_final_rows(inferred_rows), audit
+    return canonical_final_rows(inferred_rows), {
+        **audit,
+        "matched_input": {
+            "audio_start_sec": input_start,
+            "audio_end_sec": input_end,
+            "character_start": int(character_start),
+            "character_end": int(character_end),
+            "audio_text_synchronized": True,
+        },
+    }
+
+
+def _matched_crop_from_baseline(
+    rows: list[dict[str, Any]], *, character_start: int, character_end: int,
+    duration_sec: float,
+) -> tuple[float, float]:
+    by_index = {int(row["global_character_index"]): row for row in rows}
+    first = by_index.get(character_start)
+    last = by_index.get(character_end - 1)
+    if first is None or last is None:
+        raise KeyError(f"baseline lacks matched crop boundary {character_start}:{character_end}")
+    audio_start = max(0.0, float(first["start_sec"]))
+    audio_end = min(float(duration_sec), float(last["end_sec"]))
+    if audio_end <= audio_start + 1e-6:
+        raise ValueError(
+            f"baseline timestamps do not define a positive matched crop for {character_start}:{character_end}: "
+            f"{audio_start:.6f}:{audio_end:.6f}"
+        )
+    return audio_start, audio_end
 
 
 def build_stable_trial_request(
     *, args: argparse.Namespace, assistance_payload: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build cache identity for stable-window trials from explicit CLI/config values."""
+    """Build cache identity for synchronized stable-window trials."""
     return {
-        "schema_version": "stable_window_assistance_trials_request_v3_corrected_stable_anchor",
+        "schema_version": "stable_window_assistance_trials_request_v4_audio_text_synchronized",
         "assistance_request_hash": assistance_payload.get("identity", {}).get("request_hash"),
         "max_trials_per_item": int(args.max_stable_window_trials_per_item),
-        "stable_left_overlap_units": int(args.stable_left_overlap_units),
+        "stable_context_units": [0, 2, 4],
+        "audio_text_synchronized": True,
+        # Retained only so an old CLI invocation changes identity rather than
+        # silently reusing the invalid fixed-eight-character implementation.
+        "legacy_stable_left_overlap_units": int(getattr(args, "stable_left_overlap_units", 8)),
+        "stable_left_overlap_units": int(getattr(args, "stable_left_overlap_units", 8)),
     }
 
 
@@ -859,62 +991,72 @@ def run_stable_window_assistance_trials(
     assistance: dict[str, Any], item: dict[str, Any] | None = None,
     baseline_payload: dict[str, Any] | None = None, item_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Compare corrected stable-inclusive next-window strategies.
+    """Evaluate stable anchors with strictly synchronized audio/text crops.
 
-    S1 starts at the stable segment and includes it. S2 also preserves a small
-    amount of left transcript context. S3 uses the same input as S2 but freezes
-    the stable segment during the shadow splice. Full-song shadow alignments are
-    written for fair Demo videos; the official B2 branch is never changed.
+    The previous S1--S3 implementation kept the original early audio start but
+    removed the corresponding early transcript.  Those trials were invalid.
+    Here each transcript start (stable, stable-2, stable-4) determines the audio
+    start from the same baseline unit, and the transcript end determines the
+    audio end.  The stable segment itself is frozen during the shadow splice.
     """
     trials: list[dict[str, Any]] = []
     by_window = {int(row.get("window_index", -1)): row for row in trace}
+    baseline_rows = canonical_final_rows(rows)
     variant_rows: dict[str, list[dict[str, Any]]] = {
-        "S1_stable_inclusive": canonical_final_rows(rows),
-        "S2_stable_left_overlap": canonical_final_rows(rows),
-        "S3_stable_frozen_overlap": canonical_final_rows(rows),
+        "S0_stable_anchor_only": canonical_final_rows(rows),
+        "S1_stable_sync_exact": canonical_final_rows(rows),
+        "S2_stable_sync_minus2": canonical_final_rows(rows),
+        "S3_stable_sync_minus4": canonical_final_rows(rows),
     }
     applied_counts = {key: 0 for key in variant_rows}
+    duration_sec = float(len(audio) / 16000.0)
     for transition in assistance.get("transitions", []):
         if len(trials) >= args.max_stable_window_trials_per_item:
             break
-        if not transition.get("informative_cursor_change"):
+        if transition.get("stable_prefix_input_cursor") is None:
             continue
         target_window = int(transition["to_window_index"])
         trace_row = by_window.get(target_window)
         prefix_info = transition.get("prefix_segment")
         if trace_row is None or prefix_info is None:
             continue
-        baseline_start = int(transition["baseline_input_cursor"])
         stable_start = int(transition["stable_prefix_input_cursor"])
-        stable_left_overlap_units = int(getattr(args, "stable_left_overlap_units", 8))
-        overlap_start = max(0, stable_start - max(0, stable_left_overlap_units))
         character_end_exclusive = int(trace_row.get("candidate_character_end", len(document.characters)))
+        character_end_exclusive = max(stable_start + 1, min(len(document.characters), character_end_exclusive))
         committed_end_exclusive = int(trace_row.get("committed_character_end", character_end_exclusive))
         replace_end = min(len(document.characters) - 1, max(stable_start, committed_end_exclusive - 1))
         source_segment_rows = [
-            row for row in rows
+            row for row in baseline_rows
             if int(prefix_info["character_start"])
             <= int(row["global_character_index"])
             <= int(prefix_info["character_end"])
         ]
         source_segment = {**prefix_info, "rows": source_segment_rows}
         starts = {
-            "baseline_cursor": baseline_start,
-            "S1_stable_inclusive": stable_start,
-            "S2_stable_left_overlap": overlap_start,
-            "S3_stable_frozen_overlap": overlap_start,
+            "baseline_matched_rerun": int(transition["baseline_input_cursor"]),
+            "S1_stable_sync_exact": stable_start,
+            "S2_stable_sync_minus2": max(0, stable_start - 2),
+            "S3_stable_sync_minus4": max(0, stable_start - 4),
         }
         candidates: dict[str, dict[str, Any]] = {}
         for candidate_name, character_start in starts.items():
             try:
+                audio_start, audio_end = _matched_crop_from_baseline(
+                    baseline_rows,
+                    character_start=character_start,
+                    character_end=character_end_exclusive,
+                    duration_sec=duration_sec,
+                )
                 rerun_rows, audit = _attempt_rows_for_rerun(
                     processor=processor, model=model, audio=audio, document=document, args=args,
                     trace_row=trace_row, character_start=character_start,
                     character_end=character_end_exclusive,
+                    audio_start_sec=audio_start, audio_end_sec=audio_end,
                 )
-                if candidate_name == "S3_stable_frozen_overlap":
-                    frozen = {int(row["global_character_index"]): row for row in source_segment_rows}
-                    rerun_rows = [frozen.get(int(row["global_character_index"]), row) for row in rerun_rows]
+                # Stable evidence is a frozen anchor, not a suggestion that a
+                # later rerun may rewrite the same interval.
+                frozen = {int(row["global_character_index"]): row for row in source_segment_rows}
+                rerun_rows = [frozen.get(int(row["global_character_index"]), row) for row in rerun_rows]
                 replacement = [
                     row for row in rerun_rows
                     if character_start <= int(row["global_character_index"]) <= replace_end
@@ -926,35 +1068,53 @@ def run_stable_window_assistance_trials(
                     minimum_observed_ratio=args.stable_prefix_minimum_observed_ratio,
                 )
                 candidate_payload: dict[str, Any] = {
-                    "status": "complete", "character_start": character_start,
+                    "status": "complete",
+                    "character_start": character_start,
                     "character_end": character_end_exclusive,
-                    "replace_end": replace_end, "prefix_reproduction": reproduction,
+                    "audio_start_sec": audio_start,
+                    "audio_end_sec": audio_end,
+                    "audio_text_synchronized": True,
+                    "replace_end": replace_end,
+                    "prefix_reproduction": reproduction,
                     "gt": metrics_without_details(rerun_rows, gt),
-                    "structural": structural_summary(rerun_rows), "audit": audit,
+                    "structural": structural_summary(rerun_rows),
+                    "audit": audit,
+                    "decoded_rows": rerun_rows,
                 }
-                if candidate_name in variant_rows and replacement:
+                output_variant = (
+                    "S0_stable_anchor_only"
+                    if candidate_name == "baseline_matched_rerun" else candidate_name
+                )
+                candidate_payload["output_variant"] = output_variant
+                if output_variant in variant_rows and replacement:
                     updated, splice = bounded_splice(
-                        variant_rows[candidate_name], replacement,
+                        variant_rows[output_variant], replacement,
                         replace_start=min(int(row["global_character_index"]) for row in replacement),
                         replace_end=max(int(row["global_character_index"]) for row in replacement),
                         remerge=True, projection="isotonic", minimum_duration_sec=0.0,
                     )
                     candidate_payload["splice"] = splice
                     if splice.get("valid"):
-                        variant_rows[candidate_name] = updated
-                        applied_counts[candidate_name] += 1
+                        variant_rows[output_variant] = updated
+                        applied_counts[output_variant] += 1
                 candidates[candidate_name] = candidate_payload
             except Exception as exc:
                 candidates[candidate_name] = {
-                    "status": "failed", "character_start": character_start,
+                    "status": "failed",
+                    "character_start": character_start,
                     "character_end": character_end_exclusive,
+                    "audio_text_synchronized": True,
                     "error": f"{type(exc).__name__}: {exc}",
                 }
-        baseline_gt = (candidates.get("baseline_cursor") or {}).get("gt") or {}
+        baseline_gt = (candidates.get("baseline_matched_rerun") or {}).get("gt") or {}
         candidate_deltas: dict[str, float | None] = {}
         for name in variant_rows:
+            if name == "S0_stable_anchor_only":
+                candidate_deltas[name] = 0.0
+                continue
             value = (candidates.get(name) or {}).get("gt") or {}
-            baseline_mae = baseline_gt.get("boundary_mae_sec"); candidate_mae = value.get("boundary_mae_sec")
+            baseline_mae = baseline_gt.get("boundary_mae_sec")
+            candidate_mae = value.get("boundary_mae_sec")
             candidate_deltas[name] = (
                 None if baseline_mae is None or candidate_mae is None
                 else float(candidate_mae) - float(baseline_mae)
@@ -962,9 +1122,10 @@ def run_stable_window_assistance_trials(
         trials.append({
             **transition,
             "status": "complete" if any(value.get("status") == "complete" for value in candidates.values()) else "failed",
-            "experiment_role": "corrected_stable_inclusive_ablation",
-            "stable_left_overlap_units": stable_left_overlap_units,
-            "candidates": candidates, "candidate_minus_baseline_boundary_mae_sec": candidate_deltas,
+            "experiment_role": "baseline_matched_rerun_anchor_freeze_vs_audio_text_synchronized_stable_crop",
+            "stable_context_units": [0, 2, 4],
+            "candidates": candidates,
+            "candidate_minus_baseline_boundary_mae_sec": candidate_deltas,
         })
     alignment_paths: dict[str, str] = {}
     baseline_payload = baseline_payload or {}
@@ -972,38 +1133,55 @@ def run_stable_window_assistance_trials(
         if item_root is None:
             continue
         request = {
-            "schema_version": "stable_anchor_full_alignment_request_v1",
+            "schema_version": "stable_anchor_full_alignment_request_v2_audio_text_synchronized",
             "baseline_request_hash": baseline_payload.get("identity", {}).get("request_hash"),
-            "variant": name, "stable_left_overlap_units": int(getattr(args, "stable_left_overlap_units", 8)),
-            "trial_count": len(trials), "applied_count": applied_counts[name],
+            "variant": name,
+            "stable_context_units": [0, 2, 4],
+            "audio_text_synchronized": True,
+            "trial_count": len(trials),
+            "applied_count": applied_counts[name],
         }
         path = item_root / "experimental_alignments" / name / "alignment.json"
         write_experimental_alignment(
             output_path=path, baseline_payload=baseline_payload, rows=final_rows,
-            experiment_name=name, experiment_family="stable-anchor corrected ablation",
+            experiment_name=name,
+            experiment_family="stable anchor synchronized audio/text crop ablation",
             gt=gt, request=request,
-            metadata={"trial_count": len(trials), "applied_count": applied_counts[name]},
+            metadata={
+                "trial_count": len(trials),
+                "applied_count": applied_counts[name],
+                "audio_text_synchronized": True,
+            },
         )
         alignment_paths[name] = str(path)
     return {
-        "schema_version": "stable_window_assistance_trials_v3_corrected_stable_anchor",
+        "schema_version": "stable_window_assistance_trials_v4_audio_text_synchronized",
         "trial_count": len(trials),
         "successful_trial_count": sum(row.get("status") == "complete" for row in trials),
         "paired_complete_count": sum(
             all(value.get("status") == "complete" for value in row.get("candidates", {}).values())
             for row in trials
         ),
-        "stable_left_overlap_units": int(getattr(args, "stable_left_overlap_units", 8)),
-        "applied_counts": applied_counts, "alignment_paths": alignment_paths,
+        "stable_context_units": [0, 2, 4],
+        "audio_text_synchronized": True,
+        "invalid_legacy_s1_s3_reused": False,
+        "applied_counts": applied_counts,
+        "alignment_paths": alignment_paths,
         "trials": trials,
     }
+
 
 def run_forced_expansion_trials(
     *, args: argparse.Namespace, processor: Any, model: Any, audio: Any, document: Any,
     gt: list[dict[str, Any]], rows: list[dict[str, Any]], trace: list[dict[str, Any]],
     assistance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Actively enlarge future text and test both movement and stable-prefix preservation."""
+    """Measure model response to under-, exact-, and over-supplied lyrics.
+
+    The historical experiment only enlarged future text.  This version keeps
+    the acoustic window fixed and independently changes transcript end and
+    transcript start, matching actual serial-production failure modes.
+    """
     results: list[dict[str, Any]] = []
     total = len(document.characters)
     transition_by_window = {
@@ -1016,87 +1194,107 @@ def run_forced_expansion_trials(
         -int((row.get("precommit_diagnostic") or {}).get("triggered", False)),
         -int(row.get("committed_character_count", 0)), int(row.get("window_index", 0)),
     ))
+    legacy_expansion_only = not hasattr(args, "text_dosage_end_deltas") and not hasattr(args, "text_dosage_start_deltas")
+    end_deltas = tuple() if legacy_expansion_only else tuple(int(value) for value in getattr(args, "text_dosage_end_deltas", (-8, -4, -2, 0, 2, 4, 8, 16)))
+    start_deltas = tuple() if legacy_expansion_only else tuple(int(value) for value in getattr(args, "text_dosage_start_deltas", (-4, -2, 0, 2, 4)))
     for trace_row in candidates[: args.max_expansion_trials_per_item]:
         window_index = int(trace_row.get("window_index", -1))
         transition = transition_by_window.get(window_index)
         prefix_info = None if transition is None else transition.get("prefix_segment")
-        source_segment = None
-        if prefix_info is not None:
-            source_segment = {
-                **prefix_info,
-                "rows": [
-                    row for row in rows
-                    if int(prefix_info["character_start"])
-                    <= int(row["global_character_index"])
-                    <= int(prefix_info["character_end"])
-                ],
-            }
         start = int(trace_row.get("candidate_character_start", trace_row.get("input_character_start_before", 0)))
         baseline_end = int(trace_row.get("candidate_character_end", start))
-        span = max(1, baseline_end - start)
+        baseline_probe = (trace_row.get("attempts") or [])[-1].get("probe_rows", [])
         variants: list[dict[str, Any]] = []
-        for ratio in (1.25, 1.50):
-            end = min(total, max(baseline_end + 1, start + int(math.ceil(span * ratio))))
-            if end <= baseline_end:
-                continue
+
+        def run_variant(*, kind: str, delta: int, candidate_start: int, candidate_end: int) -> dict[str, Any]:
+            if candidate_end <= candidate_start:
+                return {
+                    "kind": kind, "delta_units": delta, "status": "invalid_empty_text",
+                    "character_start": candidate_start, "character_end": candidate_end,
+                }
             try:
                 rerun_rows, audit = _attempt_rows_for_rerun(
                     processor=processor, model=model, audio=audio, document=document, args=args,
-                    trace_row=trace_row, character_start=start, character_end=end,
+                    trace_row=trace_row, character_start=candidate_start, character_end=candidate_end,
                 )
             except Exception as exc:
-                variants.append({"ratio": ratio, "status": "failed", "error": f"{type(exc).__name__}: {exc}"})
-                continue
-            baseline_probe = (trace_row.get("attempts") or [])[-1].get("probe_rows", [])
+                return {
+                    "kind": kind, "delta_units": delta, "status": "failed",
+                    "character_start": candidate_start, "character_end": candidate_end,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            probe = attempt_probe_rows(
+                rerun_rows,
+                core_end_sec=float(trace_row.get("core_end_sec", 0.0)),
+                next_input_boundary_sec=trace_row.get("next_input_boundary_sec"),
+                max_rows=args.attempt_probe_max_rows,
+            )
             movement = compare_attempt_probes([
                 {"attempt_index": 0, "probe_rows": baseline_probe},
-                {"attempt_index": 1, "probe_rows": attempt_probe_rows(
-                    rerun_rows, core_end_sec=float(trace_row.get("core_end_sec", 0.0)),
-                    next_input_boundary_sec=trace_row.get("next_input_boundary_sec"),
-                    max_rows=args.attempt_probe_max_rows,
-                )},
+                {"attempt_index": 1, "probe_rows": probe},
             ])
-            prefix_reproduction = None
-            if source_segment is not None:
-                prefix_reproduction = reproduce_segment(
-                    source_segment, rerun_rows,
-                    tolerance_sec=args.stable_prefix_reproduction_tolerance_sec,
-                    minimum_observed_units=args.stable_prefix_minimum_observed_units,
-                    minimum_observed_ratio=args.stable_prefix_minimum_observed_ratio,
-                )
-            variants.append({
-                "ratio": ratio,
+            durations = [float(row["end_sec"]) - float(row["start_sec"]) for row in rerun_rows]
+            tail = rerun_rows[-min(8, len(rerun_rows)):] if rerun_rows else []
+            return {
+                "kind": kind,
+                "delta_units": delta,
                 "status": "complete",
-                "character_end": end,
+                "character_start": candidate_start,
+                "character_end": candidate_end,
+                "input_audio_start_sec": float(trace_row.get("effective_input_start_sec", trace_row.get("input_start_sec", 0.0))),
+                "input_audio_end_sec": float(trace_row.get("input_end_sec", 0.0)),
                 "movement": movement,
                 "structural": structural_summary(rerun_rows),
                 "gt": metrics_without_details(rerun_rows, gt),
-                "stable_prefix_reproduction": prefix_reproduction,
-                "stable_prefix_guard_failed": (
-                    None if prefix_reproduction is None
-                    else not bool(prefix_reproduction.get("supported"))
-                ),
+                "tail_duration_sec": [
+                    float(row["end_sec"]) - float(row["start_sec"]) for row in tail
+                ],
+                "negative_duration_count": sum(value < -1e-9 for value in durations),
+                "zero_duration_count": sum(value <= 1e-9 for value in durations),
+                "decoded_rows": rerun_rows,
+                "probe_rows": probe,
                 "audit": audit,
-            })
+            }
+
+        for delta in end_deltas:
+            candidate_end = min(total, max(start + 1, baseline_end + delta))
+            variants.append(run_variant(
+                kind="text_end_delta", delta=delta,
+                candidate_start=start, candidate_end=candidate_end,
+            ))
+        for delta in start_deltas:
+            candidate_start = min(max(0, start + delta), max(0, baseline_end - 1))
+            variants.append(run_variant(
+                kind="text_start_delta", delta=delta,
+                candidate_start=candidate_start, candidate_end=baseline_end,
+            ))
+        span = max(1, baseline_end - start)
+        for ratio in (1.25, 1.50):
+            candidate_end = min(total, max(baseline_end + 1, start + int(math.ceil(span * ratio))))
+            variants.append(run_variant(
+                kind="text_end_ratio", delta=int(round((ratio - 1.0) * 100)),
+                candidate_start=start, candidate_end=candidate_end,
+            ) | {"ratio": ratio})
         results.append({
             "window_index": window_index,
             "baseline_character_start": start,
             "baseline_character_end": baseline_end,
-            "stable_prefix_available": source_segment is not None,
-            "stable_prefix_segment": (
-                None if prefix_info is None
-                else {key: value for key, value in prefix_info.items() if key != "rows"}
-            ),
+            "baseline_input_audio_start_sec": float(trace_row.get("effective_input_start_sec", trace_row.get("input_start_sec", 0.0))),
+            "baseline_input_audio_end_sec": float(trace_row.get("input_end_sec", 0.0)),
+            "stable_prefix_available": prefix_info is not None,
+            "stable_prefix_segment": prefix_info,
             "variants": variants,
         })
     return {
-        "schema_version": "forced_candidate_expansion_trials_v2_stable_prefix_guard",
+        "schema_version": "text_dosage_trials_v3_under_exact_over_start_end",
         "window_count": len(results),
         "variant_run_count": sum(len(row["variants"]) for row in results),
-        "stable_prefix_window_count": sum(bool(row["stable_prefix_available"]) for row in results),
-        "stable_prefix_guard_failed_count": sum(
-            bool(variant.get("stable_prefix_guard_failed"))
-            for row in results for variant in row["variants"]
+        "end_deltas": list(end_deltas),
+        "start_deltas": list(start_deltas),
+        "ratios": [1.25, 1.50],
+        "interpretation": (
+            "The acoustic window is fixed. Negative end deltas may remove lyrics actually sung in the window; "
+            "positive deltas add future lyrics. Start deltas simulate early/late serial cursors."
         ),
         "windows": results,
     }
@@ -1189,7 +1387,9 @@ def run_inline_shadow(
     duration = len(audio) / 16000.0
     decisions: list[dict[str, Any]] = []
     immediate_rows = canonical_final_rows(rows)
+    fused_rows = canonical_final_rows(rows)
     immediate_applied_cases: list[str] = []
+    fused_applied_cases: list[str] = []
     for ordinal, candidate in enumerate(candidates):
         target_start = max(0, int(candidate["character_start"]))
         target_end = min(len(document.characters) - 1, int(candidate["character_end"]))
@@ -1201,7 +1401,10 @@ def run_inline_shadow(
             "source_window_index": window_index,
             "trigger": candidate,
             "candidate_source": candidate.get("candidate_source", "automatic_precommit"),
-            "would_write": False,
+            "gt_oracle_improved_shadow": False,
+            "automatic_gate_accepted_shadow": False,
+            "manual_gate_accepted_shadow": False,
+            "actual_writeback": False,
         }
         pair = None
         searched_scopes: list[list[int]] = []
@@ -1269,16 +1472,67 @@ def run_inline_shadow(
         consensus = three_context_consensus(
             trials, replacement_indices, tolerance_sec=args.context_agreement_tolerance_sec,
         )
-        selected_trial = consensus.get("selected_trial") or "exact"
-        replaced, splice = bounded_splice(
-            rows, trials[selected_trial]["decoded_rows"],
+        before = _target_structural(rows, replacement_indices)
+        before_score = _anomaly_score(before)
+        trial_evaluations: dict[str, dict[str, Any]] = {}
+        for trial_name, trial_payload in trials.items():
+            trial_rows, trial_splice = bounded_splice(
+                rows, trial_payload["decoded_rows"],
+                replace_start=replace_start, replace_end=replace_end,
+                remerge=True, projection="isotonic", minimum_duration_sec=0.0,
+            )
+            trial_structural = _target_structural(trial_rows, replacement_indices)
+            trial_score = _anomaly_score(trial_structural)
+            trial_safe = (
+                bool(trial_splice.get("valid"))
+                and int(trial_structural.get("negative_duration_count", 0)) <= int(before.get("negative_duration_count", 0))
+                and int(trial_structural.get("start_regression_count", 0)) <= int(before.get("start_regression_count", 0))
+                and int(trial_structural.get("end_regression_count", 0)) <= int(before.get("end_regression_count", 0))
+                and int(trial_structural.get("inter_unit_overlap_count", 0)) <= int(before.get("inter_unit_overlap_count", 0))
+            )
+            trial_evaluations[trial_name] = {
+                "rows": trial_rows, "splice": trial_splice,
+                "structural": trial_structural, "score": trial_score,
+                "hard_safety_passed": trial_safe,
+            }
+        selected_trial = consensus.get("selected_trial")
+        selected_trial_by = "three_context_consensus"
+        if not selected_trial:
+            relaxed_candidates = [
+                (name, value) for name, value in trial_evaluations.items()
+                if value["hard_safety_passed"]
+                and int(before.get("zero_duration_count", 0)) > 0
+                and int(value["structural"].get("zero_duration_count", 0))
+                    < int(before.get("zero_duration_count", 0))
+                and int(value["score"]) <= int(before_score)
+            ]
+            if relaxed_candidates:
+                selected_trial, _ = min(
+                    relaxed_candidates,
+                    key=lambda pair: (
+                        int(pair[1]["score"]),
+                        int(pair[1]["structural"].get("zero_duration_count", 0)),
+                        str(pair[0]),
+                    ),
+                )
+                selected_trial_by = "zero_duration_relaxed_best_trial"
+            else:
+                selected_trial = "exact"
+                selected_trial_by = "diagnostic_exact_fallback"
+        selected_evaluation = trial_evaluations[str(selected_trial)]
+        replaced = selected_evaluation["rows"]
+        splice = selected_evaluation["splice"]
+        after = selected_evaluation["structural"]
+        after_score = int(selected_evaluation["score"])
+        hard_safety_passed = bool(selected_evaluation["hard_safety_passed"])
+        fused_replacement = median_fused_context_rows(trials, replacement_indices)
+        fused_candidate, fused_splice = bounded_splice(
+            rows, fused_replacement,
             replace_start=replace_start, replace_end=replace_end,
             remerge=True, projection="isotonic", minimum_duration_sec=0.0,
-        )
-        before = _target_structural(rows, replacement_indices)
-        after = _target_structural(replaced, replacement_indices)
-        before_score = _anomaly_score(before)
-        after_score = _anomaly_score(after)
+        ) if fused_replacement else (canonical_final_rows(rows), {"valid": False, "reason": "no_fused_rows"})
+        fused_after = _target_structural(fused_candidate, replacement_indices)
+        fused_after_score = _anomaly_score(fused_after)
         gt_before = metrics_without_details(
             [row for row in rows if int(row["global_character_index"]) in replacement_indices],
             [row for row in gt if int(row.get("character_index", row.get("global_character_index", -1))) in replacement_indices],
@@ -1304,33 +1558,67 @@ def run_inline_shadow(
                 before_mae is not None and after_mae is not None
                 and float(after_mae) > float(before_mae) + 1e-9
             )
-        would_pass_non_gt_gate = (
+        strict_decrease_gate = (
             bool(consensus.get("supported"))
-            and bool(splice.get("valid"))
+            and hard_safety_passed
             and after_score < before_score
         )
-        # This experiment never mutates the canonical B2 branch.  ``would_write``
-        # preserves the oracle/automatic interpretation used by prior reports;
-        # ``would_pass_non_gt_gate`` is the production counterfactual that is
-        # also evaluated on clean controls.
-        improvement_supported = (
-            gt_improved if source == "gt_oracle"
-            else after_score < before_score if source == "automatic_precommit"
-            else False
+        would_pass_non_gt_gate = (
+            bool(consensus.get("supported"))
+            and hard_safety_passed
+            and after_score <= before_score
         )
-        would_write = bool(consensus.get("supported")) and bool(splice.get("valid")) and improvement_supported
-        false_accept = bool(would_pass_non_gt_gate and gt_worsened)
+        zero_duration_relaxed_gate = (
+            int(before.get("zero_duration_count", 0)) > 0
+            and int(after.get("zero_duration_count", 0)) < int(before.get("zero_duration_count", 0))
+            and hard_safety_passed
+            and after_score <= before_score
+        )
+        fused_hard_safety_passed = (
+            bool(fused_splice.get("valid"))
+            and int(fused_after.get("negative_duration_count", 0)) <= int(before.get("negative_duration_count", 0))
+            and int(fused_after.get("start_regression_count", 0)) <= int(before.get("start_regression_count", 0))
+            and int(fused_after.get("end_regression_count", 0)) <= int(before.get("end_regression_count", 0))
+            and int(fused_after.get("inter_unit_overlap_count", 0)) <= int(before.get("inter_unit_overlap_count", 0))
+        )
+        fused_gate_accepted = fused_hard_safety_passed and fused_after_score <= before_score
+        gt_oracle_improved_shadow = bool(
+            source == "gt_oracle" and consensus.get("supported") and hard_safety_passed and gt_improved
+        )
+        automatic_gate_accepted_shadow = bool(
+            source == "automatic_precommit" and (would_pass_non_gt_gate or zero_duration_relaxed_gate)
+        )
+        manual_gate_accepted_shadow = bool(
+            source == "manual_demo" and (would_pass_non_gt_gate or zero_duration_relaxed_gate)
+        )
+        false_accept = bool((would_pass_non_gt_gate or zero_duration_relaxed_gate) and gt_worsened)
+        accepted_gate_kind = (
+            "gt_oracle_improved" if gt_oracle_improved_shadow
+            else "zero_duration_relaxed" if zero_duration_relaxed_gate and (automatic_gate_accepted_shadow or manual_gate_accepted_shadow)
+            else "structure_nonincrease_consensus" if (automatic_gate_accepted_shadow or manual_gate_accepted_shadow)
+            else "clean_control_counterfactual" if source == "clean_control" and (would_pass_non_gt_gate or zero_duration_relaxed_gate)
+            else "none"
+        )
         decision.update({
             "reason": (
-                "shadow_would_write" if would_write
-                else "clean_control_counterfactual_pass" if source == "clean_control" and would_pass_non_gt_gate
-                else "three_context_disagreement" if not consensus.get("supported")
-                else "invalid_splice" if not splice.get("valid")
+                "gt_oracle_improved_shadow" if gt_oracle_improved_shadow
+                else "automatic_zero_duration_relaxed_gate_accepted" if source == "automatic_precommit" and zero_duration_relaxed_gate
+                else "automatic_structure_nonincrease_gate_accepted" if automatic_gate_accepted_shadow
+                else "clean_control_counterfactual_pass" if source == "clean_control" and (would_pass_non_gt_gate or zero_duration_relaxed_gate)
+                else "three_context_disagreement" if not consensus.get("supported") and not zero_duration_relaxed_gate
+                else "invalid_or_unsafe_splice" if not hard_safety_passed
                 else "gt_not_improved" if source == "gt_oracle"
-                else "trigger_not_reduced"
+                else "structure_not_improved_or_zero_not_reduced"
             ),
-            "would_write": would_write,
+            "gt_oracle_improved_shadow": gt_oracle_improved_shadow,
+            "automatic_gate_accepted_shadow": automatic_gate_accepted_shadow,
+            "manual_gate_accepted_shadow": manual_gate_accepted_shadow,
+            "actual_writeback": False,
+            "strict_decrease_gate": strict_decrease_gate,
             "would_pass_non_gt_gate": would_pass_non_gt_gate,
+            "zero_duration_relaxed_gate": zero_duration_relaxed_gate,
+            "accepted_gate_kind": accepted_gate_kind,
+            "hard_safety_passed": hard_safety_passed,
             "eligible_for_actual_writeback": False,
             "counterfactual_false_accept": false_accept,
             "replace_start": replace_start,
@@ -1338,11 +1626,21 @@ def run_inline_shadow(
             "context_agreement": consensus,
             "three_context_consensus": consensus,
             "selected_context_trial": selected_trial,
+            "selected_context_trial_by": selected_trial_by,
+            "trial_structural_diagnostics": {
+                name: {key: value for key, value in trial.items() if key != "rows"}
+                for name, trial in trial_evaluations.items()
+            },
             "splice": splice,
             "structural_before": before,
             "structural_after": after,
+            "fused_structural_after": fused_after,
+            "fused_splice": fused_splice,
+            "fused_gate_accepted_shadow": fused_gate_accepted,
+            "fused_replacement_rows": fused_replacement,
             "anomaly_score_before": before_score,
             "anomaly_score_after": after_score,
+            "fused_anomaly_score_after": fused_after_score,
             "gt_before": gt_before,
             "gt_after": gt_after,
             "gt_improved": gt_improved,
@@ -1353,8 +1651,18 @@ def run_inline_shadow(
             "exact_wall_sec": trials["exact"].get("wall_sec"),
             "plus2_wall_sec": trials["plus2"].get("wall_sec"),
             "plus4_wall_sec": trials["plus4"].get("wall_sec"),
+            "context_trials": {
+                name: {
+                    "input": value.get("input"),
+                    "replace_start": value.get("replace_start"),
+                    "replace_end": value.get("replace_end"),
+                    "decoded_rows": value.get("decoded_rows", []),
+                    "wall_sec": value.get("wall_sec"),
+                }
+                for name, value in trials.items()
+            },
         })
-        if source == "automatic_precommit" and would_pass_non_gt_gate:
+        if source == "automatic_precommit" and automatic_gate_accepted_shadow:
             try:
                 updated_rows, immediate_splice = bounded_splice(
                     immediate_rows, trials[selected_trial]["decoded_rows"],
@@ -1367,13 +1675,26 @@ def run_inline_shadow(
                     immediate_applied_cases.append(str(decision["case_id"]))
             except Exception as exc:
                 decision["immediate_alignment_error"] = f"{type(exc).__name__}: {exc}"
+        if source == "automatic_precommit" and fused_gate_accepted:
+            try:
+                updated_rows, fused_full_splice = bounded_splice(
+                    fused_rows, fused_replacement,
+                    replace_start=replace_start, replace_end=replace_end,
+                    remerge=True, projection="isotonic", minimum_duration_sec=0.0,
+                )
+                decision["fused_alignment_splice"] = fused_full_splice
+                if fused_full_splice.get("valid"):
+                    fused_rows = updated_rows
+                    fused_applied_cases.append(str(decision["case_id"]))
+            except Exception as exc:
+                decision["fused_alignment_error"] = f"{type(exc).__name__}: {exc}"
         decisions.append(decision)
     immediate_request = {
         "schema_version": "immediate_inline_full_alignment_request_v1",
         "baseline_request_hash": baseline_payload.get("identity", {}).get("request_hash"),
         "shadow_request_hash": None if request is None else canonical_hash(request),
         "applied_case_ids": immediate_applied_cases,
-        "gate": "three_context_consensus + valid_splice + anomaly_score_reduction",
+        "gate": "three_context_consensus_or_zero_duration_relaxed + safe_splice + anomaly_score_nonincrease",
     }
     immediate_path = out_path.parent / "experimental_alignments" / "R1_immediate_inline" / "alignment.json"
     write_experimental_alignment(
@@ -1383,8 +1704,23 @@ def run_inline_shadow(
         gt=gt, request=immediate_request,
         metadata={"applied_case_ids": immediate_applied_cases, "applied_count": len(immediate_applied_cases)},
     )
+    fused_request = {
+        "schema_version": "context_median_fused_full_alignment_request_v1",
+        "baseline_request_hash": baseline_payload.get("identity", {}).get("request_hash"),
+        "shadow_request_hash": None if request is None else canonical_hash(request),
+        "applied_case_ids": fused_applied_cases,
+        "gate": "median_boundary_fusion + safe_splice + anomaly_score_nonincrease",
+    }
+    fused_path = out_path.parent / "experimental_alignments" / "R4_context_median_fused" / "alignment.json"
+    write_experimental_alignment(
+        output_path=fused_path, baseline_payload=baseline_payload, rows=fused_rows,
+        experiment_name="R4_context_median_fused",
+        experiment_family="automatic three-context boundary-median fusion shadow",
+        gt=gt, request=fused_request,
+        metadata={"applied_case_ids": fused_applied_cases, "applied_count": len(fused_applied_cases)},
+    )
     payload = {
-        "schema_version": "inline_realign_shadow_v1",
+        "schema_version": "inline_realign_shadow_v2_split_decisions_and_fusion",
         "created_at": utc_now(),
         "item_id": item["item_id"],
         "dataset": item["dataset"],
@@ -1399,14 +1735,20 @@ def run_inline_shadow(
         ),
         "decision_count": len(decisions),
         "local_inference_attempted_count": sum(row.get("replace_start") is not None or row.get("reason") == "local_inference_failed" for row in decisions),
-        "would_write_count": sum(bool(row.get("would_write")) for row in decisions),
+        "gt_oracle_improved_shadow_count": sum(bool(row.get("gt_oracle_improved_shadow")) for row in decisions),
+        "automatic_gate_accepted_shadow_count": sum(bool(row.get("automatic_gate_accepted_shadow")) for row in decisions),
+        "manual_gate_accepted_shadow_count": sum(bool(row.get("manual_gate_accepted_shadow")) for row in decisions),
+        "actual_writeback_count": sum(bool(row.get("actual_writeback")) for row in decisions),
         "would_pass_non_gt_gate_count": sum(bool(row.get("would_pass_non_gt_gate")) for row in decisions),
+        "zero_duration_relaxed_gate_count": sum(bool(row.get("zero_duration_relaxed_gate")) for row in decisions),
         "clean_control_counterfactual_false_accept_count": sum(
             bool(row.get("counterfactual_false_accept"))
             for row in decisions if row.get("candidate_source") == "clean_control"
         ),
         "immediate_alignment_path": str(immediate_path),
         "immediate_applied_case_count": len(immediate_applied_cases),
+        "context_median_fused_alignment_path": str(fused_path),
+        "context_median_fused_applied_case_count": len(fused_applied_cases),
         "decisions": decisions,
     }
     if request is not None:
@@ -1533,6 +1875,30 @@ def three_context_consensus(
         "rule": "at_least_one_of_three_pairwise_agreements",
     }
 
+
+
+def median_fused_context_rows(
+    trials: dict[str, dict[str, Any]], replacement_indices: list[int],
+) -> list[dict[str, Any]]:
+    """Fuse exact/+2/+4 by per-boundary median before monotonic projection."""
+    names = [name for name in ("exact", "plus2", "plus4") if trials.get(name)]
+    by_name = {
+        name: {int(row["global_character_index"]): row for row in trials[name].get("decoded_rows", [])}
+        for name in names
+    }
+    fused: list[dict[str, Any]] = []
+    for index in replacement_indices:
+        available = [mapping[index] for mapping in by_name.values() if index in mapping]
+        if not available:
+            continue
+        template = dict(available[0])
+        starts = sorted(float(row["start_sec"]) for row in available)
+        ends = sorted(float(row["end_sec"]) for row in available)
+        template["start_sec"] = statistics.median(starts)
+        template["end_sec"] = statistics.median(ends)
+        template["context_fusion"] = "median_exact_plus2_plus4"
+        fused.append(template)
+    return fused
 
 def _simple_stable_segments_from_rows(
     rows: list[dict[str, Any]], *, minimum_units: int, after_index: int | None = None,
@@ -1676,19 +2042,81 @@ def run_pending_confirmation_shadow(
             replace_start = int(trials["exact"]["replace_start"]); replace_end = int(trials["exact"]["replace_end"])
             indices = list(range(replace_start, replace_end + 1))
             consensus = three_context_consensus(trials, indices, tolerance_sec=args.context_agreement_tolerance_sec)
-            selected_name = consensus.get("selected_trial")
-            if not selected_name:
-                case.update({"reason": "deferred_three_context_disagreement", "context_consensus": consensus})
-                cases.append(case); continue
-            candidate_deferred, splice = bounded_splice(
-                deferred_rows, trials[selected_name]["decoded_rows"],
-                replace_start=replace_start, replace_end=replace_end,
-                remerge=True, projection="isotonic", minimum_duration_sec=0.0,
-            )
             before_structural = _target_structural(deferred_rows, indices)
-            after_structural = _target_structural(candidate_deferred, indices)
-            before_score = _anomaly_score(before_structural); after_score = _anomaly_score(after_structural)
-            would_pass_non_gt_gate = bool(consensus.get("supported")) and bool(splice.get("valid")) and after_score < before_score
+            before_score = _anomaly_score(before_structural)
+            trial_evaluations: dict[str, dict[str, Any]] = {}
+            for trial_name, trial_payload in trials.items():
+                trial_rows, trial_splice = bounded_splice(
+                    deferred_rows, trial_payload["decoded_rows"],
+                    replace_start=replace_start, replace_end=replace_end,
+                    remerge=True, projection="isotonic", minimum_duration_sec=0.0,
+                )
+                trial_structural = _target_structural(trial_rows, indices)
+                trial_score = _anomaly_score(trial_structural)
+                trial_safe = (
+                    bool(trial_splice.get("valid"))
+                    and int(trial_structural.get("negative_duration_count", 0)) <= int(before_structural.get("negative_duration_count", 0))
+                    and int(trial_structural.get("start_regression_count", 0)) <= int(before_structural.get("start_regression_count", 0))
+                    and int(trial_structural.get("end_regression_count", 0)) <= int(before_structural.get("end_regression_count", 0))
+                    and int(trial_structural.get("inter_unit_overlap_count", 0)) <= int(before_structural.get("inter_unit_overlap_count", 0))
+                )
+                trial_evaluations[trial_name] = {
+                    "rows": trial_rows, "splice": trial_splice,
+                    "structural": trial_structural, "score": trial_score,
+                    "hard_safety_passed": trial_safe,
+                }
+            selected_name = consensus.get("selected_trial")
+            selected_by = "three_context_consensus"
+            if not selected_name:
+                # Deferred is allowed to use the zero-duration-specific relaxed
+                # path even when complete paths disagree.  Choose the safest
+                # structural candidate rather than rejecting before the gate.
+                relaxed_candidates = [
+                    (name, value) for name, value in trial_evaluations.items()
+                    if value["hard_safety_passed"]
+                    and int(before_structural.get("zero_duration_count", 0)) > 0
+                    and int(value["structural"].get("zero_duration_count", 0))
+                        < int(before_structural.get("zero_duration_count", 0))
+                    and int(value["score"]) <= int(before_score)
+                ]
+                if not relaxed_candidates:
+                    case.update({
+                        "reason": "deferred_three_context_disagreement",
+                        "context_consensus": consensus,
+                        "trial_structural_diagnostics": {
+                            name: {key: value for key, value in trial.items() if key != "rows"}
+                            for name, trial in trial_evaluations.items()
+                        },
+                    })
+                    cases.append(case); continue
+                selected_name, _ = min(
+                    relaxed_candidates,
+                    key=lambda pair: (
+                        int(pair[1]["score"]),
+                        int(pair[1]["structural"].get("zero_duration_count", 0)),
+                        str(pair[0]),
+                    ),
+                )
+                selected_by = "zero_duration_relaxed_best_trial"
+            selected_evaluation = trial_evaluations[str(selected_name)]
+            candidate_deferred = selected_evaluation["rows"]
+            splice = selected_evaluation["splice"]
+            after_structural = selected_evaluation["structural"]
+            after_score = int(selected_evaluation["score"])
+            hard_safety_passed = bool(selected_evaluation["hard_safety_passed"])
+            strict_decrease_gate = (
+                bool(consensus.get("supported")) and hard_safety_passed and after_score < before_score
+            )
+            zero_duration_relaxed_gate = (
+                int(before_structural.get("zero_duration_count", 0)) > 0
+                and int(after_structural.get("zero_duration_count", 0)) < int(before_structural.get("zero_duration_count", 0))
+                and hard_safety_passed
+                and after_score <= before_score
+            )
+            structure_nonincrease_gate = (
+                bool(consensus.get("supported")) and hard_safety_passed and after_score <= before_score
+            )
+            would_pass_non_gt_gate = structure_nonincrease_gate or zero_duration_relaxed_gate
             before_gt = metrics_without_details(
                 [value for value in deferred_rows if int(value["global_character_index"]) in indices],
                 [value for value in gt if _gt_row_index(value) in indices],
@@ -1702,11 +2130,32 @@ def run_pending_confirmation_shadow(
                 "reason": "deferred_shadow_gate_passed" if would_pass_non_gt_gate else "deferred_trigger_not_reduced",
                 "replace_start": replace_start, "replace_end": replace_end,
                 "context_consensus": consensus, "selected_context_trial": selected_name,
+                "selected_context_trial_by": selected_by,
+                "strict_decrease_gate": strict_decrease_gate,
+                "structure_nonincrease_gate": structure_nonincrease_gate,
+                "accepted_gate_kind": (
+                    "zero_duration_relaxed" if zero_duration_relaxed_gate and not structure_nonincrease_gate
+                    else "structure_nonincrease_consensus" if structure_nonincrease_gate
+                    else "none"
+                ),
                 "splice": splice, "structural_before": before_structural,
                 "structural_after": after_structural,
                 "anomaly_score_before": before_score, "anomaly_score_after": after_score,
                 "would_pass_non_gt_gate": would_pass_non_gt_gate,
+                "zero_duration_relaxed_gate": zero_duration_relaxed_gate,
+                "hard_safety_passed": hard_safety_passed,
+                "actual_writeback": False,
                 "eligible_for_actual_writeback": False,
+                "context_trials": {
+                    name: {
+                        "input": value.get("input"),
+                        "replace_start": value.get("replace_start"),
+                        "replace_end": value.get("replace_end"),
+                        "decoded_rows": value.get("decoded_rows", []),
+                        "wall_sec": value.get("wall_sec"),
+                    }
+                    for name, value in trials.items()
+                },
                 "gt_before": before_gt, "gt_after": after_gt,
             })
             if would_pass_non_gt_gate:
@@ -1864,6 +2313,60 @@ def legacy_r2_comparison(item: dict[str, Any], baseline_payload: dict[str, Any],
     }
 
 
+
+def raw_minimal_repair_rows(rows: list[dict[str, Any]], *, monotonic: bool) -> list[dict[str, Any]]:
+    """Project B2 raw argmax to a lightweight repair without official decoding."""
+    raw = stage_rows(rows, "raw")
+    result: list[dict[str, Any]] = []
+    previous_end = 0.0
+    for source in raw:
+        row = dict(source)
+        start = float(row["start_sec"])
+        end = max(start, float(row["end_sec"]))
+        if monotonic:
+            start = max(start, previous_end)
+            end = max(end, start)
+        row["start_sec"] = start
+        row["end_sec"] = end
+        row["raw_minimal_repair"] = "monotonic" if monotonic else "nonnegative_only"
+        result.append(row)
+        previous_end = end
+    return result
+
+
+def write_raw_decoder_ablations(
+    *, item_root: Path, baseline_payload: dict[str, Any], rows: list[dict[str, Any]],
+    gt: list[dict[str, Any]],
+) -> dict[str, Any]:
+    paths: dict[str, str] = {}
+    summaries: dict[str, Any] = {}
+    for name, monotonic in (
+        ("D5_raw_nonnegative_only", False),
+        ("D6_raw_minimal_monotonic", True),
+    ):
+        repaired = raw_minimal_repair_rows(rows, monotonic=monotonic)
+        request = {
+            "schema_version": "raw_decoder_ablation_request_v1",
+            "baseline_request_hash": baseline_payload.get("identity", {}).get("request_hash"),
+            "variant": name,
+            "monotonic": monotonic,
+        }
+        path = item_root / "experimental_alignments" / name / "alignment.json"
+        payload = write_experimental_alignment(
+            output_path=path, baseline_payload=baseline_payload, rows=repaired,
+            experiment_name=name,
+            experiment_family="raw argmax lightweight repair ablation",
+            gt=gt, request=request,
+            metadata={"monotonic": monotonic},
+        )
+        paths[name] = str(path)
+        summaries[name] = payload.get("summary", {})
+    return {
+        "schema_version": "raw_decoder_ablations_v1",
+        "alignment_paths": paths,
+        "summaries": summaries,
+    }
+
 def synthetic_seam_gt_summary(item: dict[str, Any], rows: list[dict[str, Any]], gt: list[dict[str, Any]], *, radius_sec: float = 1.0) -> dict[str, Any] | None:
     seams = [float(value) for value in item.get("synthetic_seams_sec", [])]
     if not seams or not gt:
@@ -1886,14 +2389,122 @@ def synthetic_seam_gt_summary(item: dict[str, Any], rows: list[dict[str, Any]], 
         "far_from_seam_gt": evaluate_rows(rows, gt, far) if far else None,
     }
 
-def selected_variants(item: dict[str, Any]) -> list[str]:
+def selected_variants(args: argparse.Namespace, item: dict[str, Any]) -> list[str]:
+    """Resolve the actual variant list from the frozen effective config."""
     variant_set = str(item.get("variant_set", "official_primary"))
     if variant_set == "baseline_matrix":
-        return list(VARIANTS)
-    if variant_set == "official_primary":
-        return ["B2_30_silence_official"]
-    raise ValueError(f"unknown variant_set for {item.get('item_id')}: {variant_set}")
+        names = list(args.baseline_matrix_variants)
+        if str(args.primary_variant) not in names:
+            names.insert(0, str(args.primary_variant))
+    elif variant_set == "official_primary":
+        names = [str(args.primary_variant)]
+    else:
+        raise ValueError(f"unknown variant_set for {item.get('item_id')}: {variant_set}")
+    unknown = [name for name in names if name not in VARIANTS]
+    if unknown:
+        raise ValueError(f"unknown configured variants for {item.get('item_id')}: {unknown}")
+    # Preserve order but never execute duplicate branches.
+    return list(dict.fromkeys(names))
 
+
+
+def experiment_item_request(
+    args: argparse.Namespace, item: dict[str, Any], checkpoint: dict[str, Any],
+) -> dict[str, Any]:
+    """Frozen identity for deciding whether an entire item can be skipped."""
+    resolved = dict(item)
+    for key in ("lyrics_path", "audio_path", "gt_path"):
+        if resolved.get(key):
+            resolved[key] = str(Path(str(resolved[key])).expanduser().resolve())
+    branch_hashes = {
+        name: canonical_hash(branch_request(args, resolved, name, VARIANTS[name], checkpoint))
+        for name in selected_variants(args, resolved)
+    }
+    gt_path = Path(str(resolved["gt_path"])) if resolved.get("gt_path") else None
+    return {
+        "schema_version": "inline_realign_item_request_v2_full_suite",
+        "item_id": resolved["item_id"],
+        "dataset": resolved.get("dataset"),
+        "profile": resolved.get("profile"),
+        "language": resolved.get("language"),
+        "configured_primary_variant": args.primary_variant,
+        "configured_baseline_matrix_variants": list(args.baseline_matrix_variants),
+        "branch_request_hashes": branch_hashes,
+        "gt_sha256": None if gt_path is None or not gt_path.is_file() else SERIAL.sha256(gt_path),
+        "shadow": {
+            "disabled": bool(args.disable_inline_shadow),
+            "max_automatic": int(args.max_shadow_cases_per_item),
+            "max_gt_oracle": int(args.max_gt_oracle_cases_per_item),
+            "max_clean": int(args.max_clean_control_cases_per_item),
+            "context_units": [0, 2, 4],
+            "agreement_tolerance_sec": float(args.context_agreement_tolerance_sec),
+            "gate": "safe_splice + anomaly_nonincrease; zero-duration relaxed; median fusion",
+        },
+        "stable": {
+            "disabled": bool(args.disable_stable_window_assistance),
+            "max_trials": int(args.max_stable_window_trials_per_item),
+            "context_units": [0, 2, 4],
+            "audio_text_synchronized": True,
+        },
+        "text_dosage": {
+            "disabled": bool(args.disable_forced_expansion_trials),
+            "max_trials": int(args.max_expansion_trials_per_item),
+            "end_deltas": list(args.text_dosage_end_deltas),
+            "start_deltas": list(args.text_dosage_start_deltas),
+            "ratios": [1.25, 1.50],
+        },
+        "deferred": {
+            "disabled": bool(args.disable_pending_confirmation_shadow),
+            "max_cases": int(args.max_pending_shadow_cases_per_item),
+            "max_windows": int(args.deferred_max_windows),
+            "max_seconds": float(args.deferred_max_seconds),
+            "max_units": int(args.deferred_max_units),
+        },
+        "raw_decoder_ablations": ["nonnegative_only", "minimal_monotonic"],
+        "checkpoint": checkpoint,
+    }
+
+
+def can_resume_skip_item(
+    *, resume: bool, force: bool, item_id: str, restart_items: set[str], complete_and_valid: bool,
+) -> bool:
+    """Return whether an item may be reused without entering model execution."""
+    return bool(resume and not force and item_id not in restart_items and complete_and_valid)
+
+
+def expected_item_outputs(args: argparse.Namespace, item: dict[str, Any], item_root: Path) -> list[Path]:
+    outputs = [item_root / "item_summary.json"]
+    variants = selected_variants(args, item)
+    outputs.extend(item_root / "branches" / name / "alignment.json" for name in variants)
+    if str(args.primary_variant) in variants:
+        outputs.extend([
+            item_root / "experimental_alignments" / "D5_raw_nonnegative_only" / "alignment.json",
+            item_root / "experimental_alignments" / "D6_raw_minimal_monotonic" / "alignment.json",
+        ])
+        if not args.disable_inline_shadow:
+            outputs.extend([
+                item_root / "inline_realign_shadow.json",
+                item_root / "experimental_alignments" / "R1_immediate_inline" / "alignment.json",
+                item_root / "experimental_alignments" / "R4_context_median_fused" / "alignment.json",
+            ])
+        if item.get("profile") != "local_segment" and not args.disable_stable_window_assistance:
+            outputs.extend([
+                item_root / "stable_window_assistance.json",
+                item_root / "stable_window_assistance_trials.json",
+                item_root / "experimental_alignments" / "S0_stable_anchor_only" / "alignment.json",
+                item_root / "experimental_alignments" / "S1_stable_sync_exact" / "alignment.json",
+                item_root / "experimental_alignments" / "S2_stable_sync_minus2" / "alignment.json",
+                item_root / "experimental_alignments" / "S3_stable_sync_minus4" / "alignment.json",
+            ])
+        if item.get("profile") != "local_segment" and not args.disable_forced_expansion_trials:
+            outputs.append(item_root / "text_dosage_trials.json")
+        if not args.disable_pending_confirmation_shadow and not args.disable_inline_shadow:
+            outputs.extend([
+                item_root / "pending_confirmation_shadow.json",
+                item_root / "experimental_alignments" / "R2_deferred" / "alignment.json",
+                item_root / "experimental_alignments" / "R3_inline_deferred" / "alignment.json",
+            ])
+    return outputs
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
@@ -1906,6 +2517,12 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cache-dir", type=Path)
     p.add_argument("--local-files-only", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--language", type=normalize_alignment_language, default="Chinese")
+    p.add_argument("--primary-variant", default="B2_30_silence_official")
+    p.add_argument(
+        "--baseline-matrix-variants",
+        default=",".join(VARIANTS),
+        help="comma-separated ordered branch IDs for long-serial items",
+    )
     p.add_argument("--timestamp-segment-sec", type=float, default=0.08)
     p.add_argument("--left-context-sec", type=float, default=10.0)
     p.add_argument("--right-context-sec", type=float, default=10.0)
@@ -1922,6 +2539,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--startup-minimum-forward-characters", type=int, default=24)
     p.add_argument("--silence-boundary-min-sec", type=float, default=0.8)
     p.add_argument("--strong-silence-anchor-sec", type=float, default=1.5)
+    p.add_argument("--strict-silence-boundary-sec", type=float, default=1.5)
+    p.add_argument("--silence-compression-min-sec", type=float, default=1.5)
+    p.add_argument("--silence-compression-padding-sec", type=float, default=0.20)
     p.add_argument("--silence-boundary-search-sec", type=float, default=6.0)
     p.add_argument("--leading-silence-min-sec", type=float, default=2.0)
     p.add_argument("--tail-min-core-sec", type=float, default=18.0)
@@ -1943,12 +2563,14 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--max-gt-oracle-cases-per-item", type=int, default=3)
     p.add_argument("--max-shadow-cases-per-item", type=int, default=8)
     p.add_argument("--max-stable-window-trials-per-item", type=int, default=2)
-    p.add_argument("--max-expansion-trials-per-item", type=int, default=1)
+    p.add_argument("--max-expansion-trials-per-item", "--max-text-dosage-trials-per-item", dest="max_expansion_trials_per_item", type=int, default=1)
+    p.add_argument("--text-dosage-end-deltas", default="-8,-4,-2,0,2,4,8,16")
+    p.add_argument("--text-dosage-start-deltas", default="-4,-2,0,2,4")
     p.add_argument("--max-clean-control-cases-per-item", type=int, default=2)
     p.add_argument("--max-pending-shadow-cases-per-item", type=int, default=3)
     p.add_argument("--max-tail-rollback-cases-per-item", type=int, default=2)
     p.add_argument("--disable-stable-window-assistance", action="store_true")
-    p.add_argument("--disable-forced-expansion-trials", action="store_true")
+    p.add_argument("--disable-forced-expansion-trials", "--disable-text-dosage-trials", dest="disable_forced_expansion_trials", action="store_true")
     p.add_argument("--disable-pending-confirmation-shadow", action="store_true")
     p.add_argument("--disable-tail-rollback-shadow", action="store_true")
     p.add_argument("--construct-incomplete-cases", action=argparse.BooleanOptionalAction, default=True)
@@ -1956,11 +2578,25 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--disable-inline-shadow", action="store_true")
     p.add_argument("--fail-fast", action="store_true")
     p.add_argument("--force", action="store_true")
+    p.add_argument("--resume", action="store_true", help="skip complete items whose frozen request identity and outputs still match")
+    p.add_argument("--retry-failed-only", action="store_true")
+    p.add_argument("--restart-item", action="append", default=[])
     return p
 
 
 def main() -> int:
     args = parser().parse_args()
+    args.primary_variant = str(args.primary_variant).strip()
+    args.baseline_matrix_variants = tuple(
+        value.strip() for value in str(args.baseline_matrix_variants).split(",") if value.strip()
+    )
+    if args.primary_variant not in VARIANTS:
+        raise ValueError(f"unknown --primary-variant: {args.primary_variant}")
+    unknown_variants = [name for name in args.baseline_matrix_variants if name not in VARIANTS]
+    if unknown_variants:
+        raise ValueError(f"unknown --baseline-matrix-variants: {unknown_variants}")
+    args.text_dosage_end_deltas = tuple(int(value.strip()) for value in str(args.text_dosage_end_deltas).split(",") if value.strip())
+    args.text_dosage_start_deltas = tuple(int(value.strip()) for value in str(args.text_dosage_start_deltas).split(",") if value.strip())
     args.manifest = args.manifest.expanduser().resolve()
     args.out_root = args.out_root.expanduser().resolve()
     args.r2_checkpoint = args.r2_checkpoint.expanduser().resolve()
@@ -1982,26 +2618,83 @@ def main() -> int:
     args.out_root.mkdir(parents=True, exist_ok=True)
     status_path = args.out_root / "run_status.jsonl"
     checkpoint = SERIAL.checkpoint_identity("lora", args.r2_checkpoint)
+    run_state = RunState(args.out_root)
+    restart_items = {str(value) for value in args.restart_item}
+    prepared: list[tuple[dict[str, Any], dict[str, Any], str, list[Path]]] = []
+    summaries: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
+    skipped_item_count = 0
+    for source in items:
+        resolved = dict(source)
+        for key in ("lyrics_path", "audio_path", "gt_path"):
+            if resolved.get(key):
+                resolved[key] = str(Path(str(resolved[key])).expanduser().resolve())
+        item_id = str(resolved["item_id"])
+        item_root = args.out_root / "items" / item_id
+        request = experiment_item_request(args, resolved, checkpoint)
+        request_hash = canonical_hash(request)
+        outputs = expected_item_outputs(args, resolved, item_root)
+        state_payload = read_json_if_exists(run_state.item_path(item_id))
+        complete_and_valid = run_state.item_is_complete(
+            item_id, request_hash=request_hash, outputs=outputs
+        )
+        if args.retry_failed_only and item_id not in restart_items:
+            if state_payload.get("status") == "failed":
+                prepared.append((resolved, request, request_hash, outputs))
+                continue
+            if not complete_and_valid:
+                raise RuntimeError(
+                    "--retry-failed-only encountered an item that is neither a valid complete item "
+                    f"nor a recorded failure: {item_id} status={state_payload.get('status')!r}. "
+                    "Use ordinary --resume so incomplete/pending items can be repaired."
+                )
+        can_skip = can_resume_skip_item(
+            resume=args.resume, force=args.force, item_id=item_id,
+            restart_items=restart_items, complete_and_valid=complete_and_valid,
+        )
+        if can_skip:
+            summary = read_json_if_exists(item_root / "item_summary.json")
+            if not summary:
+                raise RuntimeError(f"valid item state lacks item_summary.json: {item_id}")
+            summaries.append(summary)
+            skipped_item_count += 1
+            append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "resume_skipped_complete"})
+        else:
+            prepared.append((resolved, request, request_hash, outputs))
+
+    if not prepared:
+        aggregate = {
+            "schema_version": "inline_realign_experiment_summary_v2_resumable",
+            "created_at": utc_now(), "manifest": str(args.manifest),
+            "item_count": len(items), "completed_item_count": len(summaries),
+            "failed_item_count": 0, "resume_skipped_item_count": skipped_item_count,
+            "executed_item_count": 0, "variants": VARIANTS, "items": summaries, "failures": [],
+        }
+        atomic_json(args.out_root / "experiment_summary.json", aggregate)
+        atomic_json(args.out_root / "complete.json", {"status": "complete", **aggregate})
+        print(json.dumps({"stage": "experiment", "status": "resume_all_items_complete", "skipped": skipped_item_count}, ensure_ascii=False), flush=True)
+        return 0
+
     load_args = SimpleNamespace(
         model=str(args.model), revision=args.revision,
         local_files_only=args.local_files_only, cache_dir=args.cache_dir,
         device=args.device,
     )
     processor, model = SERIAL.load_model(load_args, "lora", args.r2_checkpoint)
-    summaries: list[dict[str, Any]] = []
-    failures: list[dict[str, Any]] = []
     try:
-        for item_ordinal, item in enumerate(items, 1):
+        for item_ordinal, prepared_item in enumerate(prepared, 1):
+            item, item_request_payload, item_request_hash, item_expected_outputs = prepared_item
             item_id = str(item["item_id"])
             item_root = args.out_root / "items" / item_id
+            run_state.begin_item(item_id, request=item_request_payload, outputs=item_expected_outputs)
             (item_root / "failure.json").unlink(missing_ok=True)
-            append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "running", "item_ordinal": item_ordinal, "item_total": len(items)})
+            append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "running", "item_ordinal": item_ordinal, "item_total": len(prepared)})
             atomic_json(args.out_root / "experiment_live_status.json", {
                 "schema_version": "inline_realign_experiment_live_status_v1",
                 "time": utc_now(), "status": "running", "item_id": item_id,
-                "item_ordinal": item_ordinal, "item_total": len(items),
+                "item_ordinal": item_ordinal, "item_total": len(prepared),
             })
-            print(json.dumps({"stage": "experiment", "status": "item_start", "item": f"{item_ordinal}/{len(items)}", "item_id": item_id}, ensure_ascii=False), flush=True)
+            print(json.dumps({"stage": "experiment", "status": "item_start", "item": f"{item_ordinal}/{len(prepared)}", "item_id": item_id}, ensure_ascii=False), flush=True)
             try:
                 lyrics_path = Path(item["lyrics_path"]).resolve()
                 audio_path = Path(item["audio_path"]).resolve()
@@ -2029,15 +2722,15 @@ def main() -> int:
                     )
                 audio = decode_audio(audio_path)
                 branch_summaries: dict[str, Any] = {}
-                b2_rows: list[dict[str, Any]] | None = None
-                b2_trace: list[dict[str, Any]] | None = None
-                b2_payload: dict[str, Any] | None = None
-                for variant_name in selected_variants(item):
-                    print(json.dumps({"stage": "experiment", "status": "branch_start", "item": f"{item_ordinal}/{len(items)}", "item_id": item_id, "branch": variant_name}, ensure_ascii=False), flush=True)
+                primary_rows: list[dict[str, Any]] | None = None
+                primary_trace: list[dict[str, Any]] | None = None
+                primary_payload: dict[str, Any] | None = None
+                for variant_name in selected_variants(args, item):
+                    print(json.dumps({"stage": "experiment", "status": "branch_start", "item": f"{item_ordinal}/{len(prepared)}", "item_id": item_id, "branch": variant_name}, ensure_ascii=False), flush=True)
                     atomic_json(args.out_root / "experiment_live_status.json", {
                         "schema_version": "inline_realign_experiment_live_status_v1",
                         "time": utc_now(), "status": "branch_running", "item_id": item_id,
-                        "item_ordinal": item_ordinal, "item_total": len(items), "branch": variant_name,
+                        "item_ordinal": item_ordinal, "item_total": len(prepared), "branch": variant_name,
                     })
                     rows, trace, payload = run_variant(
                         args=args, item=item, variant_name=variant_name,
@@ -2047,12 +2740,13 @@ def main() -> int:
                     )
                     branch_summaries[variant_name] = payload["summary"]
                     print(json.dumps({"stage": "experiment", "status": "branch_complete", "item_id": item_id, "branch": variant_name, "window_count": payload.get("summary", {}).get("window_count")}, ensure_ascii=False), flush=True)
-                    if variant_name == "B2_30_silence_official":
-                        b2_rows, b2_trace, b2_payload = rows, trace, payload
+                    if variant_name == str(args.primary_variant):
+                        primary_rows, primary_trace, primary_payload = rows, trace, payload
                 if (
                     item.get("variant_set") == "official_primary"
-                    and b2_payload is not None
-                    and int((b2_payload.get("planner_divergence") or {}).get("diverged_window_count", 0)) > 0
+                    and str(args.primary_variant) == "B2_30_silence_official"
+                    and primary_payload is not None
+                    and int((primary_payload.get("planner_divergence") or {}).get("diverged_window_count", 0)) > 0
                 ):
                     rows, trace, payload = run_variant(
                         args=args, item=item, variant_name="B3_30_silence_raw_control",
@@ -2071,19 +2765,24 @@ def main() -> int:
                 seam_gt_payload = None
                 incomplete_summary = None
                 automatic_incomplete_summary = None
-                baseline_hash = None if b2_payload is None else b2_payload.get("identity", {}).get("request_hash")
-                if b2_payload is not None and b2_rows is not None:
-                    legacy_comparison_payload = legacy_r2_comparison(item, b2_payload, gt)
+                raw_decoder_ablations = None
+                baseline_hash = None if primary_payload is None else primary_payload.get("identity", {}).get("request_hash")
+                if primary_payload is not None and primary_rows is not None:
+                    raw_decoder_ablations = write_raw_decoder_ablations(
+                        item_root=item_root, baseline_payload=primary_payload, rows=primary_rows, gt=gt,
+                    )
+                    atomic_json(item_root / "raw_decoder_ablations.json", raw_decoder_ablations)
+                    legacy_comparison_payload = legacy_r2_comparison(item, primary_payload, gt)
                     if legacy_comparison_payload is not None:
                         atomic_json(item_root / "legacy_r2_comparison.json", legacy_comparison_payload)
-                    seam_gt_payload = synthetic_seam_gt_summary(item, b2_rows, gt)
+                    seam_gt_payload = synthetic_seam_gt_summary(item, primary_rows, gt)
                     if seam_gt_payload is not None:
                         # Remove verbose per-unit details before storing the compact seam audit.
                         for key in ("near_seam_gt", "far_from_seam_gt"):
                             if isinstance(seam_gt_payload.get(key), dict):
                                 seam_gt_payload[key].pop("details", None)
                         atomic_json(item_root / "synthetic_seam_gt_summary.json", seam_gt_payload)
-                if not args.disable_inline_shadow and b2_rows is not None and b2_trace is not None:
+                if not args.disable_inline_shadow and primary_rows is not None and primary_trace is not None:
                     shadow_request = {
                         "schema_version": "inline_realign_shadow_request_v4_counterfactual_gate_and_full_alignment",
                         "baseline_request_hash": baseline_hash,
@@ -2105,11 +2804,11 @@ def main() -> int:
                     if shadow_payload is None:
                         shadow_payload = run_inline_shadow(
                             args=args, item=item, processor=processor, model=model,
-                            audio=audio, document=document, gt=gt, rows=b2_rows,
-                            trace=b2_trace, out_path=shadow_path, baseline_payload=b2_payload,
+                            audio=audio, document=document, gt=gt, rows=primary_rows,
+                            trace=primary_trace, out_path=shadow_path, baseline_payload=primary_payload,
                             request=shadow_request,
                         )
-                if b2_rows is not None and b2_trace is not None and not args.disable_stable_window_assistance:
+                if primary_rows is not None and primary_trace is not None and not args.disable_stable_window_assistance:
                     assistance_request = {
                         "schema_version": "stable_window_assistance_request_v3_local_subsegment",
                         "baseline_request_hash": baseline_hash,
@@ -2128,7 +2827,7 @@ def main() -> int:
                     if assistance_payload is None:
                         assistance_payload = with_auxiliary_identity(
                             stable_window_assistance_summary(
-                                args=args, rows=b2_rows, trace=b2_trace, gt=gt,
+                                args=args, rows=primary_rows, trace=primary_trace, gt=gt,
                                 total_characters=len(document.characters),
                             ),
                             assistance_request,
@@ -2146,9 +2845,9 @@ def main() -> int:
                         try:
                             trial_result = run_stable_window_assistance_trials(
                                 args=args, processor=processor, model=model, audio=audio,
-                                document=document, gt=gt, rows=b2_rows, trace=b2_trace,
+                                document=document, gt=gt, rows=primary_rows, trace=primary_trace,
                                 assistance=assistance_payload, item=item,
-                                baseline_payload=b2_payload, item_root=item_root,
+                                baseline_payload=primary_payload, item_root=item_root,
                             )
                         except Exception as exc:
                             trial_result = {
@@ -2163,18 +2862,20 @@ def main() -> int:
                         assistance_trials = with_auxiliary_identity(trial_result, trial_request)
                         atomic_json(trial_path, assistance_trials)
                 if (
-                    b2_trace is not None
+                    primary_trace is not None
                     and item.get("profile") != "local_segment"
                     and not args.disable_forced_expansion_trials
                 ):
                     expansion_request = {
-                        "schema_version": "forced_candidate_expansion_request_v2_stable_prefix_guard",
+                        "schema_version": "text_dosage_request_v3_under_exact_over_start_end",
                         "baseline_request_hash": baseline_hash,
                         "max_trials_per_item": args.max_expansion_trials_per_item,
+                        "end_deltas": list(args.text_dosage_end_deltas),
+                        "start_deltas": list(args.text_dosage_start_deltas),
                         "ratios": [1.25, 1.50],
                         "attempt_probe_max_rows": args.attempt_probe_max_rows,
                     }
-                    expansion_path = item_root / "forced_expansion_trials.json"
+                    expansion_path = item_root / "text_dosage_trials.json"
                     expansion_payload = current_auxiliary_payload(
                         expansion_path, canonical_hash(expansion_request), force=args.force,
                     )
@@ -2182,12 +2883,12 @@ def main() -> int:
                         try:
                             expansion_result = run_forced_expansion_trials(
                                 args=args, processor=processor, model=model, audio=audio,
-                                document=document, gt=gt, rows=b2_rows or [], trace=b2_trace,
+                                document=document, gt=gt, rows=primary_rows or [], trace=primary_trace,
                                 assistance=assistance_payload,
                             )
                         except Exception as exc:
                             expansion_result = {
-                                "schema_version": "forced_candidate_expansion_trials_v2_isolated_failure",
+                                "schema_version": "text_dosage_trials_v3_isolated_failure",
                                 "status": "failed",
                                 "window_count": 0,
                                 "variant_run_count": 0,
@@ -2198,7 +2899,7 @@ def main() -> int:
                         expansion_payload = with_auxiliary_identity(expansion_result, expansion_request)
                         atomic_json(expansion_path, expansion_payload)
                 if (
-                    b2_rows is not None and b2_trace is not None and shadow_payload is not None
+                    primary_rows is not None and primary_trace is not None and shadow_payload is not None
                     and not args.disable_pending_confirmation_shadow
                 ):
                     pending_request = {
@@ -2222,10 +2923,10 @@ def main() -> int:
                             )
                             pending_result = run_pending_confirmation_shadow(
                                 args=args, item=item, processor=processor, model=model, audio=audio,
-                                document=document, gt=gt, rows=b2_rows, trace=b2_trace,
-                                shadow_payload=shadow_payload, baseline_payload=b2_payload,
+                                document=document, gt=gt, rows=primary_rows, trace=primary_trace,
+                                shadow_payload=shadow_payload, baseline_payload=primary_payload,
                                 item_root=item_root,
-                                immediate_rows=list(immediate_alignment.get("characters", [])) or b2_rows,
+                                immediate_rows=list(immediate_alignment.get("characters", [])) or primary_rows,
                             )
                         except Exception as exc:
                             pending_result = {
@@ -2237,7 +2938,7 @@ def main() -> int:
                         pending_payload = with_auxiliary_identity(pending_result, pending_request)
                         atomic_json(pending_path, pending_payload)
                 if (
-                    b2_rows is not None and b2_trace is not None
+                    primary_rows is not None and primary_trace is not None
                     and item.get("profile") != "local_segment"
                     and not args.disable_tail_rollback_shadow
                 ):
@@ -2253,8 +2954,8 @@ def main() -> int:
                     if tail_rollback_payload is None:
                         try:
                             tail_result = run_tail_rollback_shadow(
-                                args=args, audio=audio, document=document, gt=gt, rows=b2_rows,
-                                trace=b2_trace, processor=processor, model=model,
+                                args=args, audio=audio, document=document, gt=gt, rows=primary_rows,
+                                trace=primary_trace, processor=processor, model=model,
                             )
                         except Exception as exc:
                             tail_result = {
@@ -2265,21 +2966,21 @@ def main() -> int:
                             }
                         tail_rollback_payload = with_auxiliary_identity(tail_result, tail_request)
                         atomic_json(tail_path, tail_rollback_payload)
-                if args.construct_incomplete_cases and b2_payload is not None:
+                if args.construct_incomplete_cases and primary_payload is not None:
                     constructed_candidates: list[dict[str, Any]] = []
-                    if item.get("incomplete_exercise") and b2_rows:
-                        tail_units = min(8, len(b2_rows))
+                    if item.get("incomplete_exercise") and primary_rows:
+                        tail_units = min(8, len(primary_rows))
                         constructed_candidates = [{
-                            "window_index": int(b2_rows[-1].get("owner_window_index", -1)),
-                            "character_start": len(b2_rows) - tail_units,
-                            "character_end": len(b2_rows) - 1,
+                            "window_index": int(primary_rows[-1].get("owner_window_index", -1)),
+                            "character_start": len(primary_rows) - tail_units,
+                            "character_end": len(primary_rows) - 1,
                             "reasons": ["constructed_incomplete_tail_exercise"],
                             "severity": tail_units,
                             "candidate_source": "constructed_incomplete_exercise",
                             "range_source": "deterministic_tail_exercise",
                         }]
                     incomplete_summary = construct_incomplete_guard(
-                        item=item, baseline_payload=b2_payload, candidates=constructed_candidates,
+                        item=item, baseline_payload=primary_payload, candidates=constructed_candidates,
                         out_path=item_root / "incomplete_guard" / "alignment.json", gt=gt,
                         constructed_for_validation=True, automatic_shadow_only=False,
                     )
@@ -2289,11 +2990,11 @@ def main() -> int:
                             decision["trigger"] for decision in shadow_payload.get("decisions", [])
                             if decision.get("trigger")
                             and decision.get("candidate_source") == "automatic_precommit"
-                            and not decision.get("would_write")
+                            and not decision.get("automatic_gate_accepted_shadow")
                             and int((decision.get("trigger") or {}).get("severity", 0)) >= 4
                         ]
                     automatic_incomplete_summary = construct_incomplete_guard(
-                        item=item, baseline_payload=b2_payload, candidates=automatic_candidates,
+                        item=item, baseline_payload=primary_payload, candidates=automatic_candidates,
                         out_path=item_root / "automatic_incomplete_shadow" / "alignment.json", gt=gt,
                         constructed_for_validation=False, automatic_shadow_only=True,
                     )
@@ -2319,9 +3020,10 @@ def main() -> int:
                     "stable_window_assistance_trials": None if assistance_trials is None else {
                         key: value for key, value in assistance_trials.items() if key != "trials"
                     },
-                    "forced_expansion_trials": None if expansion_payload is None else {
-                        key: value for key, value in expansion_payload.items() if key != "windows"
+                    "text_dosage_trials": None if expansion_payload is None else {
+                        key: value for key, value in expansion_payload.items() if key not in {"windows", "results"}
                     },
+                    "forced_expansion_trials_legacy_alias": None,
                     "deferred_realign_shadow": None if pending_payload is None else {
                         key: value for key, value in pending_payload.items() if key != "cases"
                     },
@@ -2331,15 +3033,25 @@ def main() -> int:
                     "tail_two_window_rollback_shadow": None if tail_rollback_payload is None else {
                         key: value for key, value in tail_rollback_payload.items() if key != "cases"
                     },
+                    "raw_decoder_ablations": raw_decoder_ablations,
                     "legacy_r2_comparison": legacy_comparison_payload,
                     "synthetic_seam_gt_summary": seam_gt_payload,
                     "incomplete_guard": incomplete_summary,
                     "automatic_incomplete_shadow": automatic_incomplete_summary,
                 }
+                item_summary["item_identity"] = {
+                    "request_hash": item_request_hash,
+                    "request": item_request_payload,
+                    "resume_safe": True,
+                }
                 atomic_json(item_root / "item_summary.json", item_summary)
+                run_state.finish_item(
+                    item_id, status="complete", request_hash=item_request_hash,
+                    outputs=item_expected_outputs,
+                )
                 summaries.append(item_summary)
-                append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "complete", "item_ordinal": item_ordinal, "item_total": len(items)})
-                print(json.dumps({"stage": "experiment", "status": "item_complete", "item": f"{item_ordinal}/{len(items)}", "item_id": item_id}, ensure_ascii=False), flush=True)
+                append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "complete", "item_ordinal": item_ordinal, "item_total": len(prepared)})
+                print(json.dumps({"stage": "experiment", "status": "item_complete", "item": f"{item_ordinal}/{len(prepared)}", "item_id": item_id}, ensure_ascii=False), flush=True)
             except Exception as exc:
                 failure = {
                     "item_id": item_id,
@@ -2350,8 +3062,12 @@ def main() -> int:
                 }
                 failures.append(failure)
                 atomic_json(item_root / "failure.json", failure)
-                append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "failed", "error": str(exc), "item_ordinal": item_ordinal, "item_total": len(items)})
-                print(json.dumps({"stage": "experiment", "status": "item_failed", "item": f"{item_ordinal}/{len(items)}", "item_id": item_id, "error": f"{type(exc).__name__}: {exc}"}, ensure_ascii=False), flush=True)
+                run_state.finish_item(
+                    item_id, status="failed", request_hash=item_request_hash,
+                    outputs=item_expected_outputs, error=f"{type(exc).__name__}: {exc}",
+                )
+                append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "failed", "error": str(exc), "item_ordinal": item_ordinal, "item_total": len(prepared)})
+                print(json.dumps({"stage": "experiment", "status": "item_failed", "item": f"{item_ordinal}/{len(prepared)}", "item_id": item_id, "error": f"{type(exc).__name__}: {exc}"}, ensure_ascii=False), flush=True)
                 if args.fail_fast:
                     raise
     finally:
@@ -2365,12 +3081,14 @@ def main() -> int:
             pass
 
     aggregate = {
-        "schema_version": "inline_realign_experiment_summary_v1",
+        "schema_version": "inline_realign_experiment_summary_v2_resumable_full_suite",
         "created_at": utc_now(),
         "manifest": str(args.manifest),
         "item_count": len(items),
         "completed_item_count": len(summaries),
         "failed_item_count": len(failures),
+        "resume_skipped_item_count": skipped_item_count,
+        "executed_item_count": len(prepared),
         "variants": VARIANTS,
         "items": summaries,
         "failures": failures,

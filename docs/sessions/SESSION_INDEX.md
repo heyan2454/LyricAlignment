@@ -8,6 +8,7 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-07-28 | `20260728_inline_realign_v4_full_implementation_archive.md` | hot | Formal-v3 evidence review, user discussion, rejected/adopted/pending decisions, strict resume, postposed rendering, strict silence, synchronized stable crops, text dosage, gate/raw ablations and complete v4 implementation map. |
 | 2026-07-28 | `20260728_long_range_visual_detector_stable_deferred_experiment_implementation.md` | hot | Full-Demo visual experiment suite, four-way K-song videos, zero/short-duration distributions, corrected stable-anchor S1–S3, immediate/deferred realign R1–R3, YAML one-click execution, live status and bounded evidence. |
 | 2026-07-28 | `20260728_multilingual_inline_realign_completion_archive.md` | hot | Dynamic all-discovered multilingual Test Demo, completed stable/expansion trials, detector P/R, clean harm, exact/+2/+4 consensus, pending/tail rollback/incomplete shadows, legacy R2 comparison, multi-duration M4Singer and link-only publishing. |
 | 2026-07-28 | `20260728_inline_realign_followup_experiments.md` | hot | Localized anomaly ranges, GT-oracle local realign, stable-segment window/cursor assistance with active reruns, forced future-text expansion, fail-closed incomplete outputs, expanded Demo/MIR-1K/M4Singer coverage, align-all-then-render discipline. |
