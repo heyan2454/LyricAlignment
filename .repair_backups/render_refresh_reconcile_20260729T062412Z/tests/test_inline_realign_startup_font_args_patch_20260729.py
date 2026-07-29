@@ -83,13 +83,10 @@ def test_merge_preserves_latest_control_and_visual_features() -> None:
         force=False, invalidated_stages=["experiment"]
     )
     source = Path(pipeline.__file__).read_text(encoding="utf-8")
-    assert '"--video-pages-mode", "off"' in source
-    assert '"--video-pages-only"' in source
-    assert 'name="video_pages"' in source
+    assert '"--video-pages-mode", "off" if args.render_mode == "skip" else "on"' in source
 
     visual_source = (
         Path(__file__).resolve().parents[1]
         / "scripts/demo/analyze_inline_realign_visuals.py"
     ).read_text(encoding="utf-8")
-    assert 'timeline_{key}.png' in visual_source
-    assert '"--video-pages-only"' in visual_source
+    assert '"full_timeline.png"' in visual_source

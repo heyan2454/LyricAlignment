@@ -102,13 +102,9 @@ def main()->int:
             if not visual or not alignment: raise FileNotFoundError(f"visual/alignment missing for {item_id}")
             audio=Path(str(item.get("mix_audio_path") or item["audio_path"])).expanduser().resolve()
             request={
-                "schema_version":"inline_realign_render_item_request_v3_page_aware_pointer",
+                "schema_version":"inline_realign_render_item_request_v2_pages",
                 "item_id":item_id,"primary_variant":primary_variant,"visual_sha256":sha256(visual_path),"alignment_sha256":sha256(alignment_path),
                 "audio_sha256":sha256(audio),"font":font,"profile":args.profile,
-                "renderer_implementation":[
-                    file_identity(Path(__file__).resolve()),
-                    file_identity(ROOT/"src/lyricalign/demo/timeline_video.py"),
-                ],
                 "page_groups":{key:[{"path":page["path"],"start":page["start_sec"],"end":page["end_sec"]} for page in visual.get("pages",{}).get(group,[])] for key,group in {"behavior":"behavior","window":"comparison_window","realign":"comparison_realign","realign_execution":"comparison_realign_execution","decoder":"comparison_decoder"}.items()},
             }
             request_hash=canonical_hash(request); old=read_json(state_path)
@@ -144,7 +140,7 @@ def main()->int:
             atomic_state(state_path,{"schema_version":"inline_realign_render_item_state_v2","item_id":item_id,"status":"failed","finished_at":utc_now(),"error":failure["error"]})
             print(json.dumps({"stage":"render",**failure,"status":"failed"},ensure_ascii=False),flush=True)
     payload={
-        "schema_version":"inline_realign_demo_render_batch_v6_page_aware_pointer","analysis_completed_before_render":True,
+        "schema_version":"inline_realign_demo_render_batch_v5_resumable_pages","analysis_completed_before_render":True,
         "demo_item_count":len(demo_items),"rendered_item_count":sum(row.get("status")=="complete" for row in results),
         "resume_skipped_item_count":skipped,"complete_item_count":sum(row.get("status") in {"complete","resume_skipped"} for row in results),"failed_item_count":len(failures),"font":font,"profile":args.profile,"primary_variant":primary_variant,
         "videos_per_item":["behavior_current","comparison_window_mechanism","comparison_realign_mechanism","comparison_realign_execution","comparison_decoder_stages"],

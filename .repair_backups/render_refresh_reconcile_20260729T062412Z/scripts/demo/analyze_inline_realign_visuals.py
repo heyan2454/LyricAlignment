@@ -292,11 +292,7 @@ def behavior_annotations(base: dict[str,Any], spans: list[dict[str,Any]], page_s
     return [f"窗口数：{len(windows)}",f"稳定候选：{stable}",f"重对齐区间：{realign}",f"策略：{policy or '见窗口边界'}"]
 
 
-def render_item(
-    item: dict[str,Any], root: Path, *, font: str, timeline_page_seconds: float,
-    behavior_page_seconds: float, comparison_tokens: list[str],
-    generate_video_pages: bool, generate_static: bool = True,
-) -> dict[str,Any]:
+def render_item(item: dict[str,Any], root: Path, *, font: str, timeline_page_seconds: float, behavior_page_seconds: float, comparison_tokens: list[str], generate_video_pages: bool) -> dict[str,Any]:
     item_id=str(item["item_id"]); item_root=root/"items"/item_id; visual_root=item_root/"visuals"
     visual_root.mkdir(parents=True,exist_ok=True)
     validate_expected_experimental(item,root,item_root)
@@ -345,88 +341,59 @@ def render_item(
     spans,cases=realign_spans(item_root)
     stable_evidence_spans=stable_spans(item_root,primary)
 
-    page_keys=(
-        "decoder","window_core","window_strict","window_compression","window_raw_control",
-        "stable","realign","behavior","comparison_window","comparison_realign",
-        "comparison_realign_execution","comparison_decoder",
-    )
-    video_page_keys={
-        "behavior","comparison_window","comparison_realign",
-        "comparison_realign_execution","comparison_decoder",
-    }
-    existing_analysis=read_json(visual_root/"visual_analysis.json") if not generate_static else {}
-    existing_pages=existing_analysis.get("pages") if isinstance(existing_analysis.get("pages"),dict) else {}
-    pages={key:list(existing_pages.get(key) or []) for key in page_keys}
-    if generate_static:
-        pages={key:[] for key in page_keys}
-    if generate_video_pages:
-        for key in video_page_keys:
-            pages[key]=[]
-    outputs=[]
-    if not generate_static:
-        outputs=[
-            Path(str(value)).expanduser().resolve()
-            for value in existing_analysis.get("expected_outputs",[])
-            if value and "video_pages" not in Path(str(value)).parts
-        ]
-    duration_outputs=dict(existing_analysis.get("duration_distributions") or {})
-    inconsistency_outputs=dict(existing_analysis.get("inconsistency") or {})
-    case_outputs=list(existing_analysis.get("realign_case_images") or [])
+    outputs=[]; pages={"decoder":[],"window_core":[],"window_strict":[],"window_compression":[],"window_raw_control":[],"stable":[],"realign":[],"behavior":[],"comparison_window":[],"comparison_realign":[],"comparison_realign_execution":[],"comparison_decoder":[]}
+    timeline_groups=[
+        ("decoder","解码与提交层次",decoder_tracks,None,windows),
+        ("window_core","Core长度与静音吸附",window_timeline_groups["window_core"],None,[]),
+        ("window_strict","静音吸附与严格静音边界",window_timeline_groups["window_strict"],None,[]),
+        ("window_compression","连续音频与全静音压缩诊断",window_timeline_groups["window_compression"],None,[]),
+        ("window_raw_control","处理器推进与原始输出推进",window_timeline_groups["window_raw_control"],None,[]),
+        ("stable","稳定区同步裁剪消融",[(f"{primary_label}基线",ordered_rows(primary)),*stable_tracks],stable_evidence_spans,windows),
+        ("realign","局部重对齐行为",[(f"{primary_label}基线",ordered_rows(primary)),*realign_tracks],spans,windows),
+    ]
+    full_width = full_timeline_pixel_width(duration)
+    full_start, full_end = 0.0, max(duration, 0.1)
+    for key,title,tracks,track_spans,page_windows in timeline_groups:
+        if not tracks: continue
+        out=visual_root/f"timeline_{key}.png"
+        meta=render_timeline_page(output=out,tracks=tracks,windows=page_windows,start=full_start,end=full_end,title=f"{title}｜全曲时间轴",font=font,spans=track_spans,pixel_width=full_width)
+        pages[key].append(meta); outputs.append(out)
+
+    duration_outputs={}
+    for key,title,tracks in [
+        ("decoder","单字时长离散概率分布：解码层次",decoder_tracks),
+        ("window_core","单字时长离散概率分布：Core与静音吸附",window_groups["window_core"]),
+        ("window_strict","单字时长离散概率分布：严格静音边界",window_groups["window_strict"]),
+        ("window_compression","单字时长离散概率分布：静音压缩诊断",window_groups["window_compression"]),
+        ("window_raw_control","单字时长离散概率分布：原始输出推进控制",window_groups["window_raw_control"]),
+        ("stable","单字时长离散概率分布：稳定区同步裁剪",[("基线",ordered_rows(primary)),*stable_tracks]),
+        ("realign","单字时长离散概率分布：局部重对齐",[("基线",ordered_rows(primary)),*realign_tracks]),
+    ]:
+        if not tracks: continue
+        out=visual_root/f"duration_{key}.png"; duration_outputs[key]=render_duration_pmf(output=out,tracks=tracks,title=title,font=font); outputs.append(out)
+
+    inconsistency_outputs={}
+    out=visual_root/"inconsistency_decoder.png"; inconsistency_outputs["decoder"]=render_inconsistency(output=out,tracks=[decoder_tracks[0],decoder_tracks[1],decoder_tracks[-1]],title="原始逐槽结果、处理器解码与最终提交的歌词序号—时间及最大差",font=font); outputs.append(out)
+    out=visual_root/"inconsistency_commit.png"; inconsistency_outputs["commit"]=render_inconsistency(output=out,tracks=[decoder_tracks[1],decoder_tracks[2],decoder_tracks[3]],title="处理器解码、窗口选中与最终提交的差异",font=font); outputs.append(out)
+    # Window inconsistency uses per-window shadow predictions when available.
+    shadow_tracks=[]
+    for window in windows:
+        rows=ordered_rows(window.get("shadow_rows") or [])
+        if rows: shadow_tracks.append((f"窗{window.get('window_index')}",rows))
+    if shadow_tracks:
+        out=visual_root/"inconsistency_windows.png"; inconsistency_outputs["windows"]=render_inconsistency(output=out,tracks=shadow_tracks,title="同一歌词单位在不同窗口中的时间分歧",font=font,heatmap_label="相对跨窗中位时间偏差（秒）"); outputs.append(out)
+
+    case_outputs=[]
     baseline_rows=ordered_rows(primary)
-
-    if generate_static:
-        timeline_groups=[
-            ("decoder","解码与提交层次",decoder_tracks,None,windows),
-            ("window_core","Core长度与静音吸附",window_timeline_groups["window_core"],None,[]),
-            ("window_strict","静音吸附与严格静音边界",window_timeline_groups["window_strict"],None,[]),
-            ("window_compression","连续音频与全静音压缩诊断",window_timeline_groups["window_compression"],None,[]),
-            ("window_raw_control","处理器推进与原始输出推进",window_timeline_groups["window_raw_control"],None,[]),
-            ("stable","稳定区同步裁剪消融",[(f"{primary_label}基线",ordered_rows(primary)),*stable_tracks],stable_evidence_spans,windows),
-            ("realign","局部重对齐行为",[(f"{primary_label}基线",ordered_rows(primary)),*realign_tracks],spans,windows),
-        ]
-        full_width = full_timeline_pixel_width(duration)
-        full_start, full_end = 0.0, max(duration, 0.1)
-        for key,title,tracks,track_spans,page_windows in timeline_groups:
-            if not tracks: continue
-            out=visual_root/f"timeline_{key}.png"
-            meta=render_timeline_page(output=out,tracks=tracks,windows=page_windows,start=full_start,end=full_end,title=f"{title}｜全曲时间轴",font=font,spans=track_spans,pixel_width=full_width)
-            pages[key].append(meta); outputs.append(out)
-
-        duration_outputs={}
-        for key,title,tracks in [
-            ("decoder","单字时长离散概率分布：解码层次",decoder_tracks),
-            ("window_core","单字时长离散概率分布：Core与静音吸附",window_groups["window_core"]),
-            ("window_strict","单字时长离散概率分布：严格静音边界",window_groups["window_strict"]),
-            ("window_compression","单字时长离散概率分布：静音压缩诊断",window_groups["window_compression"]),
-            ("window_raw_control","单字时长离散概率分布：原始输出推进控制",window_groups["window_raw_control"]),
-            ("stable","单字时长离散概率分布：稳定区同步裁剪",[("基线",ordered_rows(primary)),*stable_tracks]),
-            ("realign","单字时长离散概率分布：局部重对齐",[("基线",ordered_rows(primary)),*realign_tracks]),
-        ]:
-            if not tracks: continue
-            out=visual_root/f"duration_{key}.png"; duration_outputs[key]=render_duration_pmf(output=out,tracks=tracks,title=title,font=font); outputs.append(out)
-
-        inconsistency_outputs={}
-        out=visual_root/"inconsistency_decoder.png"; inconsistency_outputs["decoder"]=render_inconsistency(output=out,tracks=[decoder_tracks[0],decoder_tracks[1],decoder_tracks[-1]],title="原始逐槽结果、处理器解码与最终提交的歌词序号—时间及最大差",font=font); outputs.append(out)
-        out=visual_root/"inconsistency_commit.png"; inconsistency_outputs["commit"]=render_inconsistency(output=out,tracks=[decoder_tracks[1],decoder_tracks[2],decoder_tracks[3]],title="处理器解码、窗口选中与最终提交的差异",font=font); outputs.append(out)
-        # Window inconsistency uses per-window shadow predictions when available.
-        shadow_tracks=[]
-        for window in windows:
-            rows=ordered_rows(window.get("shadow_rows") or [])
-            if rows: shadow_tracks.append((f"窗{window.get('window_index')}",rows))
-        if shadow_tracks:
-            out=visual_root/"inconsistency_windows.png"; inconsistency_outputs["windows"]=render_inconsistency(output=out,tracks=shadow_tracks,title="同一歌词单位在不同窗口中的时间分歧",font=font,heatmap_label="相对跨窗中位时间偏差（秒）"); outputs.append(out)
-
-        case_outputs=[]
-        baseline_rows=ordered_rows(primary)
-        for position,case in enumerate(cases):
-            tracks=realign_case_tracks(case,baseline_rows)
-            if len(tracks)<2: continue
-            all_rows=[row for _,rows in tracks for row in rows]
-            start=min(float(r["start_sec"]) for r in all_rows)-0.5; end=max(float(r["end_sec"]) for r in all_rows)+0.5
-            reason=display_text(case.get("reason") or case.get("gate_reason") or "待判断")
-            out=visual_root/"realign_cases"/f"case_{position:03d}.png"
-            render_timeline_page(output=out,tracks=tracks,windows=[],start=max(0,start),end=max(start+0.1,end),title=f"{case.get('case_kind','局部重对齐')}｜{reason}",font=font,pixel_width=3000,annotations=[f"目标字符：{case.get('target_start')}–{case.get('target_end')}",f"判定规则：{display_text(case.get('accepted_gate_kind') or case.get('gate_kind') or case.get('non_gt_gate') or '-')}"])
-            case_outputs.append(str(out)); outputs.append(out)
+    for position,case in enumerate(cases):
+        tracks=realign_case_tracks(case,baseline_rows)
+        if len(tracks)<2: continue
+        all_rows=[row for _,rows in tracks for row in rows]
+        start=min(float(r["start_sec"]) for r in all_rows)-0.5; end=max(float(r["end_sec"]) for r in all_rows)+0.5
+        reason=display_text(case.get("reason") or case.get("gate_reason") or "待判断")
+        out=visual_root/"realign_cases"/f"case_{position:03d}.png"
+        render_timeline_page(output=out,tracks=tracks,windows=[],start=max(0,start),end=max(start+0.1,end),title=f"{case.get('case_kind','局部重对齐')}｜{reason}",font=font,pixel_width=3000,annotations=[f"目标字符：{case.get('target_start')}–{case.get('target_end')}",f"判定规则：{display_text(case.get('accepted_gate_kind') or case.get('gate_kind') or case.get('non_gt_gate') or '-')}"])
+        case_outputs.append(str(out)); outputs.append(out)
 
     # Fixed-scale reusable pages for Demo videos.  They contain full glyph tracks,
     # while the render stage only adds a moving pointer and audio.
@@ -470,9 +437,9 @@ def render_item(
                 meta=render_timeline_page(output=out,tracks=tracks,windows=[] if key=="comparison_window" else windows,start=start,end=end,title=title,font=font,spans=spans if key=="comparison_realign" else None,pixel_width=1920,pixel_height=1080,video_layout=True)
                 pages[key].append(meta); outputs.append(out)
 
-    require_files(outputs,"可视化输出")
+    require_files(outputs,"静态可视化")
     analysis={
-        "schema_version":"inline_realign_visual_analysis_v6_bounded_layout_page_pointer",
+        "schema_version":"inline_realign_visual_analysis_v5_character_mechanism",
         "item_id":item_id,"duration_sec":duration,"font":font,"pages":pages,
         "duration_distributions":duration_outputs,"inconsistency":inconsistency_outputs,
         "realign_case_images":case_outputs,"structural":{
@@ -535,10 +502,6 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--comparison-branches",default="B0_60_fixed_official,B2_30_silence_official,B4_60_silence_official,B5_30_strict_silence_official")
     p.add_argument("--font",default="Noto Sans CJK SC")
     p.add_argument("--video-pages-mode", choices=("on", "off"), default="on")
-    p.add_argument(
-        "--video-pages-only", action="store_true",
-        help="reuse existing static diagnostics and rebuild only fixed-scale Demo video pages",
-    )
     p.add_argument("--resume",action="store_true")
     p.add_argument("--force",action="store_true")
     p.add_argument("--restart-item",action="append",default=[])
@@ -547,12 +510,9 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args=parser().parse_args(); root=args.experiment_root.expanduser().resolve(); manifest=read_jsonl(args.manifest.expanduser().resolve())
-    if args.video_pages_only and args.video_pages_mode != "on":
-        raise SystemExit("--video-pages-only requires --video-pages-mode on")
     font=detect_font(args.font); tokens=[v.strip() for v in args.comparison_branches.split(",") if v.strip()]
     results=[]; failures=[]; skipped=0; restart={str(value) for value in args.restart_item}
-    state_root=root/("state/video_page_items" if args.video_pages_only else "state/visual_items")
-    state_root.mkdir(parents=True,exist_ok=True)
+    state_root=root/"state/visual_items"; state_root.mkdir(parents=True,exist_ok=True)
     for ordinal,item in enumerate(manifest,1):
         item_id=str(item["item_id"]); item_root=root/"items"/item_id; state_path=state_root/f"{item_id}.json"
         request={
@@ -560,11 +520,6 @@ def main() -> int:
             "item_id":item_id,"font":font,"timeline_page_seconds":args.timeline_page_seconds,
             "behavior_page_seconds":args.behavior_page_seconds,"comparison_tokens":tokens,
             "video_pages_mode": args.video_pages_mode,
-            "video_pages_only": args.video_pages_only,
-            "visual_implementation": [
-                file_identity(Path(__file__).resolve()),
-                file_identity(ROOT/"src/lyricalign/demo/visual_diagnostics.py"),
-            ],
             "sources":visual_source_identity(root,item_root),
         }
         request_hash=canonical_hash(request); old=read_json(state_path); expected=visual_expected_outputs(item_root)
@@ -580,16 +535,11 @@ def main() -> int:
             "request":request,"request_hash":request_hash,"expected_outputs":[str(path) for path in expected],
         })
         try:
-            result=render_item(
-                item,root,font=font,timeline_page_seconds=args.timeline_page_seconds,
-                behavior_page_seconds=args.behavior_page_seconds,comparison_tokens=tokens,
-                generate_video_pages=args.video_pages_mode=="on",
-                generate_static=not args.video_pages_only,
-            )
+            result=render_item(item,root,font=font,timeline_page_seconds=args.timeline_page_seconds,behavior_page_seconds=args.behavior_page_seconds,comparison_tokens=tokens,generate_video_pages=args.video_pages_mode=="on")
             expected=[Path(str(value)).expanduser().resolve() for value in result.get("expected_outputs",[]) if value]
             analysis_path=item_root/"visuals/visual_analysis.json"
             if analysis_path not in expected: expected.append(analysis_path)
-            require_files(expected,"可视化完整性")
+            require_files(expected,"静态可视化完整性")
             atomic_json(state_path,{
                 "schema_version":"inline_realign_visual_item_state_v1","item_id":item_id,"status":"complete",
                 "request_hash":request_hash,"expected_outputs":[str(path) for path in expected],
@@ -605,11 +555,11 @@ def main() -> int:
             })
             print(json.dumps({"stage":"visualization","item_id":item_id,"status":"failed","error":str(exc)},ensure_ascii=False),flush=True)
     payload={
-        "schema_version":"inline_realign_visualization_summary_v7_bounded_layout_resumable",
+        "schema_version":"inline_realign_visualization_summary_v6_character_mechanism_resumable",
         "item_count":len(manifest),"complete_count":len(results),
         "new_complete_count":sum(row.get("status")=="complete" for row in results),
         "resume_skipped_item_count":skipped,"failed_count":len(failures),
-        "font":font,"video_pages_only":args.video_pages_only,"results":results,"failures":failures,
+        "font":font,"results":results,"failures":failures,
     }
     atomic_json(root/"visualization_summary.json",payload)
     return 0 if not failures else 1

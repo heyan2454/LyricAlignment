@@ -225,7 +225,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--resume", action="store_true")
     p.add_argument("--retry-failed-only", action="store_true")
     p.add_argument("--restart-item", action="append", default=[])
-    p.add_argument("--from-stage", choices=("manifest", "experiment", "summary", "visualization", "collection", "video_pages", "render"))
+    p.add_argument("--from-stage", choices=("manifest", "experiment", "summary", "visualization", "collection", "render"))
     p.add_argument("--invalidate-stage", action="append", default=[])
     p.add_argument("--force", action="store_true")
     return p
@@ -332,25 +332,19 @@ def main() -> int:
     status_path = root / "pipeline_status.jsonl"
     state = RunState(root)
 
-    # Freeze only files that can change model inference, serial planning or the
-    # experiment artifact schema.  Presentation code has its own stage identity;
-    # changing plots or video encoding must not invalidate expensive old model runs.
     implementation_files = [
+        ROOT / "scripts/demo/run_inline_realign_pipeline.py",
         ROOT / "scripts/demo/run_inline_realign_experiment.py",
         ROOT / "scripts/demo/align_qwen_fa_serial_demo.py",
-        ROOT / "scripts/demo/build_inline_realign_manifest.py",
-        ROOT / "src/lyricalign/demo/window_planning.py",
-        ROOT / "src/lyricalign/demo/inline_realign.py",
-        ROOT / "src/lyricalign/demo/alignment_artifacts.py",
-    ]
-    presentation_files = [
-        ROOT / "scripts/demo/run_inline_realign_pipeline.py",
         ROOT / "scripts/demo/analyze_inline_realign_visuals.py",
         ROOT / "scripts/demo/render_inline_realign_demo_batch.py",
+        ROOT / "src/lyricalign/demo/window_planning.py",
+        ROOT / "src/lyricalign/demo/run_state.py",
         ROOT / "src/lyricalign/demo/visual_diagnostics.py",
         ROOT / "src/lyricalign/demo/timeline_video.py",
         ROOT / "scripts/demo/summarize_inline_realign_followup.py",
         ROOT / "scripts/demo/collect_inline_realign_evidence.py",
+        ROOT / "scripts/demo/build_inline_realign_manifest.py",
     ]
     run_identity = {
         "schema_version": "inline_realign_pipeline_identity_v1",
@@ -388,7 +382,7 @@ def main() -> int:
             "silence_compression_min_sec": args.silence_compression_min_sec,
             "silence_compression_padding_sec": args.silence_compression_padding_sec,
         },
-        "experiment_implementation": _script_identity(implementation_files),
+        "implementation": _script_identity(implementation_files),
     }
     state.initialize(run_identity, resume=args.resume)
     for stage_name in args.invalidate_stage:
@@ -399,7 +393,6 @@ def main() -> int:
         "schema_version": "inline_realign_pipeline_request_v4_resumable_full_suite",
         "created_at": utc_now(), "run_identity_hash": canonical_hash(run_identity),
         "effective": vars(args), "config": config_payload,
-        "presentation_implementation": _script_identity(presentation_files),
     }
     serializable = json.loads(json.dumps(request_record, default=str))
     atomic_json(root / "pipeline_request.json", serializable)
@@ -419,7 +412,7 @@ def main() -> int:
     max_tail = args.max_tail_rollback_cases_per_item if args.max_tail_rollback_cases_per_item is not None else 0
     mir1k_roles = args.mir1k_roles or ("development" if args.mode == "smoke" else "development,quick_v2_extra,spare")
 
-    stages = ["manifest", "experiment", "summary", "visualization", "collection", "video_pages", "render"]
+    stages = ["manifest", "experiment", "summary", "visualization", "collection", "render"]
     from_index = stages.index(args.from_stage) if args.from_stage else 0
     partial_failure = False
     render_failure = False
@@ -507,7 +500,7 @@ def main() -> int:
                 "--timeline-page-seconds", str(args.timeline_page_seconds),
                 "--behavior-page-seconds", str(args.timeline_page_seconds),
                 "--comparison-branches", args.comparison_branches, "--font", args.font,
-                "--video-pages-mode", "off",
+                "--video-pages-mode", "off" if args.render_mode == "skip" else "on",
             ]
             if args.resume: command.append("--resume")
             for item_id in args.restart_item: command += ["--restart-item", item_id]
@@ -561,31 +554,6 @@ def main() -> int:
             })
 
         if args.render_mode == "after" and from_index <= 5:
-            command = [
-                args.python_bin, "scripts/demo/analyze_inline_realign_visuals.py",
-                "--manifest", str(manifest_path), "--experiment-root", str(root),
-                "--timeline-page-seconds", str(args.timeline_page_seconds),
-                "--behavior-page-seconds", str(args.timeline_page_seconds),
-                "--comparison-branches", args.comparison_branches, "--font", args.font,
-                "--video-pages-mode", "on", "--video-pages-only",
-            ]
-            if args.resume: command.append("--resume")
-            for item_id in args.restart_item: command += ["--restart-item", item_id]
-            if args.force or "video_pages" in args.invalidate_stage or "visualization" in args.invalidate_stage:
-                command.append("--force")
-            rc = run_stage(
-                name="video_pages", command=command, root=root, status_path=status_path, state=state,
-                request={
-                    "command": command,
-                    "experiment": file_identity(root / "experiment_summary.json"),
-                    "analysis_complete": file_identity(root / "analysis_complete.json"),
-                },
-                expected_outputs=[root / "visualization_summary.json"], resume=args.resume,
-                allowed_returncodes={0, 1}, allow_stage_resume_skip=False,
-            )
-            partial_failure |= rc == 1
-
-        if args.render_mode == "after" and from_index <= 6:
             command = [
                 args.python_bin, "scripts/demo/render_inline_realign_demo_batch.py",
                 "--manifest", str(manifest_path), "--experiment-root", str(root),

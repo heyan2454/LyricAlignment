@@ -163,37 +163,18 @@ def _visible_rows(rows: Iterable[dict[str, Any]], start: float, end: float) -> l
     return sorted(result, key=lambda row: (min(float(row["start_sec"]), float(row["end_sec"])), row_index(row)))
 
 
-def assign_lanes(
-    rows: Iterable[dict[str, Any]], *, minimum_width: float = 0.08,
-    max_lanes: int | None = None,
-) -> tuple[list[tuple[dict[str, Any], int]], int]:
-    """Pack intervals into lanes without allowing malformed rows to explode height.
-
-    When ``max_lanes`` is reached, additional overlapping rows are placed in the
-    earliest-free lane and marked as visual overflow.  The time data are not
-    changed; only the diagnostic presentation is bounded.
-    """
+def assign_lanes(rows: Iterable[dict[str, Any]], *, minimum_width: float = 0.08) -> tuple[list[tuple[dict[str, Any], int]], int]:
     lane_ends: list[float] = []
     assigned: list[tuple[dict[str, Any], int]] = []
-    for source_row in rows:
-        row = dict(source_row)
+    for row in rows:
         left = min(float(row["start_sec"]), float(row["end_sec"]))
         right = max(float(row["start_sec"]), float(row["end_sec"]))
         visual_right = max(right, left + minimum_width)
         lane = next((i for i, lane_end in enumerate(lane_ends) if left >= lane_end + 0.015), None)
-        overflow = False
         if lane is None:
-            if max_lanes is not None and max_lanes > 0 and len(lane_ends) >= max_lanes:
-                lane = min(range(len(lane_ends)), key=lane_ends.__getitem__)
-                overflow = True
-                lane_ends[lane] = max(lane_ends[lane], visual_right)
-            else:
-                lane = len(lane_ends)
-                lane_ends.append(visual_right)
+            lane = len(lane_ends); lane_ends.append(visual_right)
         else:
             lane_ends[lane] = visual_right
-        if overflow:
-            row["visual_lane_overflow"] = True
         assigned.append((row, lane))
     return assigned, max(1, len(lane_ends))
 
@@ -257,16 +238,7 @@ def draw_track_windows(
 
 
 def _row_display_label(row: dict[str, Any]) -> str:
-    return f"{row_index(row)} {row_text(row)}"
-
-
-def _adaptive_row_label(row: dict[str, Any], width_px: float) -> str:
-    """Keep labels readable instead of forcing every index into every glyph box."""
-    if bool(row.get("visual_lane_overflow")) or width_px < 14.0:
-        return ""
-    if width_px < 34.0:
-        return row_text(row)
-    return _row_display_label(row)
+    return f"{row_index(row)}:{row_text(row)}"
 
 
 class _CollapsedGroup(dict):
@@ -322,84 +294,40 @@ def _group_collapsed_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, An
     return positive, collapsed
 
 
-def _track_layout(
-    rows: list[dict[str, Any]], *, start: float, end: float, max_lanes: int | None,
-) -> tuple[list[tuple[dict[str, Any], int]], int, list[tuple[dict[str, Any], int]], int]:
-    visible = _visible_rows(rows, start, end)
-    normal_rows, collapsed_groups = _group_collapsed_rows(visible)
-    assigned, lane_count = assign_lanes(normal_rows, max_lanes=max_lanes)
-    collapsed_assigned, collapsed_lane_count = assign_lanes(
-        collapsed_groups, minimum_width=0.02, max_lanes=max_lanes,
-    )
-    return assigned, lane_count, collapsed_assigned, collapsed_lane_count
-
-
-def _track_height(
-    rows: list[dict[str, Any]], *, start: float, end: float, max_lanes: int | None,
-) -> float:
-    _, lane_count, collapsed_assigned, collapsed_lane_count = _track_layout(
-        rows, start=start, end=end, max_lanes=max_lanes,
-    )
-    height = max(0.45, lane_count * 0.32)
-    if collapsed_assigned:
-        height += 0.12 + max(0.45, collapsed_lane_count * 0.32)
-    return height + 0.18
-
-
 def draw_track(
     ax: Any, *, rows: list[dict[str, Any]], label: str, y_top: float,
     start: float, end: float, font_size: float = 8.0,
-    pixels_per_second: float = 80.0, max_lanes: int | None = None,
 ) -> float:
-    _, Rectangle, _ = import_plotting(None)
-    assigned, lane_count, collapsed_assigned, collapsed_lane_count = _track_layout(
-        rows, start=start, end=end, max_lanes=max_lanes,
-    )
+    _, Rectangle, FancyArrowPatch = import_plotting(None)
+    visible = _visible_rows(rows, start, end)
+    normal_rows, collapsed_groups = _group_collapsed_rows(visible)
+    assigned, lane_count = assign_lanes(normal_rows)
+    collapsed_assigned, collapsed_lane_count = assign_lanes(collapsed_groups, minimum_width=0.02)
     lane_height = 0.32
     for row, lane in assigned:
-        raw_x0 = min(float(row["start_sec"]), float(row["end_sec"]))
-        raw_x1 = max(float(row["start_sec"]), float(row["end_sec"]))
-        x0 = max(start, raw_x0)
-        x1 = min(end, raw_x1)
-        if x1 <= x0:
-            continue
+        x0 = float(row["start_sec"]); x1 = float(row["end_sec"])
         y = y_top - lane * lane_height
-        overflow = bool(row.get("visual_lane_overflow"))
         color = character_color(row_index(row), 0.80)
+        text = _row_display_label(row)
         width = x1 - x0
-        ax.add_patch(Rectangle(
-            (x0, y - 0.095), width, 0.19, facecolor=color, edgecolor=color,
-            linewidth=0.35 if overflow else 0.55, alpha=0.18 if overflow else 0.43, zorder=3,
-        ))
-        text = _adaptive_row_label(row, width * pixels_per_second)
-        if text:
-            ax.text(
-                (x0 + x1) / 2, y, text, ha="center", va="center", fontsize=font_size,
-                color="black", clip_on=True, zorder=5,
-            )
-        if raw_x0 < start:
-            ax.text(start + 0.015, y, "←", ha="left", va="center", fontsize=max(6.5, font_size - 1), clip_on=True, zorder=6)
-        if raw_x1 > end:
-            ax.text(end - 0.015, y, "→", ha="right", va="center", fontsize=max(6.5, font_size - 1), clip_on=True, zorder=6)
+        ax.add_patch(Rectangle((x0, y-0.095), width, 0.19, facecolor=color, edgecolor=color,
+                               linewidth=0.55, alpha=0.43, zorder=3))
+        ax.text((x0+x1)/2, y, text, ha="center", va="center", fontsize=font_size,
+                color="black", clip_on=True, zorder=5)
     collapsed_top = y_top - max(0.45, lane_count * lane_height) - 0.10 if collapsed_assigned else y_top
     for group, lane in collapsed_assigned:
-        x = min(end, max(start, float(group["start_sec"])))
+        x = float(group["start_sec"])
         y = collapsed_top - lane * lane_height
         text = _collapsed_group_label(group)
         color = "#b22222" if group["kind"] == "negative" else "#8b4513"
-        ax.vlines(x, y - 0.11, y + 0.11, linewidth=2.2, color=color, zorder=4)
-        if pixels_per_second >= 32:
-            ax.text(
-                x, y + 0.13, text, ha="center", va="bottom",
-                fontsize=max(font_size - 0.2, 6.8), color=color, clip_on=True, zorder=5,
-            )
+        ax.vlines(x, y-0.11, y+0.11, linewidth=2.2, color=color, zorder=4)
+        ax.text(x, y+0.13, text, ha="center", va="bottom", fontsize=max(font_size - 0.2, 6.8),
+                color=color, clip_on=True, zorder=5)
     block_height = max(0.45, lane_count * lane_height)
     if collapsed_assigned:
         block_height += 0.12 + max(0.45, collapsed_lane_count * lane_height)
-    ax.text(
-        start - max(0.18, (end - start) * 0.008), y_top - (block_height - 0.22) / 2, label,
-        ha="right", va="center", fontsize=9, fontweight="bold",
-    )
+    ax.text(start - max(0.18, (end-start)*0.008), y_top - (block_height-0.22)/2, label,
+            ha="right", va="center", fontsize=9, fontweight="bold")
     ax.hlines(y_top - block_height - 0.05, start, end, linewidth=0.3, alpha=0.25)
     return block_height + 0.18
 
@@ -412,12 +340,11 @@ def render_timeline_page(
     video_layout: bool = False,
 ) -> dict[str, Any]:
     plt, _, _ = import_plotting(font)
+    lane_heights = []
     unpacked_tracks=[_unpack_track(track) for track in tracks]
-    max_lanes = 3 if video_layout else 12
-    lane_heights = [
-        _track_height(rows, start=start, end=end, max_lanes=max_lanes)
-        for _, rows, _ in unpacked_tracks
-    ]
+    for _, rows, _ in unpacked_tracks:
+        _, count = assign_lanes(_visible_rows(rows, start, end))
+        lane_heights.append(max(0.45, count*0.32)+0.18)
     total_height = sum(lane_heights) + 1.15
     if pixel_height is None:
         pixel_height = max(520, int(total_height * 145))
@@ -425,8 +352,7 @@ def render_timeline_page(
     # Video pages reserve a real subtitle band instead of drawing the model
     # mechanism behind the karaoke overlay.  The timeline remains the visual
     # center while subtitles occupy the lower, intentionally flattened band.
-    axes_box = [0.07, 0.23, 0.91, 0.66] if video_layout else [0.07, 0.10, 0.91, 0.82]
-    ax = fig.add_axes(axes_box)
+    ax = fig.add_axes([0.07, 0.23, 0.91, 0.66] if video_layout else [0.07, 0.10, 0.91, 0.82])
     y_top = total_height - 0.35
     draw_windows(ax, windows, start=start, end=end, y_min=0, y_max=total_height)
     if spans:
@@ -466,18 +392,7 @@ def render_timeline_page(
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=100)
     plt.close(fig)
-    left, bottom, width_fraction, height_fraction = axes_box
-    return {
-        "path": str(output), "start_sec": start, "end_sec": end,
-        "width": pixel_width, "height": pixel_height,
-        "timeline_axis_px": {
-            "left": int(round(left * pixel_width)),
-            "right": int(round((left + width_fraction) * pixel_width)),
-            "top": int(round((1.0 - bottom - height_fraction) * pixel_height)),
-            "bottom": int(round((1.0 - bottom) * pixel_height)),
-        },
-        "lane_cap": max_lanes,
-    }
+    return {"path": str(output), "start_sec": start, "end_sec": end, "width": pixel_width, "height": pixel_height}
 
 
 def render_duration_pmf(
@@ -524,14 +439,10 @@ def render_inconsistency(
     import numpy as np
     indices, starts, ends, names = _stage_matrix(tracks)
     fig = plt.figure(figsize=(24, 13))
-    grid = fig.add_gridspec(
-        3, 2, height_ratios=[2.2, 1.1, 1.5], width_ratios=[1.0, 0.025],
-        hspace=0.18, wspace=0.04,
-    )
-    ax1 = fig.add_subplot(grid[0, 0])
-    ax2 = fig.add_subplot(grid[1, 0], sharex=ax1)
-    ax3 = fig.add_subplot(grid[2, 0], sharex=ax1)
-    colorbar_axis = fig.add_subplot(grid[2, 1])
+    grid = fig.add_gridspec(3, 1, height_ratios=[2.2, 1.1, 1.5], hspace=0.18)
+    ax1 = fig.add_subplot(grid[0])
+    ax2 = fig.add_subplot(grid[1], sharex=ax1)
+    ax3 = fig.add_subplot(grid[2], sharex=ax1)
     for name, start_values, end_values in zip(names, starts, ends):
         ax1.plot(indices, start_values, linewidth=1.0, label=f"{name} 起点")
         ax1.plot(indices, end_values, linewidth=1.0, linestyle="--", label=f"{name} 终点")
@@ -573,7 +484,7 @@ def render_inconsistency(
     ax3.set_xlabel("全局歌词序号")
     ax3.set_title("偏差热力图（灰色为空缺）")
     image.cmap.set_bad("lightgray")
-    fig.colorbar(image, cax=colorbar_axis, label=heatmap_label)
+    fig.colorbar(image, ax=ax3, label=heatmap_label, pad=0.01)
     for axis in (ax1, ax2):
         axis.tick_params(labelbottom=False)
         axis.set_xlim(left, right)
