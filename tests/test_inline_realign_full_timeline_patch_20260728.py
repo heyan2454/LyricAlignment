@@ -35,9 +35,9 @@ def test_group_collapsed_rows_compacts_adjacent_zero_and_negative() -> None:
 
 def test_full_timeline_pixel_width_is_wider_and_bounded() -> None:
     module = load_script('inline_visual_full_timeline_patch', 'analyze_inline_realign_visuals.py')
-    assert module.full_timeline_pixel_width(5.0) == 6000
-    assert module.full_timeline_pixel_width(240.0) == 19200
-    assert module.full_timeline_pixel_width(1000.0) == 36000
+    assert module.full_timeline_pixel_width(5.0) == 12000
+    assert module.full_timeline_pixel_width(240.0) == 38400
+    assert module.full_timeline_pixel_width(1000.0) == 64000
 
 
 def test_render_inconsistency_supports_shared_index_axis(tmp_path: Path) -> None:

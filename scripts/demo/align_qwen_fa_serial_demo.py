@@ -40,6 +40,7 @@ from lyricalign.demo.window_planning import (
     build_strict_silence_boundary_window_plan,
     compress_silence_audio,
     map_compressed_time_to_original,
+    project_silence_aware_plan_to_compressed_timeline,
 )
 from lyricalign.demo.inline_realign import (
     analyze_precommit_trial, attempt_probe_rows, compare_attempt_probes,
@@ -574,7 +575,7 @@ def _remap_compressed_alignment(
     mapped_trace = convert(traces)
     for trace in mapped_trace:
         trace["silence_compression_mapping"] = mapping
-        trace["window_plan_policy"] = "silence_compressed_diagnostic_v1"
+        trace["window_plan_policy"] = "silence_compressed_with_original_snap_v2"
     return mapped_rows, mapped_trace
 
 
@@ -599,6 +600,19 @@ def windowed_alignment(
     compress_mode = bool(getattr(args, "compress_silence_audio", False))
     if compress_mode and not bool(getattr(args, "_silence_compression_inner", False)):
         activity_profile = build_vocal_activity_profile(audio)
+        original_plan = build_silence_aware_window_plan(
+            duration,
+            activity_profile,
+            target_core_sec=float(args.core_sec),
+            left_context_sec=float(args.left_context_sec),
+            right_context_sec=float(args.right_context_sec),
+            min_silence_sec=float(getattr(args, "silence_boundary_min_sec", 0.8)),
+            strong_silence_sec=float(getattr(args, "strong_silence_anchor_sec", 1.5)),
+            boundary_search_sec=float(getattr(args, "silence_boundary_search_sec", 6.0)),
+            leading_silence_min_sec=float(getattr(args, "leading_silence_min_sec", 2.0)),
+            tail_min_core_sec=float(getattr(args, "tail_min_core_sec", 18.0)),
+            minimum_core_sec=float(getattr(args, "minimum_core_sec", 12.0)),
+        )
         compressed_audio, mapping = compress_silence_audio(
             audio, activity_profile,
             min_silence_sec=float(getattr(args, "silence_boundary_min_sec", 0.8)),
@@ -606,18 +620,30 @@ def windowed_alignment(
             remove_silence_sec=float(getattr(args, "silence_compression_min_sec", getattr(args, "strong_silence_anchor_sec", 1.5))),
             keep_edge_padding_sec=float(getattr(args, "silence_compression_padding_sec", 0.20)),
         )
+        compressed_plan = project_silence_aware_plan_to_compressed_timeline(
+            original_plan, mapping,
+        )
         inner_args = SimpleNamespace(**vars(args))
         inner_args.compress_silence_audio = False
         inner_args._silence_compression_inner = True
         inner_args.silence_aware_window_plan = False
         inner_args.strict_silence_boundary_plan = False
+        inner_args._precomputed_window_plan = compressed_plan
         rows, traces = windowed_alignment(
             processor, model, compressed_audio, document, inner_args, progress_callback=progress_callback,
         )
         mapped_rows, mapped_traces = _remap_compressed_alignment(rows, traces, mapping)
         setattr(args, "generated_silence_compression_mapping", mapping)
+        setattr(args, "generated_window_plan", {
+            **original_plan,
+            "schema_version": "silence_compressed_original_clock_plan_v2",
+            "policy": "original_silence_snap_with_compressed_audio_input",
+            "compressed_window_plan": compressed_plan,
+            "silence_compression_mapping": mapping,
+        })
         return mapped_rows, mapped_traces
 
+    precomputed_window_plan = getattr(args, "_precomputed_window_plan", None)
     use_silence_plan = bool(getattr(args, "silence_aware_window_plan", False))
     use_strict_silence_plan = bool(getattr(args, "strict_silence_boundary_plan", False))
     need_activity = (
@@ -627,7 +653,13 @@ def windowed_alignment(
     )
     activity_profile = build_vocal_activity_profile(audio) if need_activity else None
     window_plan = None
-    if use_strict_silence_plan:
+    if precomputed_window_plan is not None:
+        window_plan = dict(precomputed_window_plan)
+        windows = list(window_plan.get("windows") or [])
+        if not windows:
+            raise RuntimeError("precomputed window plan contains no windows")
+        setattr(args, "generated_window_plan", window_plan)
+    elif use_strict_silence_plan:
         assert activity_profile is not None
         window_plan = build_strict_silence_boundary_window_plan(
             duration,

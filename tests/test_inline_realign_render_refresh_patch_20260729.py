@@ -17,14 +17,14 @@ def test_progress_pointer_resets_for_each_page() -> None:
         {
             "start_sec": 0.0,
             "end_sec": 1.0,
-            "width": 1920,
+            "width": 3840,
             "height": 1080,
             "timeline_axis_px": {"left": 100, "right": 1800, "top": 100, "bottom": 800},
         },
         {
             "start_sec": 1.0,
             "end_sec": 2.0,
-            "width": 1920,
+            "width": 3840,
             "height": 1080,
             "timeline_axis_px": {"left": 120, "right": 1750, "top": 100, "bottom": 800},
         },

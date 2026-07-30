@@ -231,29 +231,84 @@ def _unpack_track(track: tuple[Any, ...]) -> tuple[str, list[dict[str, Any]], li
 
 def draw_track_windows(
     ax: Any, windows: list[dict[str, Any]], *, start: float, end: float,
-    y_bottom: float, y_top: float,
+    y_bottom: float, y_top: float, color: str,
 ) -> None:
-    """Draw one branch's input/core boundaries only inside its own row."""
+    """Draw one branch's boundaries inside the exact vertical extent of that track.
+
+    Core boundaries remain full-height solid lines.  Input-context edges are
+    deliberately rendered as short dotted ticks near the top of the track so
+    they cannot be mistaken for actual core splits.
+    """
+    height = max(0.01, y_top - y_bottom)
+    input_tick_bottom = y_top - min(0.14, max(0.045, height * 0.16))
+
+    # A compressed branch is mapped back to the original clock, so genuinely
+    # removed silence appears as a temporal gap between adjacent cores.  Mark
+    # that gap explicitly instead of leaving an ambiguous white strip that can
+    # be mistaken for a track-height/layout failure.
+    compression_mapping = next(
+        (window.get("silence_compression_mapping") for window in windows
+         if isinstance(window.get("silence_compression_mapping"), dict)),
+        None,
+    )
+    if compression_mapping is not None:
+        for interval in compression_mapping.get("removed_intervals", []):
+            removed_start = float(interval.get("start_sec", 0.0))
+            removed_end = float(interval.get("end_sec", removed_start))
+            left = max(start, removed_start)
+            right = min(end, removed_end)
+            if right <= left:
+                continue
+            ax.fill_between(
+                [left, right], y_bottom, y_top,
+                facecolor="#b7b7b7", edgecolor="#777777", hatch="////",
+                linewidth=0.0, alpha=0.24, zorder=0.5,
+            )
+            if (right - left) >= max(0.7, (end - start) * 0.025):
+                ax.text(
+                    (left + right) / 2.0, y_bottom + min(0.10, height * 0.12),
+                    "输入中已移除静音", ha="center", va="bottom", fontsize=5.8,
+                    color="#555555", clip_on=True, zorder=6,
+                )
+
     for position, window in enumerate(windows):
-        core_start=float(window.get("core_start_sec",0.0));core_end=float(window.get("core_end_sec",core_start))
-        input_start=float(window.get("effective_input_start_sec",window.get("input_start_sec",core_start)))
-        input_end=float(window.get("input_end_sec",window.get("effective_input_end_sec",core_end)))
-        if core_end < start or core_start > end: continue
-        left=max(start,core_start);right=min(end,core_end)
-        if right>left:
-            ax.fill_between([left,right],y_bottom,y_top,alpha=0.055 if position%2==0 else 0.10,zorder=0)
-        for boundary in (input_start,input_end):
-            if start<=boundary<=end:
-                ax.vlines(boundary,y_bottom,y_top,linestyle=":",linewidth=0.75,alpha=0.60,zorder=1)
-        for boundary in (core_start,core_end):
-            if start<=boundary<=end:
-                ax.vlines(boundary,y_bottom,y_top,linewidth=1.4,alpha=0.78,zorder=1)
-        if start<=core_start<=end:
-            ax.text(core_start+0.015,y_top-0.02,f"窗{window.get('window_index')}",fontsize=6,va="top",clip_on=True)
+        core_start = float(window.get("core_start_sec", 0.0))
+        core_end = float(window.get("core_end_sec", core_start))
+        input_start = float(window.get("effective_input_start_sec", window.get("input_start_sec", core_start)))
+        input_end = float(window.get("effective_input_end_sec", window.get("input_end_sec", core_end)))
+        if core_end < start or core_start > end:
+            continue
+        left = max(start, core_start)
+        right = min(end, core_end)
+        if right > left:
+            ax.fill_between(
+                [left, right], y_bottom, y_top, color=color,
+                alpha=0.075 if position % 2 == 0 else 0.14, zorder=0,
+            )
+        for boundary in (input_start, input_end):
+            if start <= boundary <= end:
+                ax.vlines(
+                    boundary, input_tick_bottom, y_top, color=color,
+                    linestyle=":", linewidth=0.9, alpha=0.78, zorder=2,
+                )
+        for boundary in (core_start, core_end):
+            if start <= boundary <= end:
+                ax.vlines(
+                    boundary, y_bottom, y_top, color=color,
+                    linewidth=1.45, alpha=0.88, zorder=2,
+                )
+        if start <= core_start <= end:
+            ax.text(
+                core_start + 0.015, y_top - 0.02, f"窗{window.get('window_index')}",
+                fontsize=6, va="top", color=color, clip_on=True, zorder=6,
+            )
         if "strict" in str(window.get("window_plan_policy") or ""):
-            for boundary in (window.get("strict_region_start_sec"),window.get("strict_region_end_sec")):
-                if boundary is not None and start<=float(boundary)<=end:
-                    ax.vlines(float(boundary),y_bottom,y_top,linewidth=2.8,alpha=0.90,zorder=1)
+            for boundary in (window.get("strict_region_start_sec"), window.get("strict_region_end_sec")):
+                if boundary is not None and start <= float(boundary) <= end:
+                    ax.vlines(
+                        float(boundary), y_bottom, y_top, color=color,
+                        linewidth=2.8, alpha=0.95, zorder=2,
+                    )
 
 
 def _row_display_label(row: dict[str, Any]) -> str:
@@ -273,53 +328,116 @@ class _CollapsedGroup(dict):
     pass
 
 
+COLLAPSED_TIME_CLUSTER_TOLERANCE_SEC = 0.12
+
+
+def _compress_index_ranges(indices: list[int]) -> str:
+    ordered = sorted(set(int(value) for value in indices))
+    if not ordered:
+        return ""
+    ranges: list[tuple[int, int]] = []
+    run_start = run_end = ordered[0]
+    for value in ordered[1:]:
+        if value == run_end + 1:
+            run_end = value
+            continue
+        ranges.append((run_start, run_end))
+        run_start = run_end = value
+    ranges.append((run_start, run_end))
+    return ", ".join(str(left) if left == right else f"{left}-{right}" for left, right in ranges)
+
+
+def _collapsed_text_runs(entries: list[dict[str, Any]]) -> str:
+    ordered = sorted(entries, key=lambda item: int(item["index"]))
+    if not ordered:
+        return ""
+    runs: list[list[dict[str, Any]]] = [[ordered[0]]]
+    for item in ordered[1:]:
+        if int(item["index"]) == int(runs[-1][-1]["index"]) + 1:
+            runs[-1].append(item)
+        else:
+            runs.append([item])
+    labels: list[str] = []
+    for run in runs:
+        first_text = str(run[0].get("text") or "")
+        last_text = str(run[-1].get("text") or first_text)
+        labels.append(first_text if len(run) == 1 else f"{first_text}-{last_text}")
+    return "，".join(labels)
+
+
 def _collapsed_group_label(group: dict[str, Any]) -> str:
-    start_index = int(group["start_index"])
-    end_index = int(group["end_index"])
-    start_text = str(group["start_text"] or "")
-    end_text = str(group["end_text"] or start_text)
+    entries = list(group.get("entries") or [])
+    if not entries:
+        start_index = int(group["start_index"])
+        end_index = int(group["end_index"])
+        entries = [
+            {"index": start_index, "text": str(group.get("start_text") or "")},
+            {"index": end_index, "text": str(group.get("end_text") or "")},
+        ] if end_index != start_index else [
+            {"index": start_index, "text": str(group.get("start_text") or "")},
+        ]
     prefix = "坍缩" if group["kind"] == "negative" else "零时长"
-    return f"{prefix}[{start_index}-{end_index}] {start_text}-{end_text}" if end_index != start_index else f"{prefix}[{start_index}] {start_text}"
+    index_text = _compress_index_ranges([int(item["index"]) for item in entries])
+    lyric_text = _collapsed_text_runs(entries)
+    return f"{prefix} [{index_text}] {lyric_text}".rstrip()
 
 
 def _group_collapsed_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Cluster zero/negative rows by timing, not only by adjacent lyric index.
+
+    Decoder collapse often places non-contiguous lyric indices on the same or
+    neighbouring 80 ms timestamp.  Rendering each run separately recreates the
+    visual pile-up.  Rows of the same kind whose representative times differ by
+    at most 120 ms are therefore summarized in one label, while the original
+    indices and text-run boundaries remain visible.
+    """
     positive: list[dict[str, Any]] = []
-    collapsed: list[dict[str, Any]] = []
-    current: dict[str, Any] | None = None
+    candidates: list[dict[str, Any]] = []
     for row in rows:
         start_sec = float(row["start_sec"])
         end_sec = float(row["end_sec"])
         kind = "negative" if end_sec < start_sec - 1e-9 else "zero" if end_sec <= start_sec + 1e-9 else None
         if kind is None:
-            if current is not None:
-                collapsed.append(current)
-                current = None
             positive.append(row)
             continue
-        idx = row_index(row)
-        if current is None or current["kind"] != kind or idx != int(current["end_index"]) + 1:
-            if current is not None:
-                collapsed.append(current)
-            current = {
-                "kind": kind,
-                "start_index": idx,
-                "end_index": idx,
-                "start_text": row_text(row),
-                "end_text": row_text(row),
-                "times": [start_sec, end_sec],
-            }
-        else:
-            current["end_index"] = idx
-            current["end_text"] = row_text(row)
-            current["times"].extend([start_sec, end_sec])
-    if current is not None:
-        collapsed.append(current)
+        candidates.append({
+            "kind": kind,
+            "index": row_index(row),
+            "text": row_text(row),
+            "time": (start_sec + end_sec) / 2.0,
+        })
+
+    collapsed: list[dict[str, Any]] = []
+    for item in sorted(candidates, key=lambda value: (value["kind"], float(value["time"]), int(value["index"]))):
+        current = collapsed[-1] if collapsed else None
+        if (
+            current is None
+            or current["kind"] != item["kind"]
+            or abs(float(item["time"]) - float(current["center_sec"])) > COLLAPSED_TIME_CLUSTER_TOLERANCE_SEC
+        ):
+            collapsed.append({
+                "kind": item["kind"],
+                "entries": [{"index": int(item["index"]), "text": str(item["text"])}],
+                "times": [float(item["time"])],
+                "center_sec": float(item["time"]),
+            })
+            continue
+        current["entries"].append({"index": int(item["index"]), "text": str(item["text"])})
+        current["times"].append(float(item["time"]))
+        current["center_sec"] = sum(current["times"]) / len(current["times"])
+
     for group in collapsed:
-        times = [float(value) for value in group.pop("times")]
-        center = sum(times) / max(1, len(times))
-        group["start_sec"] = center
-        group["end_sec"] = center
-    return positive, collapsed
+        entries = sorted(group["entries"], key=lambda item: int(item["index"]))
+        group["entries"] = entries
+        group["start_index"] = int(entries[0]["index"])
+        group["end_index"] = int(entries[-1]["index"])
+        group["start_text"] = str(entries[0].get("text") or "")
+        group["end_text"] = str(entries[-1].get("text") or "")
+        group["start_sec"] = float(group["center_sec"])
+        group["end_sec"] = float(group["center_sec"])
+        group.pop("times", None)
+        group.pop("center_sec", None)
+    return positive, sorted(collapsed, key=lambda value: (float(value["start_sec"]), value["kind"]))
 
 
 def _track_layout(
@@ -334,26 +452,41 @@ def _track_layout(
     return assigned, lane_count, collapsed_assigned, collapsed_lane_count
 
 
-def _track_height(
-    rows: list[dict[str, Any]], *, start: float, end: float, max_lanes: int | None,
+def _track_block_height(
+    layout: tuple[
+        list[tuple[dict[str, Any], int]], int,
+        list[tuple[dict[str, Any], int]], int,
+    ],
 ) -> float:
-    _, lane_count, collapsed_assigned, collapsed_lane_count = _track_layout(
-        rows, start=start, end=end, max_lanes=max_lanes,
-    )
+    _, lane_count, collapsed_assigned, collapsed_lane_count = layout
     height = max(0.45, lane_count * 0.32)
     if collapsed_assigned:
         height += 0.12 + max(0.45, collapsed_lane_count * 0.32)
-    return height + 0.18
+    return height
+
+
+def _track_height(
+    rows: list[dict[str, Any]], *, start: float, end: float, max_lanes: int | None,
+) -> float:
+    return _track_block_height(
+        _track_layout(rows, start=start, end=end, max_lanes=max_lanes)
+    ) + 0.18
 
 
 def draw_track(
     ax: Any, *, rows: list[dict[str, Any]], label: str, y_top: float,
     start: float, end: float, font_size: float = 8.0,
     pixels_per_second: float = 80.0, max_lanes: int | None = None,
+    layout: tuple[
+        list[tuple[dict[str, Any], int]], int,
+        list[tuple[dict[str, Any], int]], int,
+    ] | None = None,
 ) -> float:
     _, Rectangle, _ = import_plotting(None)
-    assigned, lane_count, collapsed_assigned, collapsed_lane_count = _track_layout(
-        rows, start=start, end=end, max_lanes=max_lanes,
+    assigned, lane_count, collapsed_assigned, collapsed_lane_count = (
+        layout
+        if layout is not None
+        else _track_layout(rows, start=start, end=end, max_lanes=max_lanes)
     )
     lane_height = 0.32
     for row, lane in assigned:
@@ -393,9 +526,9 @@ def draw_track(
                 x, y + 0.13, text, ha="center", va="bottom",
                 fontsize=max(font_size - 0.2, 6.8), color=color, clip_on=True, zorder=5,
             )
-    block_height = max(0.45, lane_count * lane_height)
-    if collapsed_assigned:
-        block_height += 0.12 + max(0.45, collapsed_lane_count * lane_height)
+    block_height = _track_block_height(
+        (assigned, lane_count, collapsed_assigned, collapsed_lane_count)
+    )
     ax.text(
         start - max(0.18, (end - start) * 0.008), y_top - (block_height - 0.22) / 2, label,
         ha="right", va="center", fontsize=9, fontweight="bold",
@@ -408,54 +541,121 @@ def render_timeline_page(
     *, output: Path, tracks: list[tuple[Any, ...]], windows: list[dict[str, Any]],
     start: float, end: float, title: str, font: str | None = None,
     spans: list[dict[str, Any]] | None = None, annotations: list[str] | None = None,
-    pixel_width: int = 2800, pixel_height: int | None = None,
+    pixel_width: int = 5600, pixel_height: int | None = None,
     video_layout: bool = False,
 ) -> dict[str, Any]:
     plt, _, _ = import_plotting(font)
-    unpacked_tracks=[_unpack_track(track) for track in tracks]
+    unpacked_tracks = [_unpack_track(track) for track in tracks]
     max_lanes = 3 if video_layout else 12
-    lane_heights = [
-        _track_height(rows, start=start, end=end, max_lanes=max_lanes)
+    track_layouts = [
+        _track_layout(rows, start=start, end=end, max_lanes=max_lanes)
         for _, rows, _ in unpacked_tracks
     ]
-    total_height = sum(lane_heights) + 1.15
+    block_heights = [_track_block_height(layout) for layout in track_layouts]
+    consumed_heights = [height + 0.18 for height in block_heights]
+    total_height = sum(consumed_heights) + 0.36
     if pixel_height is None:
         pixel_height = max(520, int(total_height * 145))
-    fig = plt.figure(figsize=(pixel_width/100, pixel_height/100), dpi=100)
+    fig = plt.figure(figsize=(pixel_width / 100, pixel_height / 100), dpi=100)
     # Video pages reserve a real subtitle band instead of drawing the model
     # mechanism behind the karaoke overlay.  The timeline remains the visual
     # center while subtitles occupy the lower, intentionally flattened band.
     axes_box = [0.07, 0.23, 0.91, 0.66] if video_layout else [0.07, 0.10, 0.91, 0.82]
     ax = fig.add_axes(axes_box)
-    y_top = total_height - 0.35
+    pixels_per_second = (pixel_width * axes_box[2]) / max(end - start, 1e-9)
+    y_top = total_height - 0.24
     draw_windows(ax, windows, start=start, end=end, y_min=0, y_max=total_height)
+
+    span_labels: list[dict[str, Any]] = []
     if spans:
         for span in spans:
-            left = span.get("start_sec"); right = span.get("end_sec")
-            if left is None or right is None: continue
-            left=float(left); right=float(right)
-            if right >= start and left <= end:
-                kind=str(span.get("kind") or "realign")
-                style={
-                    "stable_candidate":("#6aa84f",0.045,0.4),
-                    "stable_selected_input":("#38761d",0.16,2.0),
-                    "stable_selected_commit":("#274e13",0.16,2.0),
-                    "realign_accepted":("#3d85c6",0.15,1.8),
-                    "realign_rejected":("#cc0000",0.08,1.0),
-                }.get(kind,("#674ea7",0.10,1.0))
-                color,alpha,linewidth=style
-                ax.axvspan(max(start,left),min(end,right),facecolor=color,edgecolor=color,linewidth=linewidth,alpha=alpha,zorder=1)
-                # All candidates remain visible as bands; text is reserved for
-                # selected anchors and realign decisions to avoid unreadable overlap.
-                if kind != "stable_candidate":
-                    label = str(span.get("label") or span.get("reason") or "重对齐")
-                    ax.text(max(start,left)+0.02,0.08,label,fontsize=7,rotation=90,va="bottom",color=color)
-    for label, rows, track_windows in unpacked_tracks:
-        _, lane_count=assign_lanes(_visible_rows(rows,start,end))
-        block_height=max(0.45,lane_count*0.32)
+            left = span.get("start_sec")
+            right = span.get("end_sec")
+            if left is None or right is None:
+                continue
+            left = float(left)
+            right = float(right)
+            if right < start or left > end:
+                continue
+            kind = str(span.get("kind") or "realign")
+            style = {
+                "stable_candidate": ("#6aa84f", 0.045, 0.4),
+                "stable_selected_input": ("#38761d", 0.16, 2.0),
+                "stable_selected_commit": ("#274e13", 0.16, 2.0),
+                "stable_selected_both": ("#1f5d2f", 0.20, 2.4),
+                "realign_accepted": ("#3d85c6", 0.15, 1.8),
+                "realign_rejected": ("#cc0000", 0.08, 1.0),
+            }.get(kind, ("#674ea7", 0.10, 1.0))
+            color, alpha, linewidth = style
+            clipped_left = max(start, left)
+            clipped_right = min(end, right)
+            ax.axvspan(
+                clipped_left, clipped_right, facecolor=color, edgecolor=color,
+                linewidth=linewidth, alpha=alpha, zorder=1,
+            )
+            if kind != "stable_candidate":
+                span_labels.append({
+                    "left": clipped_left,
+                    "right": clipped_right,
+                    "label": str(span.get("label") or span.get("reason") or "重对齐"),
+                    "color": color,
+                })
+
+    # Selected stable regions often share exactly the same interval.  Labels are
+    # placed in overlap-aware horizontal lanes at the top of the axes instead of
+    # all being rotated at y=0.08, which previously made them overwrite each other.
+    label_lane_ends: list[float] = []
+    label_padding = max(0.05, (end - start) * 0.004)
+    for item in sorted(span_labels, key=lambda row: (row["left"], row["right"], row["label"])):
+        lane = next(
+            (index for index, lane_end in enumerate(label_lane_ends)
+             if item["left"] >= lane_end + label_padding),
+            None,
+        )
+        if lane is None:
+            lane = len(label_lane_ends)
+            label_lane_ends.append(item["right"])
+        else:
+            label_lane_ends[lane] = item["right"]
+        if lane >= 5:
+            continue
+        ax.text(
+            item["left"] + 0.02, 0.985 - lane * 0.045, item["label"],
+            transform=ax.get_xaxis_transform(), fontsize=7, ha="left", va="top",
+            color=item["color"], clip_on=True, zorder=7,
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.72, "pad": 0.5},
+        )
+
+    palette = plt.rcParams["axes.prop_cycle"].by_key().get("color", ["#4c78a8"])
+    track_geometry: list[dict[str, Any]] = []
+    for track_index, ((label, rows, track_windows), layout, block_height, consumed) in enumerate(
+        zip(unpacked_tracks, track_layouts, block_heights, consumed_heights, strict=True)
+    ):
+        track_color = palette[track_index % len(palette)]
+        track_geometry.append({
+            "label": label,
+            "y_top": y_top + 0.12,
+            "y_bottom": y_top - block_height - 0.06,
+            "block_height": block_height,
+            "consumed_height": consumed,
+            "has_track_windows": track_windows is not None,
+        })
         if track_windows is not None:
-            draw_track_windows(ax,track_windows,start=start,end=end,y_bottom=y_top-block_height-0.04,y_top=y_top+0.12)
-        consumed = draw_track(ax, rows=rows, label=label, y_top=y_top, start=start, end=end)
+            draw_track_windows(
+                ax, track_windows, start=start, end=end,
+                y_bottom=y_top - block_height - 0.06,
+                y_top=y_top + 0.12,
+                color=track_color,
+            )
+        actual_consumed = draw_track(
+            ax, rows=rows, label=label, y_top=y_top, start=start, end=end,
+            pixels_per_second=pixels_per_second, max_lanes=max_lanes, layout=layout,
+        )
+        if not math.isclose(actual_consumed, consumed, abs_tol=1e-9):
+            raise RuntimeError(
+                f"timeline track geometry drift for {label}: "
+                f"planned={consumed} drawn={actual_consumed}"
+            )
         y_top -= consumed
     ax.set_xlim(start, end); ax.set_ylim(0, total_height)
     ax.set_yticks([]); ax.set_xlabel("全局时间（秒）")
@@ -477,6 +677,7 @@ def render_timeline_page(
             "bottom": int(round((1.0 - bottom) * pixel_height)),
         },
         "lane_cap": max_lanes,
+        "track_geometry": track_geometry,
     }
 
 
@@ -486,7 +687,7 @@ def render_duration_pmf(
     plt, _, _ = import_plotting(font)
     labels = duration_bin_labels(); x = list(range(len(labels)))
     width = min(0.78/max(len(tracks),1), 0.22)
-    fig, ax = plt.subplots(figsize=(18, 6.5))
+    fig, ax = plt.subplots(figsize=(36, 6.5))
     summaries = {}
     for position, (name, rows) in enumerate(tracks):
         summary = duration_pmf(rows); summaries[name] = summary
@@ -523,7 +724,7 @@ def render_inconsistency(
     plt, _, _ = import_plotting(font)
     import numpy as np
     indices, starts, ends, names = _stage_matrix(tracks)
-    fig = plt.figure(figsize=(24, 13))
+    fig = plt.figure(figsize=(48, 13))
     grid = fig.add_gridspec(
         3, 2, height_ratios=[2.2, 1.1, 1.5], width_ratios=[1.0, 0.025],
         hspace=0.18, wspace=0.04,

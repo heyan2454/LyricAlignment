@@ -447,6 +447,139 @@ def compress_silence_audio(
     }
 
 
+
+def map_original_time_to_compressed(
+    value: float, mapping: dict[str, Any], *, boundary_side: str = "right",
+) -> float:
+    """Map an original-song timestamp onto the silence-compressed clock.
+
+    Removed silence interiors collapse to a single splice coordinate.  The
+    boundary-side argument is retained for symmetry with the inverse mapping;
+    both sides normally share the same compressed coordinate at a splice.
+    """
+    if boundary_side not in {"left", "right"}:
+        raise ValueError(f"unsupported boundary_side: {boundary_side}")
+    segments = sorted(
+        list(mapping.get("kept_segments", [])),
+        key=lambda row: float(row["original_start_sec"]),
+    )
+    if not segments:
+        return float(value)
+    value = float(value)
+    tolerance = 1e-9
+    candidates = [
+        segment for segment in segments
+        if float(segment["original_start_sec"]) - tolerance
+        <= value
+        <= float(segment["original_end_sec"]) + tolerance
+    ]
+    if candidates:
+        segment = candidates[0] if boundary_side == "left" else candidates[-1]
+        original_start = float(segment["original_start_sec"])
+        compressed_start = float(segment["compressed_start_sec"])
+        compressed_end = float(segment["compressed_end_sec"])
+        mapped = compressed_start + max(0.0, value - original_start)
+        return min(compressed_end, mapped)
+    if value < float(segments[0]["original_start_sec"]):
+        return float(segments[0]["compressed_start_sec"])
+    if value > float(segments[-1]["original_end_sec"]):
+        return float(segments[-1]["compressed_end_sec"])
+
+    previous = max(
+        (segment for segment in segments if float(segment["original_end_sec"]) < value),
+        key=lambda row: float(row["original_end_sec"]),
+        default=None,
+    )
+    following = min(
+        (segment for segment in segments if float(segment["original_start_sec"]) > value),
+        key=lambda row: float(row["original_start_sec"]),
+        default=None,
+    )
+    if boundary_side == "left" and previous is not None:
+        return float(previous["compressed_end_sec"])
+    if following is not None:
+        return float(following["compressed_start_sec"])
+    if previous is not None:
+        return float(previous["compressed_end_sec"])
+    return float(value)
+
+
+def project_silence_aware_plan_to_compressed_timeline(
+    original_plan: dict[str, Any], mapping: dict[str, Any],
+) -> dict[str, Any]:
+    """Project a silence-snapped original plan onto silence-removed audio.
+
+    Core boundaries are chosen on the original clock first, using the same
+    silence-snap and tail rules as B2/B4.  Their projected compressed positions
+    become splice boundaries, so a compressed core does not straddle a selected
+    silence.  Input intervals remain contiguous on the compressed clock and
+    therefore contain no removed-silence samples.
+    """
+    compressed_duration = float(mapping.get("compressed_duration_sec", 0.0))
+    windows: list[dict[str, Any]] = []
+    for source in original_plan.get("windows", []):
+        original_core_start = float(source["core_start_sec"])
+        original_core_end = float(source["core_end_sec"])
+        original_input_start = float(source["input_start_sec"])
+        original_input_end = float(source["input_end_sec"])
+        core_start = map_original_time_to_compressed(
+            original_core_start, mapping, boundary_side="right",
+        )
+        core_end = map_original_time_to_compressed(
+            original_core_end, mapping, boundary_side="left",
+        )
+        input_start = map_original_time_to_compressed(
+            original_input_start, mapping, boundary_side="right",
+        )
+        input_end = map_original_time_to_compressed(
+            original_input_end, mapping, boundary_side="left",
+        )
+        if core_end <= core_start + 1e-9:
+            continue
+        windows.append({
+            **source,
+            "window_index": len(windows),
+            "core_start_sec": max(0.0, core_start),
+            "core_end_sec": min(compressed_duration, core_end),
+            "core_duration_sec": max(0.0, core_end - core_start),
+            "input_start_sec": max(0.0, min(input_start, core_start)),
+            "input_end_sec": min(compressed_duration, max(input_end, core_end)),
+            "original_core_start_sec": original_core_start,
+            "original_core_end_sec": original_core_end,
+            "original_input_start_sec": original_input_start,
+            "original_input_end_sec": original_input_end,
+            "window_plan_policy": "silence_compressed_with_original_snap_v2",
+            "input_excludes_removed_silence": True,
+            "compressed_boundary_from_original_silence_snap": True,
+        })
+    if windows:
+        for window in windows:
+            window["is_final_core"] = False
+        windows[-1]["is_final_core"] = True
+    return {
+        "schema_version": "silence_compressed_window_plan_v2",
+        "policy": "original_silence_snap_then_project_to_compressed_audio",
+        "duration_sec": compressed_duration,
+        "target_core_sec": original_plan.get("target_core_sec"),
+        "active_span_start_sec": (
+            float(windows[0]["core_start_sec"]) if windows else 0.0
+        ),
+        "active_span_end_sec": (
+            float(windows[-1]["core_end_sec"]) if windows else compressed_duration
+        ),
+        "active_span_duration_sec": (
+            float(windows[-1]["core_end_sec"] - windows[0]["core_start_sec"])
+            if windows else compressed_duration
+        ),
+        "windows": windows,
+        "original_window_plan": original_plan,
+        "silence_compression_mapping": mapping,
+        "parameters": {
+            "input_excludes_removed_silence": True,
+            "boundary_policy": "original_silence_snap",
+        },
+    }
+
 def map_compressed_time_to_original(
     value: float, mapping: dict[str, Any], *, boundary_side: str = "right",
 ) -> float:

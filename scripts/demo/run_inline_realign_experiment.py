@@ -86,12 +86,12 @@ VARIANTS: dict[str, dict[str, Any]] = {
     },
     "C0_30_silence_compressed_diagnostic": {
         "core_sec": 30.0, "silence_mode": "compressed", "serial_control": "same",
-        "meaning": "30 秒全静音压缩诊断；输出映射回原时间轴",
+        "meaning": "30 秒先按原时间轴静音吸附分窗；模型输入删除长静音后映射回原时间轴",
         "diagnostic_only": True,
     },
     "C1_60_silence_compressed_diagnostic": {
         "core_sec": 60.0, "silence_mode": "compressed", "serial_control": "same",
-        "meaning": "60 秒全静音压缩诊断；输出映射回原时间轴",
+        "meaning": "60 秒先按原时间轴静音吸附分窗；模型输入删除长静音后映射回原时间轴",
         "diagnostic_only": True,
     },
 }
@@ -2517,7 +2517,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cache-dir", type=Path)
     p.add_argument("--local-files-only", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--language", type=normalize_alignment_language, default="Chinese")
-    p.add_argument("--primary-variant", default="B2_30_silence_official")
+    p.add_argument("--primary-variant", default="B4_60_silence_official")
     p.add_argument(
         "--baseline-matrix-variants",
         default=",".join(VARIANTS),

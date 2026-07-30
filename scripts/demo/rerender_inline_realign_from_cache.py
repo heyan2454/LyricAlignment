@@ -125,7 +125,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--timeline-page-seconds", type=float, default=30.0)
     p.add_argument(
         "--comparison-branches",
-        default="B2_30_silence_official,B4_60_silence_official,B5_30_strict_silence_official,B6_60_strict_silence_official",
+        default="B0_60_fixed_official,B4_60_silence_official,C1_60_silence_compressed_diagnostic,B6_60_strict_silence_official",
     )
     p.add_argument("--skip-static", action="store_true")
     p.add_argument("--skip-video-pages", action="store_true")

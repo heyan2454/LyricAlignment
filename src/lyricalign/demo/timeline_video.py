@@ -4,13 +4,14 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from .media_render import VideoGeometry, atomic_json, build_bottom_ass, canonical_hash, sha256
 
 
-OUTPUT_WIDTH = 1920
+OUTPUT_WIDTH = 3840
 OUTPUT_HEIGHT = 1080
 
 
@@ -69,6 +70,27 @@ def _probe_media(path: Path) -> dict[str, Any]:
     return {"duration_sec": format_duration, "streams": payload.get("streams") or []}
 
 
+@lru_cache(maxsize=4)
+def _ffmpeg_cfr_output_options(ffmpeg_binary: str = "ffmpeg") -> tuple[str, ...]:
+    """Select a CFR option supported by both old and new ffmpeg builds."""
+    try:
+        completed = subprocess.run(
+            [ffmpeg_binary, "-hide_banner", "-h", "full"],
+            check=False, capture_output=True, text=True,
+        )
+        help_text = f"{completed.stdout}\n{completed.stderr}"
+    except (OSError, TypeError):
+        # Older wrappers and lightweight test doubles may not support the
+        # capture_output/text keyword set.  -vsync cfr is the broadest fallback.
+        return ("-vsync", "cfr")
+    if "-fps_mode" in help_text:
+        return ("-fps_mode", "cfr")
+    if "-vsync" in help_text:
+        return ("-vsync", "cfr")
+    # The explicit fps filter already produces a constant-rate video stream.
+    return ()
+
+
 def _audio_input_layout_options(path: Path) -> tuple[list[str], dict[str, Any]]:
     """Declare a missing mono/stereo layout so ffmpeg need not guess it."""
     try:
@@ -104,8 +126,10 @@ def render_page_video(
         "final": {"fps": 24, "preset": "medium", "crf": 20, "audio_bitrate": "192k"},
     }[profile]
     duration = float((alignment.get("summary") or {}).get("audio_duration_sec", pages[-1]["end_sec"]))
+    ffmpeg_binary = shutil.which("ffmpeg") or "ffmpeg"
+    cfr_output_options = list(_ffmpeg_cfr_output_options(ffmpeg_binary))
     request = {
-        "schema_version": "inline_realign_timeline_video_v3_page_aware_pointer",
+        "schema_version": "inline_realign_timeline_video_v4_ffmpeg_compatible_cfr",
         "title": title,
         "pages": [
             {
@@ -117,6 +141,7 @@ def render_page_video(
         ],
         "audio_sha256": sha256(audio_track), "font": font, "profile": profile,
         "include_karaoke": include_karaoke, "duration_sec": duration, "settings": settings,
+        "cfr_output_options": cfr_output_options,
     }
     request_hash = canonical_hash(request)
     identity_path = output_path.with_suffix(output_path.suffix + ".identity.json")
@@ -173,12 +198,12 @@ def render_page_video(
     audio_input_options, audio_probe = _audio_input_layout_options(audio_track)
     temporary = output_path.with_suffix(".tmp.mp4")
     command = [
-        "ffmpeg", "-nostdin", "-y", "-v", "warning",
+        ffmpeg_binary, "-nostdin", "-y", "-v", "warning",
         "-f", "concat", "-safe", "0", "-i", str(concat_path),
         *audio_input_options, "-i", str(audio_track),
         "-filter_complex", filter_graph,
         "-map", "[v]", "-map", "1:a:0",
-        "-t", f"{duration:.6f}", "-fps_mode", "cfr",
+        "-t", f"{duration:.6f}", *cfr_output_options,
         "-c:v", "libx264", "-preset", settings["preset"], "-crf", str(settings["crf"]),
         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", settings["audio_bitrate"],
         "-movflags", "+faststart", str(temporary),

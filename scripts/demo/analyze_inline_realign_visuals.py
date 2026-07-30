@@ -62,6 +62,22 @@ BRANCH_LABELS = {
     "C0_30_silence_compressed_diagnostic": "30秒全静音压缩（诊断）",
     "C1_60_silence_compressed_diagnostic": "60秒全静音压缩（诊断）",
 }
+def branch_display_label(token: str, payload: dict[str, Any] | None = None) -> str:
+    """Describe compressed branches according to the cached plan actually used."""
+    base = BRANCH_LABELS.get(token, token)
+    if token not in {
+        "C0_30_silence_compressed_diagnostic",
+        "C1_60_silence_compressed_diagnostic",
+    }:
+        return base
+    trace = list((payload or {}).get("window_trace") or [])
+    policy = str(trace[0].get("window_plan_policy") or "") if trace else ""
+    prefix = "30秒" if token.startswith("C0_") else "60秒"
+    if policy == "silence_compressed_with_original_snap_v2":
+        return f"{prefix}静音吸附＋输入静音压缩（诊断）"
+    return f"{prefix}压缩后固定窗（旧诊断）"
+
+
 STABLE_LABELS = {
     "S0_stable_anchor_only": "原窗口范围重跑，仅冻结稳定区",
     "S1_stable_sync_exact": "从稳定区同步开始",
@@ -182,11 +198,11 @@ def full_timeline_pixel_width(duration: float) -> int:
     minimization.  Use a substantially wider scale than the video pages, while
     still bounding pathological widths.
     """
-    return max(6000, min(36000, int(max(duration, 30.0) * 80.0)))
+    return max(12000, min(64000, int(max(duration, 30.0) * 160.0)))
 
 
 def stable_spans(item_root: Path, baseline: dict[str,Any]) -> list[dict[str,Any]]:
-    """Return all stable candidates plus the selected input/commit anchors."""
+    """Return stable evidence without duplicating coincident selected labels."""
     spans: list[dict[str,Any]] = []
     stable_payload = baseline.get("stable_segments") or {}
     for segment in stable_payload.get("segments",[]) if isinstance(stable_payload,dict) else []:
@@ -198,14 +214,56 @@ def stable_spans(item_root: Path, baseline: dict[str,Any]) -> list[dict[str,Any]
             })
     assistance=read_json(item_root/"stable_window_assistance.json")
     for transition in assistance.get("transitions",[]):
-        for key,label,kind in (
-            ("prefix_segment","选中的输入稳定区","stable_selected_input"),
-            ("safe_commit_segment","选中的安全提交区","stable_selected_commit"),
-        ):
-            segment=transition.get(key) or {}
-            if segment.get("start_sec") is not None and segment.get("end_sec") is not None:
-                spans.append({"start_sec":float(segment["start_sec"]),"end_sec":float(segment["end_sec"]),"label":label,"kind":kind,"from_window":transition.get("from_window_index"),"to_window":transition.get("to_window_index")})
-    return spans
+        prefix=transition.get("prefix_segment") or {}
+        commit=transition.get("safe_commit_segment") or {}
+        common={
+            "from_window":transition.get("from_window_index"),
+            "to_window":transition.get("to_window_index"),
+        }
+        prefix_valid=prefix.get("start_sec") is not None and prefix.get("end_sec") is not None
+        commit_valid=commit.get("start_sec") is not None and commit.get("end_sec") is not None
+        same_interval=(
+            prefix_valid and commit_valid
+            and abs(float(prefix["start_sec"])-float(commit["start_sec"])) <= 1e-9
+            and abs(float(prefix["end_sec"])-float(commit["end_sec"])) <= 1e-9
+        )
+        if same_interval:
+            spans.append({
+                **common,
+                "start_sec":float(prefix["start_sec"]),
+                "end_sec":float(prefix["end_sec"]),
+                "label":"选中的输入稳定区／安全提交区",
+                "kind":"stable_selected_both",
+            })
+            continue
+        if prefix_valid:
+            spans.append({
+                **common,
+                "start_sec":float(prefix["start_sec"]),
+                "end_sec":float(prefix["end_sec"]),
+                "label":"选中的输入稳定区",
+                "kind":"stable_selected_input",
+            })
+        if commit_valid:
+            spans.append({
+                **common,
+                "start_sec":float(commit["start_sec"]),
+                "end_sec":float(commit["end_sec"]),
+                "label":"选中的安全提交区",
+                "kind":"stable_selected_commit",
+            })
+    deduplicated: list[dict[str,Any]]=[]
+    seen=set()
+    for span in spans:
+        key=(
+            str(span.get("kind")), round(float(span["start_sec"]),6),
+            round(float(span["end_sec"]),6), str(span.get("label")),
+            span.get("from_window"), span.get("to_window"),
+        )
+        if key in seen:
+            continue
+        seen.add(key); deduplicated.append(span)
+    return deduplicated
 
 def realign_spans(item_root: Path) -> tuple[list[dict[str,Any]], list[dict[str,Any]]]:
     shadow=read_json(item_root/"inline_realign_shadow.json")
@@ -304,7 +362,7 @@ def render_item(
     primary_root=item_root/"branches"/primary_token
     primary=read_json(primary_root/"alignment.json")
     if not primary: raise FileNotFoundError(primary_root/"alignment.json")
-    primary_label=BRANCH_LABELS.get(primary_token,primary_token)
+    primary_label=branch_display_label(primary_token, primary)
     duration=float(nested(primary,"summary","audio_duration_sec",default=0.0) or 0.0)
     windows=list(primary.get("window_trace") or [])
     raw=read_json(primary_root/"alignment.raw.json")
@@ -321,20 +379,22 @@ def render_item(
     branch_specs=[]
     for token,label in BRANCH_LABELS.items():
         path=item_root/"branches"/token/"alignment.json"
-        if path.is_file(): branch_specs.append((label,path))
+        if path.is_file():
+            payload=read_json(path)
+            branch_specs.append((branch_display_label(token,payload),path))
     window_payload_map={token:read_json(item_root/"branches"/token/"alignment.json") for token in BRANCH_LABELS if (item_root/"branches"/token/"alignment.json").is_file()}
-    window_track_map={token:(BRANCH_LABELS[token],ordered_rows(payload)) for token,payload in window_payload_map.items() if payload.get("characters")}
-    window_timeline_map={token:(BRANCH_LABELS[token],ordered_rows(payload),list(payload.get("window_trace") or [])) for token,payload in window_payload_map.items() if payload.get("characters")}
+    window_track_map={token:(branch_display_label(token,payload),ordered_rows(payload)) for token,payload in window_payload_map.items() if payload.get("characters")}
+    window_timeline_map={token:(branch_display_label(token,payload),ordered_rows(payload),list(payload.get("window_trace") or [])) for token,payload in window_payload_map.items() if payload.get("characters")}
     window_groups={
-        "window_core":[window_track_map[token] for token in ("B0_60_fixed_official","B1_30_fixed_official","B2_30_silence_official","B4_60_silence_official") if token in window_track_map],
-        "window_strict":[window_track_map[token] for token in ("B2_30_silence_official","B4_60_silence_official","B5_30_strict_silence_official","B6_60_strict_silence_official") if token in window_track_map],
-        "window_compression":[window_track_map[token] for token in ("B2_30_silence_official","B4_60_silence_official","C0_30_silence_compressed_diagnostic","C1_60_silence_compressed_diagnostic") if token in window_track_map],
+        "window_core":[window_track_map[token] for token in ("B0_60_fixed_official","B4_60_silence_official","B1_30_fixed_official","B2_30_silence_official") if token in window_track_map],
+        "window_strict":[window_track_map[token] for token in ("B4_60_silence_official","B6_60_strict_silence_official","B2_30_silence_official","B5_30_strict_silence_official") if token in window_track_map],
+        "window_compression":[window_track_map[token] for token in ("B4_60_silence_official","C1_60_silence_compressed_diagnostic","B2_30_silence_official","C0_30_silence_compressed_diagnostic") if token in window_track_map],
         "window_raw_control":[window_track_map[token] for token in ("B2_30_silence_official","B3_30_silence_raw_control") if token in window_track_map],
     }
     window_timeline_groups={
-        "window_core":[window_timeline_map[token] for token in ("B0_60_fixed_official","B1_30_fixed_official","B2_30_silence_official","B4_60_silence_official") if token in window_timeline_map],
-        "window_strict":[window_timeline_map[token] for token in ("B2_30_silence_official","B4_60_silence_official","B5_30_strict_silence_official","B6_60_strict_silence_official") if token in window_timeline_map],
-        "window_compression":[window_timeline_map[token] for token in ("B2_30_silence_official","B4_60_silence_official","C0_30_silence_compressed_diagnostic","C1_60_silence_compressed_diagnostic") if token in window_timeline_map],
+        "window_core":[window_timeline_map[token] for token in ("B0_60_fixed_official","B4_60_silence_official","B1_30_fixed_official","B2_30_silence_official") if token in window_timeline_map],
+        "window_strict":[window_timeline_map[token] for token in ("B4_60_silence_official","B6_60_strict_silence_official","B2_30_silence_official","B5_30_strict_silence_official") if token in window_timeline_map],
+        "window_compression":[window_timeline_map[token] for token in ("B4_60_silence_official","C1_60_silence_compressed_diagnostic","B2_30_silence_official","C0_30_silence_compressed_diagnostic") if token in window_timeline_map],
         "window_raw_control":[window_timeline_map[token] for token in ("B2_30_silence_official","B3_30_silence_raw_control") if token in window_timeline_map],
     }
 
@@ -425,7 +485,7 @@ def render_item(
             start=min(float(r["start_sec"]) for r in all_rows)-0.5; end=max(float(r["end_sec"]) for r in all_rows)+0.5
             reason=display_text(case.get("reason") or case.get("gate_reason") or "待判断")
             out=visual_root/"realign_cases"/f"case_{position:03d}.png"
-            render_timeline_page(output=out,tracks=tracks,windows=[],start=max(0,start),end=max(start+0.1,end),title=f"{case.get('case_kind','局部重对齐')}｜{reason}",font=font,pixel_width=3000,annotations=[f"目标字符：{case.get('target_start')}–{case.get('target_end')}",f"判定规则：{display_text(case.get('accepted_gate_kind') or case.get('gate_kind') or case.get('non_gt_gate') or '-')}"])
+            render_timeline_page(output=out,tracks=tracks,windows=[],start=max(0,start),end=max(start+0.1,end),title=f"{case.get('case_kind','局部重对齐')}｜{reason}",font=font,pixel_width=6000,annotations=[f"目标字符：{case.get('target_start')}–{case.get('target_end')}",f"判定规则：{display_text(case.get('accepted_gate_kind') or case.get('gate_kind') or case.get('non_gt_gate') or '-')}"])
             case_outputs.append(str(out)); outputs.append(out)
 
     # Fixed-scale reusable pages for Demo videos.  They contain full glyph tracks,
@@ -438,7 +498,7 @@ def render_item(
             else:
                 payload=read_json(item_root/"branches"/token/"alignment.json")
                 if payload:
-                    comparison_window.append((BRANCH_LABELS.get(token,token),ordered_rows(payload),list(payload.get("window_trace") or [])))
+                    comparison_window.append((branch_display_label(token,payload),ordered_rows(payload),list(payload.get("window_trace") or [])))
         comparison_realign=[("基线",ordered_rows(primary)),*realign_tracks]
         for page_no,(start,end) in enumerate(page_ranges(duration,behavior_page_seconds)):
             stable_exact=next((track for track in stable_tracks if track[0]==STABLE_LABELS["S1_stable_sync_exact"]),None)
@@ -447,7 +507,7 @@ def render_item(
                 behavior_tracks.append(stable_exact)
             behavior_tracks.extend(realign_tracks)
             out=visual_root/"video_pages"/"behavior"/f"page_{page_no:03d}.png"
-            meta=render_timeline_page(output=out,tracks=behavior_tracks,windows=windows,start=start,end=end,title="模型行为：窗口、稳定区与局部重对齐",font=font,spans=[*stable_evidence_spans,*spans],annotations=behavior_annotations(primary,spans,start,end),pixel_width=1920,pixel_height=1080,video_layout=True)
+            meta=render_timeline_page(output=out,tracks=behavior_tracks,windows=windows,start=start,end=end,title="模型行为：窗口、稳定区与局部重对齐",font=font,spans=[*stable_evidence_spans,*spans],annotations=behavior_annotations(primary,spans,start,end),pixel_width=3840,pixel_height=1080,video_layout=True)
             pages["behavior"].append(meta); outputs.append(out)
             execution_tracks,execution_annotations=realign_execution_tracks_for_page(
                 cases,baseline_rows,page_start=start,page_end=end,
@@ -456,7 +516,7 @@ def render_item(
             meta=render_timeline_page(
                 output=out,tracks=execution_tracks,windows=windows,start=start,end=end,
                 title="局部重对齐执行：精确范围、前后各加2字、前后各加4字与中位融合",font=font,spans=spans,
-                annotations=execution_annotations,pixel_width=1920,pixel_height=1080,video_layout=True,
+                annotations=execution_annotations,pixel_width=3840,pixel_height=1080,video_layout=True,
             )
             pages["comparison_realign_execution"].append(meta); outputs.append(out)
             for key,title,tracks in [
@@ -467,7 +527,7 @@ def render_item(
                 if not tracks:
                     continue
                 out=visual_root/"video_pages"/key/f"page_{page_no:03d}.png"
-                meta=render_timeline_page(output=out,tracks=tracks,windows=[] if key=="comparison_window" else windows,start=start,end=end,title=title,font=font,spans=spans if key=="comparison_realign" else None,pixel_width=1920,pixel_height=1080,video_layout=True)
+                meta=render_timeline_page(output=out,tracks=tracks,windows=[] if key=="comparison_window" else windows,start=start,end=end,title=title,font=font,spans=spans if key=="comparison_realign" else None,pixel_width=3840,pixel_height=1080,video_layout=True)
                 pages[key].append(meta); outputs.append(out)
 
     require_files(outputs,"可视化输出")
@@ -532,7 +592,7 @@ def parser() -> argparse.ArgumentParser:
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--manifest",type=Path,required=True); p.add_argument("--experiment-root",type=Path,required=True)
     p.add_argument("--timeline-page-seconds",type=float,default=60.0); p.add_argument("--behavior-page-seconds",type=float,default=30.0)
-    p.add_argument("--comparison-branches",default="B0_60_fixed_official,B2_30_silence_official,B4_60_silence_official,B5_30_strict_silence_official")
+    p.add_argument("--comparison-branches",default="B0_60_fixed_official,B4_60_silence_official,C1_60_silence_compressed_diagnostic,B6_60_strict_silence_official")
     p.add_argument("--font",default="Noto Sans CJK SC")
     p.add_argument("--video-pages-mode", choices=("on", "off"), default="on")
     p.add_argument(

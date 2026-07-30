@@ -77,7 +77,7 @@ def parser()->argparse.ArgumentParser:
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--manifest",type=Path,required=True); p.add_argument("--experiment-root",type=Path,required=True)
     p.add_argument("--font",default="Noto Sans CJK SC"); p.add_argument("--profile",choices=("review","final"),default="review")
-    p.add_argument("--comparison-branches",default="B0_60_fixed_official,B2_30_silence_official,B4_60_silence_official,B5_30_strict_silence_official")
+    p.add_argument("--comparison-branches",default="B0_60_fixed_official,B4_60_silence_official,C1_60_silence_compressed_diagnostic,B6_60_strict_silence_official")
     p.add_argument("--render-incomplete",action="store_true"); p.add_argument("--resume",action="store_true"); p.add_argument("--force",action="store_true")
     p.add_argument("--restart-item",action="append",default=[])
     return p

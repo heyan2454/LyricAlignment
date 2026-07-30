@@ -202,12 +202,12 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--render-mode", choices=("after", "skip"), default="after")
     p.add_argument("--demo-publish-layout", choices=("central", "adjacent", "directory"), default="central")
     p.add_argument("--demo-publish-root", type=Path)
-    p.add_argument("--primary-variant", default="B2_30_silence_official")
+    p.add_argument("--primary-variant", default="B4_60_silence_official")
     p.add_argument(
         "--baseline-matrix-variants",
         default="B0_60_fixed_official,B1_30_fixed_official,B2_30_silence_official,B3_30_silence_raw_control,B4_60_silence_official,B5_30_strict_silence_official,B6_60_strict_silence_official,C0_30_silence_compressed_diagnostic,C1_60_silence_compressed_diagnostic",
     )
-    p.add_argument("--comparison-branches", default="B2_30_silence_official,B4_60_silence_official,B5_30_strict_silence_official,B6_60_strict_silence_official")
+    p.add_argument("--comparison-branches", default="B0_60_fixed_official,B4_60_silence_official,C1_60_silence_compressed_diagnostic,B6_60_strict_silence_official")
     p.add_argument("--timeline-page-seconds", type=float, default=30.0)
     p.add_argument("--stable-left-overlap-units", type=int, default=8, help=argparse.SUPPRESS)
     p.add_argument("--deferred-max-windows", type=int, default=3)
