@@ -16,6 +16,7 @@ that require metric or listening review.
 from __future__ import annotations
 
 import json
+import os
 import math
 import statistics
 import tempfile
@@ -374,7 +375,8 @@ def write_alignment_bundle(output: Path, payload: dict[str, Any]) -> dict[str, A
         "files": {key: path.name for key, path in artifact_paths.items()},
     }
 
-    for stage in ("raw", "processor_decoded", "selected"):
+    compact = os.environ.get("LYRICALIGN_COMPACT_ARTIFACTS") == "1"
+    for stage in (() if compact else ("raw", "processor_decoded", "selected")):
         stage_payload = {
             **enriched,
             "artifact_stage": stage,

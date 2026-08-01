@@ -15,6 +15,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
 import statistics
 import sys
 import time
@@ -52,6 +53,7 @@ from lyricalign.demo.realign_diagnostics import (
     structural_summary,
 )
 from lyricalign.training.qwen_fa_runtime import decode_audio
+from lyricalign.research_v6.audio_support import cleanup_item_audio, materialize_item_audio
 from lyricalign.metrics.character import evaluate_tolerant
 from lyricalign.demo.run_state import RunState
 
@@ -263,6 +265,7 @@ def serial_args(args: argparse.Namespace, variant: dict[str, Any]) -> SimpleName
     return SimpleNamespace(
         device=value("device", "cuda"),
         timestamp_segment_sec=value("timestamp_segment_sec", 0.08),
+        decoder_top_k=value("decoder_top_k", 8),
         core_sec=float(variant["core_sec"]),
         left_context_sec=value("left_context_sec", 10.0),
         right_context_sec=value("right_context_sec", 10.0),
@@ -310,6 +313,7 @@ def local_serial_args(args: argparse.Namespace) -> SimpleNamespace:
     return SimpleNamespace(
         device=args.device,
         timestamp_segment_sec=args.timestamp_segment_sec,
+        decoder_top_k=args.decoder_top_k,
         decoder_kind="official",
         gpu_decoder_runtime=None,
     )
@@ -374,6 +378,10 @@ def branch_request(
         key: str(value) if isinstance(value, Path) else value
         for key, value in vars(serial_args(args, variant)).items()
     }
+    audio_identity = (
+        {"lazy_sources": [{"path": str(Path(p).resolve()), "sha256": SERIAL.sha256(Path(p))} for p in item.get("lazy_audio_sources", [])]}
+        if item.get("lazy_audio_materialization") else {"sha256": SERIAL.sha256(Path(item["audio_path"]))}
+    )
     return {
         "schema_version": "inline_realign_baseline_request_v4_complete_behavior_identity",
         "behavior_schema_version": "serial_window_behavior_20260728_v4",
@@ -385,7 +393,7 @@ def branch_request(
         "lyrics_path": item["lyrics_path"],
         "lyrics_sha256": SERIAL.sha256(Path(item["lyrics_path"])),
         "audio_path": item["audio_path"],
-        "audio_sha256": SERIAL.sha256(Path(item["audio_path"])),
+        "audio_identity": audio_identity,
         "model": str(args.model),
         "revision": args.revision,
         "checkpoint": checkpoint,
@@ -2524,6 +2532,7 @@ def parser() -> argparse.ArgumentParser:
         help="comma-separated ordered branch IDs for long-serial items",
     )
     p.add_argument("--timestamp-segment-sec", type=float, default=0.08)
+    p.add_argument("--decoder-top-k", type=int, default=8)
     p.add_argument("--left-context-sec", type=float, default=10.0)
     p.add_argument("--right-context-sec", type=float, default=10.0)
     p.add_argument("--future-line-padding", type=int, default=1)
@@ -2576,6 +2585,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--construct-incomplete-cases", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--max-case-preview-rows", type=int, default=64)
     p.add_argument("--disable-inline-shadow", action="store_true")
+    p.add_argument("--compact-artifacts", action="store_true", help="retain final alignment and quality only; omit duplicate raw/selected/processor bundles")
     p.add_argument("--fail-fast", action="store_true")
     p.add_argument("--force", action="store_true")
     p.add_argument("--resume", action="store_true", help="skip complete items whose frozen request identity and outputs still match")
@@ -2586,6 +2596,8 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = parser().parse_args()
+    if args.compact_artifacts:
+        os.environ["LYRICALIGN_COMPACT_ARTIFACTS"] = "1"
     args.primary_variant = str(args.primary_variant).strip()
     args.baseline_matrix_variants = tuple(
         value.strip() for value in str(args.baseline_matrix_variants).split(",") if value.strip()
@@ -2695,9 +2707,12 @@ def main() -> int:
                 "item_ordinal": item_ordinal, "item_total": len(prepared),
             })
             print(json.dumps({"stage": "experiment", "status": "item_start", "item": f"{item_ordinal}/{len(prepared)}", "item_id": item_id}, ensure_ascii=False), flush=True)
+            owned_audio = False
+            materialized_audio_path: Path | None = None
             try:
                 lyrics_path = Path(item["lyrics_path"]).resolve()
-                audio_path = Path(item["audio_path"]).resolve()
+                audio_path, owned_audio = materialize_item_audio(item)
+                materialized_audio_path = audio_path
                 gt_path = Path(item["gt_path"]).resolve() if item.get("gt_path") else None
                 for path in (lyrics_path, audio_path):
                     if not path.is_file():
@@ -3050,9 +3065,12 @@ def main() -> int:
                     outputs=item_expected_outputs,
                 )
                 summaries.append(item_summary)
+                cleanup_item_audio(audio_path, owned_audio)
                 append_jsonl(status_path, {"time": utc_now(), "item_id": item_id, "status": "complete", "item_ordinal": item_ordinal, "item_total": len(prepared)})
                 print(json.dumps({"stage": "experiment", "status": "item_complete", "item": f"{item_ordinal}/{len(prepared)}", "item_id": item_id}, ensure_ascii=False), flush=True)
             except Exception as exc:
+                if materialized_audio_path is not None:
+                    cleanup_item_audio(materialized_audio_path, owned_audio)
                 failure = {
                     "item_id": item_id,
                     "dataset": item.get("dataset"),

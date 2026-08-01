@@ -144,16 +144,27 @@ def timestamp_gt(label: dict[str, Any], *, offset_sec: float = 0.0, start_index:
         raise ValueError(f"{label['item_id']}: timestamp/lyrics mismatch")
     rows = []
     for local_index, character in enumerate(text):
+        start_class = int(classes[2 * local_index])
+        end_class = int(classes[2 * local_index + 1])
+        # Qwen timestamp labels are quantized independently at each boundary.
+        # A short character can therefore collapse to one class at the source.
+        # Ground-truth metric records require a strictly positive interval; use
+        # the smallest representable duration rather than emitting an invalid
+        # reference row that would make the entire item unevaluable.
+        repaired = end_class <= start_class
+        if repaired:
+            end_class = start_class + 1
         rows.append({
             "character_index": start_index + local_index,
             "global_character_index": start_index + local_index,
             "character": character,
             "normalized_character": character,
-            "start_sec": offset_sec + int(classes[2 * local_index]) * segment,
-            "end_sec": offset_sec + int(classes[2 * local_index + 1]) * segment,
+            "start_sec": offset_sec + start_class * segment,
+            "end_sec": offset_sec + end_class * segment,
             "source_item_id": label["item_id"],
             "gt_source": "qwen_fa_quantized_timestamp_labels",
             "timestamp_segment_sec": segment,
+            "timestamp_interval_repaired": repaired,
         })
     return rows
 
@@ -174,8 +185,11 @@ def write_native_m4(label: dict[str, Any], audio_root: Path, target: Path) -> di
         "item_id": f"m4native_{safe_component(label['item_id'])}",
         "source_item_id": label["item_id"],
         "song_id": label.get("song_id"),
+        "source_song_id": label.get("song_id") or label.get("item_id"),
         "singer_id": label.get("singer_id"),
-        "selection_role": "development",
+        "split": label.get("split"),
+        "selection_role": f"m4_{label.get('split', 'unknown')}",
+        "training_exposure": str(label.get("split")) == "train",
         "lyrics_path": str(lyrics_path.resolve()),
         "audio_path": str(audio),
         "gt_path": str(gt_path.resolve()),
@@ -253,6 +267,7 @@ def write_long_m4(
         source_items.append({
             "sequence_index": sequence_index,
             "item_id": label["item_id"],
+            "split": label.get("split"),
             "audio_path": str(audio),
             "duration_sec": duration,
             "offset_sec": offset,
@@ -266,15 +281,20 @@ def write_long_m4(
     lyrics = "".join(lyrics_parts)
     lyrics_path = item_root / "lyrics.txt"
     gt_path = item_root / "ground_truth.characters.jsonl"
+    # The formal population can contain tens of thousands of synthetic-long
+    # items.  Keep only immutable lyrics/GT/source provenance in the manifest;
+    # callers materialize this path immediately before inference and remove it
+    # afterwards.
     audio_path = item_root / "vocal.wav"
     lyrics_path.write_text("\n".join(lyrics[index:index + 24] for index in range(0, len(lyrics), 24)) + "\n", encoding="utf-8")
     write_jsonl(gt_path, gt_rows)
-    concat_audio([audio for _, audio, _ in selected], audio_path)
     atomic_json(item_root / "source_manifest.json", {
         "schema_version": "inline_realign_m4singer_synthetic_long_v1",
         "item_id": item_id,
         "song_id": selected[0][0].get("song_id"),
+        "source_song_id": selected[0][0].get("song_id") or selected[0][0].get("item_id"),
         "singer_id": selected[0][0].get("singer_id"),
+        "source_splits": sorted({str(row[0].get("split")) for row in selected}),
         "source_items": source_items,
         "synthetic_seams_sec": seams,
         "gt_source": "qwen_fa_quantized_timestamp_labels",
@@ -284,13 +304,19 @@ def write_long_m4(
         "profile": "long_serial",
         "item_id": item_id,
         "song_id": selected[0][0].get("song_id"),
+        "source_song_id": selected[0][0].get("song_id") or selected[0][0].get("item_id"),
         "singer_id": selected[0][0].get("singer_id"),
-        "selection_role": "development",
+        "split": next(iter({str(row[0].get("split")) for row in selected})) if len({str(row[0].get("split")) for row in selected}) == 1 else "mixed",
+        "source_splits": sorted({str(row[0].get("split")) for row in selected}),
+        "selection_role": "m4_synthetic_long",
+        "training_exposure": any(str(row[0].get("split")) == "train" for row in selected),
         "lyrics_path": str(lyrics_path.resolve()),
         "audio_path": str(audio_path.resolve()),
         "gt_path": str(gt_path.resolve()),
-        "duration_sec": probe_duration(audio_path),
+        "duration_sec": accumulated,
         "synthetic": True,
+        "lazy_audio_materialization": True,
+        "lazy_audio_sources": [str(audio) for _, audio, _ in selected],
         "synthetic_seams_sec": seams,
         "source_manifest": str((item_root / "source_manifest.json").resolve()),
         "gt_time_resolution_sec": float(selected[0][0].get("timestamp_segment_sec", 0.08)),
@@ -432,6 +458,9 @@ def demo_rows(args: argparse.Namespace, cap: int | None, audit: dict[str, Any]) 
             "item_id": f"demo_{safe_component(language)}_{safe_component(job.stem)}_{short_hash}",
             "source_identity_short_hash": short_hash,
             "selection_role": "development",
+            "split": "demo",
+            "training_exposure": False,
+            "source_song_id": identity_source,
             "language": language,
             "language_source": language_source,
             "demo_relative_parent": relative_parent,
@@ -592,7 +621,7 @@ def mir_rows(args: argparse.Namespace, cap: int, audit: dict[str, Any]) -> list[
         roles.add("heldout")
     candidates = [row for row in rows if str(row.get("selection_role")) in roles]
     candidates.sort(key=lambda row: (str(row.get("selection_role")), row.get("selection_order") or 0, str(row["item_id"])))
-    selected = candidates[:cap]
+    selected = list(candidates) if cap <= 0 else candidates[:cap]
     _repair_missing_mir1k_assets(root, selected, args, audit)
     result: list[dict[str, Any]] = []
     for row in selected:
@@ -610,8 +639,11 @@ def mir_rows(args: argparse.Namespace, cap: int, audit: dict[str, Any]) -> list[
             "item_id": f"mir1k_{safe_component(item_id)}",
             "source_item_id": item_id,
             "song_id": row.get("song_id"),
+            "source_song_id": row.get("song_id") or item_id,
             "singer_id": row.get("singer_id"),
+            "split": row.get("selection_role"),
             "selection_role": row.get("selection_role"),
+            "training_exposure": False,
             "selection_order": row.get("selection_order"),
             "lyrics_path": str((item_root / "lyrics.txt").resolve()),
             "audio_path": str(audio.resolve()),
@@ -649,15 +681,18 @@ def m4_rows(args: argparse.Namespace, native_cap: int, long_cap: int, audit: dic
     filtered = [row for row in labels if str(row.get("split")) in split_order]
     if not filtered:
         raise ValueError(f"no M4Singer labels in splits {split_order}")
-    native_selected = diverse_m4_native_rows(filtered, native_cap)
+    native_selected = list(filtered) if native_cap <= 0 else diverse_m4_native_rows(filtered, native_cap)
     materialized = args.out_root / "materialized" / "m4singer"
     result = [
         write_native_m4(row, args.m4_audio_root.resolve(), materialized / "native" / safe_component(row["item_id"]))
         for row in native_selected
     ]
-    by_song: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    # Never construct one synthetic song from clips belonging to different
+    # train/validation/test partitions.  The split is part of the grouping key
+    # even when the source corpus normally keeps songs split-consistent.
+    by_song: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in filtered:
-        by_song[str(row.get("song_id"))].append(row)
+        by_song[(str(row.get("split")), str(row.get("song_id")))].append(row)
     candidate_groups = [
         {
             "item_id": str(values[0].get("song_id")),
@@ -764,9 +799,9 @@ def parser() -> argparse.ArgumentParser:
         "--demo-per-language-cap", type=int,
         help="optional per-language cap; smoke wrapper defaults to one item per discovered language",
     )
-    p.add_argument("--mir1k-cap", type=int)
-    p.add_argument("--m4-native-cap", type=int)
-    p.add_argument("--m4-long-cap", type=int)
+    p.add_argument("--mir1k-cap", type=int, help="0 means all eligible MIR-1K items")
+    p.add_argument("--m4-native-cap", type=int, help="0 means all eligible M4Singer native labels")
+    p.add_argument("--m4-long-cap", type=int, help="0 means all eligible source-song groups for every target duration")
     return p
 
 
@@ -776,7 +811,7 @@ def main() -> int:
     args.out_root.mkdir(parents=True, exist_ok=True)
     defaults = {
         "smoke": {"demo": None, "mir1k": 4, "m4_native": 6, "m4_long": 3},
-        "formal": {"demo": None, "mir1k": 20 if args.include_heldout else 16, "m4_native": 32, "m4_long": 18},
+        "formal": {"demo": None, "mir1k": 0, "m4_native": 0, "m4_long": 0},
     }[args.mode]
     if args.mode == "smoke" and args.demo_per_language_cap is None and args.demo_cap is None:
         args.demo_per_language_cap = 1
@@ -833,6 +868,8 @@ def main() -> int:
         row["language"] = normalize_alignment_language(str(row["language"]))
         row["manifest_order"] = ordinal
         for field in ("lyrics_path", "audio_path"):
+            if field == "audio_path" and row.get("lazy_audio_materialization"):
+                continue
             if not Path(row[field]).is_file():
                 raise FileNotFoundError(Path(row[field]))
         if row.get("gt_path") and not Path(row["gt_path"]).is_file():

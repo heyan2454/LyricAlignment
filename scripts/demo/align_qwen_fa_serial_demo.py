@@ -49,6 +49,9 @@ from lyricalign.demo.inline_realign import (
 
 SCHEMA_VERSION = "qwen_fa_serial_demo_v7_silence_aware_windows"
 WINDOW_POLICY = "silence_aware_global_core_plan_v7"
+RESEARCH_TIMESTAMP_DECODERS = {
+    "joint_start_end", "topk_sequence", "weighted_isotonic",
+}
 
 
 class SerialWindowAlignmentError(RuntimeError):
@@ -57,6 +60,45 @@ class SerialWindowAlignmentError(RuntimeError):
     def __init__(self, message: str, diagnostic: dict[str, Any]):
         super().__init__(message)
         self.diagnostic = diagnostic
+
+
+def apply_research_timestamp_decoder(
+    rows: list[dict[str, Any]], *, decoder_kind: str,
+    timestamp_segment_sec: float, decoder_top_k: int, decoder_beam_size: int,
+    global_audio_offset_sec: float,
+) -> list[dict[str, Any]]:
+    """Project a research decoder into the serial route's ``fixed_*`` fields."""
+    if decoder_kind not in RESEARCH_TIMESTAMP_DECODERS:
+        raise ValueError(f"unsupported research timestamp decoder: {decoder_kind}")
+    from lyricalign.research_v6.decoders import DecoderConfig, decode_rows
+
+    result = [dict(row) for row in rows]
+    decoded_rows = decode_rows(
+        result,
+        DecoderConfig(
+            name=decoder_kind,
+            timestamp_step_sec=float(timestamp_segment_sec),
+            top_k=int(decoder_top_k),
+            beam_size=int(decoder_beam_size),
+        ),
+    )
+    decoded_by_index = {
+        int(row["global_character_index"]): row for row in decoded_rows
+    }
+    for row in result:
+        decoded_row = decoded_by_index[int(row["global_character_index"])]
+        global_start = float(decoded_row["start_sec"])
+        global_end = float(decoded_row["end_sec"])
+        row["fixed_global_start_sec"] = global_start
+        row["fixed_global_end_sec"] = global_end
+        row["fixed_local_start_sec"] = global_start - float(global_audio_offset_sec)
+        row["fixed_local_end_sec"] = global_end - float(global_audio_offset_sec)
+        row["decoder_kind"] = decoder_kind
+        row["research_decoder"] = decoded_row.get("research_decoder", decoder_kind)
+        for key, value in decoded_row.items():
+            if key.startswith("research_decoder_"):
+                row[key] = value
+    return result
 
 
 def sha256(path: Path) -> str:
@@ -192,6 +234,35 @@ def infer_slice(
     selected = document.characters[character_start:character_end]
     expected_units = [item.text for item in selected]
     transcript = document.transcript_for_slice(character_start, character_end)
+    # Research experiments frequently arrive at the same decoder/model input
+    # through different phase labels or serial branches.  Cache at this lowest
+    # deterministic boundary, keyed only by actual audio/text/model inputs.
+    cache_root = getattr(args, "research_infer_cache_root", None)
+    cache_path = None
+    cache_key = None
+    if cache_root is not None:
+        audio_bytes = audio.tobytes() if hasattr(audio, "tobytes") else bytes(audio)
+        cache_identity = {
+            "schema_version": "serial_infer_actual_input_cache_v1",
+            "audio_sha256": hashlib.sha256(audio_bytes).hexdigest(),
+            "audio_sample_count": len(audio),
+            "global_audio_offset_sec": float(global_audio_offset_sec),
+            "character_range": [int(character_start), int(character_end)],
+            "alignment_units": expected_units,
+            "timestamp_segment_sec": float(args.timestamp_segment_sec),
+            "decoder_top_k": int(getattr(args, "decoder_top_k", 8)),
+            "decoder_beam_size": int(getattr(args, "decoder_beam_size", 96)),
+            "decoder_kind": str(getattr(args, "decoder_kind", "official")),
+            "model_identity": getattr(args, "research_model_identity", None),
+        }
+        cache_key = canonical_hash(cache_identity)
+        cache_path = Path(cache_root) / f"{cache_key}.json"
+        if cache_path.is_file():
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            stats = getattr(args, "research_infer_cache_stats", None)
+            if stats is not None:
+                stats["hits"] = int(stats.get("hits", 0)) + 1
+            return [dict(row) for row in payload["rows"]], dict(payload["audit"])
     transcript_policy = "pretokenized_content_items"
     inputs, words = prepare_pretokenized_aligner_inputs(
         processor,
@@ -212,7 +283,8 @@ def infer_slice(
         )
     raw_classes = slot_logits.argmax(dim=-1)
     probabilities = torch.softmax(slot_logits, dim=-1)
-    top_values, top_indices = torch.topk(probabilities, k=2, dim=-1)
+    saved_top_k = max(2, min(int(getattr(args, "decoder_top_k", 8)), int(probabilities.shape[-1])))
+    top_values, top_indices = torch.topk(probabilities, k=saved_top_k, dim=-1)
     entropy = -(probabilities * probabilities.clamp_min(1e-12).log()).sum(dim=-1)
     decoded = processor.decode_forced_alignment(
         output.logits, batch["input_ids"], words, model.config.timestamp_token_id
@@ -242,7 +314,7 @@ def infer_slice(
         }
         if int(gpu_decoded_classes.shape[0]) != 2 * len(selected):
             raise RuntimeError("GPU decoder returned the wrong slot count")
-    elif decoder_kind not in {"official", "raw"}:
+    elif decoder_kind not in {"official", "raw", *RESEARCH_TIMESTAMP_DECODERS}:
         raise ValueError(f"unknown decoder_kind: {decoder_kind}")
 
     rows: list[dict[str, Any]] = []
@@ -262,7 +334,7 @@ def infer_slice(
             float(int(gpu_decoded_classes[end_slot])) * segment
             if gpu_decoded_classes is not None else None
         )
-        if decoder_kind == "official":
+        if decoder_kind == "official" or decoder_kind in RESEARCH_TIMESTAMP_DECODERS:
             fixed_start, fixed_end = official_fixed_start, official_fixed_end
         elif decoder_kind == "raw":
             fixed_start, fixed_end = raw_start, raw_end
@@ -300,6 +372,10 @@ def infer_slice(
                 "raw_end_top1_probability": float(top_values[end_slot, 0]),
                 "raw_start_top2_class": int(top_indices[start_slot, 1]),
                 "raw_end_top2_class": int(top_indices[end_slot, 1]),
+                "raw_start_topk_classes": [int(value) for value in top_indices[start_slot].tolist()],
+                "raw_end_topk_classes": [int(value) for value in top_indices[end_slot].tolist()],
+                "raw_start_topk_probabilities": [float(value) for value in top_values[start_slot].tolist()],
+                "raw_end_topk_probabilities": [float(value) for value in top_values[end_slot].tolist()],
                 "raw_start_margin": float(top_values[start_slot, 0] - top_values[start_slot, 1]),
                 "raw_end_margin": float(top_values[end_slot, 0] - top_values[end_slot, 1]),
                 "raw_start_entropy": float(entropy[start_slot]),
@@ -318,6 +394,20 @@ def infer_slice(
                 ),
             }
         )
+    if decoder_kind in RESEARCH_TIMESTAMP_DECODERS:
+        # These decoders consume the raw/top-K evidence from the complete model
+        # window.  Applying them here, before ownership splitting and cursor
+        # updates, makes the frozen decoder part of the actual serial route
+        # rather than a report-only post-processing step.
+        rows = apply_research_timestamp_decoder(
+            rows,
+            decoder_kind=decoder_kind,
+            timestamp_segment_sec=float(args.timestamp_segment_sec),
+            decoder_top_k=int(getattr(args, "decoder_top_k", 8)),
+            decoder_beam_size=int(getattr(args, "decoder_beam_size", 96)),
+            global_audio_offset_sec=float(global_audio_offset_sec),
+        )
+
     audit = {
         "character_start": character_start,
         "character_end": character_end,
@@ -331,6 +421,7 @@ def infer_slice(
         "word_count": len(words[0]),
         "timestamp_position_count": int(len(positions)),
         "timestamp_logit_class_count": int(slot_logits.shape[-1]),
+        "saved_timestamp_top_k": int(saved_top_k),
         "audio_sample_count": int(len(audio)),
         "audio_duration_sec": float(len(audio) / 16000.0),
         "decoder_kind": decoder_kind,
@@ -339,6 +430,17 @@ def infer_slice(
             else getattr(getattr(args, "gpu_decoder_runtime", None), "identity", None)
         ),
     }
+    if cache_path is not None:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_json(cache_path, {
+            "schema_version": "serial_infer_actual_input_cache_v1",
+            "identity": cache_identity,
+            "rows": rows,
+            "audit": audit,
+        })
+        stats = getattr(args, "research_infer_cache_stats", None)
+        if stats is not None:
+            stats["misses"] = int(stats.get("misses", 0)) + 1
     return rows, audit
 
 
@@ -355,6 +457,19 @@ def project_rows_for_decoder(
     """
     if decoder_kind in {"same", "output"}:
         return [dict(row) for row in rows]
+    if decoder_kind in RESEARCH_TIMESTAMP_DECODERS:
+        result = []
+        for source in rows:
+            row = dict(source)
+            if str(row.get("decoder_kind")) != decoder_kind:
+                raise ValueError(
+                    "research serial-control decoder must match the already "
+                    f"projected output decoder: requested={decoder_kind} "
+                    f"row={row.get('decoder_kind')}"
+                )
+            row["serial_control_decoder_kind"] = decoder_kind
+            result.append(row)
+        return result
     if decoder_kind not in {"official", "raw"}:
         raise ValueError(f"unsupported serial control decoder: {decoder_kind}")
     result: list[dict[str, Any]] = []
@@ -479,6 +594,31 @@ def decorate_final_rows(rows: list[dict[str, Any]], document: LyricDocument) -> 
     result: list[dict[str, Any]] = []
     for item in document.characters:
         row = dict(by_index[item.global_index])
+        row["character"] = item.text
+        row["alignment_unit"] = item.text
+        row["unit_type"] = item.unit_type
+        row["line_index"] = item.line_index
+        row["index_in_line"] = item.index_in_line
+        row["display_prefix"] = item.display_prefix
+        row["display_text"] = item.display_text or item.text
+        row["display_suffix"] = item.display_suffix
+        result.append(row)
+    return result
+
+
+def decorate_partial_rows(rows: list[dict[str, Any]], document: LyricDocument) -> list[dict[str, Any]]:
+    """Decorate a contiguous research prefix without requiring full coverage.
+
+    Production callers still use :func:`decorate_final_rows`.  Research-v6 uses
+    this helper only when it intentionally advances one beam window at a time.
+    """
+    result: list[dict[str, Any]] = []
+    for source in sorted(rows, key=lambda row: int(row["global_character_index"])):
+        index = int(source["global_character_index"])
+        if index < 0 or index >= len(document.characters):
+            raise RuntimeError(f"partial alignment index out of range: {index}")
+        item = document.characters[index]
+        row = dict(source)
         row["character"] = item.text
         row["alignment_unit"] = item.text
         row["unit_type"] = item.unit_type
@@ -700,12 +840,41 @@ def windowed_alignment(
             right_context_sec=args.right_context_sec,
         )
     total_characters = len(document.characters)
-    committed_cursor = 0
-    input_cursor = 0
-    committed_rows: list[dict[str, Any]] = []
+    initial_rows = [
+        dict(row) for row in (getattr(args, "research_initial_committed_rows", None) or [])
+    ]
+    initial_rows.sort(key=lambda row: int(row["global_character_index"]))
+    inferred_cursor = (
+        int(initial_rows[-1]["global_character_index"]) + 1 if initial_rows else 0
+    )
+    committed_cursor = int(
+        getattr(args, "research_initial_committed_cursor", inferred_cursor)
+    )
+    if committed_cursor != inferred_cursor:
+        raise RuntimeError(
+            "research initial state is not a contiguous prefix: "
+            f"rows imply cursor={inferred_cursor}, requested={committed_cursor}"
+        )
+    if initial_rows:
+        expected = list(range(committed_cursor))
+        actual = [int(row["global_character_index"]) for row in initial_rows]
+        if actual != expected:
+            raise RuntimeError(
+                "research initial committed rows must cover [0,cursor) contiguously: "
+                f"cursor={committed_cursor} first_actual={actual[:5]} last_actual={actual[-5:]}"
+            )
+    input_cursor = int(
+        getattr(args, "research_initial_input_cursor", committed_cursor)
+    )
+    input_cursor = max(0, min(max(0, total_characters - 1), input_cursor))
+    committed_rows: list[dict[str, Any]] = initial_rows
     traces: list[dict[str, Any]] = []
-    previous_committed_count = 0
-    previous_core_duration = 0.0
+    previous_committed_count = int(
+        getattr(args, "research_initial_previous_committed_count", 0)
+    )
+    previous_core_duration = float(
+        getattr(args, "research_initial_previous_core_duration", 0.0)
+    )
     control_decoder_kind = str(getattr(args, "serial_control_decoder_kind", "same"))
     skip_silent_windows = bool(getattr(args, "skip_silent_windows", False))
     silent_active_ratio_max = float(getattr(args, "silent_active_ratio_max", 0.01))
@@ -719,7 +888,11 @@ def windowed_alignment(
     if activity_profile is None and skip_silent_windows:
         activity_profile = build_vocal_activity_profile(audio)
     alignment_span_sec = (
-        float(window_plan["active_span_duration_sec"])
+        # Research variants may supply an externally constructed window plan.
+        # Older and transformed-clock plans do not carry this optional
+        # provenance field; in that case the decoded input audio is the
+        # correct active span.
+        float(window_plan.get("active_span_duration_sec", duration))
         if window_plan is not None else duration
     )
     capture_attempt_probes = bool(getattr(args, "capture_attempt_probes", False))
@@ -743,17 +916,47 @@ def windowed_alignment(
     stable_prefix_minimum_observed_ratio = float(
         getattr(args, "stable_prefix_minimum_observed_ratio", 0.50)
     )
-    previous_stable_suffix: dict[str, Any] | None = None
+    previous_stable_suffix: dict[str, Any] | None = getattr(
+        args, "research_initial_stable_suffix", None
+    )
+    research_injections: dict[int, list[dict[str, Any]]] = {}
+    for source in (getattr(args, "research_state_injections", None) or []):
+        research_injections.setdefault(int(source.get("window_index", -1)), []).append(dict(source))
+    research_previous_end_override: float | None = None
 
+    research_max_windows = int(getattr(args, "research_max_windows", 0))
+    processed_window_count = 0
     for window_position, window in enumerate(windows):
+        if research_max_windows > 0 and processed_window_count >= research_max_windows:
+            break
         if committed_cursor >= total_characters:
             break
+        processed_window_count += 1
         nominal_input_start = float(window["input_start_sec"])
         input_end = float(window["input_end_sec"])
         core_start = float(window["core_start_sec"])
         core_end = float(window["core_end_sec"])
         final_core = bool(window.get("is_final_core", math.isclose(core_end, duration, abs_tol=1e-9)))
         final_region_core = bool(window.get("is_final_region_core", False))
+        planned_input_character_start = window.get("planned_input_character_start")
+        planned_input_cursor_applied = False
+        if planned_input_character_start is not None:
+            input_cursor = max(0, min(total_characters - 1, int(planned_input_character_start)))
+            planned_input_cursor_applied = True
+        for injection in research_injections.get(int(window.get("window_index", window_position)), []):
+            kind = str(injection.get("kind"))
+            value = float(injection.get("value", 0.0))
+            if kind == "cursor_units":
+                input_cursor = max(0, min(total_characters - 1, input_cursor + int(round(value))))
+            elif kind == "cursor_set":
+                input_cursor = max(0, min(total_characters - 1, int(round(value))))
+            elif kind == "previous_end_sec":
+                baseline_end = float(committed_rows[-1]["end_sec"]) if committed_rows else 0.0
+                research_previous_end_override = max(0.0, min(duration, baseline_end + value))
+            elif kind == "previous_end_set":
+                research_previous_end_override = max(0.0, min(duration, value))
+            else:
+                raise ValueError(f"unsupported research state injection kind: {kind}")
 
         activity = None
         if activity_profile is not None:
@@ -776,6 +979,8 @@ def windowed_alignment(
                     "silent_core_skipped": True,
                     "vocal_activity": activity,
                     "input_character_start_before": input_cursor,
+                    "planned_input_character_start": planned_input_character_start,
+                    "planned_input_cursor_applied": planned_input_cursor_applied,
                     "committed_cursor_before": committed_cursor,
                     "committed_cursor_after": committed_cursor,
                     "next_window_character_start": input_cursor,
@@ -1046,7 +1251,8 @@ def windowed_alignment(
                     accepted_committed = core_committed
                     accepted_lookahead = lookahead
                     accepted_range = (char_start, char_end)
-                    accepted_next_input_cursor = next_input_candidate
+                    backtrack_units = max(0, int(getattr(args, "next_input_backtrack_units", 0)))
+                    accepted_next_input_cursor = max(0, int(next_input_candidate) - backtrack_units)
                     accepted_next_input_cut_character = next_input_cut_character
                     accepted_effective_window = effective_window
                     accepted_control_committed = control_core_committed
@@ -1116,7 +1322,9 @@ def windowed_alignment(
             window=effective_window,
             duration_sec=duration,
             seam_tolerance_sec=args.seam_tolerance_sec,
+            previous_end_override_sec=research_previous_end_override,
         )
+        research_previous_end_override = None
         precommit_diagnostic = analyze_precommit_trial(
             existing_rows=committed_rows,
             candidate_rows=accepted_committed,
@@ -1203,6 +1411,8 @@ def windowed_alignment(
                 **effective_window,
                 "serial_policy": WINDOW_POLICY,
                 "input_character_start_before": input_cursor_before,
+                "planned_input_character_start": planned_input_character_start,
+                "planned_input_cursor_applied": planned_input_cursor_applied,
                 "committed_cursor_before": committed_cursor_before,
                 "committed_cursor_after": committed_cursor,
                 "candidate_character_start": accepted_range[0],
@@ -1270,12 +1480,15 @@ def windowed_alignment(
             flush=True,
         )
 
-    if committed_cursor != total_characters:
+    allow_partial_return = bool(getattr(args, "research_allow_partial_return", False))
+    if committed_cursor != total_characters and not allow_partial_return:
         raise RuntimeError(
             f"strict serial alignment ended with uncommitted lyrics: "
             f"cursor={committed_cursor} total={total_characters}"
         )
-    return decorate_final_rows(committed_rows, document), traces
+    if committed_cursor == total_characters:
+        return decorate_final_rows(committed_rows, document), traces
+    return decorate_partial_rows(committed_rows, document), traces
 
 
 def output_is_current(path: Path, request_hash: str) -> bool:
@@ -1307,12 +1520,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gpu-decoder-checkpoint", type=Path)
     parser.add_argument("--language", type=normalize_alignment_language, default="Chinese")
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)
+    parser.add_argument("--decoder-top-k", type=int, default=8, help="save top-K timestamp candidates for offline structured decoders")
     parser.add_argument("--core-sec", type=float, default=60.0)
     parser.add_argument("--left-context-sec", type=float, default=10.0)
     parser.add_argument("--right-context-sec", type=float, default=10.0)
     parser.add_argument("--future-line-padding", type=int, default=1)
     parser.add_argument("--minimum-forward-characters", type=int, default=64)
     parser.add_argument("--future-character-ratio", type=float, default=1.35)
+    parser.add_argument("--next-input-backtrack-units", type=int, default=0, help="research-only synchronized safe-boundary backtrack")
     parser.add_argument("--max-candidate-expansions", type=int, default=4)
     parser.add_argument(
         "--boundary-start-tolerance-sec",

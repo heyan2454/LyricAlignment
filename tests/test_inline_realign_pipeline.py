@@ -396,6 +396,13 @@ def test_manifest_timestamp_conversion_and_default_m4_split() -> None:
     })
     assert gt[0]["start_sec"] == 0.08
     assert gt[1]["end_sec"] == 0.40
+    collapsed = module.timestamp_gt({
+        "item_id": "x", "lyrics_normalized": "甲",
+        "timestamp_class_ids": [4, 4], "timestamp_segment_sec": 0.08,
+    })
+    assert collapsed[0]["start_sec"] == 0.32
+    assert collapsed[0]["end_sec"] == 0.40
+    assert collapsed[0]["timestamp_interval_repaired"] is True
     args = module.parser().parse_args(["--mode", "smoke", "--out-root", "/tmp/o"])
     assert args.m4_splits == "validation"
     assert "_qwen_fa_raw_guarded" in args.demo_prepared_suffixes

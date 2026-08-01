@@ -533,6 +533,7 @@ def append_strict_core_commits(
     window: dict[str, Any],
     duration_sec: float,
     seam_tolerance_sec: float = 0.16,
+    previous_end_override_sec: float | None = None,
 ) -> list[dict[str, Any]]:
     """Append immutable core rows using forward-only overlap compression.
 
@@ -552,7 +553,11 @@ def append_strict_core_commits(
     if seam_tolerance_sec < 0:
         raise ValueError("seam_tolerance_sec must be non-negative")
     result = [dict(row) for row in existing]
-    previous_end = float(result[-1]["end_sec"]) if result else 0.0
+    previous_end = (
+        float(previous_end_override_sec)
+        if previous_end_override_sec is not None
+        else float(result[-1]["end_sec"]) if result else 0.0
+    )
     next_index = int(result[-1]["global_character_index"]) + 1 if result else 0
     for source in rows:
         row = dict(source)
