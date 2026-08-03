@@ -1,5 +1,41 @@
 # AI Session Entry
 
+## 2026-08-03 Current Stage Override
+
+The active planning entry is now:
+
+```text
+docs/research_v7_align_behavior/README.md
+docs/research_v7_align_behavior/00_EXECUTION_PLAN.md
+docs/research_v7_align_behavior/01_USER_DECISIONS_AND_RATIONALE.md
+docs/research_v7_align_behavior/08_AGENT_HANDOFF.md
+```
+
+Current stage:
+
+```text
+research v6 formal E0–E9 completed
+→ repair E1 event aggregation, E5/E6 paired subsets and conditional denominators
+→ freeze old negative results rather than tuning them further
+→ research production-like invalid-input alignment behaviour
+→ prioritize strict-serial same-audio short-text, sparse slots, percentage text mismatch, posterior and official repair trace
+→ only after evidence collection decide QualityAssessor, posterior decoder, coarse localization and transactional realign
+```
+
+Important user decisions:
+
+- E3 decoder-only local repair is stopped;
+- extra/missing text severity must be percentage-based, not only +2/+5 units;
+- strict serial workflow is the primary new E4 route;
+- no-match uses frozen same-language, same-length cross-song real lyrics;
+- no-GT full-song Demo must become structured evidence and heldout data;
+- detector may improve later, but it cannot currently write back;
+- serial alignment is a candidate architecture, not the project definition.
+
+---
+
+## Previous Entry (preserved)
+
 ## Read in this order
 
 1. `README.md`

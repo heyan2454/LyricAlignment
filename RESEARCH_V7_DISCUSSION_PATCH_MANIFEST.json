@@ -1,0 +1,115 @@
+{
+  "schema_version": "research_v7_discussion_patch_manifest_v1",
+  "created_at": "2026-08-03T20:32:00+08:00",
+  "base_archive": {
+    "name": "LyricAlignment_202608010232_beforehierchange.zip",
+    "size_bytes": 1733179,
+    "sha256": "fd85c01b3fe36bd5c807e9f1d274f2ca6ee1f10928cd7c75760a5679e28bf7c1"
+  },
+  "scope": "Documentation, planning, configuration specification, and session-entry update only; no experiment implementation code changed.",
+  "file_count": 17,
+  "files": [
+    {
+      "path": "AI_SESSION_ENTRY.md",
+      "change_type": "modified",
+      "size_bytes": 6255,
+      "sha256": "f13b68fc90fe093ca474d65baf48dc25e04d896ec41484ebe8afbcfd9e35ba8d"
+    },
+    {
+      "path": "APPLY_RESEARCH_V7_DISCUSSION_PATCH.sh",
+      "change_type": "new",
+      "size_bytes": 967,
+      "sha256": "63d9688d0c95ba63672940bc693f4d24de67564130b9a39d5ac10905600c8e83"
+    },
+    {
+      "path": "PATCH_README_20260803_RESEARCH_V7_ALIGN_BEHAVIOR.md",
+      "change_type": "new",
+      "size_bytes": 1575,
+      "sha256": "76ca393ab45ddedd8eb1821e224bec9d64c78c2e112f13f7d410cd3487d2c8ee"
+    },
+    {
+      "path": "configs/research_v7/README.md",
+      "change_type": "new",
+      "size_bytes": 315,
+      "sha256": "da649aa58478708fb3c273f68ae64744af03788a8eeb06383f24b281dc7a2d8b"
+    },
+    {
+      "path": "configs/research_v7/mutation_catalog.example.yaml",
+      "change_type": "new",
+      "size_bytes": 1992,
+      "sha256": "92b556612b35c4e50995ac9e5bb9c86725305dc19da19b5ab7b7bbce147256ff"
+    },
+    {
+      "path": "docs/research_v6/README.md",
+      "change_type": "modified",
+      "size_bytes": 1381,
+      "sha256": "76b6297059b4c3e58a52f478d28aa33081a67a940d43f6f2f205deef275663d9"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/00_EXECUTION_PLAN.md",
+      "change_type": "new",
+      "size_bytes": 16623,
+      "sha256": "d112fbd1995719e1427717f48617df2255abea47439301bb89349486559586a9"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/01_USER_DECISIONS_AND_RATIONALE.md",
+      "change_type": "new",
+      "size_bytes": 8034,
+      "sha256": "c4e1ec4c3f8e7e77aa8b6dedf15c83b2a58eecfbdf436fd88d0fb88d6ce2eebb"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/02_PROJECT_RESEARCH_LEDGER.md",
+      "change_type": "new",
+      "size_bytes": 4126,
+      "sha256": "e9bb59e2471e1c8ed92d33e6c8837f3785ac73cc7f0dd621b3bec3285a4766ac"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/03_QWEN_TECHNICAL_REPORT_IMPLICATIONS.md",
+      "change_type": "new",
+      "size_bytes": 2508,
+      "sha256": "b49a19179e78c15660bd12cfb7bc3b467b6ed705e845855d235981f052b7091d"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/04_ARCHITECTURE_OPTIONS_AND_CURRENT_DIRECTION.md",
+      "change_type": "new",
+      "size_bytes": 2179,
+      "sha256": "fd55dcfc7e3edb981a179b82a935ca98b1261530f53e0688a6215b3659185be6"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/05_MUTATION_AND_NO_MATCH_SPEC.md",
+      "change_type": "new",
+      "size_bytes": 2327,
+      "sha256": "ec418fc5aa30805a23e2a5c62f1609da037d3c738a64f2981f6b48435703c3ec"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/06_HISTORICAL_REPAIR_SCOPE.md",
+      "change_type": "new",
+      "size_bytes": 900,
+      "sha256": "aa8557c28287dff573565195761a62068e2debffd5d112b30eae17cef1222383"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/07_DEMO_AND_COLLABORATOR_SHARE_PREPARATION.md",
+      "change_type": "new",
+      "size_bytes": 1197,
+      "sha256": "587e4dd162e53b0293910f5701560deb314dfc55ddcc1b86a07b9d53f7acce2d"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/08_AGENT_HANDOFF.md",
+      "change_type": "new",
+      "size_bytes": 1517,
+      "sha256": "4fb31d37f63e499d93096d236348352520b95a38b71180536edeba725467ead0"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/README.md",
+      "change_type": "new",
+      "size_bytes": 2151,
+      "sha256": "73fe29c22145527f7f04cfc17ff8be13fc74a2f56c51b613622298985d391485"
+    },
+    {
+      "path": "docs/sessions/20260803_research_v7_align_behavior_planning_archive.md",
+      "change_type": "new",
+      "size_bytes": 4721,
+      "sha256": "91afe910d0084b9ca4a765bb8443530c6014b424036a1645cdb5bb5981f5fc5b"
+    }
+  ]
+}

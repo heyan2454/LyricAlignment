@@ -17,3 +17,15 @@ scripts/research/run_research_v6_smoke.sh
 scripts/research/run_research_v6_formal.sh
 scripts/research/start_research_v6_detached.sh formal --resume
 ```
+
+## 2026-08-03 Transition to research v7
+
+Research v6 formal E0–E9 has moved into conclusion repair and archival. The active next-stage documents are:
+
+```text
+../research_v7_align_behavior/README.md
+../research_v7_align_behavior/00_EXECUTION_PLAN.md
+../research_v7_align_behavior/01_USER_DECISIONS_AND_RATIONALE.md
+```
+
+The v7 direction does not continue tuning E3/E5/E6/E9. It first repairs E1/E5/E6 reporting and then studies production-like invalid-input alignment behaviour, strict serial short-text, sparse timestamp slots, posterior evidence and no-match cases.

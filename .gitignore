@@ -29,6 +29,7 @@ configs/assets/smoke_samples.local.yaml
 # Run-local large outputs
 runs/**/raw_audio/
 runs/**/large_outputs/
+runs/research_v7_align_behavior/
 
 # Audio/video and model artifacts
 *.wav

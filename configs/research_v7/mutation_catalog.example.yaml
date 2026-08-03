@@ -1,0 +1,76 @@
+schema_version: research_v7_mutation_catalog_v1
+severity_basis: baseline_text_units
+
+severity_grids:
+  extra: [0.10, 0.25, 0.50, 1.00, 2.00]
+  missing: [0.10, 0.25, 0.50, 0.75, 0.90]
+  replacement: [0.10, 0.25, 0.50, 0.75, 1.00]
+
+workflow_modes:
+  - production_full_once
+  - strict_serial_same_audio
+  - strict_serial_progressive_crop
+  - independent_short_text_diagnostic
+  - strict_serial_sparse_slots
+  - oracle_localized_control
+
+mutation_types:
+  - valid_baseline
+  - tail_extra_future_present
+  - tail_extra_future_absent
+  - tail_extra_partially_present
+  - tail_extra_far_future_same_song
+  - tail_extra_cross_song
+  - head_extra_duplicate_committed
+  - head_extra_same_song
+  - head_extra_cross_song
+  - middle_insert_repeat_prefix
+  - middle_insert_future
+  - middle_insert_same_song_wrong_section
+  - middle_insert_cross_song
+  - tail_missing
+  - head_missing
+  - middle_missing_contiguous
+  - missing_distributed
+  - partial_replace_cross_song
+  - strict_no_match_cross_song
+  - same_song_wrong_section
+  - ambiguous_repeated_section
+  - instrumental_audio_with_real_lyrics
+  - reordered_real_lyrics
+  - random_text_control
+  - wrong_language_or_unit_mode
+  - audio_start_shift
+  - audio_end_shift
+  - audio_partial_coverage
+  - cursor_shift
+  - duplicate_committed_prefix
+
+strict_no_match_donor_policy:
+  same_language: true
+  same_unit_mode: true
+  exact_unit_length: true
+  continuous_real_lyrics: true
+  exclude_same_source_song: true
+  freeze_seed: 3407
+  similarity_filters:
+    normalized_lcs_max: 0.20
+    longest_contiguous_match_ratio_max: 0.10
+    ngram_overlap_max: null  # freeze after pilot
+    phonetic_similarity_max: null  # freeze after pilot if available
+
+required_record_fields:
+  - n_base
+  - requested_ratio
+  - actual_ratio
+  - actual_added_units
+  - actual_removed_units
+  - actual_replaced_units
+  - mutation_position
+  - text_relation
+  - audio_relation
+  - donor_song_id
+  - donor_start_index
+  - donor_end_index
+  - donor_similarity
+  - selection_seed
