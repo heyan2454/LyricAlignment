@@ -149,3 +149,48 @@ def test_successful_export_branch_done_and_files(tmp_path):
              "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0"], capture_output=True, env=env)
     reqs2 = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
     assert len(reqs2) == len(reqs)  # 去重，不追加
+
+
+def test_c3_wav_to_runner_integration(tmp_path):
+    # review4 下一步验收：C3 REQUESTS → materialized alignment request → fake executor evidence → identity-safe resume
+    import json
+    import subprocess
+    import sys
+
+    sr = 16000
+    vv = np.concatenate([_tone(1.0, sr, amp=4000.0), np.zeros(int(1.0 * sr), dtype=np.float32)])
+    cc = np.concatenate([_tone(1.0, sr, amp=2000.0), _tone(1.0, sr, amp=700.0)])
+    vp = tmp_path / "vocals.wav"; ap = tmp_path / "accompaniment.wav"
+    _write_wav(vp, vv, sr); _write_wav(ap, cc, sr)
+    il = tmp_path / "items.jsonl"
+    il.write_text(json.dumps({"item_id": "Z", "audio_path": str(vp)}) + "\n")
+    # 先导出 C3（含歌词）
+    out3 = tmp_path / "c3out"
+    env = dict(__import__("os").environ)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src") + ":" + env["PYTHONPATH"]
+    exporter = str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py")
+    r = subprocess.run([sys.executable, exporter, "--item-list", str(il), "--out-root", str(out3),
+                        "--window-sec", "2.0", "--text-units", "春", "风", "又"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    reqs = [json.loads(l) for l in (out3 / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert reqs, "no REQUESTS emitted"
+    # 第一条(control)应 validate 通过(有 text_units + audio range)
+    con = next(rq for rq in reqs if rq["condition"] == "control")
+    assert con["text_units"] and con["audio_end_sec"] > 0 and con["mutation"] == "control" and con["target_ratio"] == 0.0
+    assert con["request_identity"]  # 可复现 identity 存在
+    # runner 消费 REQUESTS（fake exec）→ evidence + RUN_MANIFEST
+    run = tmp_path / "run"
+    runner = str(Path(__file__).resolve().parents[2] / "scripts/research_v7/run_behavior_suite.py")
+    rr = subprocess.run([sys.executable, runner, "--manifest", str(out3 / "REQUESTS.jsonl"),
+                         "--out-root", str(run), "--smoke"], capture_output=True, text=True, env=env)
+    assert rr.returncode == 0, rr.stderr
+    run_man = json.loads((run / "RUN_MANIFEST.json").read_text())
+    assert run_man["manifest"]["sha256"]  # 冻结 manifest sha 记录
+    assert run_man["environment"]["executor"] == "fake-smoke"
+    assert run_man["cache_keys"]  # 每请求 content identity
+    # identity-safe resume：同 REQUESTS 再跑 → cache hit
+    rr2 = subprocess.run([sys.executable, runner, "--manifest", str(out3 / "REQUESTS.jsonl"),
+                          "--out-root", str(run), "--smoke", "--resume"],
+                         capture_output=True, text=True, env=env)
+    out2 = json.loads(rr2.stdout)
+    assert out2["cache_hit"] >= 1 and out2["forward"] == 0
