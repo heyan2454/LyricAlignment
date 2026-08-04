@@ -1,0 +1,1577 @@
+diff --git a/AI_SESSION_ENTRY.md b/AI_SESSION_ENTRY.md
+index d5ed838..b19d8b2 100644
+--- a/AI_SESSION_ENTRY.md
++++ b/AI_SESSION_ENTRY.md
+@@ -123,3 +123,26 @@ manifest/input audit
+ - no mixing M4 synthetic seams with natural MIR-1K conclusions;
+ - no unconditional tail commit as a future repair strategy;
+ - checkpoints, audio, video and large runtime outputs stay external.
++
++## 2026-08-04 长时间线 Slot/串行混合与子区间判别器（review 后修订）
++
++当前冻结入口：
++
++1. `docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md`
++2. `docs/research_v7_align_behavior/14_AGENT_EXECUTION_CONTRACT_12H.md`
++3. `docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md`
++
++当前方向：
++
++```text
++≥90 秒、以 ≥180 秒为主体的数据时间线
+++ fixed 60s acoustic requests
++→ 连续/非连续 sparse slots 与真实串行组合
++→ absolute-unit + percentage 文本错误
++→ missing gap / replace 双向评价
++→ raw / official / hidden 逐 unit/gap evidence
++→ 95/99 operating points：unit、75% interval、100% interval
++→ 跨域 region assessor、有限复查、unresolved 和后续重新入轨
++```
++
++硬约束：formal 目标 10 小时、硬上限 12 小时；禁止人工静音凑长数据；baseline 必须按完整 request identity 配对；机制消融与系统配置分开；density 使用 common units 和 phase 轮换；英文不得切断单词，日文不得切断 processor 最小对齐 unit；人工 review 结果与标签已经存在，须先定位审计，不得继续写“未填写”。
+diff --git a/APPLY_LONG_SLOT_REGION_ASSESSOR_ARCHIVE_PATCH.sh b/APPLY_LONG_SLOT_REGION_ASSESSOR_ARCHIVE_PATCH.sh
+new file mode 100755
+index 0000000..85a5b08
+--- /dev/null
++++ b/APPLY_LONG_SLOT_REGION_ASSESSOR_ARCHIVE_PATCH.sh
+@@ -0,0 +1,32 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++REPO="${REPO:-$SCRIPT_DIR}"
++
++if [[ ! -f "$REPO/README.md" || ! -d "$REPO/docs/research_v7_align_behavior" ]]; then
++  echo "[error] REPO does not look like the expected LyricAlignment tree: $REPO" >&2
++  exit 2
++fi
++
++required=(
++  "$REPO/docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md"
++  "$REPO/docs/research_v7_align_behavior/14_AGENT_EXECUTION_CONTRACT_12H.md"
++  "$REPO/docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md"
++  "$REPO/docs/research_v7_align_behavior/11_STAGE_B_FORMAL_REPORT.md"
++  "$REPO/docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md"
++)
++
++for path in "${required[@]}"; do
++  [[ -f "$path" ]] || { echo "[error] missing patch file: $path" >&2; exit 3; }
++done
++
++grep -q 'fixed 60s' "$REPO/docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md" || {
++  echo "[error] reviewed plan marker missing" >&2; exit 4;
++}
++grep -q '人工结果与标签已存在' "$REPO/docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md" || {
++  echo "[error] human-review correction marker missing" >&2; exit 5;
++}
++
++echo "[ok] reviewed 2026-08-04 long-timeline slot/region-assessor archive is present: $REPO"
++echo "[read] $REPO/docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md"
+diff --git a/PATCH_README_20260804_LONG_SLOT_REGION_ASSESSOR_ARCHIVE.md b/PATCH_README_20260804_LONG_SLOT_REGION_ASSESSOR_ARCHIVE.md
+new file mode 100644
+index 0000000..e114dde
+--- /dev/null
++++ b/PATCH_README_20260804_LONG_SLOT_REGION_ASSESSOR_ARCHIVE.md
+@@ -0,0 +1,44 @@
++# 2026-08-04 长时间线 Slot/判别器会话归档 Patch（review 修订版）
++
++## 基准工作目录
++
++本 patch 面向：
++
++```text
++LyricAlignment_202608040823_alignbehavior.zip
++```
++
++它只更新文档、会话入口和 Agent 实施合同，不包含下一阶段实验代码或运行结果。
++
++## 主要修订
++
++- 明确 ≥180 秒是数据时间线，主模型请求继续使用 fixed 60s；
++- 禁止人工静音凑长度，仅保留小型 0.5 秒 seam 对照；
++- extra/missing/replace 同时保留 1/2/4/8 units 与百分比曲线；
++- missing 增加 virtual gap，replace 增加 wrong-output + omitted-original 双向评价；
++- 同时报告 unit recall、interval recall@75%、interval recall@100% 和 correct-unit FPR；
++- slot density 使用 common units 和 stride phase 轮换；
++- matched legal baseline 按完整 request identity 建立；
++- S6 拆分为机制消融和系统配置比较；
++- raw/official/hidden 分开诊断，暂不冻结生产 commit；
++- 增加跨域 assessor 与严格 hidden extraction contract；
++- 弱人声 calibration packet 作为第一批并行工作；
++- formal 目标 10 小时、硬上限 12 小时；
++- 修正 E5、P1 和人工 review 结果/标签的历史文档错误。
++
++## 应用
++
++在 `/home/hyan` 下覆盖解压：
++
++```bash
++cd /home/hyan
++unzip -o LyricAlignment_20260804_long_slot_region_assessor_archive_patch_reviewed.zip
++```
++
++也可以在解压后的仓库根目录运行：
++
++```bash
++bash APPLY_LONG_SLOT_REGION_ASSESSOR_ARCHIVE_PATCH.sh
++```
++
++该脚本验证文件是否已正确覆盖，不执行实验。
+diff --git a/docs/research_v7_align_behavior/09_STAGE_A_REPAIR_REPORT.md b/docs/research_v7_align_behavior/09_STAGE_A_REPAIR_REPORT.md
+index a471574..1b51716 100644
+--- a/docs/research_v7_align_behavior/09_STAGE_A_REPAIR_REPORT.md
++++ b/docs/research_v7_align_behavior/09_STAGE_A_REPAIR_REPORT.md
+@@ -27,18 +27,13 @@
+ - 结论：E1 旧 detector 的事件级能力极弱（F1≈0.08–0.13），属可信负结论；与 v6 已判定的
+   "E1 unit 旧 detector 极弱"一致，且修复了此前**未按 item 分组**导致的聚合口径错误。
+ 
+-## A2. E5 同子集 paired 重算
++## A2. E5 paired 身份复核（2026-08-04 更正）
+ 
+-- 同一 set 内 fixed baseline vs dynamic exact（−0）/−2/−4，按 item 算 MAE delta。
+-- 结果（807 applicable item，1614 个 variant pair；仅 gt 项算 MAE）：
+-
+-| 项 | 值 |
+-|---|---|
+-| mean delta MAE | **−0.001 s**（≈无改善） |
+-| improve / harm / no_change | 714 / 822 / 78 |
+-
+-- 结论：E5 dynamic 边界相对 fixed baseline 近乎打平（slight harm），不继续调参数 → 冻结为
+-  "E5 未带来稳定改善"的负结果归档。
++- 本阶段原报告曾把 dynamic exact 误当作 fixed baseline，并据此写出 807 applicable item、1614 variant pairs 和近似打平结论。
++- 复核原 artifact 后确认：当前 artifact 中缺少可配对的真正 fixed baseline，实际不能形成可信的 E5 fixed-vs-dynamic variant pairs。
++- 因此上述数值和“E5 近似打平”的结论撤回，不作为科研证据。
++- 当前冻结状态：**E5 在现有 artifact 下不可验证；不继续扫参数，但也不将其写成已证明的负结果。**
++- 当前真值以 `12_COMPLETION_AUDIT.md` 为准。
+ 
+ ## A3. E6 同子集 paired 重算
+ 
+@@ -82,7 +77,7 @@
+ | E2 | 旧 detector 评价退役；扰动工具保留 | v7 用户决定 |
+ | E3 | 停止 | v7 用户决定（decoe only 不值得） |
+ | E4-old | 仅作为 oracle/localized upper bound | v7 计划 |
+-| E5 | **负结果归档，不再调参** | A2（Δ≈0） |
++| E5 | **现有 artifact 不可验证；停止继续调参** | A2 身份复核、`12_COMPLETION_AUDIT.md` |
+ | E6 | **负结果归档，不再扫 cap** | A3（Δ+1.05s） |
+ | E7 | 保留有限负证据（旧 reset 不完整） | v7 计划 |
+ | E8 | rerun/continuation 框架保留，自动选优失败 | v7 计划 |
+@@ -93,7 +88,7 @@
+ ## 完成门槛核对（08_AGENT_HANDOFF §必须优先完成）
+ 
+ - [x] E1 event 修复（A1）
+-- [x] E5/E6 paired（A2/A3）
++- [x] E5 身份复核并撤回无效 paired 结论；E6 paired 完成（A2/A3）
+ - [x] 条件分母（A4）
+ - [ ] strict serial P1 / sparse-slot S / extra-missing-replace 百分比 / cross-song no-match /
+       posterior top-K / official repair trace —— 属阶段 B，另立。
+diff --git a/docs/research_v7_align_behavior/10_STAGE_B_PROGRESS.md b/docs/research_v7_align_behavior/10_STAGE_B_PROGRESS.md
+index 0b07154..1d6bc6b 100644
+--- a/docs/research_v7_align_behavior/10_STAGE_B_PROGRESS.md
++++ b/docs/research_v7_align_behavior/10_STAGE_B_PROGRESS.md
+@@ -13,7 +13,7 @@
+ 
+ ## 当前冻结观察（不是超出样本范围的结论）
+ 
+-- MIR heldout workflow：S 与 P0 基本持平；P1/D 显著变差，P2 部分恢复。优先继续 sparse-slot 路线。
++- MIR heldout workflow（2026-08-04 更正）：stateful P1 与 P0 基本持平；S 与 P0 基本持平；独立短文本 D 明显变差，P2 部分恢复。
+ - M4 C1–C6：19-song macro ΔMAE `+1.0216s`，source-song bootstrap 95% `+0.8863..+1.1498s`。
+ - M4 C7–C9：音频后半段单独输入最不利（平均 ΔMAE `+2.7225s`），起点延后 `+1.1905s`。
+ - 100% replacement 的无正确文本锚点被保留为 unscorable/catastrophic 分母，未计入 MAE 分子。
+@@ -23,4 +23,4 @@
+ - C10 已补 MIR heldout 3-song / 6-attempt multiple-legal-answer GT control；C6 已含同歌错段、纯器乐、错语言等独立对照。demo C10 仍是无 GT review，不混同为 accuracy。
+ - 更长序列的 commit/provisional 恢复传播矩阵（80-unit 三段已完成，但不能代替长程结论）。
+ - GT strata 的 localization thresholds、coverage/overlap、posterior/repair 信号分层和综合报告。
+-- demo 人工盲审填写与无 GT 错误时长统计；没有人工标签前不可作 quality/accuracy claim。
++- 人工 review 结果与标签已经存在，但当前进度报告和 provenance 尚未正确纳入。下一阶段先定位原始 human-review artifact，审计实际填写数量、schema、reviewer 和 packet identity，再补充无 GT 错误时长与人工统计；在完成身份审计前不作超出口径的 quality/accuracy claim。
+diff --git a/docs/research_v7_align_behavior/11_STAGE_B_FORMAL_REPORT.md b/docs/research_v7_align_behavior/11_STAGE_B_FORMAL_REPORT.md
+index 95a00ac..b39e943 100644
+--- a/docs/research_v7_align_behavior/11_STAGE_B_FORMAL_REPORT.md
++++ b/docs/research_v7_align_behavior/11_STAGE_B_FORMAL_REPORT.md
+@@ -34,7 +34,7 @@
+ - C6 formal pure-instrumental：本地 MIR heldout 4/4 均有与 `official_vocal.wav` 同目录的真实 `accompaniment.wav`。8 次真实运行（4 vocal baseline + 4 accompaniment-only）均可评分；伴奏相对 vocal baseline 的 macro ΔMAE 为 `+23.46764s`，source-song bootstrap 95% `[+15.13557,+37.18049]s`，4/4 harm。这是有 GT 的 pure-accompaniment 结论，不再以 demo 盲审替代。
+ - C10 controlled GT：MIR heldout 的 4 首中，3 首具有长度 6–16 的真实非重叠重复段；在完整 source WAV 上运行 single-ambiguous 与 ordered-double 共 6 次。single 的多答案最小 MAE 均值为 `16.49057s`（范围 `0.03332–32.54855s`），ordered double 的均值为 `22.84921s`（范围 `1.02238–36.33513s`）。该小样本显示稳定错段/多段分裂确实存在，但不外推为所有歌曲的发生率。
+ - 伴奏+真实歌词：全部 35 demo 的本地 `accompaniment.wav` 已真实运行并进入盲审；它是 verified accompaniment-only 音频，但仍无 GT，不能写入 formal MAE/accuracy。
+-- 人工盲审交付已拆分为不含 mutation type 的 140 个全 demo packet 与 66 个 C10 packet；实验者 decode key 独立保存。packet 提供固定 taxonomy、`severe_error_minutes`、`longest_error_sec` 与 `unresolved` 字段，但当前仍未填写，不将空模板当作人工结果。
++- 人工盲审交付已拆分为不含 mutation type 的 140 个全 demo packet 与 66 个 C10 packet；实验者 decode key 独立保存。**2026-08-04 用户更正：人工 review 结果与标签已经存在，原“当前仍未填写”表述错误。** 当前 archive 尚未定位并审计实际 human-review artifact，因此本报告暂不猜测填写数量或汇总值；下一阶段必须按 packet identity 导入、核验 reviewer/schema/空记录并补充正式统计。
+ - 同歌 wrong-section：从同 source song 的其它原生 GT segments 派生（19 song / 38 attempts）；仅 5 条存在正确 anchor 可 MAE 配对，余下显式 unscorable。该 control 不是连续远处副歌的等价替代。
+ 
+ ## 不能声称的内容
+diff --git a/docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md b/docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md
+index c98e513..3e020ae 100644
+--- a/docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md
++++ b/docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md
+@@ -27,10 +27,10 @@
+ | threshold localization / geometry / repair diagnostics | 完成（M4 + MIR formal curves） | `gt_evidence_diagnostics.json`：0.25/0.5/1/2/5s、near-zero、gap/overlap、posterior 与 repair 汇总；只对可验证 GT 匹配单元报告 |
+ | 可区分内部信号 | 完成（诊断级，不是 QualityAssessor） | `internal_signal_separation.json` 在 M4/MIR 的 request-level entropy/margin 均可区分 baseline 与 invalid mutations；AUROC 已冻结 |
+ | no-GT data/review | 完成 | 35 demo / 140 attempts + 66 C10 cases/review bundles |
+-| human blind labels/errors-min | 待外部人工填写；盲审交付完成 | 140 demo + 66 C10 的 blinded packets 不含 mutation type，decode key 隔离；字段含 taxonomy、errors/min、longest error、unresolved，但无人类填写结果 |
++| human blind labels/errors-min | **人工结果与标签已存在，但当前 archive 尚未正确纳入/审计** | 140 demo + 66 C10 blinded packets 与 decode key 已存在；下一阶段需定位原始 human-review artifact，核验实际填写数、schema、reviewer、空记录和 packet identity 后补充统计 |
+ | full source-song population coverage | 完成（source-song 层） | `source_song_coverage.json` 证明 M4 test 19/19 source song、MIR heldout 4/4 source song 均被最长可用代表覆盖；不等同于 839 个相邻 M4 segment 的逐段全量推理 |
+-| final decision/report | 部分完成 | `11_STAGE_B_FORMAL_REPORT.md`；自动化实验闭环已完成，仍缺人类盲审标签/错误时长指标 |
++| final decision/report | 部分完成 | `11_STAGE_B_FORMAL_REPORT.md`；自动化实验闭环已完成；人工结果/标签并非缺失，但仍未被当前 archive 正确导入和审计 |
+ 
+ ## 结论
+ 
+-当前阶段已经形成可重放的生产型行为证据体系和明确的负/稳定观察，但尚不能宣称“既定计划全部完成”。尤其不能用无 GT demo 代替人工指标，或把同歌错段/纯器乐空缺改称 cross-song no-match。
++当前阶段已经形成可重放的生产型行为证据体系和明确的负/稳定观察，但尚不能宣称“既定计划全部完成”。人工 review 结果与标签已经存在，当前缺口是定位、身份对齐和正式统计，而不是等待首次人工填写。仍不能用无 GT 自动一致性代替人工指标，或把同歌错段/纯器乐空缺改称 cross-song no-match。
+diff --git a/docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md b/docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md
+new file mode 100644
+index 0000000..8905736
+--- /dev/null
++++ b/docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md
+@@ -0,0 +1,799 @@
++# Research v7 补充冻结计划：长时间线 Slot/串行混合行为与子区间判别器
++
++日期：2026-08-04
++状态：待 agent 实现与运行；正式结论需在结果回传后由 ChatGPT 复核和修正文档。
++
++## 1. 本轮目标与基本口径
++
++本轮不再将 slot 与串行视为互斥路线。二者控制不同层面：
++
++- **串行/窗口策略**决定多次 60 秒请求如何逐步覆盖长歌曲，以及是否传播文本 cursor、时间 cursor 和提交状态；
++- **slot 策略**决定一次请求中哪些歌词单元需要输出时间，哪些歌词只作为上下文。
++
++正式研究对象是二者的组合：
++
++```text
++≥90 秒、以 ≥180 秒为主体的真实或规则构造时间线
+++ 当前冻结的 fixed 60s acoustic request
+++ 足够的歌词上下文
+++ 当前区/复查区的 sparse 或非连续 slots
+++ 逐 unit/逐 gap 子区间判别器
+++ 有限重试与 unresolved 机制
++```
++
++**180 秒是形成和评价数据时间线的时长，不是模型单次窗口长度。** 本轮默认沿用此前观察较稳的 fixed 60s production baseline，不将主请求直接改成 180 秒，也不扫描 180 秒模型输入长度。
++
++本轮需要完成：
++
++1. 修复旧行为实验的评价口径、历史文档错误和未真正完成的串行实验；
++2. 以 90 秒以上、尤其 180 秒以上时间线为主体，系统研究 slot 的工作方式；
++3. 同时补充绝对 unit 与百分比文本扰动；
++4. 从 hidden、raw、official 及其交互中寻找逐 unit 和逐 gap 的错误信号；
++5. 建立初步子区间判别器，并分别诊断 raw-target 与 official-target；
++6. 将判别器放入真实多窗流程，验证是否能阻断 end-early、错误 head 和困难区的传播；
++7. 正式实验运行目标控制在 **10 小时以内**，硬上限 **12 小时**。
++
++## 2. 判别器输出与冻结评价目标
++
++判别器输入一个或多个歌词查询范围，输出范围内部的可信与不可信连续子区间，而不是对整条请求给一次二分类。对于 missing，还需要输出相邻保留 unit 之间的可疑 gap。
++
++```json
++{
++  "queried_intervals": [[40, 100], [130, 150]],
++  "trusted_intervals": [[40, 67], [82, 100], [130, 141]],
++  "unsafe_intervals": [[67, 82], [141, 150]],
++  "unsafe_gaps": [{"left_unit": 73, "right_unit": 78}]
++}
++```
++
++在 validation 上冻结 `high_recall_95` 和 `high_recall_99` 两个 operating point。test 同时报告三种错误捕捉标准：
++
++1. **unit recall**：错误 output unit 被判 unsafe 的比例；missing 另报告 deleted-GT-unit weighted gap recall；
++2. **interval recall@75%**：一个真实错误区间至少 75% 的 canonical units 被预测 unsafe；
++3. **interval recall@100%**：一个真实错误区间全部 canonical units 被预测 unsafe。
++
++正确结果的代价只按 **retained correct unit** 统计 false-positive rate，不用 request 或 interval 数量替代。错误捕捉优先，可以接受一定正确误判；原 20%/10% 正确 unit 误判率继续作为参考目标，而不是以牺牲错误捕捉为代价的绝对硬门槛。
++
++同时报告：
++
++- missing gap event recall；
++- replace wrong-output recall 与 replaced-GT omission recall；
++- 长度不少于 3 units 的错误区间完全漏检率；
++- unsafe 预测的平均扩张长度；
++- 额外请求、提交延迟、unresolved 和停滞率。
++
++AUROC、AUPRC、F1 只作辅助，不替代上述 operating-point 结果。
++
++## 3. 长时间线与 60 秒窗口
++
++### 3.1 长度口径
++
++| 时间线长度 | 用途 |
++|---|---|
++| <30 秒 | 单元测试和快速代码 smoke |
++| 30–90 秒 | 历史兼容或长度对照，不作为主结果 |
++| 90–180 秒 | 正式最低档 |
++| ≥180 秒 | 正式主体，支持至少 3 个 60 秒请求 |
++| 完整歌曲 | 真实多窗串行、后部定位和困难区隔离 |
++
++正式主统计不得用 4–12 秒短片段替代长时间线结论。
++
++### 3.2 请求窗口冻结
++
++- 主 acoustic request 使用现有 **fixed 60s production baseline**；
++- overlap、步长和尾窗处理沿用当前已验证实现，本阶段不再把窗口长度加入实验因素；
++- 180 秒及完整歌曲通过多个 60 秒请求覆盖；
++- full-song audio 单次输入若保留，只能作为小型诊断 control，不进入主系统平均结果；
++- 不需要把“模型能否一次处理 180 秒输入”设为本轮 gate。
++
++### 3.3 Formal 数据规模
++
++优先目标：
++
++- 至少 20 首独立 source song 可形成 ≥180 秒时间线，理想 30 首以上；
++- 至少 8 首完整歌曲支持 4 个以上连续 60 秒请求；
++- 每个核心主效应条件覆盖至少 12 首独立 source song；
++- assessor 的 test split 应包含多个独立 source song，并明确报告每类 unsafe units、gap events 和 error intervals 的实际分母；
++- early/middle/late 三种时间线位置均有覆盖。
++
++本轮不要求用置信区间作为启动门槛，但不能只给百分比而隐藏样本数；95%/99% 的解释强度必须随实际分母说明。
++
++如果本地数据无法满足，agent 应在 preflight 中报告实际可用规模，并按以下顺序降级：
++
++1. 减少次要交互和极端严重度；
++2. 减少重复随机种子；
++3. 减少 90 秒对照，优先保留 ≥180 秒主体；
++4. 减少每首歌的变体数量，优先保留 source-song 多样性；
++5. 不得通过大量短片段或重复 slot view 填充正式 attempt 数。
++
++### 3.4 M4Singer 长时间线构造
++
++agent 可依据本地元数据灵活构造，但必须遵守：
++
++- 只拼接同一 source song、同一录音版本、同一歌手的片段；
++- 顺序必须由原元数据确定，不按文件名任意猜测；
++- 歌词与音频同步拼接；
++- 禁止循环复制短片段凑长度；
++- 禁止通过强塞人工静音把短样本凑成 180 秒；自然存在的静音正常保留；
++- 保存每个 seam 的来源、原时间、新时间和位置；
++- 同一 source song 的所有派生时间线和窗口属于同一数据 split。
++
++已有实验倾向于 seam 影响较小，因此不做大规模 seam 扫描。只建立一个小型对照：
++
++- 主版本直接按规则拼接；
++- 对照版本在 seam 插入 0.5 秒静音并同步平移后续 GT；
++- seam-silence 对照不超过 synthetic-long attempts 的 10%；
++- 全部插入静音占最终时间线时长也必须低于 10%；
++- 原始有效内容本身必须接近目标长度，不能依靠这 0.5 秒静音达到长度门槛；
++- 分别报告 seam 邻近与远离 seam 的结果。
++
++### 3.5 外部长数据探索
++
++网络数据只作为补充，不能阻塞本地主线。可尝试许可清楚的完整歌曲同步歌词、Enhanced LRC，或用户本地合法拥有的 QRC/YRC/音乐软件导出歌词。每个外部项目必须记录来源、许可、音频/歌词版本、语言、时间粒度、单位映射和版本匹配审计。
++
++若只有 onset，可用下一个 onset 派生 offset，但必须标记，主指标只评价 onset，不与真实 offset GT 混合。
++
++## 4. 避免笛卡尔积的设计
++
++禁止把以下所有因素做全组合：
++
++```text
++时间线长度 × 时间线位置 × slot 拓扑 × slot 密度 × 文本上下文
++× extra/missing/replace × 严重度 × 扰动位置 × 声学退化
++× 串行方式 × 判别器特征组合
++```
++
++### 4.1 问题隔离 cohort
++
++每个实验只回答一个主要问题，其他因素固定：
++
++- 时间线实验：只改变时间线长度和目标位置，request 始终为 60 秒；
++- slot 拓扑实验：固定长时间线、同一 60 秒 crop、正确文本和 queried units，只改变 slot 结构；
++- slot 上下文实验：固定 slot 区和 acoustic crop，只改变历史/future 文本预算；
++- 文本扰动实验：固定主 slot 方式，分别运行绝对 unit 与百分比 cohort；
++- 声学困难实验：歌词完全正确，只改变弱人声/静音等声学条件；
++- 串行传播实验：固定 60 秒窗口计划和已选定 slot 方式，只改变传播状态或 commit 规则；
++- 判别器消融：复用同一底层 evidence，不重新推理。
++
++### 4.2 主效应后再做少量交互
++
++smoke/pilot 先筛选单因素。只有已有观察提示交互后，formal 才增加少量成对条件，例如：
++
++- leading silence × extra-head 10%；
++- end-early × 判别器 commit；
++- 非连续 slot × 中间困难区；
++- replace 困难区 × 后续 sparse slot 重新入轨。
++
++不增加三因素以上全组合。
++
++### 4.3 固定代表条件
++
++默认代表设置：
++
++- 主时间线长度：≥180 秒；
++- 主 acoustic request：fixed 60s；
++- 主目标位置：middle，另保留少量 early/late；
++- 主 slot 区长度：32 units；
++- 主历史文本：从当前可信 cursor 到当前区，必要时保留更早文本作上下文；
++- 主 future lookahead：16 units，无 slots；
++- 稀疏真实错误：1/2/4/8 units；
++- 百分比核心档：10%/25%/50%；
++- 百分比极端档只在小型压力子集运行。
++
++### 4.4 分层抽样而非全量复制
++
++每首歌不承载所有条件。用冻结 seed 将歌曲分配到互补 cohort，保证：
++
++- 每个核心条件有足够 source-song 覆盖；
++- 同一歌曲不会生成大量高度相关变体；
++- 同一底层 request 的不同 view 可成对分析，但不能当作独立歌曲扩充样本；
++- M4 synthetic-long、MIR natural-song 和 demo 分开汇报。
++
++## 5. 阶段 A：修复评价、映射和历史事实
++
++### A1. Raw/Official 分开
++
++每个 queried unit 保存并评分：
++
++- raw onset/offset/duration；
++- official onset/offset/duration；
++- raw 顺序、重复、逆序；
++- raw→official 位移；
++- official repair 标志、连续 repair 长度和局部 repair 比例；
++- posterior top-k、entropy、margin 和边缘概率。
++
++当前阶段是诊断研究，不冻结最终生产 commit 路线。raw-target 与 official-target 必须分别建立标签、训练和评价；必要的可视化由自动异常排序选择，不能依赖大规模人工观看。
++
++### A2. Mutation canonical mapping
++
++显式保存 canonical GT axis、输入 axis、输出 row 和 gap candidate 之间的映射：
++
++- before mutation；
++- inside mutation；
++- after mutation；
++- inserted input unit；
++- removed GT unit；
++- replacement input unit；
++- replaced original GT unit；
++- retained correct unit。
++
++replace 不再通过字符偶然相同决定评分。100% replace 单列为无正确 anchor 行为。
++
++### A3. Missing 与 replace 的评价方式
++
++#### Missing
++
++被删除的 GT unit 没有 output row，不能伪装成普通 output-unit 标签。必须同时建立：
++
++1. **retained output-unit 评价**：评价 deletion 前后仍存在的正确 unit 是否被带偏；
++2. **virtual gap 评价**：在每对相邻 retained units 之间建立 gap candidate。若 canonical GT 中间存在一个或多个 removed units，该 gap 为 positive；
++3. **missing event recall**：最大连续 removed run 是否被对应 gap 检出；
++4. **deleted-GT-unit weighted recall**：一个 positive gap 被检出时，其覆盖的 removed GT units 计为被捕捉，并明确这是 omission detection，不代表模型恢复了每个缺失 unit 的精确时间。
++
++virtual gap 的输入特征只能来自左右 unit 的 hidden/raw/official/posterior、时间跳变和跨视图差异，不得使用 mutation mask、缺失数量或 GT 身份。
++
++#### Replace
++
++replace 同时包含两个方向：
++
++1. replacement input units 是不存在于 GT 的 wrong-output units，按 identity error 评价；
++2. 被替代的 original GT units 在输入中缺失，按 omission gap 评价；
++3. replacement 前后的 retained correct units 单独评价是否被污染；
++4. 组合报告 wrong-output recall、replaced-GT omission recall、combined replace-region recall@75%/100%。
++
++### A4. Slot 映射
++
++- slot indices 强制严格递增；
++- 保存输入 timestamp token 位置；
++- 保存输出 row 到原 input unit 和 canonical GT unit 的映射；
++- 连续与非连续 slots 均有单元测试；
++- 同一 queried unit 在不同 slot mask 下可追踪；
++- gap candidate 的左右边界映射可追踪。
++
++### A5. 真正串行 lineage
++
++保存：
++
++- parent request；
++- 上一窗 trusted/provisional/unsafe/unresolved；
++- 文本 cursor 来源；
++- 60 秒 acoustic crop 来源；
++- slot mask 与 review slots；
++- 本窗是否使用任何 oracle reset。
++
++正式串行不得每窗用 GT 重置。
++
++### A6. 历史文档事实修正
++
++当前文档统一修正为：
++
++- E5 当前 artifact 缺真正 fixed baseline，paired 结果不可验证；
++- P1 是 same-audio incremental prefix/stateful prefix workflow，修正后与 P0 基本持平，不是“显著变差”；
++- recovery 0.0 秒只说明当前调用式实现无跨请求隐状态污染，不是真实错误恢复；
++- M4 短片段、M4 synthetic-long、MIR natural-song 和 demo 必须分开；
++- 人工 review 结果与标签已经存在；此前“未填写”的表述错误。下一阶段必须定位原始人工 artifact，审计实际填写数量、schema、reviewer 和可用字段，再纳入正式统计，不能仅凭 packet 数推定标签数。
++
++## 6. 阶段 B：Slot 工作方式研究
++
++slot 与串行可组合。所有主实验在 ≥180 秒时间线上用 60 秒 acoustic request 运行。
++
++### S0. 长时间线位置基线
++
++固定合法文本和 60 秒 crop，比较：
++
++1. crop 内全部目标歌词有 slots；
++2. 当前连续区有 slots，其余歌词只作上下文；
++3. 当前区有 slots，只有有限历史文本；
++4. 只有当前短文本。
++
++目标分别位于长时间线 early/middle/late。查询区以 32 units 为主，少量 8/16/64 units 作容量对照。
++
++回答：
++
++- sparse slot 对 GT 的 raw/official 精度；
++- 在歌曲后部和连续多窗后能否保持定位；
++- 历史文本和 future lookahead 是否必要；
++- 孤立短文本为何失败。
++
++### S1. Slot 拓扑
++
++固定同一长时间线、同一 60 秒 crop、正确文本和相同 queried units，分别运行：
++
++- 单个连续区间；
++- 两个不连续区间；
++- 三个短区间；
++- 当前生成区 + 仍位于 crop 内的历史复查区；
++- 困难区两侧；
++- 联合查询与分别查询。
++
++主评价是同一 unit 的成对 GT 误差和跨视图 hidden/raw/official/posterior 一致性；分别查询的额外请求成本必须单列。
++
++### S2. Slot 密度与公平比较
++
++固定 32-unit 目标区，比较：
++
++- 100%；
++- stride 2；
++- stride 4；
++- stride 8；
++- 仅首尾与公共锚点。
++
++为避免不同密度评价了不同难度的 unit：
++
++- 预先冻结一组所有密度都包含的 **common anchor units**；
++- stride 2/4/8 使用多个起始 phase 轮换，不固定只取某一种位置；
++- 主精度比较只评价所有 mask 共同 queried 的 common units；
++- 次要结果再报告各条件全部 queried units 的绝对表现；
++- 仅首尾锚点只能说明锚点定位和成本，不能代表整个 32-unit 区间的完整对齐质量。
++
++pilot 后只保留有信息的 2–3 个密度进入 formal。
++
++### S3. 上下文预算
++
++固定当前 slot 区和 acoustic crop，分别研究：
++
++- 历史文本：无、最近 16、完整可用历史；
++- future 文本：无、16 units、较长 future。
++
++先分别研究历史和 future 主效应，仅在 pilot 显示交互时增加少量组合。
++
++### S4. Slot mask 不变性
++
++同一 unit 在以下视图中重复查询：
++
++- full slots；
++- 连续 sparse；
++- 非连续 sparse；
++- 联合与单独查询；
++- 两种 future dosage；
++- 相邻 60 秒窗口重叠区。
++
++保存 raw/official 时间差、posterior 分布差和 hidden 距离。这既是行为研究，也是无 GT 判别信号。
++
++### S5. Slot 外部文本错误
++
++queried interval 保持正确，只在查询前、两个查询区之间或查询后加入代表性的 extra、missing、replace。分别运行：
++
++- 稀疏真实错误：1/2/4/8 units；
++- 比例错误核心档：10%/25%/50%；
++- 极端比例只在小型 stress subset 运行。
++
++回答 slot 是否能隔离局部正确区，或是否受远处错误文本污染。
++
++### S6. 机制消融与系统配置分开
++
++#### S6-M：机制消融
++
++使用相同 60 秒 acoustic crops、相同歌词、相同 queried units 和尽量相同请求计划，分别只改变一个机制：
++
++- 当前 slots vs 当前 + 历史 review slots；
++- 固定 acoustic window 下，不传播 vs 传播 text cursor；
++- 固定 text schedule 下，不传播 vs 传播 time cursor；
++- unsafe 后强行提交 vs 有限复查后 unresolved；
++- 同一 queried units 的联合查询 vs 分别查询。
++
++这部分用于回答组件作用。
++
++#### S6-S：端到端系统配置
++
++系统配置同时改变多个机制，只作为整体路线比较，不称为严格消融：
++
++- **Window-sparse**：fixed 60s 多窗 + 当前 sparse slots + future 无 slots；
++- **Window-review**：fixed 60s 多窗 + 当前区 + crop 内历史复查区；
++- **Serial-text**：fixed 60s 窗口计划，仅传播文本 commit；
++- **Serial-dynamic**：下一 crop 和文本起点由上一窗可信结果共同决定；
++- **Hybrid-relocalize**：平时 60 秒串行，失败时用更大范围或相邻请求的 sparse slots 重新定位后续区。
++
++先用合法输入比较精度、请求数和耗时，再只对最有价值的 2–3 个系统运行错误传播实验。
++
++## 7. 阶段 C：文本与声学困难行为
++
++### C1. 绝对 unit 与百分比扰动同时保留
++
++#### 稀疏真实错误
++
++1/2/4/8 units：
++
++- extra：重复已提交文本、相邻短语、同歌过去/未来文本、跨歌同语言文本；
++- missing：单字、短语、句首、分散漏字；
++- replace：同歌其他位置、跨歌真实文本、同音/近音、小连续块。
++
++#### 百分比曲线
++
++每条记录同时保存 requested ratio、actual ratio 和绝对 unit 数。
++
++核心正式档：
++
++- extra：+10%/+25%/+50%；
++- missing：10%/25%/50%；
++- replace：10%/25%/50%。
++
++小型压力子集：
++
++- extra：+100%/+200%；
++- missing：75%/90%；
++- replace：75%/100%。
++
++比例档不与所有位置、slot 密度和声学条件做全组合。主曲线固定代表位置，并用少量 head/middle/tail 分层检查位置效应。
++
++### C2. Replace 作为困难区代理
++
++replace 只作为“文字与声音不对应”的人工困难区，不预设其与弱人声机制一致。比较 replace、正确歌词+弱人声、混响、dropout 和自然高误差区，并进行有限迁移：replace 训练→弱人声测试、弱人声训练→replace 测试、联合训练和 leave-one-family-out。
++
++### C3. 前置静音与弱人声
++
++纯伴奏只保留极端负对照，正式主条件为纯人声输入的合理退化。
++
++弱人声校准是第一批工作：
++
++- Phase 0 立即生成小型 calibration packet；
++- 与 evaluator、slot mapping、cache 和 hidden 代码并行推进；
++- 尽早交给用户试听，冻结“轻度合理”和“明显但合理”两档；
++- 人工选择不阻塞其它代码和非声学实验；
++- 未完成校准前可以生成 provisional 结果，但不能混入正式声学结论。
++
++正式主要测试：
++
++- 绝对静音、低幅噪声、自然无唱前奏；
++- 正常人声、冻结的轻度弱人声、明显弱人声、混响、分离残留。
++
++不做全组合。先测试正确 head；仅对发现明显风险的条件增加 extra-head 10% 或 missing-head 10% 交互。
++
++## 8. 阶段 D：真实串行、end-early 和困难区隔离
++
++### D1. End-early
++
++在第 2 个 60 秒窗口提前结束音频 0.5/1/2/4/8 秒，歌词仍含原 tail。比较：
++
++- 全部提交；
++- 固定安全尾区；
++- oracle 区间判断；
++- 初步判别器判断。
++
++后续至少继续 3 窗，不得 GT 重置。观察错误提交、下一窗 head、重复/漏字、cursor 漂移和恢复。
++
++### D2. 困难区隔离
++
++困难区有限复查后仍不可信时：
++
++1. 标记 unresolved；
++2. 不用其错误结束时间推进后续；
++3. 使用非连续 sparse slots 或相邻 60 秒请求查询困难区后的歌词；
++4. 建立新的右侧锚点；
++5. 继续处理后续，困难区留待左右锚点约束下单独解决。
++
++比较强行提交、无限 realign、有限重试后 unresolved 和 hybrid relocalize。
++
++## 9. Hidden、Raw、Official 信号与抽取契约
++
++### 9.1 Hidden extraction contract
++
++agent 必须先生成 `hidden_extraction_audit.json`，明确：
++
++- 实际模型模块、层编号、pre/post norm 位置和 hidden tensor shape；
++- 每个 queried unit 的 start/end boundary 对应哪个 decoder token position、output row 和 timestamp class；
++- unit index、boundary type、token position、layer id、request id 的可逆映射；
++- dtype、device、是否同一次 forward 同时生成 hidden 与 logits；
++- 启用 hidden extraction 前后 raw logits、top-k 和 official 输出的数值等价检查及容差；
++- selected layer vectors 的保存 dtype、压缩方式和内容 hash。
++
++不得只凭层序号猜测 token 语义。若模型接口不能稳定映射，hidden 路线停止在 audit，不得生成看似合理的特征。
++
++formal 默认只保存最后层和最后四层所需向量/派生特征，不全面扫描所有层。标准化、PCA、Mahalanobis、kNN reference 和任何 feature selection 只能在 train split 拟合，再应用到 validation/test。
++
++### 9.2 Hidden-only 特征
++
++- start/end hidden 拼接、差、均值；
++- norm、分量方差、最大绝对值；
++- start/end cosine 和距离；
++- 相邻 unit 的一阶/二阶变化、局部方差和曲率；
++- 最后四层的层间 cosine、delta norm、总移动和稳定速度；
++- 到正确训练分布中心的 Mahalanobis、PCA reconstruction、kNN 距离；
++- 同一 unit 跨 slot mask、窗口和 dosage 的 hidden 一致性；
++- hidden 异常序列的变化点和持续区间。
++
++### 9.3 Raw-only
++
++- entropy、margin、top-k 时间跨度和方差；
++- 多峰和远距离第二峰；
++- 音频边缘概率；
++- raw duration、相邻时间差、零时长、重复、逆序；
++- 局部字速和跨视图时间差。
++
++### 9.4 Official-only
++
++- official duration、gap/overlap、边缘吸附；
++- repair 标志、位移、局部比例和连续 run；
++- official 跨视图稳定性。
++
++### 9.5 交互与消融
++
++统一消融：H、R、O、H+R、H+O、R+O、H+R+O、H+R+O+跨视图。
++
++显式交互包括：
++
++- hidden 异常 × raw uncertainty；
++- hidden 跳变 × raw 时间跳变；
++- hidden 异常 × official repair；
++- raw 确信但 official 大修；
++- raw 不确定但 official 表面平滑；
++- hidden/raw 跨视图不稳定但 official 稳定。
++
++所有特征消融复用同一 attempt evidence，不重新运行 aligner。
++
++## 10. 子区间判别器
++
++### 10.1 Candidate 与标签
++
++建立两类 candidate：
++
++1. **unit candidate**：每个实际 output unit；
++2. **gap candidate**：每对相邻 retained units 之间的潜在 omission gap。
++
++unit 主标签：
++
++- unsafe：对应 target 下任一边界误差 >250 ms，或歌词身份错误、插入内容不存在、无效时间、严重逆序/越界；
++- trusted：对应 target 下两个边界均 ≤250 ms、歌词身份正确且时间有效。
++
++同时报告 100 ms、500 ms；raw-target 与 official-target 分开。gap 标签按 canonical mapping 判断中间是否存在 removed/replaced-original GT units。
++
++mutation mask、mutation family、GT error 和 deleted count 只能用于标签与分层，不能进入模型特征。
++
++### 10.2 模型顺序
++
++1. 单规则；
++2. unit/gap 分开的标准化 logistic regression 或线性 probe；
++3. 显式二阶交互；
++4. 若仍明显不足，再尝试冻结规模浅层 MLP 或浅层树。
++
++按 source song 切分，validation 冻结特征、阈值和区间合并规则，test 不再调参。
++
++### 10.3 跨域评价
++
++至少分别报告：
++
++- M4 synthetic-long 同域 source-song heldout；
++- M4 训练/验证后在 MIR natural-song 上的跨数据集测试；
++- mutation family leave-one-out；
++- replace、弱人声和自然高误差区之间的 acoustic/text family leave-one-out；
++- demo 只做无 GT 自动 challenge 和人工标签复核，不用来调阈值。
++
++M4、MIR、demo 不合并成一个准确率。
++
++### 10.4 Operating points 与区间输出
++
++在 validation 上冻结 `high_recall_95` 和 `high_recall_99`。test 同时报告 unit recall、interval recall@75%、interval recall@100% 和 correct-unit FPR。
++
++逐 unit/gap score 二分后，只比较：
++
++- 无平滑；
++- 填补 1-unit 小孔、左右最多扩张 1 unit 的轻度平滑。
++
++不得使用大范围形态学扩张人为抬高 recall。
++
++## 11. Test Demo 自动利用、多语言和人工标签
++
++### 11.1 自动证据
++
++当前全部 demo 自动运行，但不称为 GT accuracy。生成：
++
++- full vs sparse 一致性；
++- 不同 tail dosage 的共同区间一致性；
++- 前置静音平移一致性；
++- 相邻 60 秒窗口重叠一致性；
++- 连续与非连续 slot mask 一致性；
++- 判别器潜在漏检/误报排序。
++
++默认只渲染最异常、阈值附近和少量随机正常对照，总量不超过 20–30 个。
++
++### 11.2 已有人工结果与标签
++
++人工 review 结果与标签已经存在。agent 在 Phase 0 必须：
++
++- 定位实际 human-review artifact；
++- 报告实际填写记录数、空记录数、reviewer、schema 和 decode-key 对应关系；
++- 将人工结果与 140 demo attempts、66 C10 cases 的 packet identity 对齐；
++- 不能继续把 packet 模板数量写成“尚无人工结果”，也不能在未审计前假定所有 packet 都已填写；
++- 人工标签只用于 heldout 复核或预先冻结的人工评价，不泄漏到自动 challenge 阈值选择。
++
++### 11.3 英文切分
++
++- 不在单词内部切分；
++- 优先行、标点、单词边界；
++- 覆盖撇号词、连字符词、非 ASCII 拉丁字符；
++- alignment unit、window unit 和 render unit 映射可追踪。
++
++### 11.4 日文切分
++
++审查现有日文 demo：
++
++- processor unit 与窗口 unit 是否一致；
++- 小假名、促音、长音符、汉字+假名、标点和拉丁混写；
++- 不在 processor 的最小对齐 unit 内截断；
++- 无稳定词界时优先行或标点边界。
++
++英文和日文边界测试必须进入 smoke gate。
++
++## 12. Baseline、缓存与正式运行预算
++
++### 12.1 公平 baseline
++
++“baseline 只跑一次”只适用于 **完整 request identity 相同** 的情况。每个 mutation 或 slot 条件必须引用 matched legal baseline，身份至少相同于：
++
++```text
++audio crop/transform
++normalized legal text context
++alignment units
++slot indices and topology
++request mode
++window position
++processor/model/decoder version
++```
++
++因此：
++
++- full-slot mutation 对应 full-slot legal baseline；
++- sparse mutation 对应相同 sparse mask 的 legal baseline；
++- 非连续 slot mutation 对应相同非连续 mask 的 legal baseline；
++- 不同 acoustic crop、文本上下文或 request mode 不得共享一个不匹配 baseline。
++
++完全相同 identity 的 baseline 才可通过缓存复用。
++
++### 12.2 缓存分层与 key
++
++优先复用：
++
++1. 音频派生缓存；
++2. processor 输入缓存；
++3. 经等价性验证后可复用的音频编码缓存；
++4. attempt 底层 hidden/raw/posterior/official/repair evidence；
++5. H/R/O 和跨视图特征缓存；
++6. 不同 GT 阈值、模型和 operating point 的评价缓存。
++
++缓存键至少包含：
++
++```text
++code commit/source-tree hash
++model/checkpoint hash
++processor/dependency environment version
++audio content hash + crop/transform spec
++normalized text hash
++alignment units hash
++slot indices/topology
++request mode and window identity
++mutation spec hash and seed
++hidden extraction schema/layers
++decoder and global-time conversion version
++GT/canonical mapping schema version
++```
++
++不得仅按输出目录或文件名复用。音频 encoder cache 只有在确认该表示与文本/slot 无关且缓存前后输出等价后才能启用。
++
++### 12.3 正式运行预算
++
++- **formal target：≤10 小时**；
++- **formal hard stop：≤12 小时**；
++- 代码开发、用户试听校准不计入 formal；
++- preflight、smoke、pilot 单独记录耗时，不得被混写为 formal；
++- 预计 formal 超过 10 小时时先缩减，只有保留核心实验仍无法压到 10 小时时才允许接近 12 小时；
++- 超过 12 小时必须终止未开始的低优先级 cohort，而不是静默继续。
++
++formal 建议预算：
++
++| 阶段 | 目标上限 |
++|---|---:|
++| 长时间线合法基线、slot 主效应 | 2.5 h |
++| 绝对/百分比文本扰动与 seam 小对照 | 2.0 h |
++| 声学困难、真实串行、end-early | 2.5 h |
++| H/R/O evidence 与 region assessor | 2.0 h |
++| demo 自动 challenge、人工标签导入、汇总 | 1.0 h |
++
++缩减顺序：
++
++1. 删除 pilot 无信息的密度、上下文或系统配置；
++2. 删除百分比极端 stress subset，保留 10/25/50 和 1/2/4/8；
++3. 减少随机重复和同歌变体；
++4. 减少 90 秒对照，保留 ≥180 秒时间线；
++5. 保留非连续 slot、真实串行、end-early、missing/replace gap 评价、跨域 assessor 和 demo 自动分析；
++6. 不得退回短音频作为主要节省方式。
++
++pilot 必须生成每种请求的中位/p90 推理时间、cache hit/miss、预计 forward 数、formal 墙钟和 retained/dropped conditions。预计超过 10 小时时不得直接启动 formal。
++
++## 13. 执行阶段和 Gate
++
++### Phase 0：Preflight 与并行校准
++
++输出：
++
++- 长源与长度分布；
++- 可构造 ≥90/≥180 秒时间线；
++- 60 秒窗口计划；
++- seam 0.5 秒小对照 manifest；
++- slot mapping 与 density common anchors；
++- hidden extraction audit；
++- human-review artifact audit；
++- demo 多语言切分 audit；
++- cache plan 与 formal 成本预测；
++- 弱人声 calibration packet。
++
++### Phase 1：修复契约
++
++修 raw/official evaluator、canonical mutation mapping、unit/gap candidate、slot 映射、serial lineage、多语言切分、历史文档和缓存身份。
++
++### Phase 2：Smoke
++
++至少包括：
++
++- 1 个 ≥180 秒 M4 时间线上的连续 60 秒 requests；
++- 1 首完整 MIR 的多窗流程；
++- 1 个非连续 slot；
++- 1 组 density common-anchor/phase 检查；
++- 1 条真实多窗 lineage；
++- 1 个 missing gap 与 1 个 replace 双向评价；
++- hidden extraction 等价检查；
++- 英文不切词；
++- 日文 unit 边界；
++- demo 自动一致性与人工标签身份对齐。
++
++### Phase 3：Pilot
++
++用少量长歌曲覆盖全部实验家族，冻结代表条件、formal forward 数、hidden 层、unit/gap 模型和判别器特征候选。
++
++### Phase 4：Formal manifests
++
++```text
++01_long_timeline_60s_legal_baseline
++02_slot_position_topology
++03_slot_density_common_units
++04_slot_context_mask_invariance
++05_sparse_and_percentage_text_errors
++06_seam_half_second_control
++07_leading_silence_weak_vocal
++08_serial_mechanism_ablation
++09_serial_system_routes
++10_end_early_and_difficult_region
++11_region_assessor_cross_domain
++12_demo_automatic_and_human_review
++```
++
++### Formal 启动硬门槛
++
++不得 formal，如果：
++
++- 主数据仍以 <90 秒时间线为主；
++- 主 acoustic request 被误改成 180 秒，而不是冻结 60 秒；
++- 人工静音被用于凑够 180 秒；
++- 非连续 slot mapping 或 density common-unit 比较未测试；
++- 串行仍使用 GT 重置；
++- missing 没有 gap candidate，replace 没有双向评价；
++- hidden 抽取改变 raw/official 输出或映射不明；
++- raw/official target 混用；
++- matched legal baseline identity 不完整；
++- demo 未自动利用或已有人工标签未审计；
++- 英文仍可切断单词；
++- 日文 unit 未审计；
++- 缓存身份不完整；
++- 预计 formal 超过 10 小时且尚未缩减；
++- 计划仍包含明显笛卡尔积。
++
++## 14. Agent 输出与文档边界
++
++agent 至少输出：
++
++```text
++PRECHECK.json
++LONG_TIMELINE_MANIFEST.jsonl
++WINDOW_PLAN.jsonl
++SEAM_CONTROL_MANIFEST.jsonl
++HUMAN_REVIEW_AUDIT.json
++HIDDEN_EXTRACTION_AUDIT.json
++RUN_MANIFEST.json
++RUNTIME_BUDGET.json
++CACHE_AUDIT.json
++FAILURES.jsonl
++AUTO_TABLES.csv
++AUTO_SUMMARY.json
++AUTO_FINDINGS_DRAFT.md
++```
++
++`AUTO_FINDINGS_DRAFT.md` 只是自动观察，不是最终结论。运行完成后，将工作目录或 compact evidence 包交回 ChatGPT，由 ChatGPT 审查实现公平性、核对原始结果、修正正式文档、记录 negative results，并形成下一阶段决定。
+diff --git a/docs/research_v7_align_behavior/14_AGENT_EXECUTION_CONTRACT_12H.md b/docs/research_v7_align_behavior/14_AGENT_EXECUTION_CONTRACT_12H.md
+new file mode 100644
+index 0000000..3cc40e7
+--- /dev/null
++++ b/docs/research_v7_align_behavior/14_AGENT_EXECUTION_CONTRACT_12H.md
+@@ -0,0 +1,132 @@
++# Agent 实施合同：10 小时目标 / 12 小时硬上限的长时间线 Slot/判别器实验
++
++## 1. 职责
++
++Agent 负责代码编写、测试、数据发现、长时间线构造、缓存、运行、日志和机器可读汇总。涉及本地路径、模型接口、已有缓存、人工 review artifact 或数据元数据的判断，由 agent 在工作目录内调查并记录证据。
++
++Agent 不负责最终科研文档定稿。所有自动结论必须标为 draft，结果回传后由 ChatGPT 复核和修订。
++
++## 2. 首先阅读
++
++1. `docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md`
++2. `docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md`
++3. `docs/research_v7_align_behavior/11_STAGE_B_FORMAL_REPORT.md`
++4. `docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md`
++5. 当前 research_v7 代码、attempt/evidence schema、原始 formal 结果和 human-review artifacts
++6. `AGENTS.md`
++
++`09_STAGE_A_REPAIR_REPORT.md` 和 `10_STAGE_B_PROGRESS.md` 仅为历史阶段记录；其中 E5、P1 和人工标签状态已由本 patch 修正，不得引用旧表述。
++
++## 3. 冻结事实
++
++- 长数据指 ≥90 秒、以 ≥180 秒为主体的时间线；主模型请求仍使用 fixed 60s acoustic window；
++- 不得用人工静音把短样本凑成 180 秒；
++- slot 与串行可组合；
++- 文本扰动同时包含 1/2/4/8 units 和百分比曲线；
++- missing 必须有 virtual gap 评价，replace 必须同时评价 wrong-output 与 omitted-original；
++- raw-target 与 official-target 分开诊断，本阶段不冻结最终生产 commit；
++- 人工 review 结果与标签已经存在，必须定位、审计并导入，不能继续写“未填写”。
++
++## 4. 实现优先级
++
++1. 立即生成弱人声 calibration packet，与其它开发并行；
++2. 修 evaluator、canonical mutation mapping、unit/gap candidate、slot mapping、serial lineage 和历史文档；
++3. 实现严格 matched-baseline/cache identity；
++4. 完成 ≥180 秒时间线和 fixed 60s window preflight；
++5. 完成 density common anchors/phase、非连续 slot、slot+串行和多语言切分 smoke；
++6. 完成 hidden extraction contract 与等价性审计；
++7. 用 pilot 测真实耗时并将 formal 预测压到 10 小时目标内；
++8. 在 12 小时硬上限内运行 formal；
++9. 训练并评价 unit/gap H/R/O 子区间判别器及跨域测试；
++10. 生成 compact evidence 和 draft 汇总。
++
++## 5. 严禁事项
++
++- 不做全笛卡尔积；
++- 不用大量短音频或重复 view 替代长时间线；
++- 不把 180 秒误作主模型窗口；
++- 不用人工静音凑长数据；
++- 不把 P1 prefix recomputation 叫真实串行；
++- 不在正式串行每窗用 GT reset；
++- 不只输出 request 平均 posterior；
++- 不只评分 official；
++- 不将 missing 删除 unit 当作普通 output row；
++- 不把 replace 只评价成错误输出而忽略被替代 GT；
++- 不用不同 slot mask/上下文共享不匹配 baseline；
++- 不把系统配置比较写成严格消融；
++- 不把无 GT demo 一致性称作 accuracy；
++- 不用 attempt 随机切分训练/测试；
++- 不在 test/demo 上选阈值；
++- 不无限 realign 或永久阻塞；
++- 不覆盖旧 OUT_ROOT 或原始 evidence。
++
++## 6. 正式运行预算
++
++- formal 目标 `<=10h`；
++- formal 硬上限 `<=12h`；
++- 代码开发、用户试听不计入 formal；preflight/smoke/pilot 单独记时；
++- pilot 预计 formal 超过 10 小时时必须先缩减；
++- 超过 12 小时不得继续启动低优先级 cohort；
++- 每阶段保存 elapsed、GPU utilization、forward count、cache hit/miss 和失败数；
++- 支持阶段级 resume；
++- 单 item 失败不阻止其它独立 cohort，但必须记录实际分母。
++
++优先保留：fixed 60s 长时间线、非连续 slot、density 公共 unit、公平 baseline、绝对+百分比文本错误、missing/replace 评价、真实串行、end-early、跨域判别器和 demo/人工标签审计。
++
++## 7. Cache 与 baseline
++
++缓存必须内容寻址并包含 code/model/processor/environment、audio crop/transform、text units、slot topology、request/window identity、mutation spec/seed、hidden schema、decoder/global-time conversion 和 GT mapping version。
++
++只有完整 request identity 相同的 legal baseline 才能共享。不同 slot mask、文本上下文、audio crop 或 request mode 必须各有 matched legal baseline。
++
++推荐层级：
++
++```text
++derived_audio/
++processor_inputs/
++audio_features/
++attempt_evidence/
++unit_gap_features/
++evaluations/
++```
++
++不同判别器特征组合和阈值评价必须复用同一 attempt evidence。
++
++## 8. Preflight 交付
++
++正式运行前生成：
++
++- `available_long_sources.json`
++- `duration_distribution.json`
++- `constructable_90s_180s.json`
++- `window_plan_60s.json`
++- `seam_half_second_control.json`
++- `multilingual_split_audit.json`
++- `slot_contract_audit.json`
++- `slot_density_common_units.json`
++- `mutation_mapping_audit.json`
++- `missing_replace_evaluation_audit.json`
++- `hidden_extraction_audit.json`
++- `human_review_audit.json`
++- `cache_plan.json`
++- `estimated_forward_counts.json`
++- `estimated_runtime.json`
++- `retained_conditions.json`
++- `dropped_conditions.json`
++- 弱人声 calibration packet
++
++如果数据、映射、hidden 等价性、公平 baseline 或 10/12 小时预算不满足，停止在 preflight/pilot，不能自行改成短数据全量。
++
++## 9. 最终完成定义
++
++- 目标实验实际使用 ≥180 秒时间线主体和 fixed 60s 请求；
++- slot 不同工作方式、机制消融和系统配置分别有结果；
++- density 主比较使用共同 queried units 并有 phase 轮换；
++- 英文词和日文 processor unit 不被窗口错误切断；
++- raw、official、hidden 证据可按 unit/gap 回溯；
++- missing/replace 评价契约实际运行；
++- 判别器在独立 source-song test 上报告 unit recall、interval recall@75%、interval recall@100%、correct-unit FPR 和跨域结果；
++- 人工 review 结果/标签已定位、审计并与 packet identity 对齐；
++- 正式运行目标 10 小时、硬上限 12 小时；
++- 所有结果、失败和缓存身份可复现；
++- 自动报告明确标为 draft。
+diff --git a/docs/research_v7_align_behavior/README.md b/docs/research_v7_align_behavior/README.md
+index f234d58..a5ab8ab 100644
+--- a/docs/research_v7_align_behavior/README.md
++++ b/docs/research_v7_align_behavior/README.md
+@@ -1,34 +1,54 @@
+ # Alignment Research v7：输入合法性与行为图谱
+ 
+-本目录记录从 research v6 正式 E0–E9 之后形成的新研究阶段。当前主线不再是继续调旧 detector、dynamic boundary 或 silence cap，而是：
+-
+-1. 修复并冻结旧实验结论；
+-2. 系统研究 Aligner 在生产型合法、部分合法、不合法和多解输入下的行为；
+-3. 建立可重放的 Request / Attempt / Evidence 数据；
+-4. 从 posterior、official repair trace、多 request 稳定性和辅助音频信号中寻找危险区证据；
+-5. 再决定是否训练 QualityAssessor、开发 posterior-aware decoder 或引入 coarse localization；
+-6. 最终将 realign 改造成可接受、可回滚、允许 unresolved 的有界流程。
+-
+-## 阅读顺序
+-
+-1. `00_EXECUTION_PLAN.md`：可直接交给 agent 的完整执行计划；
+-2. `01_USER_DECISIONS_AND_RATIONALE.md`：用户意见、质疑、取舍和最终决定；
+-3. `02_PROJECT_RESEARCH_LEDGER.md`：整个项目的主要实验、猜想、结果和去留；
+-4. `03_QWEN_TECHNICAL_REPORT_IMPLICATIONS.md`：Qwen 技术报告对本项目的具体影响；
+-5. `04_ARCHITECTURE_OPTIONS_AND_CURRENT_DIRECTION.md`：D1–D8 架构评价与最小新架构；
+-6. `05_MUTATION_AND_NO_MATCH_SPEC.md`：百分比文本扰动、完全不对应文本和 donor 规则；
+-7. `06_HISTORICAL_REPAIR_SCOPE.md`：E1/E5/E6/条件分母的历史修复边界；
+-8. `07_DEMO_AND_COLLABORATOR_SHARE_PREPARATION.md`：阶段性 Demo 与环境包准备；
+-9. `08_AGENT_HANDOFF.md`：执行顺序、完成门槛和禁止事项。
++本目录记录从 research v6 正式 E0–E9 之后形成的新研究阶段。当前主线是修复旧结论、研究生产型合法/不合法输入、建立可重放 evidence，并进一步研究 60 秒窗口上的 slot/串行混合与子区间判别器。
++
++## 当前阅读顺序
++
++1. `13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md`：**当前冻结的下一阶段实验计划**；
++2. `14_AGENT_EXECUTION_CONTRACT_12H.md`：当前 agent 执行合同；
++3. `../sessions/20260804_align_behavior_slot_region_assessor_archive.md`：用户评论、结果解释与设计演化；
++4. `11_STAGE_B_FORMAL_REPORT.md`：当前 Stage B 自动实验结果真值；
++5. `12_COMPLETION_AUDIT.md`：当前完成状态、不可验证项与人工结果导入缺口；
++6. `01_USER_DECISIONS_AND_RATIONALE.md`：此前用户意见与取舍；
++7. `02_PROJECT_RESEARCH_LEDGER.md`：项目主要实验、猜想、结果和去留；
++8. `03_QWEN_TECHNICAL_REPORT_IMPLICATIONS.md`、`04_ARCHITECTURE_OPTIONS_AND_CURRENT_DIRECTION.md`：技术背景与架构路线；
++9. `05_MUTATION_AND_NO_MATCH_SPEC.md`、`06_HISTORICAL_REPAIR_SCOPE.md`、`07_DEMO_AND_COLLABORATOR_SHARE_PREPARATION.md`：专题规范；
++10. `08_AGENT_HANDOFF.md`：上一阶段 handoff，仅供历史实现对照。
++
++## 文档状态
++
++| 文件 | 当前状态 |
++|---|---|
++| `00_EXECUTION_PLAN.md` | 历史原始计划；不再作为当前 agent 入口 |
++| `08_AGENT_HANDOFF.md` | 上一阶段执行合同；已被 `14` 取代 |
++| `09_STAGE_A_REPAIR_REPORT.md` | 历史阶段报告；E5 已更正为“现有 artifact 不可验证” |
++| `10_STAGE_B_PROGRESS.md` | 历史进度报告；P1 和人工标签状态已更正 |
++| `11_STAGE_B_FORMAL_REPORT.md` | 当前 Stage B 自动结果口径 |
++| `12_COMPLETION_AUDIT.md` | 当前完成状态与可声明边界 |
++| `13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md` | 当前冻结实验计划 |
++| `14_AGENT_EXECUTION_CONTRACT_12H.md` | 当前 agent 执行入口 |
+ 
+ ## 当前冻结判断
+ 
+-- E1 event-level 必须按 item 重算；
+-- E5、E6 只做同子集 paired 重算和负结果归档，不继续扫参数；
++- E1 event-level 已按 item 修复；
++- E5 当前 artifact 缺真正 fixed baseline，不可验证，不写成已证明负结果；
++- E6 时间压缩负结果保留；
+ - E3 decoder-only local repair 停止；
+-- E2 旧 detector 评价退役，扰动基础设施转为 alignment behaviour 研究；
+-- 旧 E4 只保留为 oracle/localized upper bound；
+-- 新 E4 必须包含同一长音频下的严格串行短文本和 sparse-slot 路线；
+ - 旧 detector 暂不自动写回；
+-- 无 GT Demo 要成为结构化真实行为数据，而不只是视频；
+-- GT MAE 仍保留，但不再单独决定研究路线。
++- raw、official、hidden 分开诊断，本阶段不急于冻结最终生产 commit；
++- 人工 review 结果与标签已经存在，但当前 archive 尚未正确导入和审计；
++- M4 native-short、M4 synthetic-long、MIR natural-song 和 demo 分开汇报。
++
++## 2026-08-04 补充冻结计划
++
++- ≥90 秒、以 ≥180 秒为主体的是**数据时间线**，主 acoustic request 仍为 fixed 60s；
++- 禁止强塞静音凑长数据；仅做少量 0.5 秒 seam-silence 对照；
++- slot 与串行不是互斥路线，机制消融与系统配置比较分开；
++- slot density 主比较固定 common units，并轮换 stride phase；
++- extra/missing/replace 同时保留 1/2/4/8 units 与百分比曲线；
++- missing 使用 virtual gap 评价，replace 同时评价 wrong-output 与 omitted-original；
++- 判别器报告 unit recall、interval recall@75%、interval recall@100% 和 correct-unit FPR；
++- hidden extraction 先冻结 token/row/layer 映射和数值等价契约；
++- 增加 M4→MIR、leave-one-family-out 等跨域评价；
++- 弱人声校准作为第一批并行工作尽早交付；
++- formal 目标 10 小时，硬上限 12 小时；使用严格 matched baseline 和内容寻址缓存；禁止全笛卡尔积。
+diff --git a/docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md b/docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md
+new file mode 100644
+index 0000000..62c2884
+--- /dev/null
++++ b/docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md
+@@ -0,0 +1,314 @@
++# 2026-08-04 Align 行为、Slot 工作方式与子区间判别器讨论归档
++
++## 1. 会话任务
++
++本次会话首先审查 `research_v7_compact_evidence_20260804.tar.gz` 与 `LyricAlignment_202608040823_alignbehavior.zip`，分析已有实验结果、实现与报告口径，随后围绕 head/tail 行为、静音与弱人声、posterior、sparse slots、真实串行传播、困难区隔离和初步子区间判别器反复修正下一阶段研究计划。
++
++用户要求本记录重点保留：
++
++- 实验结果实际说明了什么；
++- 用户对结果解释的质疑与修正；
++- 哪些旧实验没有真正回答问题；
++- 新的研究判断、目标和期望；
++- 长数据、slot、串行、判别器和 demo 自动化的完整计划；
++- 后续由 agent 编写和运行代码，最终文档由 ChatGPT 复核修正。
++
++## 2. 对工作目录和报告的审查
++
++当前 research_v7 已具有 request/attempt/evidence、mutation、workflow、posterior、official repair 和 source-song bootstrap 等基础，能够继续正式研究，但存在文档与原始结果不一致：
++
++1. 旧 E5 报告曾称有 807 个 item 且近似打平，但当前 artifact 缺真正 fixed baseline，paired 结果不可验证；
++2. P1 一度被写成显著变差，修正后的 workflow GT 中与 P0 基本持平；
++3. 人工 review 结果与标签已经存在，正式报告“未填写”的表述错误；当前 archive 仍需定位原始 artifact、审计实际填写数量并与 packet identity 对齐；
++4. 旧 discussion patch manifest 已不能代表当前包含大量代码变化的工作树；
++5. 当前大量 ΔMAE 使用 official decoder，而不是 raw，后续不能继续将其直接解释为模型底层行为。
++
++这些修正应由 agent 生成机器可读清单，运行结束后由 ChatGPT 修改正式文档。
++
++## 3. 用户对初始分析的主要纠正
++
++### 3.1 不把常识包装为主要发现
++
++“推理成功不代表文本与音频匹配”被用户认为是无意义的常识，不应作为本轮主要科研结论。最多保留为接口限制：模型没有自动拒绝输出机制。
++
++### 3.2 Head 严格、Tail 宽松
++
++用户根据已有结果提出：
++
++> 对齐可能可以收敛为歌词与歌声的头部必须准确，尾部可以宽松。
++
++已有证据：
++
++- M4 短片段 extra-tail 对原正确前缀几乎无影响；
++- MIR-1K 长音频也显示 tail 多给不明显伤害原前缀；
++- head 错误随比例快速恶化；
++- M4 extra-head 10% 约 +0.056 秒，用户认为勉强可容忍；25% 约 +0.333 秒，已经明显；
++- MIR-1K 长音频 extra-head 10% 已约 +0.291 秒，25% 约 +1.833 秒，说明长/OOD 条件更敏感。
++
++但需注意：这些正式曲线主要基于 official 输出；M4 主实验是 4–12 秒短片段，不能代替长音频结论。
++
++### 3.3 Middle 的解释
++
++用户认为，在 head 和中间文本均正确时，middle 理应正常。当前 middle mutation 结果说明的是插入、删除或替换会伤害错误后的后缀，并不表示正确 middle 本身不稳定。后续必须分 mutation 前、内部和后部评价。
++
++### 3.4 数据来源必须分开
++
++用户在旧报告中无法分辨结果来自 M4、MIR 或 demo。后续必须明确区分：
++
++- M4 原生短片段；
++- M4 同歌拼合长音频；
++- MIR-1K 完整歌曲；
++- 无 GT 多语言 test demo。
++
++当前包中没有 MIR-ST500，使用的是 4 首 MIR-1K heldout。
++
++## 4. 音频范围、静音与弱人声
++
++“音频范围错误”实际是保留完整歌词但裁掉部分音频。start-late 会让开头歌词无声可对齐，后续一起错；end-early 开头仍正确，因此单窗平均较好。
++
++用户指出串行风险：如果 end-early 中尚未唱到的 tail 被错误提交，下一窗文本从更后面开始，而音频先唱未提交歌词，立即形成危险的 head 错位。因此 end-early 必须在真实连续多窗中测试，并尝试依赖子区间判别器决定最后可信提交位置。
++
++纯伴奏不符合生产主输入。正式实验应使用分离纯人声的合理退化：
++
++- 弱人声；
++- 混响；
++- 分离残留；
++- 局部 dropout；
++- 第一处主唱削弱；
++- 前置静音、低幅噪声和自然无唱前奏。
++
++用户需先试听一个小型校准包，冻结“轻度合理”和“明显但合理”的等级。单纯音量衰减前需确认 processor 是否归一化。
++
++前置人工静音可形成强 GT：加入 δ 秒后，正确时间应整体加 δ。需观察第一处真实主唱是否能重新建立 head，以及静音是否放大小量 head 文本错误。
++
++## 5. Posterior 与区域判断
++
++Posterior 表示每个边界对候选时间的分数分布。正确边界通常集中、margin 大；困难输入可能分散、多峰、margin 小或吸附边缘。
++
++已有 request 平均 entropy 对 extra、replace、no-match 有较高 AUROC，用户认为已经值得试做二分检查。讨论后确认：当前“整条请求平均”会把少量 tail 错误被正确 core 稀释，也无法指出错误从哪里开始。
++
++下一版应保存逐 unit：
++
++- start/end entropy；
++- top1-top2 margin；
++- top-k 时间和概率；
++- 边缘概率；
++- raw 时间、时长和局部推进；
++- 滑窗变化和变化点。
++
++判别目标不是整条请求是否正确，而是查询范围内哪些连续子区间可信。
++
++## 6. Official、Raw 与 Hidden
++
++用户认为 official 最终可能被抛弃，重点应转向 raw 和底层潜表示。但当前阶段 official 仍可提供判定信号：
++
++- official 几何本身；
++- repair 位移和连续 repair；
++- raw 很确定但 official 大修；
++- raw 不确定但 official 修成表面平滑；
++- hidden/raw 不稳定但 official 表面稳定。
++
++判别器消融需要比较 H、R、O、H+R、H+O、R+O、H+R+O 和跨视图组合。
++
++Hidden 不只使用原向量，还应构造：
++
++- start/end hidden 的差、均值、cosine 和距离；
++- norm、方差、极值；
++- 相邻 unit 的一阶/二阶变化与局部几何；
++- 最后四层的层间演化与稳定速度；
++- 到正常 hidden 分布的 Mahalanobis、PCA 和 kNN 异常距离；
++- 同一 unit 跨 slot mask、窗口、tail dosage 和音频变换的一致性；
++- hidden 异常变化点和持续区间。
++
++是否真正有增量信息需通过消融验证，不能预设。
++
++## 7. Sparse-slot 已有结果
++
++现有 sparse-slot 使用 4 首 MIR-1K 完整歌曲，音频约 57–87 秒，查询目标末尾约位于 36–52 秒，共 320 units。official GT 边界 MAE：
++
++- 一次性完整对齐约 32.69 ms；
++- sparse-slot 约 32.43 ms。
++
++当前只能解释为在这 4 首数据上未观察到精度损失，不能说 sparse-slot 更准。它尚未验证 90 秒以后、180 秒、完整歌曲后部、非连续 slots、困难区跨越和 future 无 slot。
++
++已有具体配置大致表现为：
++
++```text
++完整音频 + 孤立短文本
++< 裁剪音频 + 串行短文本
++< 完整音频 + 较完整文本上下文 + 当前 sparse slots
++≈ 一次性完整对齐
++```
++
++但这个排序混合了音频范围、文本上下文和 slot 结构，不能解释为“slot 天然优于串行”。
++
++## 8. Slot 与串行不互斥
++
++用户进一步指出 slot 和串行并不完全互斥。最终修正：
++
++- 串行负责多次请求如何覆盖歌曲和传播状态；
++- slot 负责每次请求查询哪些歌词时间。
++
++可组合为：
++
++```text
++≥180 秒歌曲时间线上的 fixed 60s 移动请求
+++ 足够历史/未来歌词上下文
+++ 当前 sparse slots
+++ 历史复查的非连续 slots
+++ future tail 无 slots
+++ 区间判别器
++```
++
++需要研究的具体工作方式包括：
++
++- 完整歌曲音频按顺序查询不同 slot 区；
++- ≥180 秒时间线上的 fixed 60s 窗口 + 当前 sparse slots；
++- 当前区 + 历史复查区的非连续 slots；
++- 固定窗口只传播文本 cursor；
++- 动态窗口传播文本和时间 cursor；
++- 平时串行，失败时使用更大范围 sparse slots 重新入轨。
++
++Slot 能减少重复输出、支持历史复查和困难区跨越，但如果 controller 选择了错误歌词区，slot 仍可能“准确回答错误问题”，所以仍需判别器保护。
++
++## 9. Slot 后续行为研究
++
++需要补充：
++
++1. ≥180 秒和完整歌曲时间线中，使用 fixed 60s 请求进行 early/middle/late 定位；
++2. 连续、两个/三个不连续区间；
++3. 历史复查 + 当前区；
++4. 困难区两侧；
++5. 联合查询 vs 分别查询；
++6. slot 密度 100%、每 2/4/8 个和仅锚点；
++7. 历史文本预算和 future 无 slot；
++8. 同一 unit 跨 slot mask 的 raw/official/posterior/hidden 不变性；
++9. 查询区以外少量 extra/missing/replace 的污染；
++10. 跨过 unresolved 区后重新定位。
++
++当前实现理论上可支持非连续 slots，但需修 slot indices 未强制递增及输出映射风险。
++
++## 10. Replace、Missing、Extra
++
++单独使用百分比或单独使用绝对数量都不够。后续同时保留 1/2/4/8 units 的稀疏真实错误和 10%/25%/50% 的核心百分比曲线；更极端比例只在小型压力子集运行，避免与位置、slot 和声学条件形成笛卡尔积。
++
++Replace 可能模拟困难区，因为文字与声音无法对应，模型可能无法判断边界；但它与弱人声不同：replace 是文字身份错误，弱人声是正确文字但声学证据不足。应进行迁移实验，验证二者是否共享 hidden/raw/official 不确定信号，不能直接等同。
++
++旧 replace evaluator 通过字符碰巧相同评分，语义不正确，必须显式 mutation mask，并分错误前、错误内和错误后。
++
++## 11. 真正串行与恢复
++
++旧 cursor ±2/4/8 仍使用完整上下文，且目标随错误 cursor 移动，没有测试“系统想对齐 A 却送入 B”。旧 recovery 只是错误请求后重新送完全正确输入，说明模型无跨请求内部状态污染，不是实际恢复。
++
++真正串行要求：
++
++- 首窗正确；
++- 第 2 窗注入错误；
++- 后续至少运行 3 窗；
++- 下一窗由上一窗实际结果构造；
++- 不允许 GT reset；
++- 保存 text/time cursor、commit 和 lineage。
++
++分别测试固定窗口只传播文本状态、动态窗口传播文本和时间状态，以及 slot+串行混合。
++
++## 12. 困难区隔离
++
++用户提出，即使 realign 也无法解决的困难区不能污染后面。建议状态：committed、provisional、unsafe、unresolved、unseen。
++
++困难区有限复查后若仍不可信：
++
++- 标记 unresolved；
++- 不用其错误时间推进；
++- 使用非连续 sparse slots 查询后续歌词；
++- 建立新的右侧锚点；
++- 后续继续；
++- 困难区留在左右锚点之间单独处理。
++
++这可能是 slot 相比单一 cursor 最重要的系统价值。
++
++## 13. 子区间判别器
++
++用户冻结：判别器至少输出查询范围内部可信与不可信子区间，不只做整请求二分类。
++
++在 validation 冻结 95% 和 99% 两个高召回 operating point；test 同时计算错误 unit recall、错误区间 75% 覆盖 recall、错误区间 100% 全覆盖 recall。正确误判只按 retained correct unit 计算。错误捕捉更重要，可以接受一定误判，但必须报告代价和停滞。
++
++第一版动作保持简单：
++
++```text
++trusted → 允许提交
++unsafe → 换预定义视图复查一次
++再次 unsafe → unresolved，继续后续
++```
++
++主要指标是 unsafe unit/interval recall、长错误段完全漏检、正确误判、提交延迟、额外请求和停滞率；AUROC/F1 仅辅助。
++
++## 14. Test demo 自动化和多语言切分
++
++用户指出人工看 demo 成本过高，必须自动利用全部 35 首 demo。强伪标签/一致性包括：
++
++- 前置静音整体平移；
++- tail dosage 共同 prefix；
++- full vs sparse；
++- 相邻窗口重叠；
++- 不同 slot mask。
++
++仅渲染潜在漏检、潜在误报、最长异常、阈值附近和随机对照。
++
++用户补充历史问题：英文窗口曾把单词从中间切开，日文不确定是否也有。正式 smoke 必须：
++
++- 英文只在合法行/标点/单词边界切分，覆盖撇号和连字符；
++- 审查日文 processor unit、小假名、促音、长音符、汉字+假名和混写；
++- 不在最小 alignment unit 内切断；
++- alignment/window/render units 可追踪。
++
++## 15. 长数据与外部数据
++
++用户否定 45 秒作为长数据，要求至少 90 秒，并有一定数量 180 秒数据。180 秒指形成和评价的数据时间线，不是把模型窗口改成 180 秒；主流程继续使用此前较稳的 fixed 60s 请求。自然静音可保留，但禁止靠人工静音把短音频凑成长数据。
++
++agent 可按规则构造 M4Singer 同歌长时间线，也可尝试公开同步歌词、字级 Enhanced LRC，或转换用户本地合法拥有的 QRC/YRC/音乐软件歌词文件。必须记录来源、许可、版本匹配、时间粒度和单位映射；网络探索不能阻塞本地主线。
++
++## 16. 12 小时预算、缓存和避免笛卡尔积
++
++用户最终要求：formal 最好控制在 10 小时内，12 小时可以接受但为硬上限；使用缓存节省时间，并特别提醒避免笛卡尔积。
++
++冻结策略：
++
++- 实验按问题隔离 cohort，每次只改变一个主要因素；
++- 先筛主效应，仅对已有证据提示的交互增加少量成对条件；
++- 不做长度×slot×mutation×声学×串行×模型全组合；
++- 用冻结 seed 将歌曲分配到互补 cohort；
++- 只共享完整 request identity 相同的 matched legal baseline；
++- 缓存长音频派生、processor 输入、可复用音频编码、attempt 底层 evidence、H/R/O 特征和评价；
++- 判别器全部消融复用同一 evidence，不重新推理；
++- pilot 估算成本，预计 formal 超过 10 小时先缩减；任何情况下不得超过 12 小时。
++
++缩减顺序：删除无信息条件、百分比极端压力档和随机重复，减少同歌变体但保留 source-song 分层，删 90 秒对照并保留 ≥180 秒时间线；不得删除非连续 slot、missing/replace gap 评价、真实串行、demo 自动分析和跨域判别器，也不得退回短音频。
++
++## 17. 分工与后续归档
++
++agent 负责代码、数据构建、本地线索修正、缓存、运行和机器可读结果。所有自动文档仅为 draft。
++
++用户明确要求：所有正式文档标注在结果回传后由 ChatGPT 修正。届时需审查实现、指标和原始 evidence，记录 negative results，更新正式报告与下一阶段决定。
++
++本 patch 只归档本会话讨论、冻结实验设计和 agent 实施合同，不包含下一阶段代码实现或实际实验结果。
++
++
++## 18. Patch review 后的用户修订（2026-08-04 晚）
++
++用户逐项确认并补充：
++
++1. 长时间线文本扰动必须同时保留绝对 unit 和百分比口径；
++2. missing 不能只按 output unit 评价，需建立 omission gap；replace 需同时评价错误替换输出、被替代 GT 缺失和周围正确 unit；
++3. 判别器同时计算 unit recall、错误区间 75% 覆盖 recall 和 100% 全覆盖 recall；正确误判按 unit 统计；
++4. 不以置信区间作为主要门槛，但实验必须有一定 source-song、unsafe unit 和 error interval 规模，并报告分母；
++5. 当前主要目标是诊断 raw、official、hidden，不急于冻结生产 commit；必要可视化应自动筛选，避免依赖人工；
++6. baseline 只有完整 request identity 相同才能共享，不同 slot mask、上下文和 crop 必须有 matched legal baseline；
++7. S6 必须分成单机制消融和端到端系统配置比较；
++8. slot density 需要固定公共 queried units 并轮换 stride phase，避免不同密度选择不同难度 unit；
++9. 180 秒是数据时间线时长，主窗口继续采用此前表现较好的 fixed 60s；不得靠人工静音凑 180 秒；
++10. formal 目标 10 小时，硬上限 12 小时；
++11. seam 影响已有证据倾向较小，只做少量直接拼接 vs seam 插入 0.5 秒静音的对照，插入静音总时长和对照规模均受限，不能成为凑长度手段；
++12. 判别器增加 M4 synthetic-long→MIR natural-song、leave-one-mutation/acoustic-family-out 等跨域评价；
++13. hidden 特征必须先冻结 token/output-row/layer/dtype/数值等价和 train-only feature fitting 契约；
++14. 弱人声校准包作为第一批工作尽早生成，与其它代码并行；
++15. 人工 review 结果与标签已经存在，所有写成“未填写”的文档均需纠正，并在下一阶段定位和审计原始 artifact。
+diff --git a/docs/sessions/SESSION_INDEX.md b/docs/sessions/SESSION_INDEX.md
+index 87143d9..16dc167 100644
+--- a/docs/sessions/SESSION_INDEX.md
++++ b/docs/sessions/SESSION_INDEX.md
+@@ -8,6 +8,7 @@
+ 
+ | Date | Session | Temperature | Summary |
+ |---|---|---|---|
++| 2026-08-04 | `20260804_align_behavior_slot_region_assessor_archive.md` | hot | Reviewed research-v7 evidence and corrections; ≥180s timelines with fixed 60s requests; absolute+percentage mutations; missing/replace evaluation; slot-density fairness; H/R/O cross-domain assessor; human-label audit; 10h target/12h hard limit. |
+ | 2026-07-31 | `20260731_alignment_research_v6_formal_decoder_route_completion.md` | hot | Frozen decoder is applied before formal serial commit/cursor updates; pilot test leakage, under-selection, and E8 failed-propagation effect contamination are fixed. |
+ | 2026-07-31 | `20260731_alignment_research_v6_e8_e9_completion.md` | hot | E5 risk-gated boundaries, true E8 downstream serial continuation, actual model-backed cross-window E9 beam, robust metrics, exact 96-unit groups, and best-effort pilot freeze. |
+ | 2026-07-31 | `20260731_alignment_research_v6_correctness_completion.md` | hot | Research v6 formal-blocking fixes: global top-K clock, local/full metrics, active frozen Detector, synchronized E5 cursor/audio, split-safe data, E0-E9 aggregates, phase resume/cache and validation. |

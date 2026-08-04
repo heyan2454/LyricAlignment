@@ -1,0 +1,129 @@
+{
+  "schema_version": "research_v7_long_slot_region_assessor_archive_patch_manifest_v2_reviewed",
+  "created_at": "2026-08-04T23:23:00+08:00",
+  "base_archive": {
+    "name": "LyricAlignment_202608040823_alignbehavior.zip",
+    "size_bytes": 1892479,
+    "sha256": "af24e93e56c7a8b85428004bee073546677c32511a056f5c38a35c752c57251e"
+  },
+  "scope": "Reviewed documentation/session archive and agent execution contract only; no experiment implementation code or runtime results.",
+  "hard_constraints": {
+    "formal_wall_clock_hours_target": 10,
+    "formal_wall_clock_hours_max": 12,
+    "timeline_duration_seconds_min": 90,
+    "timeline_duration_seconds_preferred": 180,
+    "primary_acoustic_request_seconds": 60,
+    "artificial_silence_must_not_be_used_to_reach_duration": true,
+    "seam_control_silence_seconds": 0.5,
+    "seam_control_fraction_max": 0.1,
+    "absolute_mutation_units": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "percentage_core": [
+      0.1,
+      0.25,
+      0.5
+    ],
+    "error_recall_operating_points": [
+      0.95,
+      0.99
+    ],
+    "interval_coverage_thresholds": [
+      0.75,
+      1.0
+    ],
+    "correct_false_positive_unit_based": true,
+    "avoid_full_cartesian_product": true,
+    "matched_baseline_by_full_request_identity": true
+  },
+  "corrections": [
+    "E5 current artifact is unverifiable because the true fixed baseline is absent.",
+    "Stateful P1 is approximately tied with P0 after correction; independent short-text D is the degraded route.",
+    "Human review results and labels exist; the current archive must locate, identity-audit, and import them rather than claim they are unfilled.",
+    "180 seconds refers to the data timeline, not the model request window; the primary request remains fixed 60 seconds."
+  ],
+  "file_count": 13,
+  "files": [
+    {
+      "path": "AI_SESSION_ENTRY.md",
+      "change_type": "modified",
+      "size_bytes": 7448,
+      "sha256": "054d142bd5aea424c1d30939cc881eac2a8d3a12e3bdbbd06da445615add71c5"
+    },
+    {
+      "path": "APPLY_LONG_SLOT_REGION_ASSESSOR_ARCHIVE_PATCH.sh",
+      "change_type": "new",
+      "size_bytes": 1374,
+      "sha256": "6a18c8168fad237e2416fd4a57fdabd367c5ef41e4b9b4ee16bccd243c6099f8"
+    },
+    {
+      "path": "PATCH_README_20260804_LONG_SLOT_REGION_ASSESSOR_ARCHIVE.md",
+      "change_type": "new",
+      "size_bytes": 1561,
+      "sha256": "4b919bc76804e93faa9d81c96f66dfa42de8cbb48db88c9d61f77ad0d86e0367"
+    },
+    {
+      "path": "RESEARCH_V7_LONG_SLOT_REGION_ASSESSOR_ARCHIVE.patch",
+      "change_type": "new",
+      "size_bytes": 78876,
+      "sha256": "32ec4681e0a3cf24f8206c87cc9aa66c6bf5741d84f6808354368b70ba408271"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/09_STAGE_A_REPAIR_REPORT.md",
+      "change_type": "modified",
+      "size_bytes": 4646,
+      "sha256": "c4d56b0ae39c49093690f6dea10d1716434e9c4644f76c30f30f763d9516968a"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/10_STAGE_B_PROGRESS.md",
+      "change_type": "modified",
+      "size_bytes": 2702,
+      "sha256": "e26311cfb14a6a63a3a0b829e8ec8b6d29ec4aec10864c9ae4845d0bab4ae2e9"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/11_STAGE_B_FORMAL_REPORT.md",
+      "change_type": "modified",
+      "size_bytes": 7316,
+      "sha256": "46ab72efbc321f680a4423744d4a98e4129ae9394f2175624e2b67b3684c89be"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/12_COMPLETION_AUDIT.md",
+      "change_type": "modified",
+      "size_bytes": 5005,
+      "sha256": "74c17979fce92e8daf4867e0f2f5f642ec529ff4658e51cdbed5a6ebcaf9e4d1"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/README.md",
+      "change_type": "modified",
+      "size_bytes": 3513,
+      "sha256": "3a5e207a00c17bfc6cb37e3fc6d6307c12a1e7e5011a77d0dba30f3cfe3e64e0"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md",
+      "change_type": "new",
+      "size_bytes": 32038,
+      "sha256": "5697109eb3f1112c1afcbb09c8787edf40121b5476d8daed175bdbf52da77279"
+    },
+    {
+      "path": "docs/research_v7_align_behavior/14_AGENT_EXECUTION_CONTRACT_12H.md",
+      "change_type": "new",
+      "size_bytes": 6141,
+      "sha256": "5c743bfe9ca7bdcd87a8a4719a67bc5d3ceacf76cb84157665ecce5298d71aae"
+    },
+    {
+      "path": "docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md",
+      "change_type": "new",
+      "size_bytes": 16410,
+      "sha256": "9cd4628e4a755eb0aa67286b865b1562fa05f9b1686dea22c9389907f81e65f8"
+    },
+    {
+      "path": "docs/sessions/SESSION_INDEX.md",
+      "change_type": "modified",
+      "size_bytes": 6443,
+      "sha256": "f1878f2ff1b14d4efe460355f701912df0a2228227c9c625e909fffa274f9670"
+    }
+  ]
+}

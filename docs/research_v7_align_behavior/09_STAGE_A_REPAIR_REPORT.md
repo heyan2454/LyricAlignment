@@ -27,18 +27,13 @@
 - 结论：E1 旧 detector 的事件级能力极弱（F1≈0.08–0.13），属可信负结论；与 v6 已判定的
   "E1 unit 旧 detector 极弱"一致，且修复了此前**未按 item 分组**导致的聚合口径错误。
 
-## A2. E5 同子集 paired 重算
+## A2. E5 paired 身份复核（2026-08-04 更正）
 
-- 同一 set 内 fixed baseline vs dynamic exact（−0）/−2/−4，按 item 算 MAE delta。
-- 结果（807 applicable item，1614 个 variant pair；仅 gt 项算 MAE）：
-
-| 项 | 值 |
-|---|---|
-| mean delta MAE | **−0.001 s**（≈无改善） |
-| improve / harm / no_change | 714 / 822 / 78 |
-
-- 结论：E5 dynamic 边界相对 fixed baseline 近乎打平（slight harm），不继续调参数 → 冻结为
-  "E5 未带来稳定改善"的负结果归档。
+- 本阶段原报告曾把 dynamic exact 误当作 fixed baseline，并据此写出 807 applicable item、1614 variant pairs 和近似打平结论。
+- 复核原 artifact 后确认：当前 artifact 中缺少可配对的真正 fixed baseline，实际不能形成可信的 E5 fixed-vs-dynamic variant pairs。
+- 因此上述数值和“E5 近似打平”的结论撤回，不作为科研证据。
+- 当前冻结状态：**E5 在现有 artifact 下不可验证；不继续扫参数，但也不将其写成已证明的负结果。**
+- 当前真值以 `12_COMPLETION_AUDIT.md` 为准。
 
 ## A3. E6 同子集 paired 重算
 
@@ -82,7 +77,7 @@
 | E2 | 旧 detector 评价退役；扰动工具保留 | v7 用户决定 |
 | E3 | 停止 | v7 用户决定（decoe only 不值得） |
 | E4-old | 仅作为 oracle/localized upper bound | v7 计划 |
-| E5 | **负结果归档，不再调参** | A2（Δ≈0） |
+| E5 | **现有 artifact 不可验证；停止继续调参** | A2 身份复核、`12_COMPLETION_AUDIT.md` |
 | E6 | **负结果归档，不再扫 cap** | A3（Δ+1.05s） |
 | E7 | 保留有限负证据（旧 reset 不完整） | v7 计划 |
 | E8 | rerun/continuation 框架保留，自动选优失败 | v7 计划 |
@@ -93,7 +88,7 @@
 ## 完成门槛核对（08_AGENT_HANDOFF §必须优先完成）
 
 - [x] E1 event 修复（A1）
-- [x] E5/E6 paired（A2/A3）
+- [x] E5 身份复核并撤回无效 paired 结论；E6 paired 完成（A2/A3）
 - [x] 条件分母（A4）
 - [ ] strict serial P1 / sparse-slot S / extra-missing-replace 百分比 / cross-song no-match /
       posterior top-K / official repair trace —— 属阶段 B，另立。

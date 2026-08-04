@@ -13,7 +13,7 @@
 
 ## 当前冻结观察（不是超出样本范围的结论）
 
-- MIR heldout workflow：S 与 P0 基本持平；P1/D 显著变差，P2 部分恢复。优先继续 sparse-slot 路线。
+- MIR heldout workflow（2026-08-04 更正）：stateful P1 与 P0 基本持平；S 与 P0 基本持平；独立短文本 D 明显变差，P2 部分恢复。
 - M4 C1–C6：19-song macro ΔMAE `+1.0216s`，source-song bootstrap 95% `+0.8863..+1.1498s`。
 - M4 C7–C9：音频后半段单独输入最不利（平均 ΔMAE `+2.7225s`），起点延后 `+1.1905s`。
 - 100% replacement 的无正确文本锚点被保留为 unscorable/catastrophic 分母，未计入 MAE 分子。
@@ -23,4 +23,4 @@
 - C10 已补 MIR heldout 3-song / 6-attempt multiple-legal-answer GT control；C6 已含同歌错段、纯器乐、错语言等独立对照。demo C10 仍是无 GT review，不混同为 accuracy。
 - 更长序列的 commit/provisional 恢复传播矩阵（80-unit 三段已完成，但不能代替长程结论）。
 - GT strata 的 localization thresholds、coverage/overlap、posterior/repair 信号分层和综合报告。
-- demo 人工盲审填写与无 GT 错误时长统计；没有人工标签前不可作 quality/accuracy claim。
+- 人工 review 结果与标签已经存在，但当前进度报告和 provenance 尚未正确纳入。下一阶段先定位原始 human-review artifact，审计实际填写数量、schema、reviewer 和 packet identity，再补充无 GT 错误时长与人工统计；在完成身份审计前不作超出口径的 quality/accuracy claim。

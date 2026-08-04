@@ -8,6 +8,7 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-08-04 | `20260804_align_behavior_slot_region_assessor_archive.md` | hot | Reviewed research-v7 evidence and corrections; ≥180s timelines with fixed 60s requests; absolute+percentage mutations; missing/replace evaluation; slot-density fairness; H/R/O cross-domain assessor; human-label audit; 10h target/12h hard limit. |
 | 2026-07-31 | `20260731_alignment_research_v6_formal_decoder_route_completion.md` | hot | Frozen decoder is applied before formal serial commit/cursor updates; pilot test leakage, under-selection, and E8 failed-propagation effect contamination are fixed. |
 | 2026-07-31 | `20260731_alignment_research_v6_e8_e9_completion.md` | hot | E5 risk-gated boundaries, true E8 downstream serial continuation, actual model-backed cross-window E9 beam, robust metrics, exact 96-unit groups, and best-effort pilot freeze. |
 | 2026-07-31 | `20260731_alignment_research_v6_correctness_completion.md` | hot | Research v6 formal-blocking fixes: global top-K clock, local/full metrics, active frozen Detector, synchronized E5 cursor/audio, split-safe data, E0-E9 aggregates, phase resume/cache and validation. |

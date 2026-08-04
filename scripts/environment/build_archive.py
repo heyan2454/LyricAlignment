@@ -63,7 +63,7 @@ _IGNORED_EXACT_RELATIVE_PATHS = {
 }
 
 
-def _filesystem_source_files() -> list[Path]:
+def _filesystem_source_files(excluded_root_names: set[str] | None = None) -> list[Path]:
     """Fallback for portable source snapshots without a .git directory.
 
     The fallback intentionally mirrors the repository's tracked-source policy:
@@ -71,6 +71,7 @@ def _filesystem_source_files() -> list[Path]:
     caches, local paths, media, model artifacts and generated archives are not.
     """
 
+    excluded_root_names = _IGNORED_ROOT_DIRECTORY_NAMES | (excluded_root_names or set())
     paths: list[Path] = []
     for path in ROOT.rglob("*"):
         if not path.is_file():
@@ -79,7 +80,7 @@ def _filesystem_source_files() -> list[Path]:
         relative_posix = relative.as_posix()
         if relative_posix in _IGNORED_EXACT_RELATIVE_PATHS:
             continue
-        if relative.parts and relative.parts[0] in _IGNORED_ROOT_DIRECTORY_NAMES:
+        if relative.parts and relative.parts[0] in excluded_root_names:
             continue
         if any(part in _IGNORED_DIRECTORY_NAMES or part.endswith(".egg-info") for part in relative.parts[:-1]):
             continue
@@ -95,7 +96,8 @@ def _filesystem_source_files() -> list[Path]:
     return sorted(paths, key=lambda value: value.relative_to(ROOT).as_posix())
 
 
-def tracked_files() -> list[Path]:
+def tracked_files(excluded_root_names: set[str] | None = None) -> list[Path]:
+    excluded_root_names = excluded_root_names or set()
     try:
         names = subprocess.check_output(
             ["git", "-C", str(ROOT), "ls-files", "-z"],
@@ -103,20 +105,24 @@ def tracked_files() -> list[Path]:
             stderr=subprocess.DEVNULL,
         ).split(b"\0")
     except (FileNotFoundError, subprocess.CalledProcessError):
-        return _filesystem_source_files()
+        return _filesystem_source_files(excluded_root_names)
     paths = [ROOT / name.decode("utf-8") for name in names if name]
     # A stale generated manifest may already be tracked in an older checkout.
     # It is an archive output, never a source entry, and adding it here would
     # create two ZIP members with the same name when the fresh manifest below
     # is written.
-    return [path for path in paths if path.relative_to(ROOT).as_posix() != GENERATED_MANIFEST]
+    return [
+        path for path in paths
+        if path.relative_to(ROOT).as_posix() != GENERATED_MANIFEST
+        and (not path.relative_to(ROOT).parts or path.relative_to(ROOT).parts[0] not in excluded_root_names)
+    ]
 
 
-def build(output: Path, root_name: str) -> dict:
+def build(output: Path, root_name: str, excluded_root_names: set[str] | None = None) -> dict:
     entries = []
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for path in tracked_files():
+        for path in tracked_files(excluded_root_names):
             relative = path.relative_to(ROOT).as_posix()
             payload = path.read_bytes()
             archive.writestr(f"{root_name}/{relative}", payload)
@@ -166,10 +172,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--root-name", default="LyricAlignment")
+    parser.add_argument("--exclude-root", action="append", default=[],
+                        help="top-level project directory to omit; may be repeated")
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
     if not args.verify_only:
-        build(args.output, args.root_name)
+        build(args.output, args.root_name, set(args.exclude_root))
     print(json.dumps(verify(args.output), ensure_ascii=False, sort_keys=True))
 
 

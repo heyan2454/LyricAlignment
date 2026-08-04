@@ -27,10 +27,10 @@
 | threshold localization / geometry / repair diagnostics | 完成（M4 + MIR formal curves） | `gt_evidence_diagnostics.json`：0.25/0.5/1/2/5s、near-zero、gap/overlap、posterior 与 repair 汇总；只对可验证 GT 匹配单元报告 |
 | 可区分内部信号 | 完成（诊断级，不是 QualityAssessor） | `internal_signal_separation.json` 在 M4/MIR 的 request-level entropy/margin 均可区分 baseline 与 invalid mutations；AUROC 已冻结 |
 | no-GT data/review | 完成 | 35 demo / 140 attempts + 66 C10 cases/review bundles |
-| human blind labels/errors-min | 待外部人工填写；盲审交付完成 | 140 demo + 66 C10 的 blinded packets 不含 mutation type，decode key 隔离；字段含 taxonomy、errors/min、longest error、unresolved，但无人类填写结果 |
+| human blind labels/errors-min | **人工结果与标签已存在，但当前 archive 尚未正确纳入/审计** | 140 demo + 66 C10 blinded packets 与 decode key 已存在；下一阶段需定位原始 human-review artifact，核验实际填写数、schema、reviewer、空记录和 packet identity 后补充统计 |
 | full source-song population coverage | 完成（source-song 层） | `source_song_coverage.json` 证明 M4 test 19/19 source song、MIR heldout 4/4 source song 均被最长可用代表覆盖；不等同于 839 个相邻 M4 segment 的逐段全量推理 |
-| final decision/report | 部分完成 | `11_STAGE_B_FORMAL_REPORT.md`；自动化实验闭环已完成，仍缺人类盲审标签/错误时长指标 |
+| final decision/report | 部分完成 | `11_STAGE_B_FORMAL_REPORT.md`；自动化实验闭环已完成；人工结果/标签并非缺失，但仍未被当前 archive 正确导入和审计 |
 
 ## 结论
 
-当前阶段已经形成可重放的生产型行为证据体系和明确的负/稳定观察，但尚不能宣称“既定计划全部完成”。尤其不能用无 GT demo 代替人工指标，或把同歌错段/纯器乐空缺改称 cross-song no-match。
+当前阶段已经形成可重放的生产型行为证据体系和明确的负/稳定观察，但尚不能宣称“既定计划全部完成”。人工 review 结果与标签已经存在，当前缺口是定位、身份对齐和正式统计，而不是等待首次人工填写。仍不能用无 GT 自动一致性代替人工指标，或把同歌错段/纯器乐空缺改称 cross-song no-match。

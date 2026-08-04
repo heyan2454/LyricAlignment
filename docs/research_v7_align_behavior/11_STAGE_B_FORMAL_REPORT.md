@@ -34,7 +34,7 @@
 - C6 formal pure-instrumental：本地 MIR heldout 4/4 均有与 `official_vocal.wav` 同目录的真实 `accompaniment.wav`。8 次真实运行（4 vocal baseline + 4 accompaniment-only）均可评分；伴奏相对 vocal baseline 的 macro ΔMAE 为 `+23.46764s`，source-song bootstrap 95% `[+15.13557,+37.18049]s`，4/4 harm。这是有 GT 的 pure-accompaniment 结论，不再以 demo 盲审替代。
 - C10 controlled GT：MIR heldout 的 4 首中，3 首具有长度 6–16 的真实非重叠重复段；在完整 source WAV 上运行 single-ambiguous 与 ordered-double 共 6 次。single 的多答案最小 MAE 均值为 `16.49057s`（范围 `0.03332–32.54855s`），ordered double 的均值为 `22.84921s`（范围 `1.02238–36.33513s`）。该小样本显示稳定错段/多段分裂确实存在，但不外推为所有歌曲的发生率。
 - 伴奏+真实歌词：全部 35 demo 的本地 `accompaniment.wav` 已真实运行并进入盲审；它是 verified accompaniment-only 音频，但仍无 GT，不能写入 formal MAE/accuracy。
-- 人工盲审交付已拆分为不含 mutation type 的 140 个全 demo packet 与 66 个 C10 packet；实验者 decode key 独立保存。packet 提供固定 taxonomy、`severe_error_minutes`、`longest_error_sec` 与 `unresolved` 字段，但当前仍未填写，不将空模板当作人工结果。
+- 人工盲审交付已拆分为不含 mutation type 的 140 个全 demo packet 与 66 个 C10 packet；实验者 decode key 独立保存。**2026-08-04 用户更正：人工 review 结果与标签已经存在，原“当前仍未填写”表述错误。** 当前 archive 尚未定位并审计实际 human-review artifact，因此本报告暂不猜测填写数量或汇总值；下一阶段必须按 packet identity 导入、核验 reviewer/schema/空记录并补充正式统计。
 - 同歌 wrong-section：从同 source song 的其它原生 GT segments 派生（19 song / 38 attempts）；仅 5 条存在正确 anchor 可 MAE 配对，余下显式 unscorable。该 control 不是连续远处副歌的等价替代。
 
 ## 不能声称的内容

@@ -123,3 +123,26 @@ manifest/input audit
 - no mixing M4 synthetic seams with natural MIR-1K conclusions;
 - no unconditional tail commit as a future repair strategy;
 - checkpoints, audio, video and large runtime outputs stay external.
+
+## 2026-08-04 长时间线 Slot/串行混合与子区间判别器（review 后修订）
+
+当前冻结入口：
+
+1. `docs/research_v7_align_behavior/13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md`
+2. `docs/research_v7_align_behavior/14_AGENT_EXECUTION_CONTRACT_12H.md`
+3. `docs/sessions/20260804_align_behavior_slot_region_assessor_archive.md`
+
+当前方向：
+
+```text
+≥90 秒、以 ≥180 秒为主体的数据时间线
++ fixed 60s acoustic requests
+→ 连续/非连续 sparse slots 与真实串行组合
+→ absolute-unit + percentage 文本错误
+→ missing gap / replace 双向评价
+→ raw / official / hidden 逐 unit/gap evidence
+→ 95/99 operating points：unit、75% interval、100% interval
+→ 跨域 region assessor、有限复查、unresolved 和后续重新入轨
+```
+
+硬约束：formal 目标 10 小时、硬上限 12 小时；禁止人工静音凑长数据；baseline 必须按完整 request identity 配对；机制消融与系统配置分开；density 使用 common units 和 phase 轮换；英文不得切断单词，日文不得切断 processor 最小对齐 unit；人工 review 结果与标签已经存在，须先定位审计，不得继续写“未填写”。
