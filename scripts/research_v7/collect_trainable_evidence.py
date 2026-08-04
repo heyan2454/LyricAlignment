@@ -133,19 +133,36 @@ def finalize_collection(collection: dict, out: Path) -> dict:
     return collection
 
 
-def load_verified(path: Path | str) -> tuple[dict, str]:
+def load_verified(path: Path | str, *, verify_sha: bool = True) -> tuple[dict, str]:
     """消费者【唯一】入口：加载 collection 并校验 guard 与显式 evidence 路径存在。
 
     未来 feature trainer / threshold freezer / formal evaluator 只允许接收此结果，
     不允许直接读原始 items/evidence（review10-5）。
+
+    round10（review MAJOR-3）：verify_sha=True 时重算 collection_sha256（对去掉该字段的
+    payload 序列化，与 finalize_collection 同法）并比对，检测 sha 记录与内容断环。
     """
+    import hashlib as _h
     p = Path(path)
     c = json.loads(p.read_text(encoding="utf-8"))
     g = c.get("guard")
+    if verify_sha:
+        stored = c.get("collection_sha256")
+        if not stored:
+            raise ValueError("collection missing collection_sha256 — may be stale bypass")
+        payload = {k: v for k, v in c.items() if k != "collection_sha256"}
+        recomputed = _h.sha256(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
+        if recomputed != stored:
+            raise ValueError(
+                f"collection_sha256 mismatch: stored {stored[:12]} != recomputed {recomputed[:12]} "
+                "(content drifted after finalize)")
+    else:
+        if "collection_sha256" not in c:
+            raise ValueError("collection missing collection_sha256 — may be stale bypass")
     if not isinstance(g, dict) or g.get("present") is not True:
         raise ValueError("collection missing guard (present=True) — refuses bypass")
-    if "collection_sha256" not in c:
-        raise ValueError("collection missing collection_sha256 — may be stale bypass")
     paths = [t["path"] for t in c.get("trainable_evidence", [])]
     for fp in paths:
         if not Path(fp).is_file():

@@ -330,3 +330,25 @@ def test_load_assessor_legacy_without_model_returns_none(tmp_path):
     a, reason = _load_assessor(ok)
     assert a is not None and reason is None
     assert a["model"]["feature_keys"] == ["f1"]
+
+
+def test_load_verified_sha_recompute(tmp_path):
+    """round10 MAJOR-3：load_verified 重算 collection_sha256（去字段后序列化）并比对，
+    内容漂移/断环应拒绝。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import collect, finalize_collection, load_verified
+    run, train_idn = _make_run(tmp_path)
+    c = finalize_collection(collect(run / "RUN_MANIFEST.json", tmp_path / "c.json"),
+                            tmp_path / "c.json")
+    # 正常加载通过（sha 复验一致）
+    loaded, sha = load_verified(tmp_path / "c.json")
+    assert sha == c["collection_sha256"]
+    # 篡改内容（改 trainable 列表）→ sha 断环 → 拒绝
+    import json as _j
+    bad = json.loads((tmp_path / "c.json").read_text())
+    bad["trainable_evidence"] = []
+    (tmp_path / "bad_sha.json").write_text(_j.dumps(bad))
+    import pytest as _pt
+    with _pt.raises(ValueError, match="collection_sha256 mismatch"):
+        load_verified(tmp_path / "bad_sha.json")
