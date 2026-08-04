@@ -37,7 +37,8 @@ class BoundResult:
     canonical_text_start: int | None      # original-song GT global id
     canonical_text_end: int | None        # exclusive
     canonical_to_local: dict              # {canonical global_id -> request-local idx}
-    reason: str
+    canonical_ids: list | None = None     # review9-4：bound 字的逐字 canonical global id（id 不连续时用列表表达，避免 range 失真）
+    reason: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -45,6 +46,7 @@ class BoundResult:
 
 def _coerce(canonical: Sequence[CanonicalUnit | dict]) -> list[CanonicalUnit]:
     units: list[CanonicalUnit] = []
+    prev: int | None = None
     for u in canonical:
         d = u if isinstance(u, dict) else None
         text = d.get("text") if d else getattr(u, "text", None)
@@ -56,9 +58,15 @@ def _coerce(canonical: Sequence[CanonicalUnit | dict]) -> list[CanonicalUnit]:
             raise ValueError(f"canonical unit missing text (global_index={gidx})")
         if start is None or end is None:
             raise ValueError(f"canonical unit missing time (global_index={gidx})")
-        units.append(CanonicalUnit(global_index=int(gidx), text=str(text),
-                                   start_sec=float(start), end_sec=float(end)))
-    units.sort(key=lambda u: u.global_index)
+        start, end, gidx = float(start), float(end), int(gidx)
+        # review9-4：global id 必须唯一且严格递增（拒绝重复/非递增 → canonical_to_local 不会被覆盖）
+        if prev is not None and gidx <= prev:
+            raise ValueError(f"canonical global_index not strictly increasing: {prev} then {gidx}")
+        prev = gidx
+        # review9-4：拒绝负时长（end<=start）与负时间坐标
+        if end <= start:
+            raise ValueError(f"canonical unit time invalid (end<=start): id={gidx} [{start},{end}]")
+        units.append(CanonicalUnit(global_index=gidx, text=str(text), start_sec=start, end_sec=end))
     return units
 
 
@@ -80,6 +88,7 @@ def bind_canonical_to_window(
         return BoundResult(False, [], 0, 0, None, None, {}, "no canonical unit overlaps source_window")
     g0 = in_win[0].global_index
     g1 = max(u.global_index for u in in_win) + 1              # exclusive (canonical global)
+    gap_ids = [u.global_index for u in in_win]                 # 实际落入窗的 canonical id（逐字，可能不连续）
     full = [u for u in units if g0 <= u.global_index < g1]     # 连续性由 canonical 保证
     full.sort(key=lambda u: u.global_index)
     local_of: dict = {u.global_index: i for i, u in enumerate(full)}
@@ -91,6 +100,7 @@ def bind_canonical_to_window(
         canonical_text_start=g0,
         canonical_text_end=g1,
         canonical_to_local=local_of,
+        canonical_ids=gap_ids,   # review9-4：逐字 canonical global id 列表（id 不连续时避免 range 失真）
         reason=f"overlap_source_window[{w0:.2f},{w1:.2f})",
     )
 

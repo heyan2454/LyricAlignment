@@ -80,3 +80,40 @@ def test_request_from_bound_full_row():
     assert row2["text_window_aligned"] is False
     assert row2["evaluation_role"] == "acoustic_probe"
     assert row2["text_units"] == []
+
+
+def test_reject_duplicate_global_index():
+    # review9-4：重复 id 会覆盖 canonical_to_local → 拒绝
+    dups = [
+        {"global_index": 0, "text": "乙", "start_sec": 0.0, "end_sec": 0.5},
+        {"global_index": 0, "text": "女", "start_sec": 0.6, "end_sec": 1.0},
+    ]
+    with pytest.raises(ValueError, match="strictly increasing"):
+        bind_canonical_to_window(dups, source_window=(0.0, 1.0))
+
+
+def test_reject_non_increasing_global_index():
+    bad = [
+        {"global_index": 1, "text": "乙", "start_sec": 0.0, "end_sec": 0.5},
+        {"global_index": 0, "text": "女", "start_sec": 0.6, "end_sec": 1.0},
+    ]
+    with pytest.raises(ValueError, match="strictly increasing"):
+        bind_canonical_to_window(bad, source_window=(0.0, 1.0))
+
+
+def test_reject_end_le_start():
+    bad = [{"global_index": 0, "text": "乙", "start_sec": 0.5, "end_sec": 0.5}]
+    with pytest.raises(ValueError, match="end<=start"):
+        bind_canonical_to_window(bad, source_window=(0.0, 1.0))
+
+
+def test_noncontiguous_ids_use_explicit_list():
+    # gap id（0,1,2,5）：canonical_ids 逐字列表准确；range 表达仍 min/max+1（consumer 应优先 canonical_ids）
+    units = [
+        {"global_index": i, "text": f"字{i}", "start_sec": 40 + i, "end_sec": 40 + i + 0.8}
+        for i in (0, 1, 2, 5)
+    ]
+    b = bind_canonical_to_window(units, source_window=(40.0, 43.5))
+    assert b.aligned is True
+    assert b.canonical_ids == [0, 1, 2]       # 只含窗内字，按序
+    assert b.canonical_to_local == {0: 0, 1: 1, 2: 2}
