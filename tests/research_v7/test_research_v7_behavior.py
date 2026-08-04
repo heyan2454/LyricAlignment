@@ -235,3 +235,31 @@ def test_workflow_manifest_runs_p1_p2_d_and_sparse_smoke(tmp_path):
     p2 = next(row for row in evidence if row["attempt"]["request"]["workflow_mode"] == "strict_serial_progressive_crop"
               and row["attempt"]["request"]["parent_request_id"] is not None)
     assert p2["attempt"]["cursor_prev_end"] is not None
+
+
+def test_malformed_and_blocked_row_still_produce_manifest(tmp_path):
+    # review7-1：整行隔离——malformed row 与 serial-parent 失败后批次继续并产 RUN_MANIFEST
+    import json as _j
+    manifest = tmp_path / "badman.jsonl"
+    # row0 正常；row1 malformed(缺 text_units 且 text 越界)；row2 依赖 role1(parent 未完成)
+    rows = [
+        {"request_id": "ok", "item_id": "s", "text_units": ["a", "b"], "duration_sec": 10, "mutation_type": "baseline"},
+        {"request_id": "bad", "item_id": "s2", "text_units": [], "text_start_index": 0, "text_end_index": 5,
+         "duration_sec": 10, "mutation_type": "baseline"},
+        {"request_id": "blk", "item_id": "s3", "parent_request_id": "ghost", "text_units": ["x"],
+         "workflow_mode": "strict_serial_progressive_crop", "duration_sec": 10, "mutation_type": "baseline"},
+    ]
+    manifest.write_text("\n".join(_j.dumps(r) for r in rows))
+    outroot = tmp_path / "run"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+                        "--manifest", str(manifest), "--out-root", str(outroot), "--smoke"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr  # malformed/blocked 不中止批次
+    rm = _j.loads((outroot / "RUN_MANIFEST.json").read_text())
+    kinds = {f.get("kind") for f in rm["failures"]}
+    assert "malformed_row" in kinds    # bad row 记为 malformed
+    assert "blocked_by_parent" in kinds  # blk row 记为 blocked_by_parent
+    # 正常 row0 仍被执行
+    assert any(i["request_id"] == "ok" and i["status"] == "ok" for i in rm["requests_identity"])
+    # FAILURES.jsonl 存在
+    assert (outroot / "FAILURES.jsonl").exists()
