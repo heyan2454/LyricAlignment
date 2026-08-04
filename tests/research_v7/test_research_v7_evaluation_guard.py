@@ -31,20 +31,21 @@ def test_guard_unknown_rejected():
 
 def test_partition_by_role():
     recs = [
-        {"item_id": "a", "evaluation_role": "lyrics_aligned"},
+        {"item_id": "a", "evaluation_role": "lyrics_aligned", "text_window_aligned": True},
         {"item_id": "b", "evaluation_role": "acoustic_probe"},
         {"item_id": "c", "evaluation_role": "demo_challenge"},
         {"item_id": "d", "evaluation_role": "mystery"},
     ]
     allowed, probe, other = partition_by_role(recs)
     assert [r["item_id"] for r in allowed] == ["a"]
-    assert {r["item_id"] for r in probe} == {"b", "c"}
-    assert [r["item_id"] for r in other] == ["d"]
+    # d(role=mystery 且缺 text_window_aligned→未对齐) 也归 probe；真 other 需 role unknown 且 text 对齐
+    assert {r["item_id"] for r in probe} == {"b", "c", "d"}
+    assert other == []
 
 
 def test_require_trainable_excludes_non_lyrics():
     out = require_trainable([
-        {"item_id": "ok", "evaluation_role": "lyrics_aligned"},
+        {"item_id": "ok", "evaluation_role": "lyrics_aligned", "text_window_aligned": True},
         {"item_id": "probe1", "evaluation_role": "acoustic_probe"},
         {"item_id": "demo1", "evaluation_role": "demo_challenge"},
     ])
@@ -56,7 +57,7 @@ def test_require_trainable_excludes_non_lyrics():
 def test_partition_rejects_text_not_window_aligned():
     from lyricalign.research_v7.evaluation_guard import partition_by_role
     recs = [
-        {"item_id": "a", "evaluation_role": "lyrics_aligned", "text_window_aligned": True},
+        {"item_id": "a", "evaluation_role": "lyrics_aligned", "text_window_aligned": True, "text_window_aligned": True},
         {"item_id": "b", "evaluation_role": "lyrics_aligned", "text_window_aligned": False},  # review6-1：文本未对齐→拒
         {"item_id": "c", "evaluation_role": "acoustic_probe"},
     ]

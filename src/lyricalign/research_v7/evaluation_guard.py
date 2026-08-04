@@ -51,7 +51,8 @@ def partition_by_role(records: Sequence[dict]) -> tuple[list[dict], list[dict], 
     for r in records:
         role = r.get("evaluation_role")
         g = guard_role(role)
-        window_aligned = r.get("text_window_aligned", True) is not False
+        # review7-3：缺 text_window_aligned 标记默认视为未对齐（拒绝），而非默认对齐
+        window_aligned = r.get("text_window_aligned") is True
         if g.allowed and window_aligned:
             allowed.append(r)
         elif role in ("acoustic_probe", "demo_challenge") or not window_aligned:

@@ -112,51 +112,62 @@ def main(argv=None) -> int:
             a0, a1 = r.get("audio_start_sec", 0.0), r.get("audio_end_sec", r.get("duration_sec", 0.0) or 60.0)
         if r.get("workflow_mode") == "strict_serial_progressive_crop" and parent:
             if cursor_prev is None:
-                raise RuntimeError(f"{r.get('request_id')}: P2 requires completed parent cursor {parent}")
+                # review7-1：serial 依赖失败的子请求 → 记 blocked_by_parent failure，批次继续，不中止
+                failures.append({"item_id": r.get("item_id"), "request_id": r.get("request_id"),
+                                 "status": "blocked_by_parent",
+                                 "error": f"P2 requires completed parent cursor {parent}", "kind": "blocked_by_parent"})
+                continue
             a0 = max(float(a0), float(cursor_prev) - float(r.get("left_context_sec", 10.0)))
         slot = tuple(r["timestamp_slot_indices"]) if r.get("timestamp_slot_indices") is not None else None
-        if r.get("provisional_policy") == "last_predicted_seconds" and parent:
-            previous_rows = rows_after_by_request.get(parent, [])
-            cutoff = float(cursor_prev or 0.0) - float(r.get("provisional_last_sec", 0.0))
-            recent = [int(row["global_character_index"]) for row in previous_rows if float(row.get("fixed_global_end_sec", 0.0)) > cutoff]
-            source_start = int(r.get("source_text_start_index", 0))
-            slot_start = min(recent) if recent else source_start
-            slot = tuple(range(max(0, slot_start), len(units)))
-        mutation = r.get("mutation_type", "baseline")
-        req = AlignmentRequest(
-            request_id=r.get("request_id") or f"{r['item_id']}:{mutation}:{r.get('ratio', 1.0)}:{r.get('position', 'whole')}:{i}",
-            item_id=r.get("item_id", f"r{i}"),
-            parent_request_id=r.get("parent_request_id"),
-            audio_source=r.get("files")[0] if r.get("files") else (r.get("audio_path", "demucs_vocal")),
-            audio_start_sec=a0,
-            audio_end_sec=a1,
-            text_source=r.get("text_source") or r.get("gt_path") or "labels",
-            text_start_index=int(r.get("text_start_index", 0)),
-            text_end_index=int(r.get("text_end_index", len(units))),
-            text_units=units,
-            timestamp_slot_indices=slot,
-            workflow_mode=r.get("workflow_mode", "behavior_suite") or "behavior_suite",
-            mutation_type=mutation or "baseline",
-            mutation_parameters={key: r.get(key) for key in (
-                "ratio", "requested_ratio", "actual_ratio", "position", "mutation_position", "source", "text_relation",
-                "audio_relation", "source_text_start_index", "source_text_end_index", "baseline_unit_count", "n_base",
-                "actual_added_units", "actual_removed_units", "actual_replaced_units", "donor_song_id", "donor_start_index",
-                "donor_end_index", "donor_similarity", "selection_seed", "cursor_offset_units", "provisional_policy",
-                "provisional_tail_units", "provisional_last_sec", "c10_case", "repeat_gt_starts", "repeat_unit_count")},
-            model_id=args.model,
-            checkpoint_id=args.checkpoint,
-            input_variant=r.get("input_variant", "text_mutation"),
-            metadata={"dataset": r.get("dataset"), "split": r.get("split"),
-                      "source_song_id": r.get("source_song_id") or r.get("song_id"),
-                      "language": r.get("language") or "Chinese", "provenance": r.get("provenance", {}),
-                      # review5-3：显式 condition/pair/target_ratio(供 evaluator 按 control/weak pairing 分层)
-                      "condition": r.get("condition"), "pair_id": r.get("pair_id"),
-                      "target_ratio": r.get("target_ratio"),
-                      "evaluation_role": r.get("evaluation_role"),
-                      "canonical_mapping": r.get("canonical_mapping", {})},
-        )
-        req.validate()
-        # review6-3/4/5：per-item 隔离 —— drift/校验/执行失败记录结构化 failure 并 continue，不中止批次
+        # review7-1：构造 + validate（malformed row：非法 range/slot/text）也做 per-item 隔离
+        try:
+            if r.get("provisional_policy") == "last_predicted_seconds" and parent:
+                previous_rows = rows_after_by_request.get(parent, [])
+                cutoff = float(cursor_prev or 0.0) - float(r.get("provisional_last_sec", 0.0))
+                recent = [int(row["global_character_index"]) for row in previous_rows if float(row.get("fixed_global_end_sec", 0.0)) > cutoff]
+                source_start = int(r.get("source_text_start_index", 0))
+                slot_start = min(recent) if recent else source_start
+                slot = tuple(range(max(0, slot_start), len(units)))
+            mutation = r.get("mutation_type", "baseline")
+            req = AlignmentRequest(
+                request_id=r.get("request_id") or f"{r['item_id']}:{mutation}:{r.get('ratio', 1.0)}:{r.get('position', 'whole')}:{i}",
+                item_id=r.get("item_id", f"r{i}"),
+                parent_request_id=r.get("parent_request_id"),
+                audio_source=r.get("files")[0] if r.get("files") else (r.get("audio_path", "demucs_vocal")),
+                audio_start_sec=a0,
+                audio_end_sec=a1,
+                text_source=r.get("text_source") or r.get("gt_path") or "labels",
+                text_start_index=int(r.get("text_start_index", 0)),
+                text_end_index=int(r.get("text_end_index", len(units))),
+                text_units=units,
+                timestamp_slot_indices=slot,
+                workflow_mode=r.get("workflow_mode", "behavior_suite") or "behavior_suite",
+                mutation_type=mutation or "baseline",
+                mutation_parameters={key: r.get(key) for key in (
+                    "ratio", "requested_ratio", "actual_ratio", "position", "mutation_position", "source", "text_relation",
+                    "audio_relation", "source_text_start_index", "source_text_end_index", "baseline_unit_count", "n_base",
+                    "actual_added_units", "actual_removed_units", "actual_replaced_units", "donor_song_id", "donor_start_index",
+                    "donor_end_index", "donor_similarity", "selection_seed", "cursor_offset_units", "provisional_policy",
+                    "provisional_tail_units", "provisional_last_sec", "c10_case", "repeat_gt_starts", "repeat_unit_count")},
+                model_id=args.model,
+                checkpoint_id=args.checkpoint,
+                input_variant=r.get("input_variant", "text_mutation"),
+                metadata={"dataset": r.get("dataset"), "split": r.get("split"),
+                          "source_song_id": r.get("source_song_id") or r.get("song_id"),
+                          "language": r.get("language") or "Chinese", "provenance": r.get("provenance", {}),
+                          # review5-3：显式 condition/pair/target_ratio(供 evaluator 按 control/weak pairing 分层)
+                          "condition": r.get("condition"), "pair_id": r.get("pair_id"),
+                          "target_ratio": r.get("target_ratio"),
+                          "evaluation_role": r.get("evaluation_role"),
+                          "text_window_aligned": r.get("text_window_aligned", "unknown"),
+                          "canonical_mapping": r.get("canonical_mapping", {})},
+            )
+            req.validate()
+        except Exception as _ce:  # noqa
+            # review7-1：构造/validate 失败 → malformed_row failure，跳过该 item 继续
+            failures.append({"item_id": r.get("item_id"), "request_id": r.get("request_id"),
+                             "status": "malformed_row", "error": str(_ce), "kind": "malformed_row"})
+            continue
         item_dir = out_root / "items" / str(req.item_id)
         import hashlib as _hl
         try:
@@ -191,7 +202,9 @@ def main(argv=None) -> int:
                                      "request_identity": content_idn, "status": prior_attempt.get("status"),
                                      "evidence_path": str(cache_f), "cache": "hit", "kind": "cached_error"})
                 identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
-                                   "cache": "hit", "status": prior_attempt.get("status")})
+                                   "cache": "hit", "status": prior_attempt.get("status"),
+                                   "evaluation_role": r.get("evaluation_role"),
+                                   "text_window_aligned": r.get("text_window_aligned")})
                 continue
             ev = run_request(req, executor, cursor_prev=cursor_prev)
             payload = ev.to_dict()
@@ -200,11 +213,9 @@ def main(argv=None) -> int:
             # review6-3：evidence 唯一路径 = evidence/<attempt_identity>.json（人读 view 见 items/<item>/<idn>.json），不覆盖历史
             item_dir.mkdir(parents=True, exist_ok=True)
             f_author = out_root / "evidence" / f"{content_idn}.json"
-            f_author.parent.mkdir(parents=True, exist_ok=True)
-            f_author.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
-            (item_dir / f"{content_idn}.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1))
-            cache_f.parent.mkdir(parents=True, exist_ok=True)
-            cache_f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
+            _atomic_write_text(f_author, payload)
+            _atomic_write_text(item_dir / f"{content_idn}.json", payload)
+            _atomic_write_text(cache_f, payload)
             cursor_after_by_request[req.request_id] = ev.attempt.cursor_after
             rows_after_by_request[req.request_id] = list(ev.attempt.decoder_outputs.get("official", {}).get("rows", []))
             written += 1
@@ -214,7 +225,9 @@ def main(argv=None) -> int:
                                  "request_identity": content_idn, "status": ev.attempt.status,
                                  "evidence_path": str(f_author), "cache": "miss", "kind": "exec_error"})
             identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
-                               "cache": "miss", "status": ev.attempt.status})
+                               "cache": "miss", "status": ev.attempt.status,
+                               "evaluation_role": r.get("evaluation_role"),
+                               "text_window_aligned": r.get("text_window_aligned")})
         except Exception as e:  # noqa
             # review6-4：per-item 失败不中止批次；记录 structured failure，继续其它独立 item
             failures.append({"item_id": req.item_id, "request_id": r.get("request_id") or req.request_id,
@@ -237,6 +250,13 @@ def main(argv=None) -> int:
     # review6-2：按 evaluation_role 计数
     from collections import Counter as _C
     role_counts = _C(i.get("evaluation_role", "unknown") or "unknown" for i in identities) or {}
+    # review7-3：训练/阈值/正式评价入口硬过滤（实际调用 guard，记拒绝清单与分母）
+    try:
+        from lyricalign.research_v7.evaluation_guard import require_trainable
+        _tr = require_trainable([{**i, "text_window_aligned": i.get("text_window_aligned")} for i in identities])
+        train_filter = {"trainable_identity_count": len(_tr["trainable"]), "rejected": _tr["rejected_count"]}
+    except Exception as _ge:  # noqa
+        train_filter = {"error": str(_ge)}
     run_manifest = {
         "schema": "research_v7_long_slot_v1",
         "run_id": f"rl-{_time.strftime('%Y%m%d_%H%M%S')}",
@@ -252,24 +272,22 @@ def main(argv=None) -> int:
                            "cache_hit": cache_hit, "cache_miss": forward, "cache_total": cache_hit + forward},
         "item_count": {"requests": len(rows), "written": written, "cache_hit": cache_hit, "forward": forward,
                        "failed": len(failures), "role": dict(role_counts)},
+        "train_filter": train_filter,
         "cache_keys": [i["request_identity"] for i in identities],
         "evidence_inventory": evidence_inv,
         "failures": failures,
         "requests_identity": identities,
     }
     # review6-4：原子写 RUN_MANIFEST + FAILURES.jsonl（临时文件+replace）；失败不结束仍产出
+    _atomic_write_text(out_root / "RUN_MANIFEST.json", run_manifest)
+    import json as _jf
     fd, tmp = _mkstemp(out_root)
-    with open(tmp, "w") as _f:
-        _f.write(json.dumps(run_manifest, ensure_ascii=False, indent=1))
-        _f.flush()
     import os as _os2
-    _os2.replace(tmp, out_root / "RUN_MANIFEST.json")
-    fd2, tmp2 = _mkstemp(out_root)
-    with open(tmp2, "w") as _f:
+    with _os2.fdopen(fd, "w") as _f:  # 关闭 fd
         for fa in failures:
-            _f.write(json.dumps(fa, ensure_ascii=False) + "\n")
-        _f.flush()
-    _os2.replace(tmp2, out_root / "FAILURES.jsonl")
+            _f.write(_jf.dumps(fa, ensure_ascii=False) + "\n")
+        _f.flush(); _os2.fsync(_f.fileno())
+    _os2.replace(tmp, out_root / "FAILURES.jsonl")
     print(json.dumps({"ok": True, "rows": len(rows), "written": written,
                       "cache_hit": cache_hit, "forward": forward, "failed": len(failures),
                       "out_root": str(out_root), "executor": "real" if args.real else "fake-smoke",
@@ -282,6 +300,27 @@ def _mkstemp(out_root):
     out_root.mkdir(parents=True, exist_ok=True)
     fd, path = tempfile.mkstemp(dir=str(out_root), suffix=".tmp")
     return fd, path
+
+
+def _atomic_write_text(target, payload) -> None:
+    """review7-6：fsync + 原子替换写入 JSON；返回前关闭 fd。"""
+    import json as _j
+    import os as _o
+    import tempfile as _tf
+    from pathlib import Path as _P
+    t = _P(target); t.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = _tf.mkstemp(dir=str(t.parent), suffix=".tmp")
+    try:
+        with _o.fdopen(fd, "w") as fh:  # os.fdopen 关闭 fd
+            _j.dump(payload, fh, ensure_ascii=False, indent=1)
+            fh.flush(); _o.fsync(fh.fileno())
+        _o.replace(tmp, t)
+    finally:
+        try:
+            if _o.path.exists(tmp): _o.unlink(tmp)
+        except Exception:
+            pass
+
 
 
 def _git_head() -> str:
