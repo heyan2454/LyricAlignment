@@ -43,6 +43,47 @@ def rms(x):
     return float(np.sqrt(np.mean(x * x) + 1e-12)) if x.size else 0.0
 
 
+def _atomic_jsonl(path, rows):
+    import json as _j
+    import os as _os
+    import tempfile as _tf
+
+    from pathlib import Path as _P
+
+    p = _P(path); p.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = _tf.mkstemp(dir=str(p.parent), suffix=".tmp")
+    try:
+        with _os.fdopen(fd, "w") as f:
+            for r in rows:
+                f.write(_j.dumps(r, ensure_ascii=False) + "\n")
+            f.flush(); _os.fsync(f.fileno())
+        _os.replace(tmp, p)  # 原子替换
+    except Exception:
+        if _os.path.exists(tmp):
+            _os.unlink(tmp)
+        raise
+
+
+def _atomic_json(path, payload):
+    import json as _j
+    import os as _os
+    import tempfile as _tf
+
+    from pathlib import Path as _P
+
+    p = _P(path); p.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = _tf.mkstemp(dir=str(p.parent), suffix=".tmp")
+    try:
+        with _os.fdopen(fd, "w") as f:
+            _j.dump(payload, f, ensure_ascii=False, indent=1)
+            f.flush(); _os.fsync(f.fileno())
+        _os.replace(tmp, p)
+    except Exception:
+        if _os.path.exists(tmp):
+            _os.unlink(tmp)
+        raise
+
+
 def write_wav(path, x, rate):
     with wave.open(str(path), "wb") as f:
         f.setnchannels(1); f.setsampwidth(2); f.setframerate(rate)
@@ -122,7 +163,7 @@ def main(argv=None) -> int:
 
     items = [json.loads(l) for l in Path(args.item_list).read_text().splitlines() if l.strip()]
     out_root = Path(args.out_root); out_root.mkdir(parents=True, exist_ok=True)
-    recs = []; done = 0
+    recs = []; _reqs = []; done = 0
     for it in items:
         if done >= args.limit:
             break
@@ -168,43 +209,62 @@ def main(argv=None) -> int:
         # P0（C3-review）：实际计算 source SHA，不使用输入里的可选字段
         import hashlib
         import json as _json
+        import os as _os
+        import tempfile as _tf
 
         window_s = round(start / rate, 1)
         pair_id = f"{it['item_id']}:w{window_s}"
         conditions = {lab: ("control" if lab == "control" else "weak_vocal_residual") for lab in labels.values()}
-        # request identity：canonical 字段集的 sha256（含 item/window/condition/audio hash）
-        def _reqid(cond, sha):
-            return "sha256:" + hashlib.sha256(
-                f"{pair_id}|{cond}|{rate}|{sha}".encode()).hexdigest()
-
         vocal_sha = hashlib.sha256(vp.read_bytes()).hexdigest()
         acc_sha = hashlib.sha256(cp.read_bytes()).hexdigest()
+        # P0(review3-2)：identity 必须包含全部构造内容：acc sha、每个导出 wav 的 content sha、
+        # alpha、silence-mask 摘要(meta.silence_audit 的确定性编码)、rate、code/transform version。
+        code_ver = "c3-exporter-v3"
+        wav_sha = {}
+        for a in ALPHAS:
+            name = labels[a]
+            p = d / f"{name}.wav"
+            wav_sha[name] = hashlib.sha256(p.read_bytes()).hexdigest()  # 写文件后算 content sha
+        sil_desc = _json.dumps(meta.get("silence_audit", {}), sort_keys=True) if meta.get("silence_audit") else ""
+        target_ratio = next((a for a in ALPHAS if a > 0), None)
+
+        def _reqid(cond, cond_sha):
+            return "sha256:" + hashlib.sha256(
+                f"{pair_id}|{cond}|{rate}|{vocal_sha}|{acc_sha}|{cond_sha}|{target_ratio}|{sil_desc}|{code_ver}".encode()
+            ).hexdigest()
+
         recs.append({"item_id": it["item_id"], "window_sec": [window_s, round((start + win) / rate, 1)],
                      "pair_id": pair_id, "sample_rate": rate,
-                     "vocal_sha256": vocal_sha, "acc_sha256": acc_sha, **meta,
+                     "vocal_sha256": vocal_sha, "acc_sha256": acc_sha, "wav_sha256": wav_sha, **meta,
                      "rms": {k: round(v, 3) for k, v in rms_all.items()},
                      "conditions": conditions,
                      "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})
-        # REQUESTS.jsonl：每 condition 一条固定 schema 请求，供真实 runner 消费
         for lab in labels.values():
             cond = conditions[lab]
             req = {
                 "schema_version": "research_v7_long_slot_v1",
                 "request_type": "c3_weak_vocal_calibration",
-                "condition": cond,
-                "pair_id": pair_id,
-                "item_id": it["item_id"],
+                "condition": cond, "pair_id": pair_id, "item_id": it["item_id"],
+                "audio_source": "generated_c3_wav",
                 "window_sec": [window_s, round((start + win) / rate, 1)],
                 "audio_path_vocals": str(vp), "audio_path_accompaniment": str(cp),
                 "vocal_sha256": vocal_sha, "acc_sha256": acc_sha,
-                "sample_rate": rate, "request_identity": _reqid(cond, vocal_sha),
-                "files": [str(d / f"{lab}.wav")],
-                "mutation": "silence_residual", "target_ratio": next((a for a in ALPHAS if a > 0), None),
+                "sample_rate": rate, "code_version": code_ver,
+                "request_identity": _reqid(cond, wav_sha[lab]),
+                "files": [str(d / f"{lab}.wav")], "files_sha256": [wav_sha[lab]],
+                "mutation": "silence_residual", "target_ratio": target_ratio,
             }
-            (out_root / "REQUESTS.jsonl").open("a").write(_json.dumps(req, ensure_ascii=False) + "\n")
+            _reqs.append(req)
         done += 1
-    (out_root / "AUDIO_EXPORT_MANIFEST.json").write_text(json.dumps(recs, ensure_ascii=False, indent=1))
-    print(json.dumps({"ok": True, "exported": done, "alphas": ALPHAS, "out_root": str(out_root)}, ensure_ascii=False))
+    # P0(review3-2)：REQUESTS 原子写（临时文件+replace）并按 identity 去重；AUDIO_EXPORT_MANIFEST 同理。
+    seen = set(); uniq = []
+    for r in _reqs:
+        if r["request_identity"] not in seen:
+            seen.add(r["request_identity"]); uniq.append(r)
+    _atomic_jsonl(out_root / "REQUESTS.jsonl", uniq)
+    _atomic_json(out_root / "AUDIO_EXPORT_MANIFEST.json", recs)
+    print(json.dumps({"ok": True, "exported": done, "alphas": ALPHAS, "out_root": str(out_root),
+                      "n_requests": len(uniq)}, ensure_ascii=False))
     return 0
 
 

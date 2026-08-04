@@ -141,3 +141,11 @@ def test_successful_export_branch_done_and_files(tmp_path):
     assert len(reqs) >= 2  # control + weak
     assert all(r.get("schema_version") == "research_v7_long_slot_v1" for r in reqs)
     assert all(r.get("request_identity") and r.get("pair_id") and r.get("vocal_sha256") for r in reqs)
+    # review3-2：identity 必须含 content-sha + code_version；重跑同 out-root 应去重（原子写）
+    assert all(r.get("code_version") and r.get("files_sha256") for r in reqs)
+    # idempotent：同 out-root 再跑一次 REQUESTS 不重复
+    import subprocess as _sp
+    _sp.run([sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py"),
+             "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0"], capture_output=True, env=env)
+    reqs2 = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert len(reqs2) == len(reqs)  # 去重，不追加
