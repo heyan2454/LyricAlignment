@@ -26,6 +26,14 @@ def unit_metrics(
     correct_retained_units: int,    # 正确保留(trusted)的 unit 数
     total_retained_gt: int,         # 应保留的总数
 ) -> dict[str, float]:
+    """unit recall / FPR（FP 分母 = total_retained_gt）。
+
+    调用约定（round01 GT eval）：
+    - 两侧索引必须在同一 canonical 轴上（请求文本覆盖的 canonical ids 子集）；
+    - 空集情形（truly_unsafe 与 unsafe_pred 均为空）本函数返回 0/0 -> 0.0；
+      调用方如需“无真 unsafe 且未误报 = 完全正确”的真空约定，请自行在外部覆盖 recall=1.0，
+      本函数签名与返回值保持不变。
+    """
     hit = len([u for u in unsafe_pred_units if u in truly_unsafe_indices])
     fp = len([u for u in unsafe_pred_units if u not in truly_unsafe_indices])
     fn = len([u for u in truly_unsafe_indices if u not in set(unsafe_pred_units)])
