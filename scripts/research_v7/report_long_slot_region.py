@@ -37,18 +37,30 @@ def main(argv=None) -> int:
     smoke = json.loads(smoke_f.read_text())
 
     # round02：formal 指标回填 —— GT_EVAL.json（research_v7_gt_eval_v1）优先于
-    # RUN_MANIFEST.metrics；仅当文件缺失/不可读时回退。只读，不覆盖任何原始 aggregate。
+    # RUN_MANIFEST.metrics；仅当文件缺失/不可读/schema 不合法（schema !=
+    # research_v7_gt_eval_v1 或 metrics 非空 dict）时回退。只读，不覆盖任何原始 aggregate。
     gt_eval = None
+    gt_eval_invalid_reason = None
     gt_eval_f = run / "GT_EVAL.json"
     if gt_eval_f.is_file():
         try:
-            gt_eval = json.loads(gt_eval_f.read_text(encoding="utf-8"))
+            parsed = json.loads(gt_eval_f.read_text(encoding="utf-8"))
         except Exception:
-            gt_eval = None
+            parsed = None
+        if parsed is None:
+            gt_eval_invalid_reason = "GT_EVAL unreadable"
+        elif not isinstance(parsed, dict) or parsed.get("schema") != "research_v7_gt_eval_v1":
+            gt_eval_invalid_reason = "GT_EVAL schema invalid"
+        elif not isinstance(parsed.get("metrics"), dict) or not parsed["metrics"]:
+            gt_eval_invalid_reason = "GT_EVAL metrics empty"
+        else:
+            gt_eval = parsed
 
     # P0-5 round2：formal_approved 需真实 formal evidence + frozen manifest sha + 实际预算/gates。
     formal_approved = False
     reasons = []
+    if gt_eval_invalid_reason:
+        reasons.append(gt_eval_invalid_reason)
     formal_manifest = run / "formal" / "RUN_MANIFEST.json"
     marker = run / "formal" / "FORMAL_MARKER.json"
     if not args.formal_approved_manifest:

@@ -273,7 +273,11 @@ def _load_m4_reference(m4_gt_eval: Path | None) -> dict | None:
     """
     if m4_gt_eval is None or not m4_gt_eval.is_file():
         return None
-    data = json.loads(m4_gt_eval.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(m4_gt_eval.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"warning: m4-gt-eval unreadable, m4_reference=None: {e}", file=sys.stderr)
+        return None
     m = data.get("metrics") or {}
     return {k: m.get(k) for k in M4_REFERENCE_KEYS}
 
@@ -437,6 +441,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="输出路径（默认 <run-root>/GT_EVAL.json 或 "
                         "<run-root>/MIR_CROSS_DOMAIN_EVAL.json）")
     a = p.parse_args(argv)
+    if a.domain == "m4" and a.m4_gt_eval:
+        print("warning: --m4-gt-eval ignored for domain=m4", file=sys.stderr)
     run_root = Path(a.run_root)
     default_name = "MIR_CROSS_DOMAIN_EVAL.json" if a.domain == "mir1k" else "GT_EVAL.json"
     out = Path(a.out) if a.out else (run_root / default_name)

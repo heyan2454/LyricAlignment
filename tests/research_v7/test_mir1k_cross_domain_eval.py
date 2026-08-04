@@ -215,6 +215,47 @@ def test_mir1k_m4_reference_none_when_missing_file(tmp_path):
     assert g["metrics"]["unit_recall"] is not None
 
 
+def test_m4_domain_m4_gt_eval_warns_stderr(tmp_path):
+    """T1：domain=m4 时传 --m4-gt-eval → stderr 有 warn，行为（忽略）不变。"""
+    run = _make_run(tmp_path, missing_n_rows=18)
+    m4_eval = tmp_path / "m4_gt" / "GT_EVAL.json"
+    _write(m4_eval, {
+        "schema": "research_v7_gt_eval_v1",
+        "metrics": {"unit_recall": 0.75, "gap_recall": 0.9, "n_units_evaluated": 340},
+    })
+    out = tmp_path / "eval_out_m4w" / "GT_EVAL.json"
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/research_v7/evaluate_long_slot_gt.py"),
+         "--run-root", str(run), "--timeline-manifest",
+         str(run.parent / "formal_manifest" / "MIR_TIMELINE_MANIFEST.jsonl"),
+         "--domain", "m4", "--m4-gt-eval", str(m4_eval), "--out", str(out)],
+        capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    assert "warning" in r.stderr and "--m4-gt-eval ignored" in r.stderr
+    g = json.loads(out.read_text())
+    assert "m4_reference" not in g  # m4 域输出不携带 m4_reference（行为不变）
+
+
+def test_m4_reference_malformed_json_returns_none(tmp_path):
+    """T1：--m4-gt-eval 文件 malformed JSON → 不崩、m4_reference=None、stderr 有原因。"""
+    run = _make_run(tmp_path, missing_n_rows=18)
+    bad = tmp_path / "m4_gt" / "GT_EVAL.json"
+    bad.parent.mkdir(parents=True)
+    bad.write_text("{not valid json!!")
+    out = tmp_path / "eval_out_bad" / "MIR_CROSS_DOMAIN_EVAL.json"
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/research_v7/evaluate_long_slot_gt.py"),
+         "--run-root", str(run), "--timeline-manifest",
+         str(run.parent / "formal_manifest" / "MIR_TIMELINE_MANIFEST.jsonl"),
+         "--domain", "mir1k", "--m4-gt-eval", str(bad), "--out", str(out)],
+        capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    assert "warning" in r.stderr and "m4-gt-eval unreadable" in r.stderr
+    g = json.loads(out.read_text())
+    assert g["m4_reference"] is None
+    assert g["metrics"]["unit_recall"] is not None
+
+
 def test_mir1k_missing_without_baseline_skipped_not_inflated(tmp_path):
     """配对规则与 T1 一致：missing 无配对 baseline evidence → 计入 skipped，
     unit_recall 不得被真空膨成 1.0。"""

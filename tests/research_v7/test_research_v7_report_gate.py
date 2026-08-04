@@ -128,6 +128,56 @@ def test_reverse_missing_budget_stays_draft(tmp_path):
     assert any("elapsed/forward" in x for x in s["draft_reasons"])
 
 
+def test_reverse_gt_eval_wrong_schema_never_approved(tmp_path):
+    # T1：GT_EVAL 存在但 schema 错（非 research_v7_gt_eval_v1）→ 视为无 GT_EVAL，
+    # 不得 formal_approved，draft_reasons 记录原因；metrics 回退 RUN_MANIFEST。
+    run = _run_root(tmp_path); (run / "formal").mkdir(exist_ok=True)
+    man, sha = _manifest(tmp_path)
+    (run / "formal" / "FORMAL_MARKER.json").write_text(json.dumps(
+        {"manifest_sha256": sha, "run_id": "r1", "all_gates_passed": True, "runtime_budget_ok": True}))
+    (run / "formal" / "RUN_MANIFEST.json").write_text(json.dumps(
+        {"run_id": "r1",
+         "environment": {"executor": "real"},
+         "runtime_budget": {"elapsed_sec": 600, "forward_count": 120},
+         "timeline": {"duration_sec": 400, "ge180": True},
+         "metrics": {"unit_recall": 0.75, "fpr": 0.1, "gap_recall": 1.0},
+         "assessor": {"operating_points": {"high_recall_95": 0.9}}}))
+    (run / "GT_EVAL.json").write_text(json.dumps(
+        {"schema": "research_v7_gt_eval_v2",  # schema 不匹配
+         "metrics": {"unit_recall": 0.99, "correct_unit_fpr": 0.0, "gap_recall": 1.0}}))
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is False and s["draft"] is True
+    assert any("GT_EVAL schema invalid" in x for x in s["draft_reasons"])
+    assert "gt_eval_path" not in s  # 回退 RUN_MANIFEST.metrics
+    assert s["data"]["unit_recall"] == 0.75
+
+
+def test_reverse_gt_eval_empty_metrics_never_approved(tmp_path):
+    # T1：GT_EVAL schema 对但 metrics 为空 dict → 同样视为无 GT_EVAL，不 approved 并记录原因。
+    run = _run_root(tmp_path); (run / "formal").mkdir(exist_ok=True)
+    man, sha = _manifest(tmp_path)
+    (run / "formal" / "FORMAL_MARKER.json").write_text(json.dumps(
+        {"manifest_sha256": sha, "run_id": "r1", "all_gates_passed": True, "runtime_budget_ok": True}))
+    (run / "formal" / "RUN_MANIFEST.json").write_text(json.dumps(
+        {"run_id": "r1",
+         "environment": {"executor": "real"},
+         "runtime_budget": {"elapsed_sec": 600, "forward_count": 120},
+         "timeline": {"duration_sec": 400, "ge180": True},
+         "metrics": {"unit_recall": 0.75, "fpr": 0.1, "gap_recall": 1.0},
+         "assessor": {"operating_points": {"high_recall_95": 0.9}}}))
+    (run / "GT_EVAL.json").write_text(json.dumps(
+        {"schema": "research_v7_gt_eval_v1", "metrics": {}}))  # 空 dict
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is False and s["draft"] is True
+    assert any("GT_EVAL metrics empty" in x for x in s["draft_reasons"])
+    assert "gt_eval_path" not in s
+    assert s["data"]["unit_recall"] == 0.75
+
+
 def test_reverse_smoke_only_draft(tmp_path):
     run = _run_root(tmp_path)  # 无 formal/ 任何产物
     man, sha = _manifest(tmp_path)
