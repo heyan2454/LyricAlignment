@@ -10,7 +10,8 @@ role=lyrics_aligned + text_window_aligned=true——保证 guard/collect/assesso
   PYTHONPATH=src python scripts/research_v7/build_long_timeline_manifest.py \
       --m4-manifest <m4singer_meta_v1/m4singer_manifest.jsonl> \
       --out-root <run>/formal_manifest \
-      --min-duration 180 --windows-per-song 3 --window-sec 60 [--limit 5]
+      --min-duration 180 --windows-per-song 3 --window-sec 60 [--limit 5] \
+      [--missing-ratios 0.10,0.25,0.50]
 
 输出（均冻结 SHA 记录到 FREEZE.json）：
   LONG_TIMELINE_MANIFEST.jsonl  —— 每行：时间线拼接记录（segments/seams/canonical_units）
@@ -125,8 +126,14 @@ def _canonical_units_for_window(canonical_units, w0: float, w1: float) -> list[d
 
 
 def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
-                   row_sha: str, language: str = "Chinese") -> list[dict]:
-    """从一条时间线生成 fixed-60s 窗请求（baseline + 缺失/替换 mutation 配对）。
+                   row_sha: str, language: str = "Chinese",
+                   missing_ratios: tuple[float, ...] = (0.25,)) -> list[dict]:
+    """从一条时间线生成 fixed-60s 窗请求（baseline + 缺失 mutation 多档配对）。
+
+    每个 missing_ratios 档生成一个独立 tail-missing 变体（request_id 后缀
+    :missing{r}，如 :missing0.25），避免多档 identity 冲突；mutation_parameters
+    同时记录 requested/actual ratio 与绝对 unit 数（13 §C1 百分比核心档）。
+    默认 (0.25,) 保持原单档语义（canonical 截断逻辑不变）。
 
     row_sha：LONG_TIMELINE_MANIFEST.jsonl 中本歌实际行的序列化 sha256
     （调用方在 main 中对该行 dict 以 json.dumps(ensure_ascii=False, sort_keys=True)
@@ -200,34 +207,40 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 "slot_plan_id": plan.plan_id, "comparison_group_id": plan.comparison_group_id,
                 "phase": plan.phase_name,
             }
-            # missing：virtual gap（移除尾部 1/4 单位，评价 omitted-original）。
-            # 契约：text_units 截断后，canonical_ids/mapping/range/slot 全部同步到保留单位
-            # （缺失单位不得留在请求 canonical 字段里）。
-            n_miss = max(1, len(texts) // 4)
-            miss = dict(base)
-            miss["request_id"] = f"{base['request_id']}:missing"
-            miss["item_id"] = f"{base['item_id']}:missing"
-            miss["mutation_type"] = "missing"
-            miss["condition"] = "missing"
-            kept = texts[:-n_miss]
-            kept_ids = cids[:-n_miss]
-            kept_to_local = {cid: i for i, cid in enumerate(kept_ids)}
-            # missing 的 slot：用保留 canonical ids 在【新 local 映射】上的本地索引重算
-            kept_slots = plan_slots(
-                plan_id=f"{base['slot_plan_id']}:missing", canonical_unit_count=n,
-                queried_canonical_ids=[c for c in plan.requested_canonical_ids if c in kept_to_local],
-                canonical_to_local=kept_to_local, request_local_count=len(kept),
-                comparison_group_id=plan.comparison_group_id, phase=plan.phase_name)
-            miss["text_units"] = kept
-            miss["text_end_index"] = len(kept)
-            miss["canonical_ids"] = kept_ids
-            miss["canonical_to_local"] = {str(k): v for k, v in kept_to_local.items()}
-            miss["canonical_text_end"] = kept_ids[-1] + 1 if kept_ids else c0
-            miss["timestamp_slot_indices"] = list(kept_slots.local_indices)
-            miss["mutation_parameters"] = {"position": "tail", "requested_ratio": 0.25,
-                                           "actual_removed_units": n_miss,
-                                           "baseline_unit_count": len(texts)}
-            reqs.append(miss)
+            # missing：virtual gap（移除尾部 requested_ratio 比例单位，评价
+            # omitted-original）。契约：text_units 截断后，canonical_ids/mapping/
+            # range/slot 全部同步到保留单位（缺失单位不得留在请求 canonical 字段里）。
+            # 每个 ratio 一档独立请求（13 §C1 核心档 10/25/50%）；mutation_parameters
+            # 记录 requested_ratio/actual_ratio/actual_removed_units/absolute_count。
+            for ratio in missing_ratios:
+                n_miss = max(1, round(len(texts) * ratio))
+                tag = f"missing{ratio:.2f}"
+                miss = dict(base)
+                miss["request_id"] = f"{base['request_id']}:{tag}"
+                miss["item_id"] = f"{base['item_id']}:{tag}"
+                miss["mutation_type"] = "missing"
+                miss["condition"] = "missing"
+                kept = texts[:-n_miss]
+                kept_ids = cids[:-n_miss]
+                kept_to_local = {cid: i for i, cid in enumerate(kept_ids)}
+                # missing 的 slot：用保留 canonical ids 在【新 local 映射】上的本地索引重算
+                kept_slots = plan_slots(
+                    plan_id=f"{base['slot_plan_id']}:{tag}", canonical_unit_count=n,
+                    queried_canonical_ids=[c for c in plan.requested_canonical_ids if c in kept_to_local],
+                    canonical_to_local=kept_to_local, request_local_count=len(kept),
+                    comparison_group_id=plan.comparison_group_id, phase=plan.phase_name)
+                miss["text_units"] = kept
+                miss["text_end_index"] = len(kept)
+                miss["canonical_ids"] = kept_ids
+                miss["canonical_to_local"] = {str(k): v for k, v in kept_to_local.items()}
+                miss["canonical_text_end"] = kept_ids[-1] + 1 if kept_ids else c0
+                miss["timestamp_slot_indices"] = list(kept_slots.local_indices)
+                miss["mutation_parameters"] = {
+                    "position": "tail", "requested_ratio": ratio,
+                    "actual_ratio": round(n_miss / len(texts), 6) if texts else 0.0,
+                    "actual_removed_units": n_miss, "absolute_count": n_miss,
+                    "baseline_unit_count": len(texts)}
+                reqs.append(miss)
             # baseline 本体
             reqs.append(base)
     return reqs
@@ -290,7 +303,21 @@ def main(argv=None) -> int:
     p.add_argument("--min-duration", type=float, default=180.0)
     p.add_argument("--windows-per-song", type=int, default=3)
     p.add_argument("--limit", type=int, default=5, help="最多取几首歌曲构造时间线")
+    p.add_argument("--missing-ratios", type=str, default="0.25",
+                   help="missing 尾部缺失核心档（逗号分隔 float，如 0.10,0.25,0.50）")
     args = p.parse_args(argv)
+
+    try:
+        raw_ratios = [float(x) for x in args.missing_ratios.split(",") if x.strip() != ""]
+    except ValueError:
+        print(json.dumps({"ok": False, "reason": f"bad --missing-ratios: {args.missing_ratios!r}"},
+                         ensure_ascii=False))
+        return 1
+    missing_ratios = tuple(dict.fromkeys(sorted(raw_ratios)))  # 去重保确定性，避免重复档 identity 冲突
+    if not missing_ratios or any(r <= 0.0 or r > 1.0 for r in missing_ratios):
+        print(json.dumps({"ok": False, "reason": "missing_ratios must be non-empty in (0, 1]"},
+                         ensure_ascii=False))
+        return 1
 
     m4 = Path(args.m4_manifest)
     out = Path(args.out_root); out.mkdir(parents=True, exist_ok=True)
@@ -357,7 +384,7 @@ def main(argv=None) -> int:
         row_sha = _sha_bytes(
             json.dumps(tl_row, ensure_ascii=False, sort_keys=True).encode("utf-8"))
         song_reqs = build_requests(tl, timeline, windows_per_song=args.windows_per_song,
-                                   row_sha=row_sha)
+                                   row_sha=row_sha, missing_ratios=missing_ratios)
         reqs.extend(song_reqs)
         for r in song_reqs:
             win_rows.append({"song_id": tl["song_id"], "request_id": r["request_id"],
@@ -381,6 +408,7 @@ def main(argv=None) -> int:
         ),
         "built_at_utc": "2026-08-05T00:00:00Z",
         "min_duration_sec": args.min_duration, "windows_per_song": args.windows_per_song,
+        "missing_ratios": list(missing_ratios),
         "songs": len(tl_rows), "requests": len(reqs),
         "files": {
             "LONG_TIMELINE_MANIFEST.jsonl": _sha(out / "LONG_TIMELINE_MANIFEST.jsonl"),

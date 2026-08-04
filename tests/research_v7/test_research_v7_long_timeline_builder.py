@@ -138,6 +138,91 @@ def test_builder_missing_keeps_canonical_consistency(tmp_path):
     assert all(0 <= i < len(m0["text_units"]) for i in m0["timestamp_slot_indices"])
 
 
+def test_builder_missing_ratios_multi_tier(tmp_path):
+    """round08：--missing-ratios 0.1,0.5 时每档生成独立 missing 请求（request_id
+    后缀 :missing0.10/:missing0.50 区分）、baseline 行与默认档逐字节一致（缓存复用）、
+    每档 canonical_ids 与 text_units 等长、validate 全部通过、FREEZE 记录 ratios。"""
+    from lyricalign.research_v7.requests import AlignmentRequest
+
+    mf, audio_root = _make_m4_manifest(tmp_path)
+
+    def _build(out_name, ratios):
+        out = tmp_path / out_name
+        cmd = [sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+               "--m4-manifest", str(mf), "--out-root", str(out),
+               "--audio-root", str(audio_root), "--min-duration", "180",
+               "--windows-per-song", "1", "--limit", "1"]
+        if ratios is not None:
+            cmd += ["--missing-ratios", ratios]
+        r = subprocess.run(cmd, capture_output=True, text=True, env=ENV)
+        assert r.returncode == 0, r.stderr
+        reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+        return out, reqs
+
+    default_out, default_reqs = _build("fm_ratio_default", None)
+    out, reqs = _build("fm_ratio_multi", "0.1,0.5")
+
+    def _norm(row):
+        # 两个 out-root 不同 → audio_path/canonical_timeline_row_sha（含 concat 音频路径）
+        # 归一化后比较其余全部字段（同一 out-root 下即逐字节一致，缓存可复用）
+        r = dict(row)
+        r["audio_path"] = "AUDIO"
+        r["canonical_timeline_row_sha"] = "SHA"
+        return r
+
+    base_default = sorted((x for x in default_reqs if x["mutation_type"] == "baseline"),
+                          key=lambda x: x["request_id"])
+    base = sorted((x for x in reqs if x["mutation_type"] == "baseline"),
+                  key=lambda x: x["request_id"])
+    miss = [x for x in reqs if x["mutation_type"] == "missing"]
+    # baseline 与默认单档运行完全一致（内容寻址缓存可复用）
+    assert base, "no baseline requests"
+    assert [_norm(x) for x in base_default] == [_norm(x) for x in base], \
+        "baseline rows must be identical to default single-tier run"
+    # 每档独立 missing 变体：每个 baseline 都有 :missing0.10 与 :missing0.50 两档
+    miss_ids = {x["request_id"] for x in miss}
+    for b in base:
+        for tier in (":missing0.10", ":missing0.50"):
+            assert f"{b['request_id']}{tier}" in miss_ids, b["request_id"]
+    assert len(miss) == 2 * len(base), "one independent missing request per ratio tier"
+    assert {x["mutation_parameters"]["requested_ratio"] for x in miss} == {0.1, 0.5}
+    for m in miss:
+        assert m["condition"] == "missing"
+        assert len(m["canonical_ids"]) == len(m["text_units"])
+        assert m["canonical_text_end"] == m["canonical_ids"][-1] + 1
+        assert set(int(k) for k in m["canonical_to_local"]) == set(m["canonical_ids"])
+        assert all(0 <= i < len(m["text_units"]) for i in m["timestamp_slot_indices"])
+        p = m["mutation_parameters"]
+        assert p["absolute_count"] == p["actual_removed_units"]
+        assert abs(p["actual_ratio"] - p["actual_removed_units"] / p["baseline_unit_count"]) < 1e-6
+    # validate 全通过（含多档 missing）
+    for rrow in reqs:
+        req = AlignmentRequest(
+            request_id=rrow["request_id"], item_id=rrow["item_id"], parent_request_id=None,
+            audio_source=rrow["audio_path"], audio_start_sec=rrow["audio_start_sec"],
+            audio_end_sec=rrow["audio_end_sec"],
+            text_source=rrow["text_source"], text_start_index=rrow["text_start_index"],
+            text_end_index=rrow["text_end_index"], text_units=tuple(rrow["text_units"]),
+            timestamp_slot_indices=tuple(rrow["timestamp_slot_indices"]),
+            workflow_mode=rrow["workflow_mode"], mutation_type=rrow["mutation_type"],
+            mutation_parameters=rrow["mutation_parameters"], model_id=rrow["model_id"],
+            checkpoint_id=rrow["checkpoint_id"], input_variant=rrow["input_variant"],
+            canonical_text_start=rrow["canonical_text_start"], canonical_text_end=rrow["canonical_text_end"],
+            canonical_to_local={int(k): int(v) for k, v in (rrow["canonical_to_local"] or {}).items()},
+            canonical_ids=list(rrow["canonical_ids"]),
+            canonical_timeline_file_sha=rrow["canonical_timeline_file_sha"],
+            canonical_timeline_row_sha=rrow["canonical_timeline_row_sha"],
+            canonical_adapter_version=rrow["canonical_adapter_version"],
+            source_window_sec=(rrow["source_window_start_sec"], rrow["source_window_end_sec"]),
+            metadata={"evaluation_role": rrow["evaluation_role"]})
+        req.validate()
+    # FREEZE 记录 ratios
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["missing_ratios"] == [0.1, 0.5]
+    fr_default = json.loads((default_out / "FREEZE.json").read_text())
+    assert fr_default["missing_ratios"] == [0.25]
+
+
 def test_builder_refuses_short_song(tmp_path):
     """review12 A1：无 ≥min_duration 歌曲时返回非零并给出原因。"""
     mf, audio_root = _make_m4_manifest(tmp_path, n_segments=5, seg_sec=5.0)  # 25s 不够
