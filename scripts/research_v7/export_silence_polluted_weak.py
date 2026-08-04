@@ -162,6 +162,7 @@ def main(argv=None) -> int:
     p.add_argument("--window-sec", type=float, default=20.0)
     p.add_argument("--text-units", nargs="*", default=[], help="同窗歌词逐字（fallback；推荐用 --text-manifest 做 per-item）")
     p.add_argument("--text-manifest", default="", help="jsonl: {item_id, text_units[], has_gt, source} 每 item 已审计歌词")
+    p.add_argument("--canonical-timeline", default="", help="jsonl: {item_id, units:[{global_index,text,start_sec,end_sec}]} 原曲 canonical GT 时间轴；提供才可对窗做 lyrics_aligned 绑定（review8）")
     args = p.parse_args(argv)
     global TEXT_UNITS
     TEXT_UNITS = list(args.text_units)
@@ -171,10 +172,19 @@ def main(argv=None) -> int:
         for line in Path(args.text_manifest).read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
-            t = _json.loads(line)
+            t = json.loads(line)
             text_map[t["item_id"]] = {"units": list(t.get("text_units", [])),
                                       "has_gt": bool(t.get("has_gt", False)),
                                       "source": t.get("source", "")}
+    # review8-1/2：原曲 canonical GT 时间轴（每字 start/end），供 adapter 用【原曲窗】相交
+    from lyricalign.research_v7.c3_text_adapter import bind_canonical_to_window, request_from_bound
+    canon_map: dict[str, list] = {}
+    if args.canonical_timeline and Path(args.canonical_timeline).is_file():
+        for line in Path(args.canonical_timeline).read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            t = json.loads(line)
+            canon_map[t["item_id"]] = list(t.get("units", []))
 
     items = [json.loads(l) for l in Path(args.item_list).read_text().splitlines() if l.strip()]
     out_root = Path(args.out_root); out_root.mkdir(parents=True, exist_ok=True)
@@ -223,7 +233,6 @@ def main(argv=None) -> int:
             write_wav(d / f"{name}.wav", outs[a], rate); rms_all[name] = rms(outs[a])
         # P0（C3-review）：实际计算 source SHA，不使用输入里的可选字段
         import hashlib
-        import json as _json
         import os as _os
         import tempfile as _tf
 
@@ -240,7 +249,7 @@ def main(argv=None) -> int:
             name = labels[a]
             p = d / f"{name}.wav"
             wav_sha[name] = hashlib.sha256(p.read_bytes()).hexdigest()  # 写文件后算 content sha
-        sil_desc = _json.dumps(meta.get("silence_audit", {}), sort_keys=True) if meta.get("silence_audit") else ""
+        sil_desc = json.dumps(meta.get("silence_audit", {}), sort_keys=True) if meta.get("silence_audit") else ""
         target_ratio = next((a for a in ALPHAS if a > 0), None)
 
         def _reqid(cond, cond_sha):
@@ -266,35 +275,49 @@ def main(argv=None) -> int:
             probe_flag = "acoustic_probe" if not tu else "demo_challenge"
         else:
             probe_flag = "lyrics_aligned"
+        # review8：原曲源窗（第 1 层坐标系，非生成 WAV 局部坐标），供 adapter 与 canonical GT 相交
+        source_win = [window_s, round((start + win) / rate, 1)]
+        has_canonical = bool(canon_map.get(it["item_id"]))
         for lab in labels.values():
             cond = conditions[lab]
             is_control = (lab == "control")
             wav_path = str(d / f"{lab}.wav")
             wav_dur = round(win / rate, 4)  # 生成 WAV 实际时长
-            req = {
+            base = {
                 "schema_version": "research_v7_long_slot_v1",
                 "request_type": "c3_weak_vocal_calibration",
                 "condition": cond, "pair_id": pair_id, "item_id": it["item_id"],
-                # review4-2：显式 audio 范围(0..wav 时长) + audio_path，供 runner/executor 正确消费
+                # review4-2 / review8：局部 audio 范围(0..wav 时长) 与 原曲窗 window_sec 分开存放，不混用
                 "audio_path": wav_path,
                 "audio_start_sec": 0.0, "audio_end_sec": wav_dur, "duration_sec": wav_dur,
                 "audio_source": "generated_c3_wav",
-                "window_sec": [window_s, round((start + win) / rate, 1)],
+                "window_sec": source_win,
                 "audio_path_vocals": str(vp), "audio_path_accompaniment": str(cp),
                 "vocal_sha256": vocal_sha, "acc_sha256": acc_sha,
                 "sample_rate": rate, "code_version": code_ver,
                 "request_identity": _reqid(cond, wav_sha[lab]),
                 "files": [wav_path], "files_sha256": [wav_sha[lab]],
-                # review4-1 / review5-2：歌词 units/range（per-item；空=声学 probe）
-                "text_units": tu, "text_start_index": 0, "text_end_index": len(tu),
-                "text_source": tsrc, "has_gt": has_gt, "evaluation_role": probe_flag,
-                "text_window_aligned": False,  # review6-1：当前 window 为自动选择，无法证明与歌词 overlap；需 text-manifest 提供 canonical bounds 才 true，
+                "text_source": tsrc, "has_gt": has_gt,
                 # review4-5 / review5-3：condition 显式 + target_ratio + control=ratio0
                 "mutation": ("control" if is_control else "silence_residual"),
                 "mutation_type": ("control" if is_control else "silence_residual"),
                 "target_ratio": (0.0 if is_control else target_ratio),
                 "condition": cond,
             }
+            if has_canonical and has_gt:
+                # review8-1：adapter 以【原曲窗】绑定；产出 request-local index + canonical mapping
+                bound = bind_canonical_to_window(canon_map[it["item_id"]], tuple(source_win))
+                req = request_from_bound(bound, base=base, audio_start_sec=0.0, audio_end_sec=wav_dur)
+            else:
+                # 无 canonical/无 GT → 无法证明 overlap → 显式 probe（review8 保守；带原因）
+                base["text_units"] = list(tu); base["text_start_index"] = 0
+                base["text_end_index"] = len(tu)
+                base["text_window_aligned"] = False
+                base["evaluation_role"] = probe_flag
+                base["canonical_text_start"] = None; base["canonical_text_end"] = None
+                base["canonical_to_local"] = {}
+                base["text_span_reason"] = "no_canonical_gt" if not has_gt else "no_canonical_overlap"
+                req = base
             _reqs.append(req)
         done += 1
     # P0(review3-2)：REQUESTS 原子写（临时文件+replace）并按 identity 去重；AUDIO_EXPORT_MANIFEST 同理。

@@ -1,48 +1,82 @@
 # -*- coding: utf-8 -*-
-"""review7-4 C3 canonical text-span adapter 单测。"""
+"""review7-4/review8 C3 canonical text-span adapter 三层契约单测。"""
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from lyricalign.research_v7.c3_text_adapter import bind_to_manifest_row, bind_window
+import pytest
+
+from lyricalign.research_v7.c3_text_adapter import (
+    CanonicalUnit,
+    bind_canonical_to_window,
+    request_from_bound,
+)
 
 
-def _canon(n, start=0.0, step=1.0, dur=0.8):
-    return [{"global_index": i, "start_sec": start + i * step, "end_sec": start + i * step + dur} for i in range(n)]
+def _canon(n=10, text=None, base=40.0, step=1.0, dur=0.8):
+    """原曲坐标 40s 起的 10 个 canonical 字（review8-2：非 0 起点，验证坐标系）。"""
+    return [
+        CanonicalUnit(global_index=i, text=(text or [f"字{i}" for _ in range(n)])[i],
+                      start_sec=base + i * step, end_sec=base + i * step + dur)
+        for i in range(n)
+    ]
 
 
-def test_bind_window_aligned_when_overlap():
-    units = _canon(10)
-    b = bind_window([dict(u, text=f"字{i}") for i, u in enumerate(units)], window_start=2.5, window_end=4.5)
+def test_layer1_uses_source_window_not_local():
+    # review8-2：必须用【原曲窗】40–44 相交；若误用局部 0–8 会绑到歌曲开头。
+    units = _canon()
+    b = bind_canonical_to_window(units, source_window=(40.5, 43.5))
     assert b.aligned is True
-    assert b.text_start == 2 and b.text_end == 5  # 落在 [2.5,4.5) 的 canon 2..4 → range [2,5)
-    assert len(b.bound_units) == 3
+    assert b.canonical_text_start == 0 and b.canonical_text_end == 4  # 40.5..43.5 overlap 字0..3
+    # 局部坐标 [0,8] 与原曲 40s GT 无 overlap → 在更正后的契约里应传 source_window；此处验证误用局部会 probe
+    b_local = bind_canonical_to_window(units, source_window=(0.0, 8.0))
+    assert b_local.aligned is False
 
 
-def test_bind_window_probe_when_no_overlap():
-    units = _canon(10)
-    b = bind_window(units, window_start=50.0, window_end=52.0)
-    assert b.aligned is False and b.text_start is None
+def test_layer2_bound_units_are_strings_and_serializable():
+    units = _canon()
+    b = bind_canonical_to_window(units, source_window=(41.5, 44.5))
+    assert all(isinstance(t, str) for t in b.bound_units)
+    # review8-3：输出必须可 JSON 序列化（无 CanonicalUnit 对象泄漏）
+    json.dumps(b.to_dict())
+    payload = request_from_bound(b, base={"item_id": "x"})
+    json.dumps(payload)  # round-trip 成功即通过
+    assert payload["text_units"] == b.bound_units
 
 
-def test_bind_window_probe_when_missing_time():
-    units = [{"global_index": i, "start_sec": None, "end_sec": None} for i in range(3)]
-    b = bind_window(units, 0.0, 2.0)
-    assert b.aligned is False
-    assert "missing time" in b.reason
+def test_missing_text_rejected():
+    with pytest.raises(ValueError, match="missing text"):
+        bind_canonical_to_window([{"global_index": 0, "start_sec": 0.0, "end_sec": 1.0}],
+                                 source_window=(0.0, 1.0))
 
 
-def test_bind_to_manifest_row_sets_role():
-    units = _canon(10)
-    row = {"item_id": "x", "audio_start_sec": 0.5, "audio_end_sec": 2.5, "mutation": "weak"}
-    out = bind_to_manifest_row(row, [dict(u, text=f"字{i}") for i, u in enumerate(units)])
-    assert out["text_window_aligned"] is True
-    assert out["evaluation_role"] == "lyrics_aligned"
-    assert out["text_units"] and out["text_start_index"] == 0 and out["text_end_index"] == 3
-    # 无 overlap → probe
-    out2 = bind_to_manifest_row(dict(row, audio_start_sec=50.0, audio_end_sec=52.0), units)
-    assert out2["text_window_aligned"] is False
-    assert out2["evaluation_role"] == "acoustic_probe"
+def test_layer3_local_vs_canonical_indices_distinct():
+    # review8-4：text_start/end 为 request-local 0..len；canonical_text_* 为原曲全局 id
+    units = _canon(text=None)
+    b = bind_canonical_to_window(units, source_window=(42.0, 46.0))
+    assert b.text_start == 0 and b.text_end == len(b.bound_units)
+    assert b.canonical_text_start == 2 and b.canonical_text_end == 6
+    assert b.canonical_to_local == {2: 0, 3: 1, 4: 2, 5: 3}
+    assert b.bound_units == ["字2", "字3", "字4", "字5"]
+
+
+def test_request_from_bound_full_row():
+    units = _canon()
+    b = bind_canonical_to_window(units, source_window=(40.0, 43.0))
+    base = {"item_id": "s", "sample_rate": 44100, "window_sec": [40.0, 43.0]}
+    row = request_from_bound(b, base=base, audio_start_sec=0.0, audio_end_sec=3.0)
+    assert row["text_window_aligned"] is True
+    assert row["evaluation_role"] == "lyrics_aligned"
+    assert row["text_start_index"] == 0 and row["text_end_index"] == 3
+    assert row["canonical_text_start"] == 0 and row["canonical_text_end"] == 3
+    assert row["canonical_to_local"] == {0: 0, 1: 1, 2: 2}
+    # probe 分支
+    b2 = bind_canonical_to_window(units, source_window=(100.0, 102.0))
+    row2 = request_from_bound(b2, base=base, audio_start_sec=0.0, audio_end_sec=2.0)
+    assert row2["text_window_aligned"] is False
+    assert row2["evaluation_role"] == "acoustic_probe"
+    assert row2["text_units"] == []
