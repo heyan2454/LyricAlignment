@@ -112,6 +112,7 @@ def build_mapping(
     removed_canonical_ids: Sequence[int] = (),
     replaced_canonical_ids: Sequence[int] = (),
     output_row_canonical_ids: Sequence[int | None] | None = None,
+    output_row_input_indices: Sequence[int | None] | None = None,
     canonic_n: int | None = None,
 ) -> CanonicalMapping:
     """显式 canonical mapping（P0-2 round2：完整约束校验）。"""
@@ -141,9 +142,21 @@ def build_mapping(
             seen_ids.add(cid)
     ius = [InputUnit(input_index=i, text=input_units[i], role=role[i], canonical_unit_id=input_canonical_ids[i])
            for i in range(n)]
-    # output_row_canonical_ids 可表达 decoder 缺行/多行（!= input 长度合法）；每行独立给 canonical 或 None
+    # P0-2 review：retained/replacement 的 canonical 轴按 input 顺序须严格递增（不只唯一）
+    prev = -1
+    for u in ius:
+        if u.role in ("retained", "replacement") and u.canonical_unit_id is not None:
+            if u.canonical_unit_id <= prev:
+                raise ValueError("retained/replacement canonical ids must be strictly increasing along input order")
+            prev = u.canonical_unit_id
+    # output_row_input_indices 显式表达 decoder 缺/重/插入行（可 null；值为 input index 或 None=本行非对应输入）
     if output_row_canonical_ids is not None:
-        out_map = [(row_i, row_i, c) for row_i, c in enumerate(output_row_canonical_ids)]
+        # 若调用方也提供 output_row_input_indices，用它；否则默认 row_i==input_i
+        ori = output_row_input_indices
+        if ori is not None and len(ori) != len(output_row_canonical_ids):
+            raise ValueError("output_row_input_indices len != output_row_canonical_ids len")
+        out_map = [(row_i, (ori[row_i] if ori is not None else row_i), c)
+                   for row_i, c in enumerate(output_row_canonical_ids)]
     else:
         out_map = [(i, ius[i].input_index, ius[i].canonical_unit_id) for i in range(n)]
     gaps = build_gaps(ius, removed_canonical_ids, replaced_canonical_ids, canonical_n)

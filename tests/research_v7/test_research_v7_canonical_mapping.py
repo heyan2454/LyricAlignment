@@ -136,3 +136,23 @@ def test_100pct_replace_produces_whole_region_omission():
                       replaced_canonical_ids=list(range(n)))
     whole = [g for g in m.gap_candidates if g.get("whole_region_omission")]
     assert whole and whole[0]["omitted_canonical_unit_ids"] == list(range(n))
+
+
+def test_retained_canonical_axis_must_be_strictly_increasing():
+    # retained/replacement canonical 沿 input 顺序必须严格递增（review）
+    n = len(BASE)
+    with pytest.raises(ValueError, match="strictly increasing"):
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * n, input_canonical_ids=[0, 2, 1] + list(range(3, n)))
+
+
+def test_output_row_input_indices_express_missing_double():
+    # decoder 少行 + 插入行：output_row_input_indices 显式给 input index 或 None
+    n = len(BASE)
+    out_canon = list(range(n - 1)) + [None]          # 末行 canonical None（缺映射）
+    out_input = list(range(n - 1)) + [None]          # 末行无对应 input
+    m = build_mapping(request_id="t-ori", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * n, input_canonical_ids=list(range(n)),
+                      output_row_canonical_ids=out_canon, output_row_input_indices=out_input)
+    assert m.output_row_map[-1] == (n - 1, None, None)  # 缺行：(row, input=None, canonical=None)
+    assert m.output_row_map[0] == (0, 0, 0)
