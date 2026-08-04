@@ -56,19 +56,45 @@ def test_read_mono16_roundtrip_rate():
 
 
 def test_sample_rate_mismatch_rejected_in_main(tmp_path):
-    # 用 subprocess 或直接构造：vocals 16k、accomp 8k → 导出应 skip(mismatch)
+    # P0（C3-review）：必须真调 main() 验证 skip（不能只比较两个 read rate）
     import json
     import subprocess
-    voc = tmp_path / "s" ; voc.mkdir()
+    import sys
+
     vv = tmp_path / "vocals.wav"; aa = tmp_path / "accompaniment.wav"
-    _write_wav(vv, _tone(0.3, 16000), 16000)
-    _write_wav(aa, _tone(0.3, 8000), 8000)
+    _write_wav(vv, _tone(0.5, 16000), 16000)
+    _write_wav(aa, _tone(0.5, 8000), 8000)  # 采样率不一致
     il = tmp_path / "items.jsonl"
     il.write_text(json.dumps({"item_id": "X", "audio_path": str(vv)}) + "\n")
     out = tmp_path / "out"
-    # 直接查 read 语义（açomp rate != vocals）: 这走 main 会 skip；此处借 read 返回验证
-    _, rv = read_mono16(str(vv)); _, ra = read_mono16(str(aa))
-    assert rv != ra
+    env = dict(__import__("os").environ, PYTHONPATH=str(Path(__file__).resolve().parents[2] / "src") + ":" + str(Path(__file__).resolve().parents[2]))
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py"),
+                        "--item-list", str(il), "--out-root", str(out)], capture_output=True, text=True, env=env)
+    # main 应正常返回 0，且 manifest 记录 skipped=sample_rate_mismatch
+    assert r.returncode == 0, r.stderr
+    man = json.loads((out / "AUDIO_EXPORT_MANIFEST.json").read_text())
+    assert any(x.get("skipped") == "sample_rate_mismatch" for x in man)
+
+
+def test_no_silence_window_main_skips(tmp_path):
+    # 全程有唱，无合格静音窗 → main 应 skip（不导出 control/weak 相同文件）
+    import json
+    import subprocess
+    import sys
+
+    vv = tmp_path / "vocals.wav"; aa = tmp_path / "accompaniment.wav"
+    _write_wav(vv, _tone(1.0, 16000, amp=4000.0), 16000)   # 全程 loud
+    _write_wav(aa, _tone(1.0, 16000, amp=2000.0), 16000)
+    il = tmp_path / "items.jsonl"
+    il.write_text(json.dumps({"item_id": "Y", "audio_path": str(vv)}) + "\n")
+    out = tmp_path / "out2"
+    env = dict(__import__("os").environ, PYTHONPATH=str(Path(__file__).resolve().parents[2]))
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src") + ":" + env["PYTHONPATH"]
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py"),
+                        "--item-list", str(il), "--out-root", str(out), "--window-sec", "0.5"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    man = json.loads((out / "AUDIO_EXPORT_MANIFEST.json").read_text())
+    assert all(x.get("skipped") for x in man)  # 无合格静音 → 全部 skip，不导出相同 control/weak
 
 
 def test_detect_no_silence_when_full_sing():

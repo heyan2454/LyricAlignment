@@ -138,18 +138,26 @@ def main(argv=None) -> int:
         win = int(args.window_sec * rate)
         if len(v) < win:
             continue
-        # 选一个“有唱+有静音”的 20s 窗（找静音占比适中、且含 sung 的一段）
+        # P0（C3-review）：选窗用与 build_window 相同的 silence 判定（绝对/相对/连续），非机械 20%。
         start = None
         fr = int(0.05 * rate); step = int(2 * rate)
         for s in range(0, len(v) - win + 1, step):
             seg = slice(s, s + win)
-            vf = np.sqrt((v[seg].reshape(-1, fr) ** 2).mean(1) + 1e-12)
-            sil = float((vf < float(np.percentile(vf, 20))).mean())
-            if 0.1 < sil < 0.6:
+            wv = v[seg][: len(v[seg]) // fr * fr].reshape(-1, fr)
+            vr = np.sqrt((wv * wv).mean(1) + 1e-12)
+            sung_median = float(np.median(vr[np.where(vr >= np.percentile(vr, 40))]))
+            sil, _ = detect_silence_frames(vr, sung_median, rate, 0.05)
+            frac = float(sil.mean())
+            if 0.1 < frac < 0.6:
                 start = s; break
         if start is None:
+            recs.append({"item_id": it["item_id"], "skipped": "no_adequate_silence_window"})
             continue
         outs, meta = build_window(np.array(v[start:start + win]), np.array(c[start:start + win]), rate, ALPHAS)
+        if meta["n_sil"] == 0:
+            recs.append({"item_id": it["item_id"], "skipped": "no_silence_frames_after_audit",
+                         "silence_audit": meta["silence_audit"]})
+            continue  # 无合格静音 → 不导出（避免 control==weak）
         song = it["item_id"].replace("/", "_")
         d = out_root / song; d.mkdir(parents=True, exist_ok=True)
         labels = {0.0: "control", **{a: f"weak_{int(round(a * 100))}" for a in ALPHAS if a > 0}}
@@ -157,11 +165,15 @@ def main(argv=None) -> int:
         for a in ALPHAS:
             name = labels[a]
             write_wav(d / f"{name}.wav", outs[a], rate); rms_all[name] = rms(outs[a])
+        # P0（C3-review）：实际计算 source SHA，不使用输入里的可选字段
+        import hashlib
+
         recs.append({"item_id": it["item_id"], "window_sec": [round(start / rate, 1), round((start + win) / rate, 1)],
-                     "sample_rate": rate, "vocal_sha256": it.get("hash_vocals") or None,
-                     "acc_sha256": it.get("hash_acc") or None, **meta,
+                     "sample_rate": rate,
+                     "vocal_sha256": hashlib.sha256(vpath.read_bytes()).hexdigest(),
+                     "acc_sha256": hashlib.sha256(cp.read_bytes()).hexdigest(), **meta,
                      "rms": {k: round(v, 3) for k, v in rms_all.items()},
-                     "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}})
+                     "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})
         done += 1
     (out_root / "AUDIO_EXPORT_MANIFEST.json").write_text(json.dumps(recs, ensure_ascii=False, indent=1))
     print(json.dumps({"ok": True, "exported": done, "alphas": ALPHAS, "out_root": str(out_root)}, ensure_ascii=False))
