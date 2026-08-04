@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 import sys
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -228,6 +228,7 @@ def infer_slice(
     character_end: int,
     global_audio_offset_sec: float,
     args: argparse.Namespace,
+    timestamp_slot_indices: Sequence[int] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     import torch
 
@@ -249,6 +250,7 @@ def infer_slice(
             "global_audio_offset_sec": float(global_audio_offset_sec),
             "character_range": [int(character_start), int(character_end)],
             "alignment_units": expected_units,
+            "timestamp_slot_indices": list(timestamp_slot_indices) if timestamp_slot_indices is not None else None,
             "timestamp_segment_sec": float(args.timestamp_segment_sec),
             "decoder_top_k": int(getattr(args, "decoder_top_k", 8)),
             "decoder_beam_size": int(getattr(args, "decoder_beam_size", 96)),
@@ -270,6 +272,15 @@ def infer_slice(
         alignment_units=expected_units,
     )
     processor_units = list(words[0])
+    output_meta = selected
+    if timestamp_slot_indices is not None and tuple(timestamp_slot_indices) != tuple(range(len(selected))):
+        from lyricalign.research_v7.sparse_slots import retain_timestamp_slots
+        inputs, chosen = retain_timestamp_slots(
+            inputs, timestamp_token_id=model.config.timestamp_token_id,
+            unit_indices=timestamp_slot_indices, total_units=len(selected),
+        )
+        processor_units = [processor_units[i] for i in chosen]
+        output_meta = [selected[i] for i in chosen]
 
     batch = move_inputs(inputs, args.device, torch.bfloat16)
     with torch.inference_mode():
@@ -277,9 +288,9 @@ def infer_slice(
     input_ids = batch["input_ids"][0]
     positions = (input_ids == model.config.timestamp_token_id).nonzero(as_tuple=False).flatten()
     slot_logits = output.logits[0, positions].float()
-    if int(slot_logits.shape[0]) != 2 * len(selected):
+    if int(slot_logits.shape[0]) != 2 * len(output_meta):
         raise RuntimeError(
-            f"timestamp slots mismatch: slots={slot_logits.shape[0]} units={len(selected)}"
+            f"timestamp slots mismatch: slots={slot_logits.shape[0]} units={len(output_meta)}"
         )
     raw_classes = slot_logits.argmax(dim=-1)
     probabilities = torch.softmax(slot_logits, dim=-1)
@@ -287,10 +298,10 @@ def infer_slice(
     top_values, top_indices = torch.topk(probabilities, k=saved_top_k, dim=-1)
     entropy = -(probabilities * probabilities.clamp_min(1e-12).log()).sum(dim=-1)
     decoded = processor.decode_forced_alignment(
-        output.logits, batch["input_ids"], words, model.config.timestamp_token_id
+        output.logits, batch["input_ids"], [processor_units], model.config.timestamp_token_id
     )[0]
-    if len(decoded) != len(selected):
-        raise RuntimeError(f"decode mismatch: decoded={len(decoded)} units={len(selected)}")
+    if len(decoded) != len(output_meta):
+        raise RuntimeError(f"decode mismatch: decoded={len(decoded)} units={len(output_meta)}")
 
     decoder_kind = str(getattr(args, "decoder_kind", "official"))
     gpu_decoded_classes = None
@@ -319,7 +330,7 @@ def infer_slice(
 
     rows: list[dict[str, Any]] = []
     segment = float(args.timestamp_segment_sec)
-    for local_index, (meta, item) in enumerate(zip(selected, decoded, strict=True)):
+    for local_index, (meta, item) in enumerate(zip(output_meta, decoded, strict=True)):
         start_slot = 2 * local_index
         end_slot = start_slot + 1
         raw_start = int(raw_classes[start_slot]) * segment

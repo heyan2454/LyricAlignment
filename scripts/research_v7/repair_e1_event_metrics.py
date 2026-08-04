@@ -164,14 +164,18 @@ def main(argv=None) -> int:
     micro = precision_recall_f1(gtp, gfp, gfn)
     macro = (sum(r["event_f1"] for r in item_rows) / len(item_rows)) if item_rows else 0.0
 
-    # source-song bootstrap（按 item 级 F1 采样 200 次）
+    # source-song cluster bootstrap：同一 source song 的 item 必须作为一个 cluster 抽样。
     import random
 
     rng = random.Random(0)
     if item_rows:
+        clusters: dict[str, list[dict]] = {}
+        for row in item_rows:
+            clusters.setdefault(str(row.get("source_song_id") or row["item_id"]), []).append(row)
+        cluster_rows = list(clusters.values())
         boot = []
         for _ in range(200):
-            sample = rng.choices(item_rows, k=len(item_rows))
+            sample = [row for cluster in rng.choices(cluster_rows, k=len(cluster_rows)) for row in cluster]
             boot.append(sum(r["event_f1"] for r in sample) / len(sample))
         boot.sort()
         bootstrap = {

@@ -88,40 +88,49 @@ def build(cfg: dict, labels: list[dict], limit: int) -> list[dict]:
         donors = make_donor_list(labels, song, seed=cfg.get("seed", 0))
         dur = float(it.get("duration_sec", 0.0) or 0.0)
         # baseline
+        common = {"audio_path": it.get("audio_path") or it.get("vocal_path") or it.get("audio_relpath")}
         rows.append({
             "item_id": item_id, "song_id": song, "duration_sec": dur,
             "mutation_type": "baseline", "text_units": base,
+            **common,
         })
         # extra
         for r in EXTRA_RATIOS:
-            for pos in ("tail",):
+            for pos in ("tail", "head", "middle"):
                 m = extra_ratio(base, r, source="future", position=pos)
                 rows.append({"item_id": item_id, "song_id": song, "duration_sec": dur,
                              "mutation_type": "extra", "ratio": r, "position": pos,
-                             "text_units": m.mutated_units, "source": "future"})
+                             "text_units": m.mutated_units, "source": "future", **common})
         # missing
         for r in MISSING_RATIOS:
-            for pos in ("tail", "head", "dispersed"):
+            for pos in ("tail", "head", "middle", "dispersed"):
                 m = missing_ratio(base, r, position=pos, seed=cfg.get("seed", 0))
                 rows.append({"item_id": item_id, "song_id": song, "duration_sec": dur,
                              "mutation_type": "missing", "ratio": r, "position": pos,
-                             "text_units": m.mutated_units})
+                             "text_units": m.mutated_units, **common})
         # replace (whole, tail)
         for r in REPLACE_RATIOS:
             if not donors:
                 break
             d = donors[0]
-            m = replace_ratio(base, r, donor=d, position="whole", seed=cfg.get("seed", 0))
-            rows.append({"item_id": item_id, "song_id": song, "duration_sec": dur,
-                         "mutation_type": "replace", "ratio": r, "position": "whole",
-                         "text_units": m.mutated_units, "donor": d.donor_song_id})
+            for pos in ("head", "middle", "tail", "whole"):
+                m = replace_ratio(base, r, donor=d, position=pos, seed=cfg.get("seed", 0))
+                rows.append({"item_id": item_id, "song_id": song, "duration_sec": dur,
+                             "mutation_type": "replace", "ratio": r, "position": pos,
+                             "text_units": m.mutated_units, "donor": d.donor_song_id,
+                             "donor_start_index": d.donor_start_index,
+                             "donor_units": list(d.donor_units), "donor_similarity": d.overlap_metrics,
+                             **common})
         # no_match
-        if donors:
-            d = donors[1] if len(donors) > 1 else donors[0]
+        strict_donors = [d for d in donors if len(d.donor_units) >= len(base)]
+        if strict_donors:
+            d = strict_donors[1] if len(strict_donors) > 1 else strict_donors[0]
             m = no_match(base, donor=d, language="zh", unit_mode="char")
             rows.append({"item_id": item_id, "song_id": song, "duration_sec": dur,
                          "mutation_type": "no_match", "text_units": m.mutated_units,
-                         "donor": d.donor_song_id})
+                         "donor": d.donor_song_id, "donor_start_index": d.donor_start_index,
+                         "donor_units": list(d.donor_units), "donor_similarity": d.overlap_metrics,
+                         **common})
     return rows
 
 

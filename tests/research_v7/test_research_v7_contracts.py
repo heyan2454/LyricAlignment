@@ -74,6 +74,12 @@ def test_extra_ratio_zero():
     assert m.mutated_units == BASE
 
 
+def test_extra_ratio_middle_inserts_at_middle():
+    m = extra_ratio(BASE, 0.2, position="middle")
+    assert m.mutated_units[:5] == BASE[:5]
+    assert m.mutated_units[7:] == BASE[5:]
+
+
 def test_missing_ratio_tail():
     m = missing_ratio(BASE, 0.5, position="tail")
     # 0.5*10=5 移除
@@ -122,6 +128,39 @@ def test_request_run_with_fake_executor():
     assert ev.attempt.request.text_end_index == len(req.text_units)
     assert ev.parent_request_id is None
     ev.to_dict()["metadata"]["mutation"] == "extra"
+    assert ev.audio_hash and ev.text_hash
+
+
+def test_real_executor_adapter_passes_the_complete_request():
+    from lyricalign.research_v7.real_executor import make_real_executor
+
+    class StubAligner:
+        def __init__(self):
+            self.seen = None
+
+        def align_request(self, request):
+            self.seen = request
+            return [{"global_character_index": 0, "fixed_global_start_sec": 0.0, "fixed_global_end_sec": 0.4}]
+
+    aligner = StubAligner()
+    attempt = make_real_executor(aligner)(_req())
+    assert attempt.status == "ok"
+    assert aligner.seen.item_id == "t1"
+
+
+def test_sparse_slot_transform_keeps_only_requested_marker_pairs():
+    import torch
+    from lyricalign.research_v7.sparse_slots import retain_timestamp_slots
+
+    # Three units, two timestamp markers each; non-marker text context remains.
+    inputs = {"input_ids": torch.tensor([[10, 99, 99, 11, 99, 99, 12, 99, 99, 13]]),
+              "attention_mask": torch.ones((1, 10), dtype=torch.long),
+              "input_features": torch.ones((1, 3, 4))}
+    sparse, slots = retain_timestamp_slots(inputs, timestamp_token_id=99, unit_indices=[1], total_units=3)
+    assert slots == (1,)
+    assert sparse["input_ids"].tolist() == [[10, 11, 99, 99, 12, 13]]
+    assert sparse["attention_mask"].shape[-1] == 6
+    assert sparse["input_features"].shape == (1, 3, 4)
 
 
 def test_mutation_catalog_yaml_shape(tmp_path):

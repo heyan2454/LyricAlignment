@@ -80,7 +80,15 @@ def extra_ratio(
         # 默认视为“同歌未来正确歌词已在 lookahead”，循环取 base 前段充数
         src = b
     added = tuple(src[i % len(src)] for i in range(add)) if src else ()
-    mutated = (b + added) if position == "tail" else (added + b)
+    if position == "tail":
+        mutated = b + added
+    elif position == "head":
+        mutated = added + b
+    elif position == "middle":
+        pivot = len(b) // 2
+        mutated = b[:pivot] + added + b[pivot:]
+    else:
+        raise ValueError(f"unsupported extra position: {position}")
     return Mutation(
         mutation_type="extra",
         base_units=b,
@@ -193,11 +201,11 @@ def no_match(
     b = tuple(base)
     n = len(b)
     donor_u = tuple(donor.donor_units)
+    if donor.donor_song_id == "":
+        raise ValueError("no_match donor_song_id is required")
     if len(donor_u) < n:
-        # 容忍不等长：循环/截断到 n（正式 pilot 会冻结 donor manifest 保证等长）
-        filled = tuple((donor_u[i % max(len(donor_u), 1)]) for i in range(n))
-    else:
-        filled = donor_u[:n]
+        raise ValueError("strict no_match donor must provide at least base-length continuous units")
+    filled = donor_u[:n]
     return Mutation(
         "no_match", b, filled, n, n, 1.0, 1.0, "whole", "cross_song", donor=donor,
     )

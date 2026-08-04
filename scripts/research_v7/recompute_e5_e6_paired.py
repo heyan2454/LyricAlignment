@@ -66,6 +66,7 @@ def paired_summary(rows: list[dict], baseline_name: str) -> list[dict]:
         dmae = r[MAE_KEY] - base_mae
         out.append({
             "variant": r["name"],
+            "is_baseline": r["name"] == baseline_name,
             "mae": r[MAE_KEY],
             "delta_mae": dmae,
             "verdict": "no_change" if abs(dmae) < 1e-9 else ("improve" if dmae < 0 else "harm"),
@@ -93,9 +94,10 @@ def main(argv=None) -> int:
         items = random.sample(items, args.limit)
 
     results: dict[str, dict] = {}  # {phase: {"paired": [...], "per_item": [...]}}
-    for phase, cfg in (("E5", {"vars": ["E5_dynamic_windows.json"], "baseline": None}),
+    for phase, cfg in (("E5", {"vars": ["E5_dynamic_windows.json"], "baseline": "fixed"}),
                        ("E6", {"vars": ["E6_silence.json"], "baseline": "S0_baseline"})):
         per_item = []
+        skipped = []
         for iid in items:
             meta = index.get(iid, {})
             if not meta.get("gt_path"):
@@ -107,7 +109,14 @@ def main(argv=None) -> int:
                 ci = collect_item(fp)
                 if not ci:
                     continue
-                base = "dynamic_safe_minus0" if phase == "E5" else "S0_baseline"
+                base = cfg["baseline"]
+                available = {row["name"] for row in ci["rows"]}
+                # The formal artifact names the fixed reference differently by version.
+                if phase == "E5":
+                    base = next((name for name in ("fixed", "fixed_baseline", "S0_baseline") if name in available), None)
+                    if base is None:
+                        skipped.append({"item_id": iid, "reason": "missing_fixed_baseline", "available_variants": sorted(available)})
+                        continue
                 paired = paired_summary(ci["rows"], base)
                 per_item.append({
                     "item_id": iid,
@@ -115,7 +124,7 @@ def main(argv=None) -> int:
                     "source_song_id": meta.get("source_song_id"),
                     "paired": paired,
                 })
-        results[phase] = {"per_item": per_item}
+        results[phase] = {"per_item": per_item, "skipped": skipped}
 
     # 分层统计
     def summarize(phase_rows):
@@ -123,7 +132,7 @@ def main(argv=None) -> int:
         deltas = []
         for it in phase_rows:
             for pr in it["paired"]:
-                if pr["variant"] in ("dynamic_safe_minus0", "S0_baseline"):
+                if pr["is_baseline"]:
                     continue
                 deltas.append(pr["delta_mae"])
                 all_verdicts.append(pr["verdict"])
@@ -144,6 +153,7 @@ def main(argv=None) -> int:
         "n_items_scanned": len(items),
         "E5": summarize(results["E5"]["per_item"]),
         "E6": summarize(results["E6"]["per_item"]),
+        "skipped": {phase: results[phase]["skipped"] for phase in results},
         "per_item": results,
     }
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

@@ -1,38 +1,26 @@
-# 阶段 B 进展 —— align_behavior 框架与真实 executor 打通
+# 阶段 B 进展 — 真实行为证据
 
-**日期：2026-08-03 · 计划：docs/research_v7_align_behavior/**
+**更新：2026-08-04 · 计划：research_v7_align_behavior**
 
-## 已完成
-- **契约/mutation 核心**（`src/lyricalign/research_v7/`）：
-  - `requests.py`：v7 `AlignmentRequest`（audio/text/slot/mutation/model/checkpoint/lineage）
-  - `mutations.py`：extra/missing/replace/no_match 百分比扰动 + DonorSpec/MutationCatalog（固定 seed）
-  - `attempt.py`：`AlignmentAttempt`/`EvidencePack` + `run_request` 可穿行骨架
-- **manifest 生成**（`scripts/research_v7/build_behavior_manifest.py`）：从 M4_LABELS 真实歌词生成
-  合法 baseline + 各百分比 mutation 的行为 manifest（extra/missing/replace/no_match），
-  供批量行为实验。
-- **批量 run 骨架**（`scripts/research_v7/run_behavior_suite.py`）：消费 manifest → 批量构造
-  v7 request → 注入 executor → 写 evidence（含 sparse-slot 骨架）。
-- **真实 executor**（`src/lyricalign/research_v7/real_executor.py`）：importlib 复用
-  `align_qwen_fa_serial_demo` 的 `load_model`(r2 LoRA+projector) + `infer_slice`/`full_alignment`，
-  只吃 numpy 音频 + 文本字符列表 → 逐字符 fixed 起止几何，不依赖 SERIAL/Demucs。
-- **测试**：`tests/research_v7/` 12 passed（契约/ mutation / manifest / suite smoke）。
+## 已完成的真实运行
 
-## 真实对齐 smoke（已验证）
-- 用 r2（`step-000750`）对 M4Singer `Bass-2#DEAR JOHN#0001`（"将心情化妆成初恋"，8 字）
-  跑 `infer_slice`，得到逐字符 fixed 几何：
-  - `将` fixed 0.24–0.48s（raw/official 同）… `恋` fixed end 2.72s
-  - 模型加载+推理 elapsed ≈ 7.6s；evidence 已存
-    `evidence/research_v7_stageA/real_smoke.json`（la_data, commit 64681c2）。
-- 结论：**real executor 链路打通**，阶段 B 具备真实验证不合法输入行为的能力基座。
+- 完整 R2 executor、raw/official/posterior/repair trace、immutable evidence、hash collection/verify、GT paired bootstrap、无 GT review bundle 均已实现并测试。
+- demo：35 首 / 140 attempts（baseline、extra50、missing50、cross-song no-match）；所有真实运行 `ok`。冻结 partition：dev 19、validation 9、heldout 3、challenge 4。无 GT，不报告 accuracy。
+- demo C10：从 33 首真实歌词的重复片段构造 66 个短重复/双重复 request；真实运行、hash verification 与 blind-review bundle 均完成。
+- MIR-1K heldout：4 source song、C1–C6 主曲线 268 attempts；stateful P0/P1/P2/D/S 36 attempts；另有 80-unit cursor ±2/4/8 三段矩阵 100 attempts。全部使用完整 source audio；早期 GT-cropped outputs 已降级为 oracle control。P1 现将 committed prefix/all prefix slots 真实送入 processor；S 仅保留当前新段 slots。
+- M4Singer test：19 source-song strata（每歌最长可用 native item），C1–C6 共 1,178 attempts；C7–C9 共 190 attempts；全部真实执行、collection verification 无错误。
+- Provisional：MIR heldout 80-unit/三段 full/last-8/last-16/last-predicted-10sec slot-policy matrix 76 attempts，真实执行并校验。
 
-## 待办（资源相关，留 pilot/后续）
-- 真实全量行为采集（formal GT behaviour）：对完整 mutation 曲线 + strict-serial P1 +
-  sparse-slot S 跑真实模型（需 GPU 批量、冻结 pilot 比例/donor manifest）。
-- collect_alignment_behavior / analyze_alignment_behavior / verify_research_v7_outputs
-  （聚合、failure taxonomy 统计、校验）。
-- 更新 09 报告完成门槛（阶段 B 的 P1/S/百分比等标记进行中/待跑）。
+## 当前冻结观察（不是超出样本范围的结论）
 
-## 状态小结
-- 阶段 A（历史结论修复）已全量完成并归档。
-- 阶段 B 已建立 契约/扰动/manifest/run/real-executor 全骨架 且真实单 case 验证通过；
-  核心行为数据采集（真机批量）pending，属资源密集型，建议按 pilot 流程冻结后执行。
+- MIR heldout workflow：S 与 P0 基本持平；P1/D 显著变差，P2 部分恢复。优先继续 sparse-slot 路线。
+- M4 C1–C6：19-song macro ΔMAE `+1.0216s`，source-song bootstrap 95% `+0.8863..+1.1498s`。
+- M4 C7–C9：音频后半段单独输入最不利（平均 ΔMAE `+2.7225s`），起点延后 `+1.1905s`。
+- 100% replacement 的无正确文本锚点被保留为 unscorable/catastrophic 分母，未计入 MAE 分子。
+
+## 仍需完成
+
+- C10 已补 MIR heldout 3-song / 6-attempt multiple-legal-answer GT control；C6 已含同歌错段、纯器乐、错语言等独立对照。demo C10 仍是无 GT review，不混同为 accuracy。
+- 更长序列的 commit/provisional 恢复传播矩阵（80-unit 三段已完成，但不能代替长程结论）。
+- GT strata 的 localization thresholds、coverage/overlap、posterior/repair 信号分层和综合报告。
+- demo 人工盲审填写与无 GT 错误时长统计；没有人工标签前不可作 quality/accuracy claim。

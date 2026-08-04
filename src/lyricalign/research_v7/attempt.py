@@ -7,6 +7,7 @@ repair trace、lineage；EvidencePack 是单次 attempt 的不可变 cache，多
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+import hashlib
 from typing import Any, Callable, Sequence
 
 from .requests import AlignmentRequest
@@ -82,5 +83,12 @@ def run_request(
     return EvidencePack(
         attempt=attempt,
         parent_request_id=request.parent_request_id,
+        audio_hash=hashlib.sha256(
+            f"{request.audio_source}|{request.audio_start_sec:.6f}|{request.audio_end_sec:.6f}".encode()
+        ).hexdigest(),
+        text_hash=hashlib.sha256("\x1f".join(request.text_units).encode()).hexdigest(),
+        slot_mask=request.timestamp_slot_indices,
+        posterior=attempt.decoder_outputs.get("_posterior"),
+        repair_trace=attempt.decoder_outputs.get("_repair_trace"),
         metadata={"request_id": request.request_id, "mutation": request.mutation_type},
     )

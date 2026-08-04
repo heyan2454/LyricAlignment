@@ -106,13 +106,27 @@ def main(argv=None) -> int:
         for field, st in sorted(audit[phase].items()):
             nn = st.get("non_null", 0)
             num = st.get("numeric_present", 0)
-            rate = (nn / total) if total else None
+            applicable = st.get("applicable_true")
+            numerator = st.get("numeric_gt0")
+            # Boolean applicability rates use all items; numeric/non-null
+            # condition rates use the values actually observed.
+            denominator = total if field == "applicable" else nn
+            rate = ((applicable if field == "applicable" else numerator) / denominator
+                    if denominator and (applicable if field == "applicable" else numerator) is not None else None)
             out["phases"][phase]["fields"][field] = {
                 "total_count": total,
-                "applicable_count": st.get("applicable_true", None),
+                "applicable_count": applicable,
+                # Historical compact summaries do not expose all lifecycle fields;
+                # retain the required schema and mark unavailable values explicitly.
+                "attempted_count": None,
+                "completed_count": None,
                 "non_null_count": nn,
+                "success_count": None,
+                "failure_count": None,
                 "numeric_count": num,
-                "numerator": st.get("numeric_gt0", None),
+                "numerator": applicable if field == "applicable" else numerator,
+                "denominator": denominator,
+                "rate": round(rate, 4) if rate is not None else None,
                 "rate_non_null": round(rate, 4) if rate is not None else None,
                 "sum": round(st.get("sum", 0.0), 4) if st.get("sum") else None,
             }
