@@ -35,7 +35,10 @@ def _fake_executor(_req: object):
         from lyricalign.research_v7.attempt import AlignmentAttempt
 
         n = len(request.text_units)
-        rows = [{"global_character_index": i, "start_sec": i * 0.5, "end_sec": i * 0.5 + 0.4} for i in range(n)]
+        rows = [{"global_character_index": i,
+                 "raw_global_start_sec": i * 0.5, "raw_global_end_sec": i * 0.5 + 0.4,
+                 "fixed_global_start_sec": i * 0.5 - 0.02, "fixed_global_end_sec": i * 0.5 + 0.42,
+                 "start_sec": i * 0.5, "end_sec": i * 0.5 + 0.4} for i in range(n)]
         fa = []
         if request.mutation_type == "no_match":
             fa = ["WRONG_REPEATED_SECTION"]
@@ -92,6 +95,7 @@ def main(argv=None) -> int:
     written = 0
     cache_hit = 0
     forward = 0
+    failures: list[dict] = []  # review5-4：实际错误聚合
     identities: list[dict] = []
     cursor_after_by_request: dict[str, float | None] = {}
     rows_after_by_request: dict[str, list[dict]] = {}
@@ -145,19 +149,33 @@ def main(argv=None) -> int:
             metadata={"dataset": r.get("dataset"), "split": r.get("split"),
                       "source_song_id": r.get("source_song_id") or r.get("song_id"),
                       "language": r.get("language") or "Chinese", "provenance": r.get("provenance", {}),
-                      "request_identity": r.get("request_identity"),
+                      # review5-3：显式 condition/pair/target_ratio(供 evaluator 按 control/weak pairing 分层)
+                      "condition": r.get("condition"), "pair_id": r.get("pair_id"),
+                      "target_ratio": r.get("target_ratio"),
+                      "evaluation_role": r.get("evaluation_role"),
                       "canonical_mapping": r.get("canonical_mapping", {})},
         )
         req.validate()
         item_dir = out_root / "items" / str(req.item_id)
         item_dir.mkdir(parents=True, exist_ok=True)
-        # review4-3：cache key 用 manifest 提供的 request_identity（C3 exporter 已含 audio/content hash，
-        # 规范与 runner 的 ctx 不同；以 manifest 为准保证可复现），并在 evidence 记录 audio_content_sha256 供漂移审计。
+        # review5-1：attempt_identity = hash(source_request_identity + canonical AlignmentRequest +
+        # model/checkpoint/processor/decoder/code/env/mapping schema + 实际 audio hash)；
+        # 并校验 manifest files_sha256 与实际读音 sha（同路径换 WAV → 拒绝/cache miss）
         import hashlib as _hl
-        audio_sha = _hl.sha256(Path(req.audio_source).read_bytes()).hexdigest() if req.audio_source and Path(req.audio_source).is_file() else "none"
-        content_idn = r.get("request_identity") or req.request_identity(
-            context={"audio_content_sha256": audio_sha, "code_identity": _git_head(),
-                     "mapping_schema": "research_v7_canonical_mapping_v2"})
+        audio_sha = _hl.sha256(Path(req.audio_source).read_bytes()).hexdigest() if (req.audio_source and Path(req.audio_source).is_file()) else "none"
+        man_sha = next(iter(r.get("files_sha256") or []), None)
+        if man_sha and man_sha != audio_sha:
+            raise RuntimeError(f"audio drift: manifest files_sha256 {man_sha[:12]} != actual {audio_sha[:12]} for {req.item_id}")
+        ctx = {
+            "audio_content_sha256": audio_sha,
+            "manifest_files_sha256": man_sha or audio_sha,
+            "model": args.model, "checkpoint": args.checkpoint, "revision": args.revision,
+            "decoder": r.get("decoder", "official"),
+            "code_identity": _git_dirty(), "env_schema": "research_v7_long_slot_v1",
+            "mapping_schema": "research_v7_canonical_mapping_v2",
+            "source_request_identity": r.get("request_identity") or "",
+        }
+        content_idn = req.request_identity(context=ctx)
         cache_f = out_root / "cached" / f"{content_idn}.json"
         f = item_dir / f"behavior-{mutation}-{r.get('ratio', 1.0)}-{r.get('position', 'whole')}-{i}.json"
         if cache_f.exists():
@@ -180,6 +198,12 @@ def main(argv=None) -> int:
         f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
         cache_f.parent.mkdir(parents=True, exist_ok=True)
         cache_f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
+        if ev.attempt.status != "ok":
+            import hashlib as _hlf
+            failures.append({"item_id": req.item_id, "request_id": req.request_id,
+                             "request_identity": content_idn, "status": ev.attempt.status,
+                             "evidence_path": str(f),
+                             "evidence_sha256": _hlf.sha256(f.read_bytes()).hexdigest()})
         cursor_after_by_request[req.request_id] = ev.attempt.cursor_after
         rows_after_by_request[req.request_id] = list(ev.attempt.decoder_outputs.get("official", {}).get("rows", []))
         written += 1
@@ -187,24 +211,35 @@ def main(argv=None) -> int:
         identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
                            "cache": "miss", "status": ev.attempt.status})
 
-    # review3/4：真实运行产物 RUN_MANIFEST（含 run_id、冻结 manifest sha、budget、每请求 identity、
-    # cache keys、audio/env hashes、evidence inventory、failures）
+    # review3/4/5：真实运行产物 RUN_MANIFEST（含 run_id、冻结 manifest sha、budget、每请求 identity、
+    # cache keys、audio/env hashes、evidence inventory(path/sha/status)、failures、source-tree 三哈希）
     import hashlib as _hl2
     manifest_sha = _hl2.sha256(Path(args.manifest).read_bytes()).hexdigest()
+    cached_dir = out_root / "cached"
+    evidence_inv = []
+    if cached_dir.exists():
+        for c in sorted(cached_dir.glob("*.json")):
+            try:
+                cd = json.loads(c.read_text(encoding="utf-8"))
+                evidence_inv.append({"path": str(c), "sha256": _hl2.sha256(c.read_bytes()).hexdigest(),
+                                     "status": (cd.get("attempt") or {}).get("status")})
+            except Exception:
+                evidence_inv.append({"path": str(c), "sha256": None, "status": "unreadable"})
     run_manifest = {
         "schema": "research_v7_long_slot_v1",
         "run_id": f"rl-{_time.strftime('%Y%m%d_%H%M%S')}",
-        "code_identity": {"git_commit": _git_head(), "dirty_tree_hash": _git_dirty()},
+        "code_identity": {"git_commit": _git_head(), "source_tree": _git_dirty()},
         "manifest": {"path": str(Path(args.manifest).resolve()), "sha256": manifest_sha},
         "environment": {"model": args.model, "revision": args.revision, "checkpoint": args.checkpoint,
                         "device": getattr(args, "device", "cuda" if args.real else "cpu"),
                         "executor": "real" if args.real else "fake-smoke"},
         "runtime_budget": {"elapsed_sec": round(_time.time() - t_start, 3), "forward_count": forward,
                            "cache_hit": cache_hit, "cache_miss": forward, "cache_total": cache_hit + forward},
-        "item_count": {"requests": len(rows), "written": written, "cache_hit": cache_hit, "forward": forward},
+        "item_count": {"requests": len(rows), "written": written, "cache_hit": cache_hit, "forward": forward,
+                       "failed": len(failures)},
         "cache_keys": [i["request_identity"] for i in identities],
-        "evidence_inventory": {"cached_entries": len(list((out_root / "cached").glob("*.json"))) if (out_root / "cached").exists() else 0},
-        "failures": [],
+        "evidence_inventory": evidence_inv,
+        "failures": failures,
         "requests_identity": identities,
     }
     (out_root / "RUN_MANIFEST.json").write_text(json.dumps(run_manifest, ensure_ascii=False, indent=1))
@@ -223,19 +258,28 @@ def _git_head() -> str:
 
 
 def _git_dirty() -> str:
-    """返回工作树相对 HEAD 的实际 dirty 内容 hash（真 tree hash，非 bool 字符串）。"""
-    import subprocess
-    try:
-        # 当前工作树树哈希
-        tree = subprocess.run(["git", "write-tree"], capture_output=True, text=True).stdout.strip()
-        head_tree = subprocess.run(["git", "rev-parse", "HEAD^{tree}"], capture_output=True, text=True).stdout.strip()
-    except Exception:  # noqa
-        return "unknown"
-    if not tree or not head_tree:
-        return "unknown"
-    # 用"HEAD tree:工作树 tree"的 hash 表达 dirty 状态（clean 时两者相等→同 hash）
+    """source-tree identity：HEAD commit + staged diff + unstaged 工作树 diff 的内容 hash。
+
+    review4/5：git write-tree 只代表 index，不覆盖未暂存工作树改动 → 需三条分别哈希。
+    """
     import hashlib
-    return hashlib.sha256(f"{head_tree}:{tree}".encode()).hexdigest()
+    import subprocess
+
+    def _h(*parts):
+        return hashlib.sha256(b":".join((p if isinstance(p, bytes) else p.encode()) for p in parts)).hexdigest()
+
+    def _diff_tree(_base="_git_dirty"):
+        # staged diff: index vs HEAD (write-tree vs HEAD^tree)，即 git diff --cached 的内容
+        return subprocess.run(["git", "diff", "--cached"], capture_output=True, text=True).stdout or ""
+    def _diff_work():
+        return subprocess.run(["git", "diff"], capture_output=True, text=True).stdout or ""
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        staged = _diff_tree()
+        unstaged = _diff_work()
+    except Exception:  # noqa
+        return hashlib.sha256(b"unknown").hexdigest()
+    return _h(head, staged, unstaged)
 
 
 if __name__ == "__main__":

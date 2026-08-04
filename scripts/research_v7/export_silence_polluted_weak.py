@@ -160,10 +160,21 @@ def main(argv=None) -> int:
     p.add_argument("--out-root", required=True)
     p.add_argument("--limit", type=int, default=5)
     p.add_argument("--window-sec", type=float, default=20.0)
-    p.add_argument("--text-units", nargs="*", default=[], help="同窗歌词逐字（供 REQUESTS 写 text_units；缺省=纯声学 probe）")
+    p.add_argument("--text-units", nargs="*", default=[], help="同窗歌词逐字（fallback；推荐用 --text-manifest 做 per-item）")
+    p.add_argument("--text-manifest", default="", help="jsonl: {item_id, text_units[], has_gt, source} 每 item 已审计歌词")
     args = p.parse_args(argv)
     global TEXT_UNITS
     TEXT_UNITS = list(args.text_units)
+    # review5-2：per-item 已审计 text（units+range+has_gt）；无 GT → demo challenge / 声学 probe
+    text_map = {}
+    if args.text_manifest and Path(args.text_manifest).is_file():
+        for line in Path(args.text_manifest).read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            t = _json.loads(line)
+            text_map[t["item_id"]] = {"units": list(t.get("text_units", [])),
+                                      "has_gt": bool(t.get("has_gt", False)),
+                                      "source": t.get("source", "")}
 
     items = [json.loads(l) for l in Path(args.item_list).read_text().splitlines() if l.strip()]
     out_root = Path(args.out_root); out_root.mkdir(parents=True, exist_ok=True)
@@ -243,6 +254,18 @@ def main(argv=None) -> int:
                      "rms": {k: round(v, 3) for k, v in rms_all.items()},
                      "conditions": conditions,
                      "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})
+        # review5-2：per-item 已审计 text（非全局同一组）
+        if text_map:
+            tinfo = text_map.get(it["item_id"], {"units": [], "has_gt": False, "source": ""})
+            tu = list(tinfo["units"]); has_gt = tinfo.get("has_gt", False); tsrc = tinfo.get("source", "")
+        else:
+            # fallback（不推荐真实实验）：全局 --text-units，has_gt 未知→False（视为 demo/声学 probe）
+            tu = list(TEXT_UNITS); has_gt = False; tsrc = ""
+        # 无歌词或非 GT → 显式 demo challenge / 声学 probe（不进 alignment 正式评价）
+        if not tu or not has_gt:
+            probe_flag = "acoustic_probe" if not tu else "demo_challenge"
+        else:
+            probe_flag = "lyrics_aligned"
         for lab in labels.values():
             cond = conditions[lab]
             is_control = (lab == "control")
@@ -262,11 +285,14 @@ def main(argv=None) -> int:
                 "sample_rate": rate, "code_version": code_ver,
                 "request_identity": _reqid(cond, wav_sha[lab]),
                 "files": [wav_path], "files_sha256": [wav_sha[lab]],
-                # review4-1：歌词 units/range（缺省空=纯声学 probe；有则用同窗歌词）
-                "text_units": TEXT_UNITS, "text_start_index": 0, "text_end_index": len(TEXT_UNITS),
-                # review4-5：control 显式 ratio 0/baseline，不伪装成污染样本
+                # review4-1 / review5-2：歌词 units/range（per-item；空=声学 probe）
+                "text_units": tu, "text_start_index": 0, "text_end_index": len(tu),
+                "text_source": tsrc, "has_gt": has_gt, "evaluation_role": probe_flag,
+                # review4-5 / review5-3：condition 显式 + target_ratio + control=ratio0
                 "mutation": ("control" if is_control else "silence_residual"),
+                "mutation_type": ("control" if is_control else "silence_residual"),
                 "target_ratio": (0.0 if is_control else target_ratio),
+                "condition": cond,
             }
             _reqs.append(req)
         done += 1
