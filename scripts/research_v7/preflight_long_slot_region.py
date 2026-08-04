@@ -17,6 +17,7 @@ import json
 import subprocess
 import sys
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -112,7 +113,7 @@ def main(argv=None) -> int:
 
     precheck = {
         "schema_version": "research_v7_long_slot_v1",
-        "created_at_utc": "2026-08-04T00:00:00Z",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "draft": True,
         "git": _git_state(),
         "pytest": run_pytest(),

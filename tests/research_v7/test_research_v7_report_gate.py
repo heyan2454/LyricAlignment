@@ -386,7 +386,7 @@ def test_forward_cross_domain_absent_is_none(tmp_path):
 
 def test_forward_cross_domain_missing_file_is_none(tmp_path):
     # T1：传了路径但文件不存在 → None（缺省），不阻塞 formal_approved
-    run = _run_root(tmp_path)
+    run = _run_root(tmp_path); (run / "formal").mkdir(exist_ok=True)
     man, sha = _manifest(tmp_path)
     _formal_fixture(run, man, sha)
     r = _call(run, man, sha, extra=["--cross-domain-eval", str(tmp_path / "nope.json")])
@@ -394,3 +394,114 @@ def test_forward_cross_domain_missing_file_is_none(tmp_path):
     s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
     assert s["formal_approved"] is True
     assert s["data"]["cross_domain"] is None
+
+
+def _missing_ratio_curve(tmp, full_recall=True):
+    # 合成 missing 比例曲线产物（research_v7_missing_ratio_curve_v1），数值对齐真实
+    # smoke_20260805_review12 ratio_real_run，不引用真实 run 文件
+    f = tmp / "missing_ratio_curve.json"
+    g = 1.0 if full_recall else 0.9
+    f.write_text(json.dumps({
+        "schema": "research_v7_missing_ratio_curve_v1",
+        "gt_axis_note": "synthetic_uniform_timeline_axis (not human GT)",
+        "curve": [
+            {"missing_ratio": 0.1, "n_requests": 60, "n_omitted_gt_units": 588,
+             "gap_event_recall": g, "gap_weighted_recall": g, "unit_recall": 0.0},
+            {"missing_ratio": 0.25, "n_requests": 60, "n_omitted_gt_units": 1480,
+             "gap_event_recall": g, "gap_weighted_recall": g, "unit_recall": 0.0},
+            {"missing_ratio": 0.5, "n_requests": 60, "n_omitted_gt_units": 2950,
+             "gap_event_recall": g, "gap_weighted_recall": g, "unit_recall": 0.0},
+        ],
+        "source_gt_eval": "run/GT_EVAL.json",
+    }))
+    return f
+
+
+def test_forward_missing_ratio_curve_in_summary(tmp_path):
+    # round11：提供 --missing-ratio-curve（合成 json）→ AUTO_SUMMARY.data.missing_ratio_curve
+    # 含 6 字段曲线列表 + missing_ratio_conclusion（全 gap_recall=1.0 → 结构性结论）；
+    # md 增加 Missing ratio curve 段；formal 判定不受影响。
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    mrc = _missing_ratio_curve(tmp_path)
+    r = _call(run, man, sha, extra=["--missing-ratio-curve", str(mrc)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    curve_out = s["data"]["missing_ratio_curve"]
+    assert curve_out["schema"] == "research_v7_missing_ratio_curve_v1"
+    assert [p["missing_ratio"] for p in curve_out["curve"]] == [0.1, 0.25, 0.5]
+    assert [p["n_omitted_gt_units"] for p in curve_out["curve"]] == [588, 1480, 2950]
+    assert [p["gap_event_recall"] for p in curve_out["curve"]] == [1.0, 1.0, 1.0]
+    assert [p["gap_weighted_recall"] for p in curve_out["curve"]] == [1.0, 1.0, 1.0]
+    assert [p["unit_recall"] for p in curve_out["curve"]] == [0.0, 0.0, 0.0]
+    assert [p["n_requests"] for p in curve_out["curve"]] == [60, 60, 60]
+    assert s["data"]["missing_ratio_conclusion"] == \
+        "all missing ratios detected via virtual gap; unit_recall=0 structural"
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "## Missing ratio curve" in md
+    assert "all missing ratios detected via virtual gap" in md
+
+
+def test_forward_missing_ratio_curve_partial_recall_no_structural_conclusion(tmp_path):
+    # round11：gap_event_recall 未全 1.0 → missing_ratio_conclusion=None（不得误标结构性结论）
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    mrc = _missing_ratio_curve(tmp_path, full_recall=False)
+    r = _call(run, man, sha, extra=["--missing-ratio-curve", str(mrc)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True
+    assert s["data"]["missing_ratio_curve"]["curve"][0]["gap_event_recall"] == 0.9
+    assert s["data"]["missing_ratio_conclusion"] is None
+
+
+def test_forward_missing_ratio_curve_absent_is_none(tmp_path):
+    # round11：不传 --missing-ratio-curve → 两字段为 None，formal 判定与既有断言不变
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    assert s["data"]["missing_ratio_curve"] is None
+    assert s["data"]["missing_ratio_conclusion"] is None
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "Missing ratio curve" not in md
+
+
+def test_forward_missing_ratio_curve_missing_or_bad_schema_is_none(tmp_path):
+    # round11：路径缺失/schema 不匹配 → None（缺省），不阻塞 formal_approved
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    bad = tmp_path / "bad_missing_ratio_curve.json"
+    bad.write_text(json.dumps({"schema": "research_v7_missing_ratio_curve_v2"}))
+    r = _call(run, man, sha, extra=["--missing-ratio-curve", str(bad)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True
+    assert s["data"]["missing_ratio_curve"] is None
+    r2 = _call(run, man, sha, extra=["--missing-ratio-curve", str(tmp_path / "nope.json")])
+    s2 = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s2["formal_approved"] is True
+    assert s2["data"]["missing_ratio_curve"] is None
+
+
+def test_created_at_utc_is_current_time(tmp_path):
+    # round11：AUTO_SUMMARY.created_at_utc 动态取生成时 UTC，不再是硬编码旧值
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["created_at_utc"] != "2026-08-04T00:00:00Z"
+    assert s["created_at_utc"].endswith("+00:00")
+    from datetime import datetime as dt
+    ts = dt.fromisoformat(s["created_at_utc"]).timestamp()
+    assert abs(ts - dt.now().timestamp()) < 300
+    assert s["schema"] == "research_v7_long_slot_report_v1"

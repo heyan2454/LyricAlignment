@@ -36,6 +36,10 @@ gt_eval_out/
 out/
 runs/**/GT_EVAL.json
 runs/**/MIR_CROSS_DOMAIN_EVAL.json
+runs/**/BASELINE_QUALITY_ANALYSIS.json
+runs/**/MISSING_RATIO_CURVE.json
+runs/**/MIR_GT_EVAL.json
+*.bak.json
 
 # Audio/video and model artifacts
 *.wav

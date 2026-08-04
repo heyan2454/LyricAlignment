@@ -6,6 +6,9 @@ P0-5：除非提供的 --formal-approved-manifest 真实存在且其 sha256 与 
 一致，否则一律 draft=true；不可仅凭"传了参数"就降级。
 round09：可选 --baseline-quality（research_v7_baseline_quality_analysis_v1）只读记录进
 AUTO_SUMMARY.data.baseline_quality + baseline_quality_finding，不参与 formal gate。
+round11：可选 --missing-ratio-curve（research_v7_missing_ratio_curve_v1）只读记录进
+AUTO_SUMMARY.data.missing_ratio_curve + missing_ratio_conclusion，不参与 formal gate；
+created_at_utc 动态取生成时 UTC（不再硬编码）。
 """
 from __future__ import annotations
 
@@ -13,6 +16,7 @@ import argparse
 import hashlib
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -33,6 +37,8 @@ def main(argv=None) -> int:
                    help="跨域评估产物（research_v7_assessor_cross_domain_eval_v1）；可选，只记录 finding，不参与 formal gate")
     p.add_argument("--baseline-quality", default="",
                    help="baseline 质量分析产物（research_v7_baseline_quality_analysis_v1）；可选，只记录 finding，不参与 formal gate")
+    p.add_argument("--missing-ratio-curve", default="",
+                   help="missing 比例曲线产物（research_v7_missing_ratio_curve_v1）；可选，只记录 finding，不参与 formal gate")
     args = p.parse_args(argv)
 
     run = Path(args.run_root)
@@ -180,6 +186,44 @@ def main(argv=None) -> int:
                                  "not decoder failure")
                 baseline_quality_finding = "; ".join(parts)
 
+    # round11：missing 比例曲线（research_v7_missing_ratio_curve_v1）——可选输入，只读记录。
+    # 不提供/文件缺失/不可读/schema 不匹配 → missing_ratio_curve=None 且
+    # missing_ratio_conclusion=None，不阻塞 formal_approved，行为不变。
+    missing_ratio_curve = None
+    missing_ratio_conclusion = None
+    mrc_path = Path(args.missing_ratio_curve) if args.missing_ratio_curve else None
+    if mrc_path is not None:
+        try:
+            mrc = json.loads(mrc_path.read_text(encoding="utf-8"))
+        except Exception:
+            mrc = None
+        if not isinstance(mrc, dict) or mrc.get("schema") != "research_v7_missing_ratio_curve_v1":
+            print(f"WARN: missing ratio curve {mrc_path} unreadable or schema "
+                  f"!= research_v7_missing_ratio_curve_v1; skipped", file=sys.stderr)
+            mrc = None
+        if mrc is not None:
+            points = []
+            for pt in mrc.get("curve") or []:
+                if not isinstance(pt, dict):
+                    continue
+                points.append({
+                    "missing_ratio": pt.get("missing_ratio"),
+                    "n_requests": pt.get("n_requests"),
+                    "n_omitted_gt_units": pt.get("n_omitted_gt_units"),
+                    "gap_event_recall": pt.get("gap_event_recall"),
+                    "gap_weighted_recall": pt.get("gap_weighted_recall"),
+                    "unit_recall": pt.get("unit_recall"),
+                })
+            missing_ratio_curve = {
+                "schema": mrc.get("schema"),
+                "path": str(mrc_path),
+                "gt_axis_note": mrc.get("gt_axis_note"),
+                "curve": points,
+            }
+            if points and all(p["gap_event_recall"] == 1.0 for p in points):
+                missing_ratio_conclusion = (
+                    "all missing ratios detected via virtual gap; unit_recall=0 structural")
+
     # P0-5 round2：formal_approved 需真实 formal evidence + frozen manifest sha + 实际预算/gates。
     formal_approved = False
     reasons = []
@@ -248,7 +292,7 @@ def main(argv=None) -> int:
 
     auto = {
         "schema": "research_v7_long_slot_report_v1",
-        "created_at_utc": "2026-08-04T00:00:00Z",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "draft": draft,
         "formal_approved": formal_approved,
         "draft_reasons": reasons,
@@ -263,6 +307,8 @@ def main(argv=None) -> int:
             "cross_domain": cross_domain,
             "baseline_quality": baseline_quality,
             "baseline_quality_finding": baseline_quality_finding,
+            "missing_ratio_curve": missing_ratio_curve,
+            "missing_ratio_conclusion": missing_ratio_conclusion,
         },
     }
     if gt_eval is not None:
@@ -355,6 +401,19 @@ def main(argv=None) -> int:
 - GT axis ratio M4/MIR={bq['axis_ratio_m4_over_mir']}x; seam near={bq['seam_near_unsafe']},
   far={bq['seam_far_unsafe']}; feature AUC top={bq['feature_auc_top']}; self_check={bq['self_check_ok']}
 - Finding: {baseline_quality_finding}
+"""
+    if missing_ratio_curve is not None:
+        pts = missing_ratio_curve["curve"]
+        ratios = ", ".join(str(p["missing_ratio"]) for p in pts)
+        md += f"""
+## Missing ratio curve
+
+- Source: {mrc_path}
+- Points ({len(pts)}): missing_ratio={ratios}
+- gap_event_recall per point: {[p['gap_event_recall'] for p in pts]},
+  gap_weighted_recall={[p['gap_weighted_recall'] for p in pts]},
+  unit_recall={[p['unit_recall'] for p in pts]}
+- Finding: {missing_ratio_conclusion}
 """
     md_name = f"AUTO_FINDINGS_{'SUMMARY' if not draft else 'DRAFT'}.md"
     (run / "report" / md_name).write_text(md)
