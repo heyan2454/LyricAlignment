@@ -156,3 +156,20 @@ def test_output_row_input_indices_express_missing_double():
                       output_row_canonical_ids=out_canon, output_row_input_indices=out_input)
     assert m.output_row_map[-1] == (n - 1, None, None)  # 缺行：(row, input=None, canonical=None)
     assert m.output_row_map[0] == (0, 0, 0)
+
+
+def test_output_row_input_index_out_of_range_rejected():
+    n = len(BASE)
+    with pytest.raises(ValueError, match="out of input range"):
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * n, input_canonical_ids=list(range(n)),
+                      output_row_canonical_ids=list(range(n)),
+                      output_row_input_indices=[99] + list(range(1, n)))  # 99 超出 input 范围
+
+
+def test_output_row_canonical_out_of_range_rejected():
+    n = len(BASE)
+    with pytest.raises(ValueError, match="out of canonical range"):
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * n, input_canonical_ids=list(range(n)),
+                      output_row_canonical_ids=[n] + list(range(1, n)))  # n 越界 canonical

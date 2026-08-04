@@ -155,6 +155,13 @@ def build_mapping(
         ori = output_row_input_indices
         if ori is not None and len(ori) != len(output_row_canonical_ids):
             raise ValueError("output_row_input_indices len != output_row_canonical_ids len")
+        # review3-3 mark(6)：校验 input index 范围与 output canonical id 范围
+        for idx in (ori or []):
+            if idx is not None and not (0 <= idx < n):
+                raise ValueError(f"output_row_input_index {idx} out of input range [0,{n})")
+        for oc in output_row_canonical_ids:
+            if oc is not None and not (0 <= oc < canonical_n):
+                raise ValueError(f"output_row_canonical_id {oc} out of canonical range [0,{canonical_n})")
         out_map = [(row_i, (ori[row_i] if ori is not None else row_i), c)
                    for row_i, c in enumerate(output_row_canonical_ids)]
     else:
