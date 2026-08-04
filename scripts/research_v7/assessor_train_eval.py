@@ -11,7 +11,10 @@
   标签不参与 request identity）；无标签时明确记录 labels_available=false 并拒绝训练/冻结，
   不假装产 operating points；
 - 按 item_id 划分 train/val（train_frac），fit_and_freeze 只从 train 拟合、val 选 operating point；
-- 输出 ASSESSOR_RUN_MANIFEST.json：collection SHA、实际 train/eval 分母、输出路径。
+- 输出 ASSESSOR_RUN_MANIFEST.json：collection SHA、实际 train/eval 分母、输出路径；
+- round04/op-persist：ASSESSOR.json 额外持久化冻结权重（assessor.model.beta/mean/std/
+  feature_keys），供 T4 对 MIR 打分；旧 v1 文件（无 model）经 _load_assessor() 加载
+  返回 (None, reason) 兼容。
 
 用法：
   PYTHONPATH=src python scripts/research_v7/assessor_train_eval.py \
@@ -36,6 +39,36 @@ from lyricalign.research_v7.features import HIDDEN_FEATURES_ENABLED, unit_featur
 from lyricalign.research_v7.region_assessor import fit_and_freeze  # noqa: E402
 
 COLLECTION_SCHEMA = "research_v7_trainable_evidence_collection_v1"
+
+# round04/op-persist：v2 起 ASSESSOR.json 携带冻结模型权重（beta/mean/std）；
+# v1 旧文件无 model 字段，加载方必须走 _load_assessor() 兼容（返回 None + reason）。
+ASSESSOR_MANIFEST_SCHEMA = "research_v7_assessor_consumer_run_v2"
+ASSESSOR_V1_COMPAT_NOTE = (
+    "v2: assessor.model 持久化冻结 logistic 权重 {beta,mean,std,feature_keys}; "
+    "v1 ASSESSOR.json 无 model 字段, 经 _load_assessor() 加载返回 (None, reason)"
+)
+
+
+def _load_assessor(path: Path | str) -> tuple[dict | None, str | None]:
+    """加载 ASSESSOR.json；旧文件（无 model 字段）/损坏/缺失 → (None, reason)。
+
+    round04/op-persist：consumers（T4 scorer 等）只经此函数取冻结权重，
+    不得直接读 ASSESSOR.json 假设 model 存在。
+    """
+    p = Path(path)
+    if not p.is_file():
+        return None, f"no assessor file at {p}"
+    try:
+        a = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return None, f"assessor file unreadable: {e}"
+    m = a.get("model")
+    if not isinstance(m, dict):
+        return None, "assessor lacks model weights (v1 legacy or untrained)"
+    missing = [k for k in ("beta", "mean", "std") if not isinstance(m.get(k), list)]
+    if missing:
+        return None, f"assessor model incomplete, missing {missing}"
+    return a, None
 
 
 def _atomic_write(path: Path, payload: dict) -> None:
@@ -137,7 +170,8 @@ def consume(collection_path: Path, out: Path, *, train_frac: float = 0.7,
     # 标签可用性：任何 evidence 无 gt_eval → 整体拒绝训练（不假装 operating points）
     labels_available = (not label_errors) and bool(labels) and denominator["units"] > 0
     assessor = {"labels_available": labels_available, "operating_points": None,
-                "reason": None, "train_units": None, "val_units": None}
+                "reason": None, "train_units": None, "val_units": None,
+                "model": None}
     if labels_available:
         # 按 item_id 划分 train/val（同 item 不跨集合），只从 train 拟合；
         # 单 item（item 级任一为空）时回退为 unit 级固定 seed 随机划分，并在 manifest 记录。
@@ -180,6 +214,15 @@ def consume(collection_path: Path, out: Path, *, train_frac: float = 0.7,
             assessor["train_units"] = len(Xt)
             assessor["val_units"] = len(Xv)
             assessor["split_mode"] = split_mode
+            # round04/op-persist：持久化冻结权重（numpy → list of float），
+            # 供 T4 对 MIR 打分；beta 含截距（len = d+1），mean/std 长度 = d。
+            m = res["model"]
+            assessor["model"] = {
+                "beta": [float(v) for v in np.asarray(m.beta, dtype=float).ravel()],
+                "mean": [float(v) for v in np.asarray(m.mean, dtype=float).ravel()],
+                "std": [float(v) for v in np.asarray(m.std, dtype=float).ravel()],
+                "feature_keys": list(feature_keys),
+            }
     else:
         assessor["reason"] = "; ".join(label_errors[:5]) if label_errors else "no labels in collection"
     # 输出：特征行 + assessor + run manifest（记录 collection SHA、实际分母、输出路径）
@@ -191,7 +234,8 @@ def consume(collection_path: Path, out: Path, *, train_frac: float = 0.7,
     assessor_file = out / "ASSESSOR.json"
     _atomic_write(assessor_file, assessor)
     manifest = {
-        "schema": "research_v7_assessor_consumer_run_v1",
+        "schema": ASSESSOR_MANIFEST_SCHEMA,
+        "schema_note": ASSESSOR_V1_COMPAT_NOTE,
         "collection_sha256": collection_sha,
         "input_collection": str(collection_path.resolve()),
         "code": {"script": "assessor_train_eval.py",
@@ -232,6 +276,8 @@ def main(argv: list[str] | None = None) -> int:
                       "units": m["denominator"]["units"],
                       "labels_available": m["labels"]["available"],
                       "operating_points": m["assessor"]["operating_points"],
+                      "model_dims": {k: len(v) for k, v in (m["assessor"].get("model") or {}).items()
+                                     if isinstance(v, list)} or None,
                       "out": str(Path(a.out))}, ensure_ascii=False))
     # C3（review12）：无标签时输出已写（含 reason），但退出码非 0，
     # 防止 formal 管线把"无标签的 assessor"误当训练成功继续推进。
