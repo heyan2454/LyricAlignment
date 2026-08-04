@@ -263,3 +263,31 @@ def test_malformed_and_blocked_row_still_produce_manifest(tmp_path):
     assert any(i["request_id"] == "ok" and i["status"] == "ok" for i in rm["requests_identity"])
     # FAILURES.jsonl 存在
     assert (outroot / "FAILURES.jsonl").exists()
+
+
+def test_array_row_and_type_error_row_do_not_abort_batch(tmp_path):
+    # review8-6：数组行(非 object)、字符串时间算术 TypeError 都在循环开头 try 内记 malformed，
+    # 独立正常行继续执行并产最终 RUN_MANIFEST（不再中止全批）。
+    import json as _j
+    manifest = tmp_path / "badrows.jsonl"
+    manifest.write_text(
+        "\n".join([
+            _j.dumps({"request_id": "ok", "item_id": "s1", "text_units": ["a"],
+                      "text_start_index": 0, "text_end_index": 1,
+                      "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline"}),
+            _j.dumps(["not", "an", "object"]),                      # 数组行
+            _j.dumps({"request_id": "bad2", "item_id": "s2", "files": ["/tmp/x.wav"],
+                      "duration_sec": "1.5", "audio_end_sec": 3,    # 字符串时间 → 减法 TypeError
+                      "text_units": [], "mutation_type": "baseline"}),
+        ]) + "\n")
+    outroot = tmp_path / "run"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+                        "--manifest", str(manifest), "--out-root", str(outroot), "--smoke"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr  # 批次不被前置错误中止
+    rm = _j.loads((outroot / "RUN_MANIFEST.json").read_text())
+    kinds = {f.get("kind") for f in rm["failures"]}
+    assert "malformed_row" in kinds
+    # 数组行被记为 malformed（id=None），字符串时间同样 malformed；正常行 ok 且列身份中可见
+    assert any(i["request_id"] == "ok" and i["status"] == "ok" for i in rm["requests_identity"])
+    assert len([f for f in rm["failures"] if f["kind"] == "malformed_row"]) >= 2

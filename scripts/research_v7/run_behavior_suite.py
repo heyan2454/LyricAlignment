@@ -78,7 +78,7 @@ def main(argv=None) -> int:
     p.add_argument("--resume", action="store_true", help="reuse only identity-identical evidence; reject mismatches")
     args = p.parse_args(argv)
 
-    rows = [json.loads(l) for l in Path(args.manifest).read_text().splitlines() if l.strip()]
+    rows = [l for l in Path(args.manifest).read_text().splitlines() if l.strip()]
     if args.limit:
         rows = rows[: args.limit]
 
@@ -101,26 +101,42 @@ def main(argv=None) -> int:
     rows_after_by_request: dict[str, list[dict]] = {}
     import time as _time
     t_start = _time.time()
-    for i, r in enumerate(rows):
-        units = tuple(r.get("text_units", []))
-        parent = r.get("parent_request_id")
-        cursor_prev = cursor_after_by_request.get(parent) if parent else None
-        # review3-1：若为 C3 生成的 WAV（提供 files），用 generated wav 作为 audio 源并重算窗口
-        if r.get("files"):
-            a0, a1 = 0.0, (r.get("duration_sec") or 0.0) if r.get("duration_sec") else (r.get("audio_end_sec", 60.0) - r.get("audio_start_sec", 0.0))
-        else:
-            a0, a1 = r.get("audio_start_sec", 0.0), r.get("audio_end_sec", r.get("duration_sec", 0.0) or 60.0)
-        if r.get("workflow_mode") == "strict_serial_progressive_crop" and parent:
-            if cursor_prev is None:
-                # review7-1：serial 依赖失败的子请求 → 记 blocked_by_parent failure，批次继续，不中止
-                failures.append({"item_id": r.get("item_id"), "request_id": r.get("request_id"),
-                                 "status": "blocked_by_parent",
-                                 "error": f"P2 requires completed parent cursor {parent}", "kind": "blocked_by_parent"})
-                continue
-            a0 = max(float(a0), float(cursor_prev) - float(r.get("left_context_sec", 10.0)))
-        slot = tuple(r["timestamp_slot_indices"]) if r.get("timestamp_slot_indices") is not None else None
-        # review7-1：构造 + validate（malformed row：非法 range/slot/text）也做 per-item 隔离
+    for i, raw in enumerate(rows):
+        # review8-6：循环开头立即以 try 包住全部 row materialization（解析/字段类型/算术），
+        # 避免数组行、字符串时间算术等在前置阶段逃逸中止全批；失败全记 malformed 并继续。
+        units = ()
+        parent = cursor_prev = a0 = a1 = slot = None
         try:
+            r = json.loads(raw)
+            if not isinstance(r, dict):
+                failures.append({"item_id": None, "request_id": None, "status": "malformed_row",
+                                 "error": f"manifest row is {type(r).__name__}, expected object", "kind": "malformed_row"})
+                continue
+            units = tuple(r.get("text_units", []))
+            parent = r.get("parent_request_id")
+            cursor_prev = cursor_after_by_request.get(parent) if parent else None
+            if parent:
+                pass
+            # review3-1：若为 C3 生成的 WAV（提供 files），用 generated wav 作为 audio 源并重算窗口
+            if r.get("files"):
+                a0, a1 = 0.0, (r.get("duration_sec") or 0.0) if r.get("duration_sec") else (r.get("audio_end_sec", 60.0) - r.get("audio_start_sec", 0.0))
+            else:
+                a0, a1 = r.get("audio_start_sec", 0.0), r.get("audio_end_sec", r.get("duration_sec", 0.0) or 60.0)
+            slot = tuple(r["timestamp_slot_indices"]) if r.get("timestamp_slot_indices") is not None else None
+        except Exception as _re:  # noqa
+            failures.append({"item_id": (r.get("item_id") if isinstance(r, dict) else None),
+                             "request_id": (r.get("request_id") if isinstance(r, dict) else None),
+                             "status": "malformed_row", "error": str(_re), "kind": "malformed_row"})
+            continue
+        # review7-1：构造 + validate + serial 前置（strict_serial 缺失父 cursor）也做 per-item try
+        try:
+            if r.get("workflow_mode") == "strict_serial_progressive_crop" and parent:
+                if cursor_prev is None:
+                    failures.append({"item_id": r.get("item_id"), "request_id": r.get("request_id"),
+                                     "status": "blocked_by_parent",
+                                     "error": f"P2 requires completed parent cursor {parent}", "kind": "blocked_by_parent"})
+                    continue
+                a0 = max(float(a0), float(cursor_prev) - float(r.get("left_context_sec", 10.0)))
             if r.get("provisional_policy") == "last_predicted_seconds" and parent:
                 previous_rows = rows_after_by_request.get(parent, [])
                 cutoff = float(cursor_prev or 0.0) - float(r.get("provisional_last_sec", 0.0))
@@ -164,7 +180,7 @@ def main(argv=None) -> int:
             )
             req.validate()
         except Exception as _ce:  # noqa
-            # review7-1：构造/validate 失败 → malformed_row failure，跳过该 item 继续
+            # review7-1/8-6：构造/validate/serial 前置失败 → malformed_row failure，批次继续
             failures.append({"item_id": r.get("item_id"), "request_id": r.get("request_id"),
                              "status": "malformed_row", "error": str(_ce), "kind": "malformed_row"})
             continue
