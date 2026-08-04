@@ -1,0 +1,18 @@
+{
+ "audio_root": "/home/hyan/Data/lyricalign/derived/20260722_mir1k_vocal_channel1_ood",
+ "built_at_utc": "2026-08-04T21:46:33+00:00",
+ "files": {
+  "MIR_TIMELINE_MANIFEST.jsonl": "c6336c2d0bfd77d13798cc49d40204d0071b051dc21fb1de7f2aa8788b6b7596",
+  "REQUESTS.jsonl": "346c57533e5512054e8ca9b89d16eaff8a9aecbc073cbc142a27db34420ea484"
+ },
+ "labels": {
+  "path": "/home/hyan/Data/lyricalign/derived/20260724_mir1k_qwen_fa_labels_v1/mir1k_qwen_fa_labels.jsonl",
+  "sha256": "1d10863dce275611bd6c6f10fe6d038e167b2e624c585328baa53338009de6bb"
+ },
+ "requests": 16,
+ "schema": "research_v7_mir1k_manifest_v1",
+ "songs": 3,
+ "sparse_slots": true,
+ "windows": 4,
+ "windows_per_song": null
+}
