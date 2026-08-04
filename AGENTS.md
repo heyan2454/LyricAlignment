@@ -42,10 +42,10 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
 
 实现主体在 `src/lyricalign/research_v7/`（timeline / slot_planning / sparse_slots / canonical_mapping /
 c3_text_adapter / mutations / features / region_metrics / region_assessor / requests / attempt /
-real_executor / evaluation_guard），入口在 `scripts/research_v7/`。当前**只有 smoke/draft 级产物，
-正式 gate 未批准**：以 `17_IMPLEMENTATION_REVIEW_20260805.md` 为准，P0（真实 runner/identity-evidence/
-canonical 闭环等）未全部关闭前，只允许产出标 `draft=true` 的校准与 smoke artifact，不得声称
-real smoke/pilot/formal。相关命令：
+real_executor / evaluation_guard），入口在 `scripts/research_v7/`。当前主线已跑通**真实 formal**
+（review12：M4 120 real forward + MIR 120 real forward + GT 评价 + 跨域 assessor + baseline 质量分析，
+见 `17_IMPLEMENTATION_REVIEW_20260805.md` 复审更新 12）。结论解读须注意结构性声明（unit_recall=0 为
+virtual-gap 结构、M4 synthetic 轴 66.6% 误差率为轴构造产物、MIR 弱标签非人工 GT）。相关命令：
 
 ```bash
 # preflight（只读核对，产出 PRECHECK.json；纯 CPU）
@@ -62,6 +62,16 @@ PYTHONPATH=src python scripts/research_v7/export_silence_polluted_weak.py --item
 
 # 唯一 evidence collection（review9-6）：train/eval 只消费它，不能直接读原始 items
 PYTHONPATH=src python scripts/research_v7/collect_trainable_evidence.py --run-manifest <RUN_MANIFEST.json> --out <collection.json>
+
+# 真实长数据 manifest builder（M4/MIR）+ formal 运行 + GT 评价 + 跨域/质量分析
+PYTHONPATH=src python scripts/research_v7/build_long_timeline_manifest.py --m4-manifest <meta.jsonl> --out-root <out> [--missing-ratios 0.10,0.25,0.50]
+PYTHONPATH=src python scripts/research_v7/build_mir1k_long_manifest.py --labels <labels.jsonl> --out-root <out>
+PYTHONPATH=src python scripts/research_v7/run_behavior_suite.py --manifest <REQUESTS.jsonl> --out-root <run> --real --model-dir <snapshot> --revision main --checkpoint-path <ckpt>
+PYTHONPATH=src python scripts/research_v7/evaluate_long_slot_gt.py --run-root <run> --timeline-manifest <tl.jsonl> [--domain mir1k] [--out <GT_EVAL.json>]
+PYTHONPATH=src python scripts/research_v7/analyze_long_slot_baseline_quality.py --gt-eval <GT_EVAL.json> [--mir-gt-eval <MIR_GT_EVAL.json>] --out <dir>
+PYTHONPATH=src python scripts/research_v7/evaluate_cross_domain_assessor.py --m4-assessor <ASSESSOR.json> --mir1k-collection <collection.json> --out <dir>
+PYTHONPATH=src python scripts/research_v7/label_evidence_gt_eval.py --requests <REQUESTS.jsonl> --evidence-dir <run>/evidence [--backup]
+PYTHONPATH=src python scripts/research_v7/report_long_slot_region.py --run-root <run> [--cross-domain-eval <...>] [--baseline-quality <...>] [--missing-ratio-curve <...>]
 ```
 
 ## Architecture
