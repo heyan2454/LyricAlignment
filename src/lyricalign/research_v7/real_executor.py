@@ -55,6 +55,33 @@ class RealAligner:
         self._karaoke = None
         self._processor = None
         self._model = None
+        self._checkpoint_content_sha = None
+
+    def checkpoint_content_hash(self) -> str | None:
+        """C2（review12）：checkpoint 内容 SHA（adapter/projector 等文件），用于 cache identity。
+
+        同一 checkpoint 路径被重训覆盖或换内容时，identity 必须变化，避免旧 evidence 被复用。
+        调用方在构造 request identity context 时并入该值；不加载模型、纯文件 hash。
+        """
+        import hashlib
+        from pathlib import Path
+
+        if self._checkpoint_content_sha is not None:
+            return self._checkpoint_content_sha
+        root = Path(self.checkpoint)
+        if not root.is_dir():
+            return None
+        parts = []
+        for f in sorted(root.rglob("*")):
+            if f.is_file():
+                try:
+                    parts.append(f"{f.relative_to(root)}:{hashlib.sha256(f.read_bytes()).hexdigest()}")
+                except OSError:
+                    continue
+        if not parts:
+            return None
+        self._checkpoint_content_sha = hashlib.sha256("|".join(parts).encode()).hexdigest()
+        return self._checkpoint_content_sha
 
     def _ensure(self):
         if self._mod is not None:
@@ -82,8 +109,13 @@ class RealAligner:
         self._args = args
 
     def align_units(self, audio: "object", units: Sequence[str], slot_indices: Sequence[int] | None = None,
-                    language: str = "Chinese") -> list[dict]:
-        """units 逐字符 -> 对齐 rows（含 fixed start/end）。audio 为 16k mono numpy。"""
+                    language: str = "Chinese", text_start_index: int = 0, text_end_index: int | None = None) -> list[dict]:
+        """units 逐字符 -> 对齐 rows（含 fixed start/end）。audio 为 16k mono numpy。
+
+        M4（review12）：text_start/end_index 是 request-local 索引，必须映射到 document
+        character 空间；slot_indices 同样是 request-local unit 索引。多字 unit（英文词/日文词）
+        会破坏 character↔unit 一一对应，这里显式断言，不做静默错位。
+        """
         self._ensure()
         m = self._mod
         text = "\n".join(str(u) for u in units)
@@ -93,13 +125,20 @@ class RealAligner:
             from lyricalign.demo.karaoke import parse_lyrics_text
 
             document = parse_lyrics_text(text, language=language)
+        # request-local 索引空间：text_units 即本请求完整文本（local 0..N）
+        if len(document.characters) != len(units):
+            raise ValueError(
+                f"document.characters({len(document.characters)}) != text_units({len(units)}): "
+                "multi-character units break character↔unit mapping; "
+                "request text must be character-aligned for real executor")
+        end = len(units) if text_end_index is None else min(text_end_index, len(units))
         rows, _audit = m.infer_slice(
             processor=self._processor,
             model=self._model,
             audio=audio,
             document=document,
-            character_start=0,
-            character_end=len(document.characters),
+            character_start=text_start_index,
+            character_end=end,
             global_audio_offset_sec=0.0,
             args=self._args,
             timestamp_slot_indices=slot_indices,
@@ -121,17 +160,34 @@ class RealAligner:
         audio = decode_audio(path)
         start = int(round(request.audio_start_sec * 16000))
         end = int(round(request.audio_end_sec * 16000))
-        if start < 0 or end <= start or end > len(audio):
+        # M2（review12）：manifest 中 3~4 位小数时长与解码长度可有 ±1 sample 偏差，
+        # 给 2 sample 容差并 clamp，避免合法窗口因舍入被整条拒绝。
+        if start < 0 or end <= start:
+            raise ValueError("request audio range is outside decoded audio")
+        if end > len(audio) + 2:
+            raise ValueError("request audio range is outside decoded audio")
+        end = min(end, len(audio))
+        start = min(start, len(audio) - 1) if len(audio) > 0 else 0
+        if end <= start:
             raise ValueError("request audio range is outside decoded audio")
         language = str(request.metadata.get("language") or "Chinese")
-        rows = self.align_units(audio[start:end], request.text_units, request.timestamp_slot_indices, language=language)
+        rows = self.align_units(audio[start:end], request.text_units, request.timestamp_slot_indices,
+                                language=language,
+                                text_start_index=request.text_start_index,
+                                text_end_index=request.text_end_index)
         if request.input_variant == "strict_serial_committed_prefix_all_slots":
             current_start = int(request.mutation_parameters.get("source_text_start_index") or 0)
             rows = [row for row in rows if int(row.get("global_character_index", -1)) >= current_start]
         for row in rows:
-            for key in ("raw_global_start_sec", "raw_global_end_sec", "fixed_global_start_sec", "fixed_global_end_sec"):
-                if key in row:
-                    row[key] = float(row[key]) + request.audio_start_sec
+            # C1（review12）：infer_slice 输出多组 global 坐标键
+            # （raw_global_*/official_fixed_global_*/gpu_fixed_global_*/fixed_global_*）。
+            # 全部必须随 audio_start_sec 平移，否则窗内 official 几何是局部坐标而 raw 是全局，
+            # evidence 出现混坐标；features 的 official_* 键优先读 official_fixed_global_*，
+            # 任何 audio_start_sec>0 的窗都会得到错误绝对时间。
+            for key in list(row.keys()):
+                if key.endswith("_global_start_sec") or key.endswith("_global_end_sec"):
+                    if row[key] is not None:
+                        row[key] = float(row[key]) + request.audio_start_sec
         return rows
 
 

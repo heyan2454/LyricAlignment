@@ -19,6 +19,8 @@ from pathlib import Path
 
 import numpy as np
 
+from lyricalign.research_v7.c3_text_adapter import bind_canonical_to_window, request_from_bound
+
 ALPHAS = [0.0, 0.02]  # 用户最终定档 α=2%（weak_silence_samples_2pct 为正式档）
 LOUDNESS_SCALE = 1.0  # 1.0 = 不做响度缩放（导出 2%）
 TEXT_UNITS: list = []  # 可选：同窗歌词逐字（REQUESTS 写 text_units）；缺省=纯声学 probe
@@ -177,7 +179,6 @@ def main(argv=None) -> int:
                                       "has_gt": bool(t.get("has_gt", False)),
                                       "source": t.get("source", "")}
     # review8-1/2：原曲 canonical GT 时间轴（每字 start/end），供 adapter 用【原曲窗】相交
-    from lyricalign.research_v7.c3_text_adapter import bind_canonical_to_window, request_from_bound
     canon_map: dict[str, list] = {}
     canon_buf = b""
     if args.canonical_timeline and Path(args.canonical_timeline).is_file():
@@ -201,146 +202,18 @@ def main(argv=None) -> int:
     for it in items:
         if done >= args.limit:
             break
-        vp = Path(it["audio_path"]); cp = vp.with_name(vp.name.replace("vocals.wav", "accompaniment.wav"))
-        if not vp.is_file() or not cp.is_file():
-            continue
-        v, rate = read_mono16(vp); c, c_rate = read_mono16(cp)
-        if c_rate != rate:
-            recs.append({"item_id": it["item_id"], "skipped": "sample_rate_mismatch",
-                         "vocal_rate": rate, "acc_rate": c_rate})
-            continue
-        m = min(len(v), len(c)); v, c = v[:m], c[:m]
-        win = int(args.window_sec * rate)
-        if len(v) < win:
-            continue
-        # P0（C3-review）：选窗用与 build_window 相同的 silence 判定（绝对/相对/连续），非机械 20%。
-        start = None
-        fr = int(0.05 * rate); step = int(2 * rate)
-        for s in range(0, len(v) - win + 1, step):
-            seg = slice(s, s + win)
-            wv = v[seg][: len(v[seg]) // fr * fr].reshape(-1, fr)
-            vr = np.sqrt((wv * wv).mean(1) + 1e-12)
-            sung_median = float(np.median(vr[np.where(vr >= np.percentile(vr, 40))]))
-            sil, _ = detect_silence_frames(vr, sung_median, rate, 0.05)
-            frac = float(sil.mean())
-            if 0.1 < frac < 0.6:
-                start = s; break
-        if start is None:
-            recs.append({"item_id": it["item_id"], "skipped": "no_adequate_silence_window"})
-            continue
-        outs, meta = build_window(np.array(v[start:start + win]), np.array(c[start:start + win]), rate, ALPHAS)
-        if meta["n_sil"] == 0:
-            recs.append({"item_id": it["item_id"], "skipped": "no_silence_frames_after_audit",
-                         "silence_audit": meta["silence_audit"]})
-            continue  # 无合格静音 → 不导出（避免 control==weak）
-        song = it["item_id"].replace("/", "_")
-        d = out_root / song; d.mkdir(parents=True, exist_ok=True)
-        labels = {0.0: "control", **{a: f"weak_{int(round(a * 100))}" for a in ALPHAS if a > 0}}
-        rms_all = {}
-        for a in ALPHAS:
-            name = labels[a]
-            write_wav(d / f"{name}.wav", outs[a], rate); rms_all[name] = rms(outs[a])
-        # P0（C3-review）：实际计算 source SHA，不使用输入里的可选字段
-        import hashlib
-        import os as _os
-        import tempfile as _tf
-
-        window_s = round(start / rate, 1)
-        pair_id = f"{it['item_id']}:w{window_s}"
-        conditions = {lab: ("control" if lab == "control" else "weak_vocal_residual") for lab in labels.values()}
-        vocal_sha = hashlib.sha256(vp.read_bytes()).hexdigest()
-        acc_sha = hashlib.sha256(cp.read_bytes()).hexdigest()
-        # P0(review3-2)：identity 必须包含全部构造内容：acc sha、每个导出 wav 的 content sha、
-        # alpha、silence-mask 摘要(meta.silence_audit 的确定性编码)、rate、code/transform version。
-        code_ver = "c3-exporter-v3"
-        wav_sha = {}
-        for a in ALPHAS:
-            name = labels[a]
-            p = d / f"{name}.wav"
-            wav_sha[name] = hashlib.sha256(p.read_bytes()).hexdigest()  # 写文件后算 content sha
-        sil_desc = json.dumps(meta.get("silence_audit", {}), sort_keys=True) if meta.get("silence_audit") else ""
-        target_ratio = next((a for a in ALPHAS if a > 0), None)
-
-        def _reqid(cond, cond_sha):
-            return "sha256:" + hashlib.sha256(
-                f"{pair_id}|{cond}|{rate}|{vocal_sha}|{acc_sha}|{cond_sha}|{target_ratio}|{sil_desc}|{code_ver}".encode()
-            ).hexdigest()
-
-        recs.append({"item_id": it["item_id"], "window_sec": [window_s, round((start + win) / rate, 1)],
-                     "pair_id": pair_id, "sample_rate": rate,
-                     "vocal_sha256": vocal_sha, "acc_sha256": acc_sha, "wav_sha256": wav_sha, **meta,
-                     "rms": {k: round(v, 3) for k, v in rms_all.items()},
-                     "conditions": conditions,
-                     "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})
-        # review5-2：per-item 已审计 text（非全局同一组）
-        if text_map:
-            tinfo = text_map.get(it["item_id"], {"units": [], "has_gt": False, "source": ""})
-            tu = list(tinfo["units"]); has_gt = tinfo.get("has_gt", False); tsrc = tinfo.get("source", "")
-        else:
-            # fallback（不推荐真实实验）：全局 --text-units，has_gt 未知→False（视为 demo/声学 probe）
-            tu = list(TEXT_UNITS); has_gt = False; tsrc = ""
-        # 无歌词或非 GT → 显式 demo challenge / 声学 probe（不进 alignment 正式评价）
-        if not tu or not has_gt:
-            probe_flag = "acoustic_probe" if not tu else "demo_challenge"
-        else:
-            probe_flag = "lyrics_aligned"
-        # review8 / review10-4：原曲源窗(第1层坐标系)。bind/identity/审计直接用【未舍入】sample 推导
-        # 的精确窗口 start_s=(start/rate)、end_s=((start+win)/rate)；window_sec/source_win_disp 仅作展示圆整与去重。
-        start_s_exact = start / rate
-        end_s_exact = (start + win) / rate
-        source_win_exact = [start_s_exact, end_s_exact]
-        source_win_disp = [round(start_s_exact, 1), round(end_s_exact, 1)]
-        has_canonical = bool(canon_map.get(it["item_id"]))
-        canon_info = canon_map.get(it["item_id"]) or {}
-        for lab in labels.values():
-            cond = conditions[lab]
-            is_control = (lab == "control")
-            wav_path = str(d / f"{lab}.wav")
-            wav_dur = round(win / rate, 4)  # 生成 WAV 实际时长
-            base = {
-                "schema_version": "research_v7_long_slot_v1",
-                "request_type": "c3_weak_vocal_calibration",
-                "condition": cond, "pair_id": pair_id, "item_id": it["item_id"],
-                # review4-2 / review8：局部 audio 范围(0..wav 时长) 与 原曲窗 window_sec 分开存放，不混用
-                "audio_path": wav_path,
-                "audio_start_sec": 0.0, "audio_end_sec": wav_dur, "duration_sec": wav_dur,
-                "audio_source": "generated_c3_wav",
-                "window_sec": source_win_disp,
-                # review9-7：精确 source window（identity/审计用），展示类型另行圆整
-                "source_window_start_sec": round(source_win_exact[0], 6),
-                "source_window_end_sec": round(source_win_exact[1], 6),
-                "audio_path_vocals": str(vp), "audio_path_accompaniment": str(cp),
-                "vocal_sha256": vocal_sha, "acc_sha256": acc_sha,
-                "sample_rate": rate, "code_version": code_ver,
-                "request_identity": _reqid(cond, wav_sha[lab]),
-                "files": [wav_path], "files_sha256": [wav_sha[lab]],
-                "text_source": tsrc, "has_gt": has_gt,
-                # review9-3：canonical timeline 来源可追溯（file SHA + item 行 SHA + adapter 版本）
-                "canonical_timeline_file_sha": canon_file_sha,
-                "canonical_timeline_row_sha": canon_info.get("row_sha"),
-                "canonical_adapter_version": "c3_text_adapter_v1",
-                # review4-5 / review5-3：condition 显式 + target_ratio + control=ratio0
-                "mutation": ("control" if is_control else "silence_residual"),
-                "mutation_type": ("control" if is_control else "silence_residual"),
-                "target_ratio": (0.0 if is_control else target_ratio),
-                "condition": cond,
-            }
-            if has_canonical and has_gt:
-                # review8-1：adapter 以【未舍入原曲窗】绑定；产出 request-local index + canonical mapping
-                bound = bind_canonical_to_window(canon_info["units"], tuple(source_win_exact))
-                req = request_from_bound(bound, base=base, audio_start_sec=0.0, audio_end_sec=wav_dur)
-            else:
-                # 无 canonical/无 GT → 无法证明 overlap → 显式 probe（review8 保守；带原因）
-                base["text_units"] = list(tu); base["text_start_index"] = 0
-                base["text_end_index"] = len(tu)
-                base["text_window_aligned"] = False
-                base["evaluation_role"] = probe_flag
-                base["canonical_text_start"] = None; base["canonical_text_end"] = None
-                base["canonical_to_local"] = {}
-                base["text_span_reason"] = "no_canonical_gt" if not has_gt else "no_canonical_overlap"
-                req = base
-            _reqs.append(req)
-        done += 1
+        # review11-3：单 item 处理纳入 item-level try——canonical bind/adapter 校验等任何
+        # per-item 错误（duplicate id、非递增 id、缺 text、非法时间、文件读取失败）都记录为
+        # 结构化 skipped/failed audit 并继续下一个 item；即使所有项失败也原子写最终 manifest。
+        try:
+            exported = _process_item(it, args, out_root, text_map, canon_map, canon_file_sha,
+                                     recs, _reqs)
+        except Exception as _e:  # noqa
+            recs.append({"item_id": it.get("item_id"), "status": "failed",
+                         "error": f"{type(_e).__name__}: {_e}"})
+            exported = False
+        if exported:
+            done += 1
     # P0(review3-2)：REQUESTS 原子写（临时文件+replace）并按 identity 去重；AUDIO_EXPORT_MANIFEST 同理。
     seen = set(); uniq = []
     for r in _reqs:
@@ -349,8 +222,173 @@ def main(argv=None) -> int:
     _atomic_jsonl(out_root / "REQUESTS.jsonl", uniq)
     _atomic_json(out_root / "AUDIO_EXPORT_MANIFEST.json", recs)
     print(json.dumps({"ok": True, "exported": done, "alphas": ALPHAS, "out_root": str(out_root),
-                      "n_requests": len(uniq)}, ensure_ascii=False))
+                      "n_requests": len(uniq), "audited_items": len(recs)}, ensure_ascii=False))
     return 0
+
+
+def _process_item(it, args, out_root, text_map, canon_map, canon_file_sha, recs, _reqs) -> bool:
+    """单个 item 的导出主体（review11-3 抽出，供 item-level try 包裹）。
+
+    返回 True 表示已完整导出（计入 --limit 的 exported 数）；跳过/失败返回 False。
+    """
+    vp = Path(it["audio_path"]); cp = vp.with_name(vp.name.replace("vocals.wav", "accompaniment.wav"))
+    if not vp.is_file() or not cp.is_file():
+        return False
+    v, rate = read_mono16(vp); c, c_rate = read_mono16(cp)
+    if c_rate != rate:
+        recs.append({"item_id": it["item_id"], "status": "skipped", "skipped": "sample_rate_mismatch",
+                     "vocal_rate": rate, "acc_rate": c_rate})
+        return False
+    m = min(len(v), len(c)); v, c = v[:m], c[:m]
+    win = int(args.window_sec * rate)
+    if len(v) < win:
+        recs.append({"item_id": it["item_id"], "status": "skipped", "skipped": "audio_shorter_than_window"})
+        return False
+    # P0（C3-review）：选窗用与 build_window 相同的 silence 判定（绝对/相对/连续），非机械 20%。
+    start = None
+    fr = int(0.05 * rate); step = int(2 * rate)
+    for s in range(0, len(v) - win + 1, step):
+        seg = slice(s, s + win)
+        wv = v[seg][: len(v[seg]) // fr * fr].reshape(-1, fr)
+        vr = np.sqrt((wv * wv).mean(1) + 1e-12)
+        sung_median = float(np.median(vr[np.where(vr >= np.percentile(vr, 40))]))
+        sil, _ = detect_silence_frames(vr, sung_median, rate, 0.05)
+        frac = float(sil.mean())
+        if 0.1 < frac < 0.6:
+            start = s; break
+    if start is None:
+        recs.append({"item_id": it["item_id"], "status": "skipped", "skipped": "no_adequate_silence_window"})
+        return False
+    outs, meta = build_window(np.array(v[start:start + win]), np.array(c[start:start + win]), rate, ALPHAS)
+    if meta["n_sil"] == 0:
+        recs.append({"item_id": it["item_id"], "status": "skipped", "skipped": "no_silence_frames_after_audit",
+                     "silence_audit": meta["silence_audit"]})
+        return False  # 无合格静音 → 不导出（避免 control==weak）
+    song = it["item_id"].replace("/", "_")
+    d = out_root / song; d.mkdir(parents=True, exist_ok=True)
+    labels = {0.0: "control", **{a: f"weak_{int(round(a * 100))}" for a in ALPHAS if a > 0}}
+    rms_all = {}
+    for a in ALPHAS:
+        name = labels[a]
+        write_wav(d / f"{name}.wav", outs[a], rate); rms_all[name] = rms(outs[a])
+    # P0（C3-review）：实际计算 source SHA，不使用输入里的可选字段
+    import hashlib
+    import os as _os
+    import tempfile as _tf
+
+    window_s = round(start / rate, 1)
+    pair_id = f"{it['item_id']}:w{window_s}"
+    conditions = {lab: ("control" if lab == "control" else "weak_vocal_residual") for lab in labels.values()}
+    vocal_sha = hashlib.sha256(vp.read_bytes()).hexdigest()
+    acc_sha = hashlib.sha256(cp.read_bytes()).hexdigest()
+    # P0(review3-2)：identity 必须包含全部构造内容：acc sha、每个导出 wav 的 content sha、
+    # alpha、silence-mask 摘要(meta.silence_audit 的确定性编码)、rate、code/transform version。
+    code_ver = "c3-exporter-v3"
+    wav_sha = {}
+    for a in ALPHAS:
+        name = labels[a]
+        p = d / f"{name}.wav"
+        wav_sha[name] = hashlib.sha256(p.read_bytes()).hexdigest()  # 写文件后算 content sha
+    sil_desc = json.dumps(meta.get("silence_audit", {}), sort_keys=True) if meta.get("silence_audit") else ""
+    target_ratio = next((a for a in ALPHAS if a > 0), None)
+
+    def _reqid(cond, cond_sha):
+        return "sha256:" + hashlib.sha256(
+            f"{pair_id}|{cond}|{rate}|{vocal_sha}|{acc_sha}|{cond_sha}|{target_ratio}|{sil_desc}|{code_ver}".encode()
+        ).hexdigest()
+
+    recs.append({"item_id": it["item_id"], "status": "done",
+                 "window_sec": [window_s, round((start + win) / rate, 1)],
+                 "pair_id": pair_id, "sample_rate": rate,
+                 "vocal_sha256": vocal_sha, "acc_sha256": acc_sha, "wav_sha256": wav_sha, **meta,
+                 "rms": {k: round(v, 3) for k, v in rms_all.items()},
+                 "conditions": conditions,
+                 "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})
+    # review5-2：per-item 已审计 text（非全局同一组）
+    if text_map:
+        tinfo = text_map.get(it["item_id"], {"units": [], "has_gt": False, "source": ""})
+        tu = list(tinfo["units"]); has_gt = tinfo.get("has_gt", False); tsrc = tinfo.get("source", "")
+    else:
+        # fallback（不推荐真实实验）：全局 --text-units，has_gt 未知→False（视为 demo/声学 probe）
+        tu = list(TEXT_UNITS); has_gt = False; tsrc = ""
+    # 无歌词或非 GT → 显式 demo challenge / 声学 probe（不进 alignment 正式评价）
+    if not tu or not has_gt:
+        probe_flag = "acoustic_probe" if not tu else "demo_challenge"
+    else:
+        probe_flag = "lyrics_aligned"
+    # review8 / review10-4：原曲源窗(第1层坐标系)。bind/identity/审计直接用【未舍入】sample 推导
+    # 的精确窗口 start_s=(start/rate)、end_s=((start+win)/rate)；window_sec/source_win_disp 仅作展示圆整与去重。
+    start_s_exact = start / rate
+    end_s_exact = (start + win) / rate
+    source_win_exact = [start_s_exact, end_s_exact]
+    source_win_disp = [round(start_s_exact, 1), round(end_s_exact, 1)]
+    has_canonical = bool(canon_map.get(it["item_id"]))
+    canon_info = canon_map.get(it["item_id"]) or {}
+    for lab in labels.values():
+        cond = conditions[lab]
+        is_control = (lab == "control")
+        wav_path = str(d / f"{lab}.wav")
+        wav_dur = round(win / rate, 4)  # 生成 WAV 实际时长
+        base = {
+            "schema_version": "research_v7_long_slot_v1",
+            "request_type": "c3_weak_vocal_calibration",
+            "condition": cond, "pair_id": pair_id, "item_id": it["item_id"],
+            # review4-2 / review8：局部 audio 范围(0..wav 时长) 与 原曲窗 window_sec 分开存放，不混用
+            "audio_path": wav_path,
+            "audio_start_sec": 0.0, "audio_end_sec": wav_dur, "duration_sec": wav_dur,
+            "audio_source": "generated_c3_wav",
+            "window_sec": source_win_disp,
+            # review9-7：精确 source window（identity/审计用），展示类型另行圆整
+            "source_window_start_sec": round(source_win_exact[0], 6),
+            "source_window_end_sec": round(source_win_exact[1], 6),
+            "audio_path_vocals": str(vp), "audio_path_accompaniment": str(cp),
+            "vocal_sha256": vocal_sha, "acc_sha256": acc_sha,
+            "sample_rate": rate, "code_version": code_ver,
+            "request_identity": _reqid(cond, wav_sha[lab]),
+            "files": [wav_path], "files_sha256": [wav_sha[lab]],
+            "text_source": tsrc, "has_gt": has_gt,
+            # review9-3：canonical timeline 来源可追溯（file SHA + item 行 SHA + adapter 版本）
+            "canonical_timeline_file_sha": canon_file_sha,
+            "canonical_timeline_row_sha": canon_info.get("row_sha"),
+            "canonical_adapter_version": "c3_text_adapter_v1",
+            # review4-5 / review5-3：condition 显式 + target_ratio + control=ratio0
+            "mutation": ("control" if is_control else "silence_residual"),
+            "mutation_type": ("control" if is_control else "silence_residual"),
+            "target_ratio": (0.0 if is_control else target_ratio),
+            "condition": cond,
+        }
+        if has_canonical and has_gt:
+            # review8-1：adapter 以【未舍入原曲窗】绑定；产出 request-local index + canonical mapping
+            bound = bind_canonical_to_window(canon_info["units"], tuple(source_win_exact))
+            if bound.aligned:
+                req = request_from_bound(bound, base=base, audio_start_sec=0.0, audio_end_sec=wav_dur)
+            else:
+                # review11-5：窗口无歌词 overlap → 显式 acoustic probe（不得伪称 lyrics_aligned）。
+                # 必须带可 validate 的文本（空文本行会让 runner 判 malformed），tu 为空则不产出请求。
+                if not tu:
+                    continue
+                req = dict(base)
+                req.update({"text_units": list(tu), "text_start_index": 0,
+                            "text_end_index": len(tu), "text_window_aligned": False,
+                            "evaluation_role": "acoustic_probe",
+                            "canonical_text_start": None, "canonical_text_end": None,
+                            "canonical_to_local": {},
+                            "text_span_reason": bound.reason or "no_canonical_overlap"})
+        else:
+            # 无 canonical/无 GT → 无法证明 overlap → 显式 probe（review8 保守；带原因）。
+            # tu 为空 → 不产 REQUESTS（空文本无法通过 runner validate；音频仍进 export manifest）。
+            if not tu:
+                continue
+            base["text_units"] = list(tu); base["text_start_index"] = 0
+            base["text_end_index"] = len(tu)
+            base["text_window_aligned"] = False
+            base["evaluation_role"] = probe_flag
+            base["canonical_text_start"] = None; base["canonical_text_end"] = None
+            base["canonical_to_local"] = {}
+            base["text_span_reason"] = "no_canonical_gt" if not has_gt else "no_canonical_overlap"
+            req = base
+        _reqs.append(req)
+    return True
 
 
 if __name__ == "__main__":

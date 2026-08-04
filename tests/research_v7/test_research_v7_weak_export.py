@@ -126,7 +126,8 @@ def test_successful_export_branch_done_and_files(tmp_path):
     env = dict(__import__("os").environ)
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src") + ":" + env["PYTHONPATH"]
     r = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py"),
-                        "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0"],
+                        "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0",
+                        "--text-units", "春", "风"],
                        capture_output=True, text=True, env=env)
     assert r.returncode == 0, r.stderr
     man = json.loads((out / "AUDIO_EXPORT_MANIFEST.json").read_text())
@@ -136,7 +137,7 @@ def test_successful_export_branch_done_and_files(tmp_path):
     assert d.get("vocal_sha256") and d.get("acc_sha256")   # sha 存在（vpath 已修）
     assert "control" in d["files"] and "weak_2" in d["files"]
     assert (Path(d["files"]["control"]).is_file()) and (Path(d["files"]["weak_2"]).is_file())
-    # REQUESTS.jsonl 每 condition 一条固定 schema（供真实 runner）
+    # REQUESTS.jsonl 每 condition 一条固定 schema（供真实 runner）；无文本不产 REQUESTS
     reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
     assert len(reqs) >= 2  # control + weak
     assert all(r.get("schema_version") == "research_v7_long_slot_v1" for r in reqs)
@@ -146,7 +147,8 @@ def test_successful_export_branch_done_and_files(tmp_path):
     # idempotent：同 out-root 再跑一次 REQUESTS 不重复
     import subprocess as _sp
     _sp.run([sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py"),
-             "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0"], capture_output=True, env=env)
+             "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0",
+             "--text-units", "春", "风"], capture_output=True, env=env)
     reqs2 = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
     assert len(reqs2) == len(reqs)  # 去重，不追加
 
@@ -236,3 +238,31 @@ def test_runner_rejects_audio_drift_resume(tmp_path):
     n_before = len(list((run / "evidence").glob("*.json"))) if (run / "evidence").exists() else 0
     n_after = len(list((run / "evidence").glob("*.json")))
     assert n_after <= n_before  # 未新增证据
+
+
+def test_no_text_emits_no_requests_but_audio_exported(tmp_path):
+    """review11：无歌词 item（无 --text-units/text-manifest）只导出音频，
+    REQUESTS.jsonl 为空（空文本行无法通过 runner validate，不产伪请求）。"""
+    import json
+    import subprocess
+    import sys
+
+    sr = 16000
+    vv = np.concatenate([_tone(1.0, sr, amp=4000.0), np.zeros(int(1.0 * sr), dtype=np.float32)])
+    cc = np.concatenate([_tone(1.0, sr, amp=2000.0), _tone(1.0, sr, amp=700.0)])
+    vp = tmp_path / "vocals.wav"; ap = tmp_path / "accompaniment.wav"
+    _write_wav(vp, vv, sr); _write_wav(ap, cc, sr)
+    il = tmp_path / "items.jsonl"
+    il.write_text(json.dumps({"item_id": "NT", "audio_path": str(vp)}) + "\n")
+    out = tmp_path / "ntout"
+    env = dict(__import__("os").environ, PYTHONPATH=str(Path(__file__).resolve().parents[2] / "src"))
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py"),
+                        "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0"],
+                       capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    # 音频与 manifest 已导出
+    man = json.loads((out / "AUDIO_EXPORT_MANIFEST.json").read_text())
+    assert any(x.get("done") is True for x in man)
+    # 但 REQUESTS 为空——无文本 item 不伪装成 alignment request
+    reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert reqs == [], f"expected no REQUESTS, got {reqs}"

@@ -124,3 +124,79 @@ def test_exporter_writes_canonical_lineage_into_evidence(tmp_path):
     assert req["canonical_timeline_file_sha"]   # review10-3
     assert req["canonical_timeline_row_sha"]
     assert req["source_window_sec"]  # [start, end]
+
+
+def test_exporter_continues_on_bad_timeline_item(tmp_path):
+    """review11-3：坏 timeline（duplicate id / 非递增时间）的 item 记录为 failed，
+    不影响独立好 item 导出；最终 REQUESTS.jsonl / AUDIO_EXPORT_MANIFEST.json 原子写出。"""
+    import json as _j
+    bad = _make_item(tmp_path, name="bad_song")
+    good = _make_item(tmp_path, name="good_song")
+    item_list = tmp_path / "items.jsonl"
+    item_list.write_text(_j.dumps(bad) + "\n" + _j.dumps(good) + "\n")
+    canon = tmp_path / "canon.jsonl"
+    # 坏 item：duplicate id 且时间倒序 → bind 抛错
+    canon.write_text(_j.dumps({"item_id": "bad_song",
+        "units": [{"global_index": 0, "text": "甲", "start_sec": 0.0, "end_sec": 0.4},
+                  {"global_index": 0, "text": "乙", "start_sec": 0.5, "end_sec": 0.9}]}) + "\n"
+        + _j.dumps({"item_id": "good_song",
+        "units": [{"global_index": 0, "text": "乙", "start_sec": 0.10, "end_sec": 0.45},
+                  {"global_index": 1, "text": "女", "start_sec": 0.50, "end_sec": 0.95}]}) + "\n")
+    textm = tmp_path / "text.jsonl"
+    textm.write_text(_j.dumps({"item_id": "bad_song", "text_units": ["甲", "乙"], "has_gt": True, "source": "canon"}) + "\n"
+                     + _j.dumps({"item_id": "good_song", "text_units": ["乙", "女"], "has_gt": True, "source": "canon"}) + "\n")
+    out = tmp_path / "export"
+    _run([sys.executable, str(ROOT / "scripts/research_v7/export_silence_polluted_weak.py"),
+          "--item-list", str(item_list), "--out-root", str(out),
+          "--canonical-timeline", str(canon), "--text-manifest", str(textm), "--window-sec", "1.0"], expected=0)
+    # 两个 manifest 都必须存在（即使有失败 item）
+    assert (out / "REQUESTS.jsonl").is_file()
+    assert (out / "AUDIO_EXPORT_MANIFEST.json").is_file()
+    recs = {r["item_id"]: r for r in _j.loads((out / "AUDIO_EXPORT_MANIFEST.json").read_text())}
+    assert recs["bad_song"]["status"] == "failed", recs
+    assert "strictly increasing" in recs["bad_song"]["error"] or "not monotonic" in recs["bad_song"]["error"], recs
+    assert recs["good_song"]["status"] == "done", recs
+    reqs = [_j.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert reqs and all(r["item_id"] == "good_song" for r in reqs)
+    assert all(r["evaluation_role"] == "lyrics_aligned" for r in reqs)
+    # 坏 item 无 REQUESTS（被隔离）
+    assert not any(r["item_id"] == "bad_song" for r in reqs)
+
+
+def test_exporter_no_overlap_emits_consumable_probe(tmp_path):
+    """canonical timeline 存在但所选窗口无歌词 overlap → 导出 acoustic_probe 行
+    （带文本、text_window_aligned=False），runner 可正常消费，不得产出空文本行。"""
+    import json as _j
+    it = _make_item(tmp_path, name="far_song")
+    item_list = tmp_path / "items.jsonl"
+    item_list.write_text(_j.dumps(it) + "\n")
+    # canonical 全部落在 100s 之后；自动选窗在音频前 2s（无 overlap）
+    canon = tmp_path / "canon.jsonl"
+    canon.write_text(_j.dumps({"item_id": "far_song",
+        "units": [{"global_index": 0, "text": "甲", "start_sec": 100.0, "end_sec": 100.4},
+                  {"global_index": 1, "text": "乙", "start_sec": 100.5, "end_sec": 100.9}]}) + "\n")
+    textm = tmp_path / "text.jsonl"
+    textm.write_text(_j.dumps({"item_id": "far_song", "text_units": ["甲", "乙"], "has_gt": True, "source": "canon"}) + "\n")
+    out = tmp_path / "export"
+    _run([sys.executable, str(ROOT / "scripts/research_v7/export_silence_polluted_weak.py"),
+          "--item-list", str(item_list), "--out-root", str(out),
+          "--canonical-timeline", str(canon), "--text-manifest", str(textm), "--window-sec", "1.0"], expected=0)
+    reqs = [_j.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert reqs, "exporter produced no REQUESTS"
+    for r in reqs:
+        assert r["text_window_aligned"] is False, r
+        assert r["evaluation_role"] == "acoustic_probe", r
+        assert r["text_units"], r                      # 可 validate 的文本（非空）
+        assert r["text_start_index"] == 0 and r["text_end_index"] == len(r["text_units"])
+        assert r["canonical_text_start"] is None and r["canonical_text_end"] is None
+    # runner 必须 0 通过（probe 行 validate 成功、可被 fake executor 消费）
+    runout = tmp_path / "run"
+    _run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+          "--manifest", str(out / "REQUESTS.jsonl"), "--out-root", str(runout), "--smoke"],
+         expected=0)
+    rm = _j.loads((runout / "RUN_MANIFEST.json").read_text())
+    ri = rm["requests_identity"]
+    assert ri and all(x["status"] == "ok" for x in ri), rm["failures"]
+    # probe 进 train_filter 的 rejected（不污染训练分母）
+    assert rm["train_filter"]["trainable_identity_count"] == 0
+    assert rm["train_filter"]["rejected_count"] == len(ri)

@@ -30,7 +30,7 @@ def main(argv=None) -> int:
     run = Path(args.run_root)
     smoke_f = run / "smoke" / "LONG_SLOT_SMOKE.json"
     if not smoke_f.exists():
-        print(json.dumps({"ok": False, "reason": "no smoke result"}), ensure_ascii=False)
+        print(json.dumps({"ok": False, "reason": "no smoke result"}, ensure_ascii=False))
         return 3
     smoke = json.loads(smoke_f.read_text())
 
@@ -76,6 +76,16 @@ def main(argv=None) -> int:
                     fb = run_man.get("runtime_budget") or {}
                     if not (fb.get("elapsed_sec") and fb.get("forward_count") is not None):
                         reasons.append("RUN_MANIFEST.runtime_budget missing actual elapsed/forward")
+                # M1（review12）：formal approved 必须是真实模型运行——executor=real、
+                # 有实际 forward 数、且结果数据字段非空（不得把空 RUN_MANIFEST 当 approved）
+                env = run_man.get("environment") or {}
+                if env.get("executor") != "real":
+                    reasons.append("RUN_MANIFEST executor != real (formal must be real model run)")
+                if not ((run_man.get("runtime_budget") or {}).get("forward_count") or 0) > 0:
+                    reasons.append("RUN_MANIFEST forward_count == 0 (no real forward)")
+                for field in ("timeline", "metrics", "assessor"):
+                    if not run_man.get(field):
+                        reasons.append(f"RUN_MANIFEST missing result field {field}")
                 if not reasons:
                     formal_approved = True
     draft = not formal_approved
@@ -136,7 +146,11 @@ def main(argv=None) -> int:
 
 > 自动。draft={draft}; reasons={reasons}。正式结论需 sha-matched frozen manifest；否则仅作 draft。
 """
-    (run / "report" / "AUTO_FINDINGS_DRAFT.md").write_text(md)
+    md_name = f"AUTO_FINDINGS_{'SUMMARY' if not draft else 'DRAFT'}.md"
+    (run / "report" / md_name).write_text(md)
+    # 兼容旧消费者：draft 时同时保留 DRAFT.md
+    if not draft and (run / "report" / "AUTO_FINDINGS_DRAFT.md").exists():
+        (run / "report" / "AUTO_FINDINGS_DRAFT.md").unlink()
 
     print(json.dumps({"ok": True, "draft": draft, "formal_approved": formal_approved,
                       "reasons": reasons, "out": str(run / "report"), "data": auto["data"]}, ensure_ascii=False))

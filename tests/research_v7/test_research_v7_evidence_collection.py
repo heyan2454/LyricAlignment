@@ -109,3 +109,116 @@ def test_verified_load_rejects_un_guarded_collection(tmp_path):
     import pytest as _pt
     with _pt.raises(ValueError):
         load_verified(tmp_path / "bad.json")
+
+
+def _make_evidence_with_rows(tmp_path, run, train_idn, n_units=4, gt_unsafe=(0,)):
+    """给 evidence 补 decoder official rows + gt_eval（consumer 消费所需），返回 run。"""
+    ev_path = run / "evidence" / f"{train_idn}.json"
+    ev = json.loads(ev_path.read_text())
+    rows = [{"raw_start_sec": i * 0.5, "raw_end_sec": i * 0.5 + 0.4,
+             "raw_global_start_sec": i * 0.5, "raw_global_end_sec": i * 0.5 + 0.4,
+             "fixed_global_start_sec": i * 0.5, "fixed_global_end_sec": i * 0.5 + 0.4}
+            for i in range(n_units)]
+    ev["attempt"]["decoder_outputs"] = {"official": {"rows": rows}}
+    ev["attempt"]["gt_eval"] = {"unsafe_unit_indices": list(gt_unsafe)}
+    ev_path.write_text(json.dumps(ev))
+    return run
+
+
+def test_assessor_consumer_records_collection_sha_and_denominator(tmp_path):
+    """review11-4：真实 consumer 只消费 guarded collection，run manifest 记录
+    collection SHA、实际 train/eval 分母与输出路径。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import collect, finalize_collection
+    run, train_idn = _make_run(tmp_path)
+    _make_evidence_with_rows(tmp_path, run, train_idn, n_units=4, gt_unsafe=(0, 1))
+    c = finalize_collection(collect(run / "RUN_MANIFEST.json", tmp_path / "c.json"),
+                            tmp_path / "c.json")
+    from assessor_train_eval import consume
+    out = tmp_path / "asr"
+    m = consume(tmp_path / "c.json", out)
+    assert m["collection_sha256"] == c["collection_sha256"]
+    assert m["denominator"]["trainable_evidence"] == 1
+    assert m["denominator"]["units"] == 4
+    assert m["denominator"]["items"] == 1
+    assert m["labels"]["available"] is True
+    # operating points 来自 val 冻结
+    assert isinstance(m["assessor"]["operating_points"], dict)
+    assert "high_recall_95" in m["assessor"]["operating_points"]
+    # 输出路径全部写出
+    for fp in m["outputs"].values():
+        assert Path(fp).is_file()
+    # features 每行带 identity + features
+    rows = [json.loads(l) for l in (out / "UNIT_FEATURES.jsonl").read_text().splitlines()]
+    assert len(rows) == 4
+    assert all(r["request_identity"] == train_idn for r in rows)
+
+
+def test_assessor_consumer_refuses_no_labels(tmp_path):
+    """review11-4：无 gt_eval 标签的 evidence → labels_available=false，拒绝产 operating points。
+    review12 C3：CLI 对无标签返回非零退出码（防止 formal 管线误当训练成功）。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import collect, finalize_collection
+    from assessor_train_eval import consume
+    run, train_idn = _make_run(tmp_path)
+    _make_evidence_with_rows(tmp_path, run, train_idn, n_units=2, gt_unsafe=())
+    ev = json.loads((run / "evidence" / f"{train_idn}.json").read_text())
+    del ev["attempt"]["gt_eval"]  # 无标签
+    (run / "evidence" / f"{train_idn}.json").write_text(json.dumps(ev))
+    c = finalize_collection(collect(run / "RUN_MANIFEST.json", tmp_path / "c2.json"),
+                            tmp_path / "c2.json")
+    m = consume(tmp_path / "c2.json", tmp_path / "asr2")
+    assert m["labels"]["available"] is False
+    assert m["assessor"]["operating_points"] is None
+    assert "no gt_eval" in (m["assessor"]["reason"] or "")
+    assert m["denominator"]["units"] == 2  # 特征仍被提取审计
+    # CLI 对无标签返回非零退出码（formal 检测用）
+    import subprocess as _sp
+    r = _sp.run([sys.executable, str(ROOT / "scripts/research_v7/assessor_train_eval.py"),
+                 "--collection", str(tmp_path / "c2.json"), "--out", str(tmp_path / "asr2cli")],
+                capture_output=True, text=True, env=ENV)
+    assert r.returncode == 2, r.stderr
+
+
+def test_assessor_consumer_rejects_un_guarded_collection(tmp_path):
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from assessor_train_eval import consume
+    bad = {"schema": "research_v7_trainable_evidence_collection_v1",
+           "collection_sha256": "x", "trainable_evidence": [], "guard": {}}
+    (tmp_path / "badc.json").write_text(json.dumps(bad))
+    import pytest as _pt
+    with _pt.raises(ValueError):
+        consume(tmp_path / "badc.json", tmp_path / "asr3")
+
+
+def test_assessor_consumer_aligns_feature_columns_across_rows(tmp_path):
+    """review11：不同 evidence 行特征键集合不一致（如缺 official geometry）时，
+    consumer 按统一 feature_keys 对齐（缺失填 0.0），不得因列形状不一致崩溃。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import collect, finalize_collection
+    from assessor_train_eval import consume
+    run, train_idn = _make_run(tmp_path)
+    _make_evidence_with_rows(tmp_path, run, train_idn, n_units=2, gt_unsafe=(0,))
+    # 行0 有 official geometry；行1 缺 official 键（模拟不同 decoder 输出）→ 键集不同
+    ev_path = run / "evidence" / f"{train_idn}.json"
+    ev = json.loads(ev_path.read_text())
+    rows = ev["attempt"]["decoder_outputs"]["official"]["rows"]
+    del rows[1]["fixed_global_start_sec"]
+    del rows[1]["fixed_global_end_sec"]
+    ev_path.write_text(json.dumps(ev))
+    c = finalize_collection(collect(run / "RUN_MANIFEST.json", tmp_path / "c3.json"),
+                            tmp_path / "c3.json")
+    m = consume(tmp_path / "c3.json", tmp_path / "asr4")
+    assert m["labels"]["available"] is True
+    assert isinstance(m["assessor"]["operating_points"], dict)  # 列对齐成功，可训练
+    # feature_keys 是跨行并集且每行都按同一键序
+    assert "official_duration_sec" in m["feature_keys"]
+    rows_out = [json.loads(l) for l in (Path(m["outputs"]["features"]).read_text().splitlines())]
+    assert len(rows_out) == 2
+    # 行1 缺 official 几何 → 其 official_duration_sec 为 None（键仍存在但值 None）
+    # 该键不进 feature_keys（统一列只含数值键）；特征矩阵仍可训练
+    assert any(fr["features"].get("official_duration_sec") is None for fr in rows_out)

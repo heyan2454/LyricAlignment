@@ -84,6 +84,37 @@ class AlignmentRequest:
         if self.timestamp_slot_indices is not None:
             if any(i < 0 or i >= len(self.text_units) for i in self.timestamp_slot_indices):
                 raise ValueError("timestamp_slot_indices out of text_units range")
+        # review11-1：canonical 字段自洽性（当任一 canonical **binding** 字段出现时强制约束，
+        # 避免把上游数据错误延后到 slot/feature 阶段才暴露。timeline SHA/source_window 属 lineage，
+        # 不单独触发；probe 行（无 ids/mapping/range）不受约束，lyrics_aligned 另有完整字段要求）。
+        has_canonical = bool(self.canonical_ids) or bool(self.canonical_to_local) or any(
+            v is not None for v in (self.canonical_text_start, self.canonical_text_end))
+        if has_canonical:
+            cids = self.canonical_ids
+            if not cids:
+                raise ValueError("canonical_ids required when canonical fields present")
+            if len(cids) != len(self.text_units):
+                raise ValueError(
+                    f"canonical_ids len {len(cids)} != text_units len {len(self.text_units)}")
+            if any(b <= a for a, b in zip(cids, cids[1:])):
+                raise ValueError("canonical_ids must be strictly increasing")
+            c2l = self.canonical_to_local
+            if not c2l or set(c2l.keys()) != set(cids):
+                raise ValueError("canonical_to_local keys must equal canonical_ids")
+            if sorted(c2l.values()) != list(range(len(cids))):
+                raise ValueError("canonical_to_local values must be exactly 0..N-1")
+            if self.canonical_text_start is None or self.canonical_text_end is None:
+                raise ValueError("canonical_text_start/end required when canonical fields present")
+            if self.canonical_text_end <= self.canonical_text_start:
+                raise ValueError("canonical_text range must be start<end")
+            if min(cids) < self.canonical_text_start or max(cids) >= self.canonical_text_end:
+                raise ValueError("canonical_text range must contain all canonical_ids")
+        # review11-1：lyrics_aligned 角色必须携带完整 canonical lineage 字段
+        if self.metadata.get("evaluation_role") == "lyrics_aligned":
+            for fld in ("canonical_timeline_file_sha", "canonical_timeline_row_sha",
+                        "canonical_adapter_version", "source_window_sec"):
+                if getattr(self, fld) is None:
+                    raise ValueError(f"lyrics_aligned requires canonical {fld}")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

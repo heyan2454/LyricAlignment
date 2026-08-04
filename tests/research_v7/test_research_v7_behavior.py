@@ -295,12 +295,17 @@ def test_array_row_and_type_error_row_do_not_abort_batch(tmp_path):
 
 def test_train_filter_gate_lists_rejected_not_trainable(tmp_path):
     # review8-7：入口把 probe demo 明确拒绝并列出 rejected 身份，lyrics_aligned 才进 trainable。
+    # review11-1：lyrics_aligned 行必须携带完整 canonical lineage（否则 validate 拒为 malformed）。
     import json as _j
+    canon_ok = {"canonical_text_start": 0, "canonical_text_end": 1, "canonical_to_local": {"0": 0},
+                "canonical_ids": [0], "canonical_timeline_file_sha": "f", "canonical_timeline_row_sha": "r",
+                "canonical_adapter_version": "c3_text_adapter_v1",
+                "source_window_start_sec": 40.0, "source_window_end_sec": 42.0}
     manifest = tmp_path / "mf.jsonl"
     manifest.write_text("\n".join([
         _j.dumps({"request_id": "ok", "item_id": "song1", "text_units": ["a"], "text_start_index": 0,
                   "text_end_index": 1, "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline",
-                  "evaluation_role": "lyrics_aligned", "text_window_aligned": True}),
+                  "evaluation_role": "lyrics_aligned", "text_window_aligned": True, **canon_ok}),
         _j.dumps({"request_id": "pr", "item_id": "probe1", "text_units": ["p"], "text_start_index": 0,
                   "text_end_index": 1, "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline",
                   "evaluation_role": "acoustic_probe", "text_window_aligned": False}),
@@ -324,12 +329,17 @@ def test_train_filter_gate_lists_rejected_not_trainable(tmp_path):
 def test_failure_rows_carry_role_and_source_audit(tmp_path):
     # review8-8：malformed/blocked 行 failure 均带 role/alignment/parent/source_row_sha256；
     # row_audit 对每 manifest 行给出 status 分类，包含成功与失败/阻塞行。
+    # review11-1：lyrics_aligned 行必须携带完整 canonical lineage。
     import json as _j
+    canon_ok = {"canonical_text_start": 0, "canonical_text_end": 1, "canonical_to_local": {"0": 0},
+                "canonical_ids": [0], "canonical_timeline_file_sha": "f", "canonical_timeline_row_sha": "r",
+                "canonical_adapter_version": "c3_text_adapter_v1",
+                "source_window_start_sec": 40.0, "source_window_end_sec": 42.0}
     manifest = tmp_path / "aud.jsonl"
     manifest.write_text("\n".join([
         _j.dumps({"request_id": "ok", "item_id": "s", "text_units": ["a"], "text_start_index": 0,
                   "text_end_index": 1, "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline",
-                  "evaluation_role": "lyrics_aligned", "text_window_aligned": True}),
+                  "evaluation_role": "lyrics_aligned", "text_window_aligned": True, **canon_ok}),
         _j.dumps({"request_id": "bad", "item_id": "s2", "text_units": [],
                   "text_start_index": 0, "text_end_index": 5, "audio_path": "/tmp/nonexistent.wav",
                   "mutation_type": "baseline", "evaluation_role": "lyrics_aligned"}),

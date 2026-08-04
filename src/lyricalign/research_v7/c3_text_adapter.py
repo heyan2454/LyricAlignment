@@ -47,6 +47,8 @@ class BoundResult:
 def _coerce(canonical: Sequence[CanonicalUnit | dict]) -> list[CanonicalUnit]:
     units: list[CanonicalUnit] = []
     prev: int | None = None
+    prev_start: float | None = None
+    prev_end: float | None = None
     for u in canonical:
         d = u if isinstance(u, dict) else None
         text = d.get("text") if d else getattr(u, "text", None)
@@ -62,10 +64,17 @@ def _coerce(canonical: Sequence[CanonicalUnit | dict]) -> list[CanonicalUnit]:
         # review9-4：global id 必须唯一且严格递增（拒绝重复/非递增 → canonical_to_local 不会被覆盖）
         if prev is not None and gidx <= prev:
             raise ValueError(f"canonical global_index not strictly increasing: {prev} then {gidx}")
-        prev = gidx
+        # review11-2：时间必须随 global id 单调（拒绝时间倒序的 timeline，
+        # 否则 range [g0..g1) 会编入 id 在中间但时间在窗外的单位）
+        if prev_start is not None and (start < prev_start or end < prev_end):
+            raise ValueError(
+                f"canonical time not monotonic with global_index: "
+                f"id {gidx} [{start:.3f},{end:.3f}) after id {prev} "
+                f"[{prev_start:.3f},{prev_end:.3f})")
         # review9-4：拒绝负时长（end<=start）与负时间坐标
         if end <= start:
             raise ValueError(f"canonical unit time invalid (end<=start): id={gidx} [{start},{end}]")
+        prev, prev_start, prev_end = gidx, start, end
         units.append(CanonicalUnit(global_index=gidx, text=str(text), start_sec=start, end_sec=end))
     return units
 
@@ -86,21 +95,21 @@ def bind_canonical_to_window(
     in_win = [u for u in units if _overlap(u, w0, w1)]
     if not in_win:
         return BoundResult(False, [], 0, 0, None, None, {}, reason="no canonical unit overlaps source_window")
+    # review11-2：bound/mapping 严格限定为【实际落入窗】的单位，用 explicit ids 表达，
+    # 不再用 id-range [g0..g1) 把窗外/缺口单位编入 bound text。
+    in_win.sort(key=lambda u: u.global_index)
     g0 = in_win[0].global_index
-    g1 = max(u.global_index for u in in_win) + 1              # exclusive (canonical global)
-    gap_ids = [u.global_index for u in in_win]                 # 实际落入窗的 canonical id（逐字，可能不连续）
-    full = [u for u in units if g0 <= u.global_index < g1]     # 连续性由 canonical 保证
-    full.sort(key=lambda u: u.global_index)
-    local_of: dict = {u.global_index: i for i, u in enumerate(full)}
+    g1 = in_win[-1].global_index + 1                          # exclusive (canonical global)
+    local_of: dict = {u.global_index: i for i, u in enumerate(in_win)}
     return BoundResult(
         aligned=True,
-        bound_units=[u.text for u in full],
+        bound_units=[u.text for u in in_win],
         text_start=0,
-        text_end=len(full),
+        text_end=len(in_win),
         canonical_text_start=g0,
         canonical_text_end=g1,
         canonical_to_local=local_of,
-        canonical_ids=gap_ids,   # review9-4：逐字 canonical global id 列表（id 不连续时避免 range 失真）
+        canonical_ids=[u.global_index for u in in_win],       # review9-4：逐字 canonical global id
         reason=f"overlap_source_window[{w0:.2f},{w1:.2f})",
     )
 

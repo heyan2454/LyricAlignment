@@ -40,7 +40,13 @@ def test_forward_all_gates_approved(tmp_path):
     (run / "formal" / "FORMAL_MARKER.json").write_text(json.dumps(
         {"manifest_sha256": sha, "run_id": "r1", "all_gates_passed": True, "runtime_budget_ok": True}))
     (run / "formal" / "RUN_MANIFEST.json").write_text(json.dumps(
-        {"run_id": "r1", "runtime_budget": {"elapsed_sec": 600, "forward_count": 120}}))
+        {"run_id": "r1",
+         "environment": {"executor": "real"},
+         "runtime_budget": {"elapsed_sec": 600, "forward_count": 120},
+         # M1（review12）：formal approved 还需结果数据字段非空
+         "timeline": {"duration_sec": 400, "ge180": True},
+         "metrics": {"unit_recall": 0.75, "fpr": 0.1, "gap_recall": 1.0},
+         "assessor": {"operating_points": {"high_recall_95": 0.9}}}))
     r = _call(run, man, sha)
     assert r.returncode == 0, r.stderr
     s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
@@ -49,6 +55,63 @@ def test_forward_all_gates_approved(tmp_path):
     # review3-3：formal approved 时 RUNTIME_BUDGET 必须非 draft 且引用实际 budget
     b = json.loads((run / "report" / "RUNTIME_BUDGET.json").read_text())
     assert b["draft"] is False and b["budget"].get("elapsed_sec") == 600  # 读真实 formal，不读 smoke
+
+
+def test_reverse_fake_executor_never_approved(tmp_path):
+    # M1（review12）：即使 marker/gates/预算齐全，executor 非 real（fake-smoke）不得 approved
+    run = _run_root(tmp_path); (run / "formal").mkdir(exist_ok=True)
+    man, sha = _manifest(tmp_path)
+    (run / "formal" / "FORMAL_MARKER.json").write_text(json.dumps(
+        {"manifest_sha256": sha, "run_id": "r1", "all_gates_passed": True, "runtime_budget_ok": True}))
+    (run / "formal" / "RUN_MANIFEST.json").write_text(json.dumps(
+        {"run_id": "r1",
+         "environment": {"executor": "fake-smoke"},
+         "runtime_budget": {"elapsed_sec": 600, "forward_count": 120},
+         "timeline": {"duration_sec": 400, "ge180": True},
+         "metrics": {"unit_recall": 0.75, "fpr": 0.1, "gap_recall": 1.0},
+         "assessor": {"operating_points": {"high_recall_95": 0.9}}}))
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is False and s["draft"] is True
+    assert any("executor != real" in x for x in s["draft_reasons"])
+
+
+def test_reverse_zero_forward_never_approved(tmp_path):
+    # M1（review12）：forward_count==0（无真实推理）不得 approved
+    run = _run_root(tmp_path); (run / "formal").mkdir(exist_ok=True)
+    man, sha = _manifest(tmp_path)
+    (run / "formal" / "FORMAL_MARKER.json").write_text(json.dumps(
+        {"manifest_sha256": sha, "run_id": "r1", "all_gates_passed": True, "runtime_budget_ok": True}))
+    (run / "formal" / "RUN_MANIFEST.json").write_text(json.dumps(
+        {"run_id": "r1",
+         "environment": {"executor": "real"},
+         "runtime_budget": {"elapsed_sec": 600, "forward_count": 0},
+         "timeline": {"duration_sec": 400, "ge180": True},
+         "metrics": {"unit_recall": 0.75, "fpr": 0.1, "gap_recall": 1.0},
+         "assessor": {"operating_points": {"high_recall_95": 0.9}}}))
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is False and s["draft"] is True
+    assert any("forward_count == 0" in x for x in s["draft_reasons"])
+
+
+def test_reverse_missing_result_fields_never_approved(tmp_path):
+    # M1（review12）：结果数据字段缺失（timeline/metrics/assessor 为空）不得 approved
+    run = _run_root(tmp_path); (run / "formal").mkdir(exist_ok=True)
+    man, sha = _manifest(tmp_path)
+    (run / "formal" / "FORMAL_MARKER.json").write_text(json.dumps(
+        {"manifest_sha256": sha, "run_id": "r1", "all_gates_passed": True, "runtime_budget_ok": True}))
+    (run / "formal" / "RUN_MANIFEST.json").write_text(json.dumps(
+        {"run_id": "r1",
+         "environment": {"executor": "real"},
+         "runtime_budget": {"elapsed_sec": 600, "forward_count": 120}}))
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is False and s["draft"] is True
+    assert any("missing result field" in x for x in s["draft_reasons"])
 
 
 def test_reverse_missing_budget_stays_draft(tmp_path):

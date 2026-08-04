@@ -22,7 +22,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lyricalign.research_v7.features import unit_features
-from lyricalign.research_v7.region_metrics import gap_metrics, unit_metrics
+from lyricalign.research_v7.region_metrics import gap_metrics, unit_metrics, wrong_output_metrics
 from lyricalign.research_v7.region_assessor import fit_and_freeze
 from lyricalign.research_v7.slot_planning import plan_slots
 from lyricalign.research_v7.timeline import build_timeline
@@ -78,7 +78,11 @@ def main(argv=None) -> int:
     unsafe_pred = [0, 1, 2, 15]
     um = unit_metrics(total_gt_units=32, unsafe_pred_units=unsafe_pred, truly_unsafe_indices=unsafe_gt,
                       correct_retained_units=2, total_retained_gt=2)
-    gm = gap_metrics(gt_gaps=[5], pred_gap_ids=[5, 9], weighted_deleted_gt=[5])
+    # P0-4：gap 按 omitted canonical units 加权；replace 两方向独立命中量
+    gm = gap_metrics(gt_gaps=[5], pred_gap_ids=[5, 9],
+                     gt_gap_omitted={5: [5, 6]})
+    wo = wrong_output_metrics(gt_replaced=4, wrong_output_hits=3,
+                              replaced_omission_hits=2, replaced_omission_gt=4)
 
     # 5) assessor（train/val 合成）
     rng = np.random.RandomState(0)
@@ -94,7 +98,11 @@ def main(argv=None) -> int:
                      "seams": len(tl.seams), "ge180": tl.duration_sec >= 180},
         "slot": {"topology": win0.topology, "group": win0.comparison_group_id, "non_contiguous": win0.topology != "contiguous"},
         "mapping": {"missing": "ok", "gap_candidates": len(mp.gap_candidates), "removed": list(mp.removed_canonical_unit_ids)},
-        "metrics": {"unit_recall": um["unit_recall"], "fpr": um["correct_unit_fpr"], "gap_recall": gm["gap_event_recall"]},
+        "metrics": {"unit_recall": um["unit_recall"], "fpr": um["correct_unit_fpr"],
+                    "gap_recall": gm["gap_event_recall"],
+                    "gap_weighted_recall": gm["gap_omitted_unit_weighted_recall"],
+                    "wrong_output_recall": wo["wrong_output_recall"],
+                    "replaced_omission_recall": wo["replaced_gt_omission_recall"]},
         "assessor": {"operating_points": asr["operating_points"]},
         "status": "ok",
     }

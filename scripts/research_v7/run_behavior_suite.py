@@ -236,6 +236,10 @@ def main(argv=None) -> int:
                 "audio_content_sha256": audio_sha,
                 "manifest_files_sha256": man_sha or audio_sha,
                 "model": args.model, "checkpoint": args.checkpoint, "revision": args.revision,
+                # C2（review12）：真实 checkpoint 内容 SHA 进 identity——路径/名字相同但内容
+                # 变更（重训覆盖、换 adapter）不得复用旧 evidence。
+                "checkpoint_content_sha256": (
+                    executor.checkpoint_content_hash() if args.real and hasattr(executor, "checkpoint_content_hash") else None),
                 "decoder": r.get("decoder", "official"),
                 "code_identity": _git_dirty(), "env_schema": "research_v7_long_slot_v1",
                 "mapping_schema": "research_v7_canonical_mapping_v2",

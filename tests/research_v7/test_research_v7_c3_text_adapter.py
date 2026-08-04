@@ -117,3 +117,41 @@ def test_noncontiguous_ids_use_explicit_list():
     assert b.aligned is True
     assert b.canonical_ids == [0, 1, 2]       # 只含窗内字，按序
     assert b.canonical_to_local == {0: 0, 1: 1, 2: 2}
+
+
+def test_reject_time_reversed_timeline():
+    # review11-2：id 0 在 0s、id 1 在 10s、id 2 在 1s → 时间不随 global id 单调，必须拒绝
+    bad = [
+        {"global_index": 0, "text": "甲", "start_sec": 0.0, "end_sec": 1.0},
+        {"global_index": 1, "text": "乙", "start_sec": 10.0, "end_sec": 11.0},
+        {"global_index": 2, "text": "丙", "start_sec": 1.0, "end_sec": 2.0},
+    ]
+    with pytest.raises(ValueError, match="time not monotonic"):
+        bind_canonical_to_window(bad, source_window=(0.0, 2.0))
+
+
+def test_reject_nested_non_monotonic_time():
+    # 时间倒序的另一种形式：id 1 的 end 早于 id 0 的 end（end 不单调）
+    bad = [
+        {"global_index": 0, "text": "甲", "start_sec": 0.0, "end_sec": 5.0},
+        {"global_index": 1, "text": "乙", "start_sec": 1.0, "end_sec": 2.0},
+    ]
+    with pytest.raises(ValueError, match="time not monotonic"):
+        bind_canonical_to_window(bad, source_window=(0.0, 5.0))
+
+
+def test_bound_units_limited_to_actual_overlap():
+    # review11-2：窗口只含 id0/2，id1 时间在窗外（但 id 顺序位于中间）→ 不得编入 bound
+    units = [
+        {"global_index": 0, "text": "甲", "start_sec": 0.0, "end_sec": 0.5},
+        {"global_index": 1, "text": "乙", "start_sec": 10.0, "end_sec": 10.5},
+        {"global_index": 2, "text": "丙", "start_sec": 20.0, "end_sec": 20.5},
+    ]
+    b = bind_canonical_to_window(units, source_window=(0.0, 1.0))
+    assert b.aligned is True
+    assert b.bound_units == ["甲"]
+    assert b.canonical_ids == [0]
+    assert b.canonical_text_start == 0 and b.canonical_text_end == 1
+    assert b.canonical_to_local == {0: 0}
+    # 局部与 canonical 索引完全一致（0..N-1 连续，validate 可接受）
+    assert b.text_start == 0 and b.text_end == len(b.bound_units)
