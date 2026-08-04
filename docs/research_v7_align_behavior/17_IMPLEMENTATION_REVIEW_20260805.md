@@ -320,3 +320,37 @@ smoke 实际只构造一条合成 timeline、一个 slot plan 和一个 tail-mis
 | real executor / hidden audit / long-slot serial / pilot artifacts | 未实现；仓库仍未发现实际运行产物 |
 
 下一位 agent 应优先把第 1--3 项作为一个不可拆分的 lineage 修复：将 **timeline row hash + exact source window + canonical mapping** 同时放进 request/evidence/RUN_MANIFEST/identity。随后修掉 row 重复 failure 与 adapter 验证，再考虑真实 executor smoke。
+
+## 复审更新 10：提交 `f9f25e4` 至 `8bc84e7`
+
+复审时间：2026-08-05。`PYTHONPATH=src python -m pytest -q tests/research_v7` 为 **121 项通过**，`git diff --check` 通过。本轮对上一轮最重要的 lineage 缺口有明显、有效的修补：
+
+- `AlignmentRequest` 已将 canonical text range、canonical-to-local、timeline SHA、adapter version、source window 升为正规 content 字段，因此会进入 evidence 和 request identity；
+- runner 能把 JSON string-key mapping 还原为 integer mapping，并同时在 metadata 保留人读版本；
+- exporter 已记录 timeline 文件/行 SHA、adapter version 与 source-window 字段；array manifest row 也改为单条 failure；
+- 新增 `collect_trainable_evidence.py`，以 RUN_MANIFEST 的 guard 清单生成 trainable evidence collection，拒绝没有 guard 清单的输入；
+- adapter 已拒绝重复/非递增 canonical id 及 `end <= start`。
+
+这些改动可以保留，且代表从“散落 helper”向可追溯 evidence collection 的实际推进。结论仍为：**不批准 real smoke、pilot 或 formal**；当前没有真实产物，且以下问题仍会使 canonical lineage 的完整性判断失真。
+
+### 本轮仍未关闭的问题
+
+1. **`canonical_ids` 尚未流入 REQUESTS、evidence 或 identity。** adapter 虽新增 `BoundResult.canonical_ids`，`request_from_bound()` 却没有写该字段，`AlignmentRequest` 也没有它。非连续 id 时 `canonical_text_start/end` 是 min/max 的包络，例如实际 `[2,5]` 被表示为 `[2,6)`；只有未持久化的 explicit list 才能说明中间 3、4 不存在。应把 `canonical_ids` 作为严格 content 字段与 metadata/evidence 字段，并让 collection 输出它；identity drift test 要覆盖 canonical-id-list-only 的改变。
+2. **adapter 的 unaligned reason 被 dataclass positional 参数写错。** `BoundResult` 新增 `canonical_ids` 后，`BoundResult(False, ..., {}, "no canonical unit overlaps source_window")` 的最后一个位置参数落入 `canonical_ids`，`reason` 留空。实际复核无 overlap 得到 `reason=""`、`canonical_ids="no canonical unit overlaps source_window"`。这会使 probe 的 `text_span_reason` 为空而误把原因写入错误类型字段。应改为具名参数，并覆盖 invalid-window/no-overlap JSONL 回归。
+3. **timeline file SHA 没有进入 request/evidence identity。** exporter 写的是 `canonical_timeline_file_sha` 和 `canonical_timeline_row_sha`，但 runner 的 `canonical_timeline_sha` 只取 `canonical_timeline_sha` 或 `canonical_timeline_row_sha`，不读取 file SHA。结果 evidence/identity 只含 row SHA；同一 item row 未变、timeline 文件其他内容或文件级版本变更时无法记录完整输入版本。应分设 `canonical_timeline_file_sha` 与 `canonical_timeline_row_sha` 为 content 字段，二者均进 identity、evidence、collection 和 RUN_MANIFEST external-input inventory。
+4. **“exact source window”仍从已 round-to-0.1 的变量派生。** exporter 先做 `window_s = round(start / rate, 1)`，之后 `source_win_exact[0] = float(window_s)`；所以注释所称未舍入并不成立。当前扫描步长恰为 2 秒，短期不触发差异，但契约应直接使用 `start / rate` 与 `(start + win) / rate`（或 sample indices/rate），展示字段才允许 round。
+5. **“唯一 train/eval 入口”尚未由实际消费命令实行。** 新 CLI 本身是好的唯一 collection 产物，但仓库仍没有 research_v7 的 feature trainer、threshold freezer 或 formal evaluator 只接收该 collection。因而它现在约束的是新 CLI 的使用方式，而不是已执行的训练/评价路径。后续消费者必须只接受 collection，并把 collection SHA 写入自己的 run manifest。
+
+### 状态表
+
+| 项目 | 状态 |
+|---|---|
+| canonical range/mapping 基本进入 request、evidence、identity | 部分关闭；explicit noncontiguous id list 和 file SHA 仍遗漏 |
+| C3 timeline row 可追溯 | 部分关闭；文件级 lineage 未闭环 |
+| canonical adapter 输入校验 | 部分关闭；重复/id 顺序/时长已覆盖，unaligned reason 有类型错位 |
+| row array 单次失败记录 | 已关闭（保留） |
+| guard-backed trainable collection | 初版可用；真实 train/evaluate 消费者尚未接入 |
+| downstream train/evaluate 强制消费 collection | 未实现 |
+| real executor / hidden audit / long-slot serial / pilot artifacts | 未实现；仓库仍未发现实际运行产物 |
+
+下一步应先修复第 1--4 项，再让任何 trainer/evaluator 只能读取该 collection。完成后才适合进行单个真实 executor smoke。
