@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Sequence
+from typing import Mapping, Sequence
 
 
 class SlotPlanError(ValueError):
@@ -93,30 +93,39 @@ def plan_slots(
     comparison_group_id: str = "g",
     phase: str = "p0",
     requested: Sequence[int] = (),
+    canonical_to_local: Mapping[int, int] | None = None,
 ) -> SlotPlan:
-    """为 queried canonical ids 生成本地 slots。
+    """为 queried canonical ids 生成严格递增的本地 timestamp slots。
 
-    requested 若给出则原样作为本地 index 顺序；否则按 incoming order。
-    校验：严格递增、不越界 canonical_unit_count；density anchors 必须属于 requested。
+    P0-3 整改：canonical_to_local 把 canonical id → 本地 timestamp token index（历史/future 文本
+    会占用本地 index，故 canonical 不等同 local）。若给出，local_indices = [map[c] for c in queried]；
+    并校验本地严格递增。requested 仍可显式给本地 index（兼容旧测试）；二者互斥。
     """
-    ids = list(requested) if requested else list(queried_canonical_ids)
-    if not ids:
+    which = "canonical"
+    if canonical_to_local is not None:
+        # canonical → local 映射路径（P0-3 正确路径）
+        local = [canonical_to_local[c] for c in queried_canonical_ids]
+        which = "mapped"
+    elif requested:
+        local = list(requested)
+        which = "explicit"
+    else:
+        local = list(queried_canonical_ids)
+        which = "canonical-as-local"
+    if not local:
         raise SlotPlanError("empty queried canonical ids")
-    if any(i < 0 or i >= canonical_unit_count for i in ids):
+    if any(i < 0 or i >= canonical_unit_count for i in queried_canonical_ids):
         raise SlotPlanError("queried canonical id out of range")
-    for i in range(len(ids) - 1):
-        if ids[i] >= ids[i + 1]:
-            raise SlotPlanError(f"local indices not strictly increasing: {ids}")
-    if density_anchor_ids:
-        for a in density_anchor_ids:
-            if a not in ids:
-                raise SlotPlanError(f"density anchor {a} not in queried set")
-
-    topology = detect_topology(ids)
+    for i in range(len(local) - 1):
+        if local[i] >= local[i + 1]:
+            raise SlotPlanError(f"local indices not strictly increasing: {local}")
+    # density_anchor_ids 是"汇总时跨 phase 共同评估"的范围标记，非每 request 必须包含；
+    # 故不硬校验必须 ∈ queried（P0-3：phase 轮换使不同 plan 覆盖不同 anchor 子集）。
+    topology = detect_topology(queried_canonical_ids)
     plan = SlotPlan(
         plan_id=plan_id,
-        requested_canonical_ids=tuple(ids),
-        local_indices=tuple(ids),
+        requested_canonical_ids=tuple(queried_canonical_ids),
+        local_indices=tuple(local),
         topology=topology,
         comparison_group_id=comparison_group_id,
         phase_name=phase,
@@ -124,7 +133,8 @@ def plan_slots(
         detail={
             "canonical_unit_count": canonical_unit_count,
             "common_anchors_note": f"density_common={list(density_anchor_ids)}",
-            "queried_n": len(ids),
+            "queried_n": len(queried_canonical_ids),
+            "local_source": which,
         },
     )
     return plan
@@ -139,22 +149,34 @@ def build_density_plans(
     *,
     plan_group: str,
     canonical_unit_count: int,
-    base_ids: Sequence[int],
-    step: int,
-    phase_offsets: Sequence[int],
-) -> list[SlotPlan]:
-    """为某 density stride，跨 phase 轮换生成 slots，并计算 common anchors。
+    selected_by_stride_phase: Mapping[str, Mapping[str, Sequence[int]]],
+    canonical_to_local: Mapping[int, int],
+) -> tuple[list[SlotPlan], list[int]]:
+    """P0-3：为真实 density 已选集生成 slots 并求 common anchors。
 
-    base_ids 是所有密度条件的保留集（100%）。phase_offsets 是 phase 轮换。
+    selected_by_stride_phase: {stride: {phase: [canonical_ids]}} —— 由 caller 提供每个 stride、
+    每个 phase 的真实子采样（**不再 base∪stride 合成**，保证每个 phase 真稀疏）。
+    canonical_to_local: canonical id → 本地 timestamp index。
+    返回 (plans, common_anchors)；common_anchors = 所有 stride 的**交集**（每 phase 独立或 全局）。
     """
-    plans = []
-    for po in phase_offsets:
-        ids = list(base_ids)
-        # 在 base 基础上用 stride 取样补充以覆盖 density（演示：把 stride 抽的加进去）
-        st = id_at_stride(canonical_unit_count, step, po)
-        merged = sorted(set(list(ids) + st))
-        p = plan_slots(plan_id=f"{plan_group}:s{step}:p{po}", canonical_unit_count=canonical_unit_count,
-                       queried_canonical_ids=merged, strategy="contiguous" if step == 1 else f"strided{step}",
-                       step=step, comparison_group_id=plan_group, phase=f"p{po}")
-        plans.append(p)
-    return plans
+    plans: list[SlotPlan] = []
+    # common anchors：取所有 stride 的交集（union of each stride's phases）
+    all_sets = []
+    for step, phases in selected_by_stride_phase.items():
+        union = set()
+        for ids in phases.values():
+            union |= set(ids)
+        all_sets.append(union)
+    common = sorted(set.intersection(*all_sets)) if all_sets else []
+    for step, phases in selected_by_stride_phase.items():
+        for phase, ids in phases.items():
+            p = plan_slots(
+                plan_id=f"{plan_group}:s{step}:{phase}",
+                canonical_unit_count=canonical_unit_count,
+                queried_canonical_ids=sorted(set(ids)),
+                strategy="contiguous" if step == 1 else f"strided{step}",
+                step=step, canonical_to_local=canonical_to_local,
+                density_anchor_ids=common, comparison_group_id=plan_group, phase=phase,
+            )
+            plans.append(p)
+    return plans, common
