@@ -139,6 +139,24 @@ def _deleted_ids(baseline_req: dict, missing_req: dict) -> list[int]:
     return b[len(m):]
 
 
+def _is_missing_rid(request_id: str) -> str | None:
+    """识别 missing 请求的 id 并返回其 baseline id；非 missing 返回 None。
+
+    round08 review CRITICAL：支持两种后缀——旧单档 ":missing" 与多档 ":missing0.10/0.25/0.50"
+    （round08 builder 引入）。只匹配精确 ":missing" 会让多档/新默认档配对静默失效。
+    """
+    if request_id is None:
+        return None
+    if request_id.endswith(":missing"):
+        return request_id[: -len(":missing")]
+    # ":missing<ratio>"（ratio 为 0<r<1 的浮点字面量）
+    import re as _re
+    m = _re.search(r":missing\d+(?:\.\d+)?$", request_id)
+    if m:
+        return request_id[: m.start()]
+    return None
+
+
 def _gap_omitted_ids(units: dict[int, dict], deleted: list[int],
                      window_sec: list[float]) -> list[int]:
     ws, we = window_sec
@@ -298,7 +316,9 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
     baseline_reqs = {}
     for rid, ev in by_request_id.items():
         req = (ev.get("attempt") or {}).get("request") or {}
-        if req.get("mutation_type") != "missing" and not rid.endswith(":missing"):
+        # round08 review CRITICAL：missing id 有两种后缀（旧 ":missing" 与多档 ":missing0.10"），
+        # 统一用 rsplit 识别，不能只匹配 ":missing" 精确后缀。
+        if req.get("mutation_type") != "missing" and _is_missing_rid(rid) is None:
             baseline_reqs[rid] = req
 
     per_request = []
@@ -307,8 +327,9 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
     sparse_checked = []  # (per_request 条目, 请求) 配对，供 sparse 子集自检
     for rid, ev in sorted(by_request_id.items(), key=lambda kv: kv[0]):
         req = (ev.get("attempt") or {}).get("request") or {}
-        if req.get("mutation_type") == "missing" or rid.endswith(":missing"):
-            baseline = baseline_reqs.get(rid[:- len(":missing")])
+        base_of = _is_missing_rid(rid)
+        if req.get("mutation_type") == "missing" or base_of is not None:
+            baseline = baseline_reqs.get(base_of)
         else:
             baseline = None
         r = evaluate_evidence(ev, baseline, timeline)
