@@ -57,9 +57,12 @@ def test_unit_metrics_recall_fpr():
 
 
 def test_gap_metrics_recall():
-    g = gap_metrics(gt_gaps=[10, 20], pred_gap_ids=[10, 30], weighted_deleted_gt=[20])
+    # omitted-units 加权：gap 10 命中(omitted=[30,31]); gap 20 未命中(omitted=[40])
+    g = gap_metrics(gt_gaps=[10, 20], pred_gap_ids=[10, 30],
+                    gt_gap_omitted={10: [30, 31], 20: [40]})
     assert g["gap_event_recall"] == 0.5
-    assert g["gap_deleted_weighted_recall"] == 0.0
+    # omitted units: gt=[30,31,40], 命中与检出的=gap10→[30,31] 命中 2/3
+    assert abs(g["gap_omitted_unit_weighted_recall"] - round(2 / 3, 4)) < 1e-9
 
 
 def test_interval_recall_at():

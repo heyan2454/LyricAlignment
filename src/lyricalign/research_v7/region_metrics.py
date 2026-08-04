@@ -9,7 +9,7 @@ recall、interval recall@75/100、>=3-unit 全漏检率、unsafe 扩张长度。
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Sequence
+from typing import Mapping, Sequence
 
 
 def _safe_p(r, d):
@@ -36,19 +36,41 @@ def unit_metrics(
 
 def gap_metrics(
     *,
-    gt_gaps: Sequence[int],        # 真 gap（含 omitted canonical）
-    pred_gap_ids: Sequence[int],   # 检出 gap
-    weighted_deleted_gt: Sequence[int],  # deleted-GT gap (权重要)
+    gt_gaps: Sequence[int],                        # 真 gap id 集
+    pred_gap_ids: Sequence[int],                   # 检出的 gap id
+    gt_gap_omitted: Mapping[int, Sequence[int]] | None = None,  # gap_id -> omitted canonical units
+    pred_gap_omitted: Mapping[int, Sequence[int]] | None = None,
+    weighted_deleted_gt: Sequence[int] | None = None,
 ) -> dict[str, float]:
-    gtg = set(gt_gaps)
-    pgs = set(pred_gap_ids)
-    tp = len(gtg & pgs)
-    fp = len(pgs - gtg)
-    fn = len(gtg - pgs)
+    """P0-4：gap 指标按 omitted canonical units 加权（不再只用 gap-id set）。
+
+    deleted-GT weighted recall = 命中的 GT omitted units / GT omitted units 总数。
+    """
+    gtg = set(gt_gaps); pgs = set(pred_gap_ids)
+    tp = len(gtg & pgs); fp = len(pgs - gtg); fn = len(gtg - pgs)
+    # omitted-units 加权
+    gt_units = set()
+    for g, ids in (gt_gap_omitted or {}).items():
+        gt_units.update(ids)
+    if gt_units:
+        hit_units = set()
+        for g in pgs & gtg:
+            hit_units.update((gt_gap_omitted or {}).get(g, ()))
+        w_recall = len(hit_units & gt_units) / len(gt_units)
+    else:
+        w_recall = 0.0
     return {
         "gap_event_recall": round(_safe_p(tp, len(gtg)), 4),
-        "gap_deleted_weighted_recall": round(_safe_p(len(set(weighted_deleted_gt) & pgs), len(set(weighted_deleted_gt))), 4),
+        "gap_omitted_unit_weighted_recall": round(w_recall, 4),
         "gap_fp": fp, "gap_fn": fn,
+    }
+
+
+def wrong_output_metrics(*, gt_replaced: int, pred_wrong_output: int, replaced_omission_gt: int) -> dict[str, float]:
+    """P0-4：wrong-output recall（replaced 命中）+ replaced-GT omission recall。"""
+    return {
+        "wrong_output_recall": round(_safe_p(pred_wrong_output, gt_replaced), 4),
+        "replaced_gt_omission_recall": round(_safe_p(pred_wrong_output, replaced_omission_gt), 4),
     }
 
 
@@ -70,10 +92,10 @@ def summarize_by_split(
         key = (it.get(split_field), it.get(domain_field), it.get(family_field))
         if it.get("unit_recall") is not None:
             acc[key]["unit_recall"].append(it["unit_recall"])
-        if it.get("fpr") is not None:
-            acc[key]["fpr"].append(it["fpr"])
-        if it.get("gap_recall") is not None:
-            acc[key]["gap_recall"].append(it["gap_recall"])
+        if it.get("correct_unit_fpr", it.get("fpr")) is not None:
+            acc[key]["fpr"].append(it.get("correct_unit_fpr", it.get("fpr")))
+        if it.get("gap_event_recall", it.get("gap_recall")) is not None:
+            acc[key]["gap_recall"].append(it.get("gap_event_recall", it.get("gap_recall")))
     out = {}
     for (sp, dom, fam), v in sorted(acc.items()):
         out[f"{sp}|{dom}|{fam}"] = {

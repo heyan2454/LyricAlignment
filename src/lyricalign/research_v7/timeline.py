@@ -95,6 +95,9 @@ def build_timeline(
     unit_global = 0
     n_before = 0
     for si, seg in enumerate(ordered):
+        # P0-4：段间插入的 seam silence 使后续 canonical 起止平移（第 2 段起每段前 + artificial_silence）
+        if si > 0:
+            cursor += artificial_silence_sec
         units = _seg_units(seg)
         dur = float(seg.get("duration_sec", 0.0) or 0.0)
         seg_span = 0.0

@@ -66,3 +66,22 @@ def test_seam_carries_inserted_silence():
     t = build_timeline(timeline_id="t5", source_song_id="演员", dataset="m4", language="zh",
                        segments=_segs(), order_field="order", artificial_silence_sec=0.5)
     assert all(round(s["inserted_silence_sec"], 3) == 0.5 for s in t.seams)
+
+
+def test_seam_silence_shifts_subsequent_timestamps():
+    # P0-4：0.5s seam 使第2段起 canonical start 相对无 seam 平移 0.5*(段序)
+    segs = _segs(3)  # 3 段各 dur 2.0
+    t_sil = build_timeline(timeline_id="s", source_song_id="演员", dataset="m4", language="zh",
+                           segments=segs, order_field="order", artificial_silence_sec=0.5)
+    t_none = build_timeline(timeline_id="n", source_song_id="演员", dataset="m4", language="zh",
+                            segments=segs, order_field="order", artificial_silence_sec=0.0)
+    # 第3段第一个 canonical 的 start 应比无 seam 版本偏移 0.5*2 (两段 seam)
+    # 找到第3段(segment_order==2)首个 canonical
+    def first_of_seg(tl, order):
+        for c in tl.canonical_units:
+            if c["source_segment_id"] == f"s1#seg{order}":
+                return c["start_sec"]
+        return None
+    s2_sil = first_of_seg(t_sil, 2); s2_none = first_of_seg(t_none, 2)
+    assert s2_sil is not None and s2_none is not None
+    assert abs((s2_sil - s2_none) - 1.0) < 1e-6  # 两段 seam ×0.5 =1.0
