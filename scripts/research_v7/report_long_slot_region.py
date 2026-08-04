@@ -137,6 +137,7 @@ def main(argv=None) -> int:
                                       or {}) or {}).get("median"),
                 "unsafe_rate_gt_0_25": (th or {}).get("exceed_rate", {}).get("either"),
                 "axis_ratio_m4_over_mir": axis.get("ratio_m4_over_mir"),
+                "mir_metric": (axis.get("mir_weak_axis") or {}).get("metric"),
                 "seam_near_unsafe": near,
                 "seam_far_unsafe": far,
                 "feature_auc_top": top_auc,
@@ -144,11 +145,23 @@ def main(argv=None) -> int:
             }
             parts = []
             m4_rate = baseline_quality["unsafe_rate_gt_0_25"]
-            mir_rate = (axis.get("mir_weak_axis") or {}).get("unsafe_rate")
-            ratio = baseline_quality["axis_ratio_m4_over_mir"]
-            if m4_rate is not None and mir_rate is not None and ratio is not None:
-                parts.append(f"GT axis sensitivity: {m4_rate:.1%} (M4 synthetic) "
-                             f"vs {mir_rate:.1%} (MIR weak) = {ratio:.2f}x")
+            mir_axis = axis.get("mir_weak_axis") or {}
+            # round10：同口径（boundary_error_same_metric）优先用 unsafe_rate_gt_0_25；
+            # 旧口径 mutation 标签命中率用 unsafe_rate（标注非可比）。
+            if mir_axis.get("metric") == "boundary_error_same_metric":
+                mir_rate = mir_axis.get("unsafe_rate_gt_0_25")
+                ratio = baseline_quality["axis_ratio_m4_over_mir"]
+                if m4_rate is not None and mir_rate is not None and ratio is not None:
+                    parts.append(f"GT axis sensitivity (same metric, boundary error): "
+                                 f"{m4_rate:.1%} (M4 synthetic) vs {mir_rate:.1%} (MIR weak) = {ratio:.2f}x "
+                                 f"(axis construction, not decoder quality)")
+            else:
+                mir_rate = mir_axis.get("unsafe_rate")
+                ratio = baseline_quality["axis_ratio_m4_over_mir"]
+                if m4_rate is not None and mir_rate is not None:
+                    parts.append(f"GT axis sensitivity (INCOMPARABLE metrics): "
+                                 f"{m4_rate:.1%} (M4 boundary error) vs {mir_rate:.1%} "
+                                 f"(MIR mutation-label hit rate) - non-comparable")
             if baseline_quality["start_mae_median"] is not None:
                 parts.append(f"boundary start MAE median {baseline_quality['start_mae_median']:.3f}s")
             if near is not None and far is not None:

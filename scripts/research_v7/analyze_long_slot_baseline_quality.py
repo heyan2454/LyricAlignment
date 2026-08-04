@@ -200,36 +200,70 @@ def boundary_error_table(rows: Sequence[Mapping],
 # GT 轴敏感性（M4 synthetic-uniform vs MIR weak qwen_fa）
 # --------------------------------------------------------------------------
 
-def axis_sensitivity(boundary_error: dict, cross_domain_eval: dict | None) -> dict:
+def axis_sensitivity(boundary_error: dict, cross_domain_eval: dict | None,
+                     mir_boundary: dict | None = None) -> dict:
+    """GT 轴敏感性：M4 synthetic 轴与 MIR weak 轴的**同口径边界误差率**对比。
+
+    round10（最终 review MAJOR-1）：早期版本用 ASSESSOR_CROSS_DOMAIN_EVAL 的 mutation 标签
+    命中率当 MIR unsafe 率（12.9%），与 M4 的边界误差率（66.6%）非同量，5.17x 结论不成立。
+    正确做法：MIR 侧也用【真实边界误差】（pred vs weak-label GT 轴，与 M4 同阈值口径），
+    由调用方传入 mir_boundary（analyze 主流程对 MIR evidence 计算）。若未提供则退回
+    cross_domain_eval 的标签命中率并明确标注"标签口径，非同量"。
+    """
     m4_rate = None
     for t in (str(UNSAFE_THRESHOLD_SEC),):
         if t in boundary_error.get("thresholds", {}):
             m4_rate = boundary_error["thresholds"][t]["exceed_rate"]["either"]
-    if cross_domain_eval:
+    m4_entry = {"unsafe_rate_gt_0_25": m4_rate,
+                "axis": "synthetic_uniform_timeline_axis (M4 GT_EVAL rows)"}
+    if mir_boundary and mir_boundary.get("n_rows_with_geometry"):
+        mir_entry = {
+            "unsafe_rate_gt_0_25": mir_boundary["thresholds"][str(UNSAFE_THRESHOLD_SEC)]["exceed_rate"]["either"],
+            "n_rows": mir_boundary["n_rows_with_geometry"],
+            "median_error_sec": mir_boundary["by_boundary"]["start_abs_error_sec"]["median"],
+            "axis": "weak_labeled_qwen_fa_timestamps (MIR evidence, same boundary-error metric)",
+            "metric": "boundary_error_same_metric",
+        }
+    elif cross_domain_eval:
         mir = (cross_domain_eval.get("mir1k") or {})
         n_unsafe = mir.get("n_gt_unsafe_units")
         n_units = mir.get("n_units_labeled")
         mir_entry = {"n_gt_unsafe_units": n_unsafe, "n_units_labeled": n_units,
                      "unsafe_rate": _round(n_unsafe / n_units) if n_units else None,
-                     "source": "ASSESSOR_CROSS_DOMAIN_EVAL.json mir1k (provided)"}
+                     "source": "ASSESSOR_CROSS_DOMAIN_EVAL.json mir1k (provided)",
+                     "metric": "mutation_label_hit_rate (NOT same metric; non-comparable)"}
     else:
         mir_entry = {**MIR_WEAK_AXIS_REFERENCE,
                      "unsafe_rate": _round(MIR_WEAK_AXIS_REFERENCE["n_gt_unsafe_units"]
-                                           / MIR_WEAK_AXIS_REFERENCE["n_units_labeled"])}
-    m4_entry = {"unsafe_rate_gt_0_25": m4_rate,
-                "axis": "synthetic_uniform_timeline_axis (M4 GT_EVAL rows)"}
-    ratio = _round(m4_entry["unsafe_rate_gt_0_25"] / mir_entry["unsafe_rate"], 2) \
-        if m4_entry["unsafe_rate_gt_0_25"] and mir_entry["unsafe_rate"] else None
+                                           / MIR_WEAK_AXIS_REFERENCE["n_units_labeled"]),
+                     "metric": "mutation_label_hit_rate (NOT same metric; non-comparable)"}
+    ratio = None
+    if m4_entry["unsafe_rate_gt_0_25"] and mir_entry.get("unsafe_rate_gt_0_25"):
+        ratio = _round(m4_entry["unsafe_rate_gt_0_25"] / mir_entry["unsafe_rate_gt_0_25"], 2)
+    if ratio is not None and mir_entry.get("metric") == "boundary_error_same_metric":
+        conclusion = (
+            "GT 轴敏感性（同口径边界误差）：M4 synthetic-uniform 轴任一边界误差>250ms 占 "
+            f"{m4_entry['unsafe_rate_gt_0_25']}，MIR weak-label 轴同阈值仅 "
+            f"{mir_entry['unsafe_rate_gt_0_25']}（约 {ratio}x）。差异主要来自 GT 轴构造方式"
+            "（synthetic 均匀分字 vs 真实弱标签时间戳），并非 decoder 对齐质量的跨域差异——"
+            "MIR 弱轴下模型边界误差 median 仅 "
+            f"{mir_entry.get('median_error_sec')}s。绝对 unsafe 率必须先声明 GT 轴来源。")
+    elif mir_entry.get("unsafe_rate") is not None:
+        # round10：MIR 侧只有 mutation 标签命中率（非可比口径）→ 明确说明不可归因
+        m4r = m4_entry["unsafe_rate_gt_0_25"]
+        mirr = mir_entry["unsafe_rate"]
+        approx = f"（{_round(m4r / mirr, 2)}x 若按此口径粗比）" if m4r and mirr else ""
+        conclusion = (
+            "GT 轴敏感性（口径不一致，仅示意）：M4 synthetic 轴边界误差率 "
+            f"{m4r} vs MIR mutation 标签命中率 {mirr}{approx}。两率非同量，"
+            "不可直接归因为'GT 轴差异'；需同口径边界误差对比（--mir-gt-eval）。")
+    else:
+        conclusion = "GT 轴敏感性结论不可计算（缺任一侧同口径边界误差率）。"
     return {
         "m4_synthetic_axis": m4_entry,
         "mir_weak_axis": mir_entry,
         "ratio_m4_over_mir": ratio,
-        "conclusion": (
-            "GT 轴选择对 unsafe 率影响巨大：synthetic-uniform 轴下任一边界误差>250ms 的行占 "
-            f"{m4_entry['unsafe_rate_gt_0_25']}，而 weak(qwen_fa) 轴下 GT-unsafe 仅占 "
-            f"{mir_entry['unsafe_rate']}（约 {ratio}x 差异）。同一个 decoder 输出在不同 GT 轴"
-            "下的 unsafe 判定相差一个数量级，因此绝对 unsafe 率必须先声明 GT 轴来源。"
-            if ratio else "GT 轴敏感性结论不可计算（缺任一侧 unsafe 率）。"),
+        "conclusion": conclusion,
     }
 
 
@@ -434,13 +468,18 @@ def analyze(gt_eval: dict, timeline_manifest: Path | None = None,
             evidence_dir: Path | None = None,
             cross_domain_eval: dict | None = None,
             cross_domain_eval_path: str | None = None,
+            mir_gt_eval: dict | None = None,
             thresholds: Sequence[float] = DEFAULT_THRESHOLDS,
             seam_near_sec: float = SEAM_NEAR_SEC) -> dict:
     rows = gt_eval.get("rows") or []
     per_request = gt_eval.get("per_request") or []
     coverage = coverage_table(per_request)
     boundary_error = boundary_error_table(rows, thresholds)
-    axis = axis_sensitivity(boundary_error, cross_domain_eval)
+    # round10：MIR 侧同口径边界误差（pred vs weak-label GT 轴），用于诚实对比
+    mir_boundary = None
+    if mir_gt_eval and (mir_gt_eval.get("rows") or []):
+        mir_boundary = boundary_error_table(mir_gt_eval["rows"], thresholds)
+    axis = axis_sensitivity(boundary_error, cross_domain_eval, mir_boundary)
     seams = _load_timeline_seams(timeline_manifest)
     seam = seam_strata(rows, seams, seam_near_sec) if seams is not None else None
     evidence_index = _load_evidence_index(evidence_dir)
@@ -459,6 +498,7 @@ def analyze(gt_eval: dict, timeline_manifest: Path | None = None,
         },
         "coverage": coverage,
         "boundary_error": boundary_error,
+        "mir_boundary_error": mir_boundary,
         "axis_sensitivity": axis,
         "seam_strata": seam,
         "feature_auc": auc,
@@ -486,8 +526,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--evidence-dir", default=None,
                    help="evidence 目录（可选，特征 AUC join）")
     p.add_argument("--cross-domain-eval", default=None,
-                   help="ASSESSOR_CROSS_DOMAIN_EVAL.json（可选，MIR weak 轴 unsafe 率；"
+                   help="ASSESSOR_CROSS_DOMAIN_EVAL.json（可选，MIR weak 轴 mutation 标签命中率；"
                         "缺省用硬编码引用值 12.9%）")
+    p.add_argument("--mir-gt-eval", default=None,
+                   help="MIR 域 GT_EVAL.json（可选，--domain mir1k 输出；用于同口径边界误差对比）")
     p.add_argument("--out", required=True, help="输出目录（写 BASELINE_QUALITY_ANALYSIS.json）")
     p.add_argument("--thresholds", default=",".join(str(t) for t in DEFAULT_THRESHOLDS),
                    help="误差阈值表（逗号分隔秒，默认 0.25,0.5,1,2,5）")
@@ -499,8 +541,11 @@ def main(argv: list[str] | None = None) -> int:
     evidence_dir = Path(a.evidence_dir) if a.evidence_dir else None
     cross = json.loads(Path(a.cross_domain_eval).read_text(encoding="utf-8")) \
         if a.cross_domain_eval else None
+    mir_gt = json.loads(Path(a.mir_gt_eval).read_text(encoding="utf-8")) \
+        if a.mir_gt_eval else None
     result = analyze(gt_eval, timeline, evidence_dir, cross,
                      cross_domain_eval_path=a.cross_domain_eval,
+                     mir_gt_eval=mir_gt,
                      thresholds=thresholds, seam_near_sec=a.seam_near_sec)
     out = Path(a.out)
     out_path = out / "BASELINE_QUALITY_ANALYSIS.json"

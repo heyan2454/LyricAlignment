@@ -172,8 +172,8 @@ def test_schema_and_self_check():
     res = m.analyze(gt)
     assert res["schema"] == "research_v7_baseline_quality_analysis_v1"
     assert list(res) == ["schema", "generated_at_utc", "inputs", "coverage",
-                         "boundary_error", "axis_sensitivity", "seam_strata",
-                         "feature_auc", "self_check"]
+                         "boundary_error", "mir_boundary_error", "axis_sensitivity",
+                         "seam_strata", "feature_auc", "self_check"]
     assert res["seam_strata"] is None
     assert res["feature_auc"] is None
     sc = res["self_check"]
@@ -212,9 +212,11 @@ def test_axis_sensitivity_hardcoded_reference():
     res = m.analyze(_gt_eval([_per_request("s1:w0:full", "baseline", 2, 2)], rows))
     ax = res["axis_sensitivity"]
     assert ax["m4_synthetic_axis"]["unsafe_rate_gt_0_25"] == 1.0
+    # round10：无 mir_boundary 时 MIR 侧是 mutation 标签口径，明确标注非可比，不算 ratio
+    assert ax["mir_weak_axis"]["metric"].startswith("mutation_label_hit_rate")
     assert ax["mir_weak_axis"]["unsafe_rate"] == round(592 / 4592, 4)
-    assert ax["ratio_m4_over_mir"] == round(1.0 / (592 / 4592), 2)
-    assert "GT 轴选择对 unsafe 率影响巨大" in ax["conclusion"]
+    assert ax["ratio_m4_over_mir"] is None
+    assert "非同量" in ax["conclusion"]
 
 
 def test_axis_sensitivity_from_cross_domain_eval():
@@ -229,6 +231,8 @@ def test_axis_sensitivity_from_cross_domain_eval():
     assert ax["mir_weak_axis"]["unsafe_rate"] == 0.1
     assert ax["mir_weak_axis"]["source"].endswith("(provided)")
     assert ax["m4_synthetic_axis"]["unsafe_rate_gt_0_25"] == 0.5
+    # round10：cross-domain-eval 的 mutation 标签口径 → 非可比，不算 ratio
+    assert ax["ratio_m4_over_mir"] is None
 
 
 def test_seam_strata_near_far(tmp_path):
@@ -314,3 +318,32 @@ def test_main_writes_output(tmp_path):
     result = json.loads((out / "BASELINE_QUALITY_ANALYSIS.json").read_text(encoding="utf-8"))
     assert result["schema"] == "research_v7_baseline_quality_analysis_v1"
     assert result["coverage"]["overall"]["row_coverage"] == 0.8
+
+
+def test_axis_sensitivity_same_metric_uses_mir_boundary(tmp_path):
+    """round10：MIR 同口径边界误差传入时，conclusion 用同口径对比且标注 metric。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import analyze_long_slot_baseline_quality as m
+    # M4 侧：少量行，误差 0.3s（>0.25）
+    gt_rows = [{"canonical_unit_id": 0, "gt_start_sec": 0.0, "gt_end_sec": 1.0,
+                "pred_start_sec": 0.3, "pred_end_sec": 1.3, "request_id": "s1:w0:full",
+                "mutation_type": "baseline"}]
+    # MIR 侧：同结构但误差混合（1 行 0.05s 对、1 行 0.3s 错 → 率 0.5）
+    mir_rows = [{"canonical_unit_id": 0, "gt_start_sec": 0.0, "gt_end_sec": 1.0,
+                 "pred_start_sec": 0.05, "pred_end_sec": 1.05, "request_id": "s2:w0:full",
+                 "mutation_type": "baseline"},
+                {"canonical_unit_id": 1, "gt_start_sec": 1.0, "gt_end_sec": 2.0,
+                 "pred_start_sec": 1.3, "pred_end_sec": 2.3, "request_id": "s2:w0:full",
+                 "mutation_type": "baseline"}]
+    be = m.boundary_error_table(gt_rows, (0.25, 0.5))
+    mir_be = m.boundary_error_table(mir_rows, (0.25, 0.5))
+    ax = m.axis_sensitivity(be, None, mir_be)
+    assert ax["mir_weak_axis"]["metric"] == "boundary_error_same_metric"
+    assert ax["ratio_m4_over_mir"] is not None
+    assert "同口径" in ax["conclusion"]
+    assert "MIR 弱轴下模型边界误差 median" in ax["conclusion"]
+    # 无 mir_boundary 时回退 mutation 标签口径并标注非可比
+    ax2 = m.axis_sensitivity(be, {"mir1k": {"n_gt_unsafe_units": 1, "n_units_labeled": 10}}, None)
+    assert ax2["mir_weak_axis"]["metric"] == "mutation_label_hit_rate (NOT same metric; non-comparable)"
+    assert "非同量" in ax2["conclusion"]

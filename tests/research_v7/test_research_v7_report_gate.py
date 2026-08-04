@@ -239,9 +239,10 @@ def _baseline_quality_eval(tmp):
         },
         "axis_sensitivity": {
             "m4_synthetic_axis": {"unsafe_rate_gt_0_25": 0.6664},
-            "mir_weak_axis": {"n_gt_unsafe_units": 592, "n_units_labeled": 4592,
-                              "unsafe_rate": 0.1289},
-            "ratio_m4_over_mir": 5.17,
+            "mir_weak_axis": {"unsafe_rate_gt_0_25": 0.0139, "n_rows": 4592,
+                              "metric": "boundary_error_same_metric",
+                              "median_error_sec": 0.0001},
+            "ratio_m4_over_mir": 47.94,
         },
         "seam_strata": {
             "near_seam": {"n_rows": 3273, "unsafe_rate_gt_0_25": 0.6612},
@@ -273,13 +274,13 @@ def test_forward_baseline_quality_in_summary(tmp_path):
     assert bq_out["row_coverage"] == 0.534463
     assert bq_out["start_mae_median"] == 0.2723
     assert bq_out["unsafe_rate_gt_0_25"] == 0.6664
-    assert bq_out["axis_ratio_m4_over_mir"] == 5.17
+    assert bq_out["axis_ratio_m4_over_mir"] == 47.94
     assert bq_out["seam_near_unsafe"] == 0.6612
     assert bq_out["seam_far_unsafe"] == 0.6739
     assert bq_out["feature_auc_top"] == 0.5779  # 排除标签特征 either_max_boundary_error_sec
     assert bq_out["self_check_ok"] is True
     fnd = s["data"]["baseline_quality_finding"]
-    assert "GT axis sensitivity: 66.6% (M4 synthetic) vs 12.9% (MIR weak) = 5.17x" in fnd
+    assert "GT axis sensitivity (same metric, boundary error)" in fnd
     assert "boundary start MAE median 0.272s" in fnd
     assert "seam has no measurable effect" in fnd
     assert "feature AUC top 0.578 (raw_end_entropy)" in fnd
