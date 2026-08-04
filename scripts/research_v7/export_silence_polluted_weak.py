@@ -2,11 +2,12 @@
 """导出「静音区分离残留污染」弱人声样本（C3 操作化 v3，2026-08-04，用户定夺多档试听）。
 
 依据真实曲目分析（静音/间奏区 vocals≈0、伴奏强）：只在 vocals 静音/间奏帧叠加
-“衰减到目标弱电平的伴奏残响”，正常人声段不动。α 多档：对照(0) / 1% / 2% / 5%，
+“衰减到目标弱电平的伴奏残响”，正常人声段不动。最终定档 α=2%（对照 control + weak_2），
 目标弱电平 = 该窗正常人声段 RMS × α（不按伴奏本身，避免爆响）。
+静音判定用：绝对 vocal RMS 上限 + 相对有唱段比例 + 最短连续静音；记录 frame audit 与 clip。
 
-输出 per-song：normal.wav(对照=原 vocals) 与 weak_1/weak_2/weak_5.wav；写 AUDIO_EXPORT_MANIFEST.json。
-用 wave+numpy，不改原音频、不跑 Demucs。
+输出 per-song：control.wav(对照=原 vocals) 与 weak_2.wav；写 AUDIO_EXPORT_MANIFEST.json（含 sample_rate）。
+用 wave+numpy，不改原音频、不跑 Demucs；vocals 与 accompaniment 采样率不一致则拒绝。
 """
 from __future__ import annotations
 
@@ -48,35 +49,67 @@ def write_wav(path, x, rate):
         f.writeframes(struct.pack(f"<{len(x)}h", *np.clip(x.astype(np.int32), -32768, 32767).astype(np.int16)))
 
 
-def window_pick(vocal, acc, rate, window_sec=8.0):
-    """挑‘有人声 + 有静音/间奏’的窗：窗内既有 sung（vocal 高能）也有 silence（vocal 低能）。"""
-    fr = int(window_sec * rate); vf = np.sqrt((vocal * vocal).mean(1) + 1e-12)  # 本行占位，改下
-    return None
+SIL_ABS_MAX = 400.0      # 绝对 vocal RMS 上限（低于才算静音区，防把 loud 人声机械判静）
+SIL_REL_TO_SUNG = 0.35   # silence 需 < 有唱段中位 vocal RMS × 0.35
+MIN_CONTIGUOUS_SIL_FRAMES = 6  # 最短连续静音帧(0.3s)，阻断单帧噪点
+
+
+def detect_silence_frames(vr, sung_median, rate, frame_sec):
+    """P0（C3-review）：静音帧 = 绝对上限 + 相对 sung + 连续长度。
+
+    返回 (sil_mask, audit)。不满足 min 连续长度的孤立静音帧视同正常帧（避免污染人声区）。
+    """
+    abs_ok = vr < SIL_ABS_MAX
+    rel_ok = vr < sung_median * SIL_REL_TO_SUNG
+    cand = abs_ok & rel_ok
+    # 用连续段过滤：孤立 < MIN_CONTIGUOUS 的候选帧重置为非静音
+    sil = cand.copy()
+    nf = len(cand)
+    i = 0
+    while i < nf:
+        if cand[i]:
+            j = i
+            while j < nf and cand[j]:
+                j += 1
+            if (j - i) < MIN_CONTIGUOUS_SIL_FRAMES:
+                sil[i:j] = False  # 太短 → 非静音
+            i = j
+        else:
+            i += 1
+    return sil, {"cand_abs": int(abs_ok.sum()), "cand_rel": int(rel_ok.sum()),
+                 "sil_final": int(sil.sum()), "min_contig_frame": MIN_CONTIGUOUS_SIL_FRAMES}
 
 
 def build_window(v, c, rate, alphas):
-    """对一窗：区分 sung 帧(vocals 干净) 与 silence/间奏帧(vocals 低能)，silence 叠加伴奏×α 到目标弱电平。"""
+    """对一窗：区分 sung 帧(vocals 干净) 与 silence/间奏帧(vocals 低能)，silence 叠加伴奏×α 到目标弱电平。
+
+    P0（C3）：silence 判定用绝对上限+相对 sung 比例+最短连续静音；frame audit 记录污染帧的 residual/clip。
+    """
     fr = int(0.05 * rate); nf = len(v) // fr
     wv = v[: nf * fr].reshape(-1, fr); wc = c[: nf * fr].reshape(-1, fr)
     vr = np.sqrt((wv * wv).mean(1) + 1e-12); cr = np.sqrt((wc * wc).mean(1) + 1e-12)
-    sung_idx = np.where(vr >= float(np.percentile(vr, 40)))[0]     # 上 60% = 有唱
-    sil_idx = np.where(vr < float(np.percentile(vr, 20)))[0]       # 下 20% = 静音/间奏
+    sung_idx = np.where(vr >= float(np.percentile(vr, 40)))[0]
+    sung_median = float(np.median(vr[sung_idx])) if sung_idx.size else 1.0
+    sil, aud = detect_silence_frames(vr, sung_median, rate, 0.05)
     normal_rms = float(np.sqrt(np.mean(vr[sung_idx] ** 2) + 1e-12)) if sung_idx.size else 1.0
-    leak_energy = [float(np.sqrt(np.mean(cr[i] ** 2))) for i in sil_idx] if sil_idx.size else [0.0]
-    acc_sil_rms = float(np.sqrt(np.mean(np.array(leak_energy) ** 2) + 1e-12))
+    sil_frames = {"v": vr[sil], "c": cr[sil]} if sil.any() else None
     outs = {}
+    clip = 0
     for a in alphas:
-        target = normal_rms * a * (LOUDNESS_SCALE if a > 0 else 1.0)
-        gain = (target / (acc_sil_rms + 1e-9)) if acc_sil_rms > 0 and a > 0 else 0.0
-        gain = min(gain, 1.0)  # 防爆响
-        out = v.copy() if isinstance(v, np.ndarray) else np.array(v)
-        for i in sil_idx:
-            seg = slice(int(i * fr), int((i + 1) * fr))
-            out[seg] = out[seg] + wc[i] * gain
+        out = np.array(v, copy=True)
+        if sil.any():
+            acc_sil_rms = float(np.sqrt(np.mean(cr[sil] ** 2) + 1e-12))
+            target = normal_rms * a * (LOUDNESS_SCALE if a > 0 else 1.0)
+            gain = min(target / (acc_sil_rms + 1e-9), 1.0) if a > 0 and acc_sil_rms > 0 else 0.0
+            for i in np.where(sil)[0]:
+                seg = slice(int(i * fr), int((i + 1) * fr))
+                out[seg] = out[seg] + wc[i] * gain
+            clip = int((np.abs(out) > 32000).sum())  # 16-bit 峰值裁剪计数
         outs[a] = out
-    return outs, {"normal_rms": round(normal_rms, 3), "acc_sil_rms": round(acc_sil_rms, 3),
-                  "n_sung": int(sung_idx.size), "n_sil": int(sil_idx.size),
-                  "sil_frac": round(sil_idx.size / nf, 3)}
+    meta = {"normal_rms": round(normal_rms, 3), "n_sung": int(sung_idx.size),
+            "n_sil": int(sil.sum()), "sil_frac": round(float(sil.mean()), 3),
+            "clip_count": clip, "silence_audit": aud}
+    return outs, meta
 
 
 def main(argv=None) -> int:
@@ -96,7 +129,11 @@ def main(argv=None) -> int:
         vp = Path(it["audio_path"]); cp = vp.with_name(vp.name.replace("vocals.wav", "accompaniment.wav"))
         if not vp.is_file() or not cp.is_file():
             continue
-        v, rate = read_mono16(vp); c, _ = read_mono16(cp)
+        v, rate = read_mono16(vp); c, c_rate = read_mono16(cp)
+        if c_rate != rate:
+            recs.append({"item_id": it["item_id"], "skipped": "sample_rate_mismatch",
+                         "vocal_rate": rate, "acc_rate": c_rate})
+            continue
         m = min(len(v), len(c)); v, c = v[:m], c[:m]
         win = int(args.window_sec * rate)
         if len(v) < win:
@@ -121,7 +158,9 @@ def main(argv=None) -> int:
             name = labels[a]
             write_wav(d / f"{name}.wav", outs[a], rate); rms_all[name] = rms(outs[a])
         recs.append({"item_id": it["item_id"], "window_sec": [round(start / rate, 1), round((start + win) / rate, 1)],
-                     **meta, "rms": {k: round(v, 3) for k, v in rms_all.items()},
+                     "sample_rate": rate, "vocal_sha256": it.get("hash_vocals") or None,
+                     "acc_sha256": it.get("hash_acc") or None, **meta,
+                     "rms": {k: round(v, 3) for k, v in rms_all.items()},
                      "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}})
         done += 1
     (out_root / "AUDIO_EXPORT_MANIFEST.json").write_text(json.dumps(recs, ensure_ascii=False, indent=1))
