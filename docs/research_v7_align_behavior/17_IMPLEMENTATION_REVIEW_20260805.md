@@ -354,3 +354,36 @@ smoke 实际只构造一条合成 timeline、一个 slot plan 和一个 tail-mis
 | real executor / hidden audit / long-slot serial / pilot artifacts | 未实现；仓库仍未发现实际运行产物 |
 
 下一步应先修复第 1--4 项，再让任何 trainer/evaluator 只能读取该 collection。完成后才适合进行单个真实 executor smoke。
+
+## 复审更新 11：提交 `524b468` 至 `7e33c43`
+
+复审时间：2026-08-05。`PYTHONPATH=src python -m pytest -q tests/research_v7` 为 **126 项通过**，`git diff --check` 通过。本轮已关闭上一轮列出的四个 C3 lineage 问题：
+
+- `canonical_ids` 已进入 REQUESTS、`AlignmentRequest`、evidence、collection 与 identity，并有 identity-only drift 测试；
+- `BoundResult` 的 unaligned 分支已使用具名 `reason`，不再发生 dataclass 字段错位；
+- timeline file SHA 和 item-row SHA 已分开进入 request/evidence/collection/identity；
+- source window 改由 `start/rate`、`(start+win)/rate` 直接推导，展示窗口与绑定窗口分离。
+
+另有 collection loader 与 collection SHA 的新增工作；按用户明确要求，本文不再把这类信任/防伪边界作为审查阻塞项。
+
+结论仍为：**不批准 real smoke、pilot 或 formal。** 不是因为信任问题，而是以下普通输入契约和实际运行路径仍未完成。
+
+### 仍需修复的运行正确性问题
+
+1. **`AlignmentRequest.validate()` 未校验 canonical 字段之间的自洽性。** 当前任意 manifest 都可提供与 `text_units` 长度不匹配的 `canonical_ids`、local value 越界/重复的 `canonical_to_local`、mapping keys 与 canonical ids 不一致、或与 `canonical_text_start/end` 冲突的值；request 仍会执行并写 evidence。C3 adapter 的正常输出是正确的，但 runner 也接受其他 canonical manifest，因此这会把普通上游数据错误延后到 slot/feature 阶段。应在 `validate()` 中：当 canonical fields 出现时要求 `len(canonical_ids)==len(text_units)`、ids 严格递增、mapping keys 等于 ids、mapping values 恰为 `0..N-1`、canonical range 包含 ids，并在 `lyrics_aligned` 时要求完整 timeline/file-row/source-window 字段。
+2. **adapter 没有验证 canonical 时间随 global id 的时间顺序。** 它只检查每一项 `end > start`，不检查相邻 unit 的 `start/end` 是否按 canonical id 递增。若 id 0 在 0s、id 1 在 10s、id 2 在 1s，source window 0--2s 会命中 0/2，但 `full=[g0..g1]` 又把 10s 的 id 1 编入 bound text；结果 text units、canonical ids 和实际音频窗不一致。应拒绝时间倒序的 canonical timeline，或把 bound units/mapping严格限定为实际 overlap unit 并用 explicit ids 表达，随后加非单调时间回归测试。
+3. **C3 exporter 对 canonical timeline 的单 item 错误不会收敛为可读 export 结果。** WAV 已写入后，`bind_canonical_to_window()` 若因 duplicate id、非递增 id、缺文本或非法时间抛错，`main()` 会直接退出，末尾 `REQUESTS.jsonl` / `AUDIO_EXPORT_MANIFEST.json` 均不会写出本轮完整状态。应为每个 item 记录 `skipped/failed` 的结构化 export audit 并继续下一个 item；即使所有项失败也要原子写最终 manifest。加一个“坏 timeline + 独立好 item”回归。
+4. **trainable collection 还没有被现有 research_v7 训练/阈值/正式评测命令消费。** 本轮 collection 与 loader 已形成明确接口，但仓库内现有 analysis/evaluate 脚本仍读取旧的 `{out_root,records}` collection，且没有 region assessor trainer、threshold freezer 或 formal evaluator 使用这个新 schema。下一步应实现实际 consumer，并在其 run manifest 记录 collection SHA、实际 train/eval 分母和输出路径；在此之前不能把 collection 接线视作完整实验链路。
+5. **仍没有真实运行 artifact。** 当前仓库未发现实际 `RUN_MANIFEST.json`、`PRECHECK.json`、pilot budget/结果或 real-executor evidence。126 项测试证明 fake-executor 与模块级契约，不证明真实音频、模型、hidden extraction、60s serial workflow 或运行预算。
+
+### 当前状态
+
+| 项目 | 状态 |
+|---|---|
+| C3 canonical lineage 的字段、identity 与 evidence 持久化 | 已关闭（保留） |
+| C3 adapter 基本时间/ID检查 | 部分；仍缺跨 unit 时间序与 request canonical 自洽校验 |
+| C3 错误 item 的批次 export 收敛 | 未实现 |
+| guarded collection 产出接口 | 已实现；实际 train/evaluate consumer 未接入 |
+| real executor / hidden audit / long-slot serial / pilot artifacts | 未实现 |
+
+建议下一位 agent 先关闭第 1--3 项并加真实 consumer，再跑单个 real executor request；随后再以实际产物复审。
