@@ -90,6 +90,22 @@ def test_wrong_output_two_directions_independent():
     assert m["replaced_gt_omission_recall"] == round(3 / 9, 4)
 
 
+def test_region_metrics_docstring_claims_only_implemented():
+    # review17-minor：docstring 只宣称已实现指标，不得再提未实现的
+    # interval recall@75/100、>=3-unit 全漏检率、unsafe 扩张长度
+    import lyricalign.research_v7.region_metrics as rm
+    doc = " ".join(rm.__doc__.split())  # 折叠换行（docstring 跨行换行不破坏断言）
+    for unreal in ("interval recall@75/100", ">=3-unit 全漏检率", "unsafe 扩张长度", "deleted-GT weighted"):
+        assert unreal not in doc
+    for real in ("unit recall", "correct-retained-unit FPR", "gap event recall",
+                 "gap omitted-unit weighted recall", "wrong-output recall",
+                 "replaced-GT omission recall", "interval recall"):
+        assert real in doc
+    # 已实现函数确实存在（防 docstring 与实现再次脱节）
+    for fn in ("unit_metrics", "gap_metrics", "wrong_output_metrics", "interval_recall", "summarize_by_split"):
+        assert callable(getattr(rm, fn))
+
+
 def test_gap_metrics_no_dead_params():
     from lyricalign.research_v7.region_metrics import gap_metrics
     # 不再接受 pred_gap_omitted/weighted_deleted_gt（死参数已移除）

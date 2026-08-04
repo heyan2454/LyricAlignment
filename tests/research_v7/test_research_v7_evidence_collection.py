@@ -75,6 +75,48 @@ def test_collect_refuses_un_guarded_manifest(tmp_path):
     assert not out.exists()
 
 
+def test_lineage_transfer_conflict_helper():
+    # review17-minor：collection 转存字段与 evidence.request 的 canonical lineage 一致性。
+    # 仅“两侧都存在但冲突”失败；缺失字段（旧 evidence）容错，向后兼容。
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import _lineage_transfer_conflict
+    # 一致 → 无冲突
+    req = {"canonical_timeline_file_sha": "tlf1", "canonical_timeline_row_sha": "tl1",
+           "source_window_sec": [40.0, 42.0]}
+    assert _lineage_transfer_conflict(req, dict(req)) is None
+    # 三个字段任一冲突 → 报错
+    assert _lineage_transfer_conflict(req, {**req, "canonical_timeline_row_sha": "tl2"}) is not None
+    assert _lineage_transfer_conflict(req, {**req, "canonical_timeline_file_sha": "x"}) is not None
+    assert _lineage_transfer_conflict(req, {**req, "source_window_sec": [1.0, 2.0]}) is not None
+    # 缺失字段（一侧或两侧）→ 不硬失败
+    assert _lineage_transfer_conflict({}, req) is None
+    assert _lineage_transfer_conflict(req, {}) is None
+    assert _lineage_transfer_conflict({}, {}) is None
+
+
+def test_collect_rejects_lineage_transfer_conflict(tmp_path):
+    # review17-minor：collect 时若 collection 转存字段与 evidence.request 冲突必须拒绝
+    # （模拟“收集时串台”：转存值来自别的 evidence）。
+    import sys as _sys
+    import pytest as _pt
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import _verify_lineage_transfer
+    run, train_idn = _make_run(tmp_path)
+    ev_path = run / "evidence" / f"{train_idn}.json"
+    # 转存字段被人为写成与 evidence.request 冲突的值（串台信号）
+    bad_entry = {"request_identity": train_idn, "path": str(ev_path),
+                 "canonical_timeline_file_sha": "tlf1",
+                 "canonical_timeline_row_sha": "WRONG-ROW",
+                 "source_window_sec": [40.0, 42.0]}
+    with _pt.raises(ValueError) as ei:
+        _verify_lineage_transfer([bad_entry])
+    assert "cross-talk" in str(ei.value)
+    # 字段一致 → 通过
+    good_entry = {**bad_entry, "canonical_timeline_row_sha": "tl1"}
+    _verify_lineage_transfer([good_entry])
+
+
 def test_collect_importable():
     sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
     import importlib

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""review9-6：唯一 evidence collection CLI —— 输入 RUN_MANIFEST，校验 train_filter 与 canonical lineage，
-只输出 trainable evidence 路径清单。训练/评估命令只能消费该 collection（不能直接读原始 items/evidence）。
+"""review9-6：唯一 evidence collection CLI —— 输入 RUN_MANIFEST，校验 train_filter 清单
+并核对 canonical lineage 转存一致性，只输出 trainable evidence 路径清单。
+训练/评估命令只能消费该 collection（不能直接读原始 items/evidence）。
 
 用法：
   python scripts/research_v7/collect_trainable_evidence.py --run-manifest <RUN_MANIFEST.json> --out <collection.json>
 校验项：
-  - RUN_MANIFEST 必须含 train_filter（guard 已运行，否则视为未经过滤入口、拒绝）
-  - train_filter 必须含 trainable/rejected 清单与 denominator
-  - canonical lineage：evidence 中每份 request 的 canonical_timeline_sha / source_window_sec 与
-    RUN_MANIFEST 的 code_identity 一致（mapping 未串台）
+  - RUN_MANIFEST 必须含 guard 产出的 train_filter（trainable/rejected 清单形态），否则视为未经过滤入口、拒绝
+  - 每个 trainable request_identity 必须存在 evidence/<identity>.json 文件
+  - canonical lineage 转存一致性（review17-minor）：collection 每条记录的
+    canonical_timeline_file_sha / canonical_timeline_row_sha / source_window_sec 必须与其
+    evidence.request 一致（缺失字段容错；仅两侧都存在但冲突时失败，防止收集时串台）
 输出 collection.json：{schema, run_id, trainable_evidence:[{request_identity, path, sha256}],
   rejected_count, denominator}。
 """
@@ -23,6 +25,36 @@ from pathlib import Path
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+_LINEAGE_FIELDS = ("canonical_timeline_file_sha", "canonical_timeline_row_sha", "source_window_sec")
+
+
+def _lineage_transfer_conflict(request: dict, stored: dict) -> str | None:
+    """review17-minor：collection 转存字段与 evidence.request 的 canonical lineage 一致性。
+
+    缺失字段容错（旧 evidence 无 canonical 字段不硬失败，向后兼容）；
+    仅当两侧字段都出现且不同才返回冲突描述（防止收集时串台）。
+    """
+    for k in _LINEAGE_FIELDS:
+        ev_v, st_v = request.get(k), stored.get(k)
+        if ev_v is not None and st_v is not None and ev_v != st_v:
+            return f"lineage cross-talk: request[{k}] {ev_v!r} != collection stored {st_v!r}"
+    return None
+
+
+def _verify_lineage_transfer(entries: list[dict]) -> None:
+    """review17-minor：转存一致性校验（防收集时串台）。
+
+    对每个转存字段单独读回 evidence 核对；缺失字段容错（向后兼容），
+    仅“两侧都存在但冲突”时拒绝。
+    """
+    for entry in entries:
+        ev = json.loads(Path(entry["path"]).read_text(encoding="utf-8"))
+        req = (ev.get("attempt") or {}).get("request") or {}
+        conflict = _lineage_transfer_conflict(req, entry)
+        if conflict:
+            raise ValueError(f"trainable {entry['request_identity'][:16]}: {conflict}")
 
 
 def _atomic_write(path: Path, payload: dict) -> None:
@@ -71,6 +103,8 @@ def collect(run_manifest_path: Path, out: Path) -> dict:
             "source_window_sec": req.get("source_window_sec"),
             "canonical_to_local": req.get("canonical_to_local"),
         })
+    # review17-minor：转存一致性校验（防收集时串台）——缺失字段容错，仅“存在但冲突”拒绝
+    _verify_lineage_transfer(trainable)
     collection = {
         "schema": "research_v7_trainable_evidence_collection_v1",
         "run_id": rm.get("run_id"),

@@ -97,3 +97,36 @@ def test_seam_duration_not_double_counted():
     expect = n * 2.0 + 0.5 * (n - 1)  # sum dur + 2×seam silence
     assert abs(t.duration_sec - expect) < 1e-6
     assert abs(t.duration_sec - last_end) < 1e-6  # 不双计 → 总时长==末 unit end
+
+
+def test_duration_not_degraded_by_empty_last_segment():
+    # review17-minor：末段无 units 时 duration 不得退化为 0，仍为累计 cursor（含 seam）
+    segs = _segs(3)
+    segs[2] = {"item_id": "s1#seg2", "song_id": "演员", "duration_sec": 2.0, "order": 2}  # 无 text
+    t = build_timeline(timeline_id="e1", source_song_id="演员", dataset="m4", language="zh",
+                       segments=segs, order_field="order", artificial_silence_sec=0.5)
+    expect = 3 * 2.0 + 0.5 * 2  # sum dur + 2×seam silence
+    assert t.duration_sec > 0
+    assert abs(t.duration_sec - expect) < 1e-6
+    # canonical units 时间正常：末 unit end == 前两段累计（seg0 2.0 + seam0.5 + seg1 2.0）
+    last_end = max(c["end_sec"] for c in t.canonical_units)
+    assert abs(last_end - (2.0 + 0.5 + 2.0)) < 1e-6
+    # seam 仍记录（含空段前的 seam，位于累计 cursor 5.0）
+    assert len(t.seams) == 2
+    assert abs(t.seams[-1]["timeline_sec"] - 5.0) < 1e-6
+
+
+def test_empty_middle_segment_keeps_cursor_and_resets_per():
+    # review17-minor：中间空段不残留上一段 per，后续段 canonical 时间仍按累计 cursor 平移
+    segs = _segs(4)
+    segs[1] = {"item_id": "s1#seg1", "song_id": "演员", "duration_sec": 2.0, "order": 1}  # 无 text
+    t = build_timeline(timeline_id="e2", source_song_id="演员", dataset="m4", language="zh",
+                       segments=segs, order_field="order", artificial_silence_sec=0.5)
+    # 第3段(seg2)首个 unit start = 2.0 + 0.5 + 2.0 + 0.5 = 5.0（空段时长仍计入平移）
+    first_seg2 = [c["start_sec"] for c in t.canonical_units
+                  if c["source_segment_id"] == "s1#seg2"][0]
+    assert abs(first_seg2 - 5.0) < 1e-6
+    # 末段有 units 时 duration 仍为累计 cursor（4*2.0 + 3*0.5）
+    assert abs(t.duration_sec - (4 * 2.0 + 0.5 * 3)) < 1e-6
+    starts = [c["start_sec"] for c in t.canonical_units]
+    assert starts == sorted(starts)

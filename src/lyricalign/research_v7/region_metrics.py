@@ -1,8 +1,10 @@
 """WP5：region_metrics —— 判别器结果评价（15 蓝图 §6.3）。
 
 对每个 target/domain/mutation family 输出：unit recall、correct-retained-unit FPR、
-gap event recall、deleted-GT weighted gap recall、wrong-output recall、replaced-GT omission
-recall、interval recall@75/100、>=3-unit 全漏检率、unsafe 扩张长度。
+gap event recall、gap omitted-unit weighted recall、wrong-output recall、replaced-GT
+omission recall、interval recall（cover_frac 阈值由调用方给定）。
+review17-minor：历史宣称的 interval 双阈值、全漏检率、扩张长度等输出项均未实现，
+docstring 不再宣称这些输出。
 按 source-song 独立 split 报告；demo 不参与训练/阈值。
 纯函数、可单测。
 """

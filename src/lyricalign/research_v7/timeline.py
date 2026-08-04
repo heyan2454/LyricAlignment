@@ -101,6 +101,8 @@ def build_timeline(
         units = _seg_units(seg)
         dur = float(seg.get("duration_sec", 0.0) or 0.0)
         seg_span = 0.0
+        # review17-minor：空段（无 units）时 per 重置为 0.0，不得残留上一段的值
+        per = 0.0
         if units:
             per = dur / len(units) if dur > 0 else 0.0
         for uidx, u in enumerate(units):
@@ -127,13 +129,14 @@ def build_timeline(
             })
 
     # P0-4a：cursor 已在每段前计入 artificial_silence（seam 平移），总时长直接用 cursor，勿再二次加。
+    # review17-minor：duration 基于累计 cursor（含 seam 平移），末段为空（无 units）时不得退化为 0。
     duration = cursor
     return Timeline(
         timeline_id=timeline_id,
         source_song_id=source_song_id,
         dataset=dataset,
         language=language,
-        duration_sec=duration if units else 0.0,
+        duration_sec=duration,
         source_segments=tuple(ordered),
         seams=tuple(seams),
         canonical_units=tuple(canonical),
