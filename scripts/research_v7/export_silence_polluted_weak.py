@@ -167,13 +167,41 @@ def main(argv=None) -> int:
             write_wav(d / f"{name}.wav", outs[a], rate); rms_all[name] = rms(outs[a])
         # P0（C3-review）：实际计算 source SHA，不使用输入里的可选字段
         import hashlib
+        import json as _json
 
-        recs.append({"item_id": it["item_id"], "window_sec": [round(start / rate, 1), round((start + win) / rate, 1)],
-                     "sample_rate": rate,
-                     "vocal_sha256": hashlib.sha256(vp.read_bytes()).hexdigest(),
-                     "acc_sha256": hashlib.sha256(cp.read_bytes()).hexdigest(), **meta,
+        window_s = round(start / rate, 1)
+        pair_id = f"{it['item_id']}:w{window_s}"
+        conditions = {lab: ("control" if lab == "control" else "weak_vocal_residual") for lab in labels.values()}
+        # request identity：canonical 字段集的 sha256（含 item/window/condition/audio hash）
+        def _reqid(cond, sha):
+            return "sha256:" + hashlib.sha256(
+                f"{pair_id}|{cond}|{rate}|{sha}".encode()).hexdigest()
+
+        vocal_sha = hashlib.sha256(vp.read_bytes()).hexdigest()
+        acc_sha = hashlib.sha256(cp.read_bytes()).hexdigest()
+        recs.append({"item_id": it["item_id"], "window_sec": [window_s, round((start + win) / rate, 1)],
+                     "pair_id": pair_id, "sample_rate": rate,
+                     "vocal_sha256": vocal_sha, "acc_sha256": acc_sha, **meta,
                      "rms": {k: round(v, 3) for k, v in rms_all.items()},
+                     "conditions": conditions,
                      "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})
+        # REQUESTS.jsonl：每 condition 一条固定 schema 请求，供真实 runner 消费
+        for lab in labels.values():
+            cond = conditions[lab]
+            req = {
+                "schema_version": "research_v7_long_slot_v1",
+                "request_type": "c3_weak_vocal_calibration",
+                "condition": cond,
+                "pair_id": pair_id,
+                "item_id": it["item_id"],
+                "window_sec": [window_s, round((start + win) / rate, 1)],
+                "audio_path_vocals": str(vp), "audio_path_accompaniment": str(cp),
+                "vocal_sha256": vocal_sha, "acc_sha256": acc_sha,
+                "sample_rate": rate, "request_identity": _reqid(cond, vocal_sha),
+                "files": [str(d / f"{lab}.wav")],
+                "mutation": "silence_residual", "target_ratio": next((a for a in ALPHAS if a > 0), None),
+            }
+            (out_root / "REQUESTS.jsonl").open("a").write(_json.dumps(req, ensure_ascii=False) + "\n")
         done += 1
     (out_root / "AUDIO_EXPORT_MANIFEST.json").write_text(json.dumps(recs, ensure_ascii=False, indent=1))
     print(json.dumps({"ok": True, "exported": done, "alphas": ALPHAS, "out_root": str(out_root)}, ensure_ascii=False))

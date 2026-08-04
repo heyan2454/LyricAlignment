@@ -136,3 +136,8 @@ def test_successful_export_branch_done_and_files(tmp_path):
     assert d.get("vocal_sha256") and d.get("acc_sha256")   # sha 存在（vpath 已修）
     assert "control" in d["files"] and "weak_2" in d["files"]
     assert (Path(d["files"]["control"]).is_file()) and (Path(d["files"]["weak_2"]).is_file())
+    # REQUESTS.jsonl 每 condition 一条固定 schema（供真实 runner）
+    reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert len(reqs) >= 2  # control + weak
+    assert all(r.get("schema_version") == "research_v7_long_slot_v1" for r in reqs)
+    assert all(r.get("request_identity") and r.get("pair_id") and r.get("vocal_sha256") for r in reqs)
