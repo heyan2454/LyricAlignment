@@ -299,6 +299,8 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
 
     per_request = []
     n_ok = n_skipped = 0
+    sum_text_units = 0
+    sparse_checked = []  # (per_request 条目, 请求) 配对，供 sparse 子集自检
     for rid, ev in sorted(by_request_id.items(), key=lambda kv: kv[0]):
         req = (ev.get("attempt") or {}).get("request") or {}
         if req.get("mutation_type") == "missing" or rid.endswith(":missing"):
@@ -311,6 +313,9 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             continue
         n_ok += 1
         per_request.append(r)
+        sum_text_units += len(req.get("text_units") or [])
+        if req.get("phase") == "sparse":
+            sparse_checked.append((r, req))
 
     # ---- pooled 汇总 ----
     n_units_evaluated = sum(r["n_units_evaluated"] for r in per_request)
@@ -343,6 +348,23 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
         if set(r["gap"]["pred_gap_ids"]) & set(r["gap"]["gt_gap_ids"]):
             hit_omitted += len(r["gap"]["omitted_canonical_ids"])
 
+    # ---- self-check（只读诊断，不改任何指标语义）----
+    # 1) n_units_evaluated 应等于所有已评价请求 text_units 数之和；
+    # 2) phase=="sparse" 请求的 n_units_evaluated 应等于共同评分子集长度
+    #    （text 覆盖 canonical ids 的子集，即 _request_text_ids 口径）；
+    # 3) counts_consistent：n_units_evaluated == n_retained_units。
+    sparse_subset_ok = all(
+        rr["n_units_evaluated"] == len(_request_text_ids(rq))
+        for rr, rq in sparse_checked
+    )
+    self_check = {
+        "units_match_text_units": n_units_evaluated == sum_text_units,
+        "n_units_from_text_units": sum_text_units,
+        "sparse_subset_ok": sparse_subset_ok,
+        "n_sparse_requests": len(sparse_checked),
+        "counts_consistent": n_units_evaluated == n_retained,
+    }
+
     result = {
         "schema": SCHEMA_MIR1K if domain == "mir1k" else SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -368,6 +390,7 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             "n_missing": n_missing,
             "n_evidence_ok": n_ok,
             "n_evidence_skipped": n_skipped,
+            "self_check": self_check,
         },
         "per_request": [
             {k: v for k, v in r.items() if k != "rows"} for r in per_request

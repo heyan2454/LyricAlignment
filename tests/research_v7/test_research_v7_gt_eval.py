@@ -204,6 +204,22 @@ def test_evaluate_importable_and_api(tmp_path):
     assert res["metrics"]["unit_recall"] == round(4 / 6, 4)
 
 
+def test_gt_eval_self_check_counts_consistent(tmp_path):
+    """evaluate() 返回 metrics.self_check：counts_consistent=True（n_units_evaluated
+    == n_retained_units），且 text 单位数与 sparse 子集自检一致。"""
+    sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_long_slot_gt as m
+    run = _make_run(tmp_path, missing_n_rows=18)
+    res = m.evaluate(run, run.parent / "formal_manifest" / "LONG_TIMELINE_MANIFEST.jsonl")
+    sc = res["metrics"]["self_check"]
+    assert isinstance(sc, dict)
+    assert sc["counts_consistent"] is True, sc
+    assert sc["units_match_text_units"] is True, sc
+    assert sc["n_units_from_text_units"] == 20 + 14
+    assert sc["n_sparse_requests"] == 0  # fixture 无 phase=sparse 请求（vacuous ok）
+    assert sc["sparse_subset_ok"] is True, sc
+
+
 def test_gt_eval_missing_without_baseline_skipped_not_inflated(tmp_path):
     """round1 review MAJOR：missing 请求无配对 baseline evidence 时不得按
     '无真 unsafe' 评价（那会把 recall 真空膨成 1.0）；应计入 skipped。"""

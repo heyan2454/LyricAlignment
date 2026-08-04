@@ -31,6 +31,12 @@ runs/**/raw_audio/
 runs/**/large_outputs/
 runs/research_v7_align_behavior/
 
+# GT 逐字符评价 / 跨域对照输出（工作目录冒烟产物）
+gt_eval_out/
+out/
+runs/**/GT_EVAL.json
+runs/**/MIR_CROSS_DOMAIN_EVAL.json
+
 # Audio/video and model artifacts
 *.wav
 *.mp3
