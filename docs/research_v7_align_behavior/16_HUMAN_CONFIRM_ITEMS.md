@@ -39,3 +39,23 @@
 
 - formal 目标 ≤10h / 硬限 ≤12h；不得用人工静音凑 180s；不得在 test/demo 选阈值；
   不得把 P1 prefix 叫真实串行；不得用 GT 每窗 reset；missing/replace 必须 proper 评价。
+
+---
+
+## 更新（2026-08-04，离线推进后）
+
+### A'. 弱人声/伴奏 controls —— 已按你的反馈改进为三档
+- **来源**：均来自早前 Demucs 分离的既有 `test/{song}_qwen_fa/work/audio/{vocals,accompaniment}.wav`（mtime 07-26/28，**非我新建、未破坏原数据**）；controls 为独立 `demo_challenge` run，**未混入正式实验**。
+- **改进**（`build_vocal_energy_controls_v2.py`，已 push e55f905）：
+  - 三档同窗口对照：`C6:normal`(70分位 normal 参考) / `C6:weak-vocal`(min RMS 窗) / `C6:weak-vocal+accomp`(low-vocal 混伴奏，MIX_ACCOMP_GAIN=0.25)。
+  - **收紧**：weak 窗绝对 RMS ≤5（默认），且 weak/normal RMS ratio ≤0.5；结果 35→17 item（跳过 18 个仍太响的），weak RMS 现 0.82~3.75。
+- 你在线可抽查 `runs/research_v7_align_behavior/demo_low_vocal_energy_controls_20260804/`（旧的）或 v2 manifest 输出；如需跑 v2 的 51 请求可再执行。
+
+### B'. C10 —— 已确认是自动合成，无需人工标注
+- `build_repeated_section_manifest.py` 自动从真实歌词检测重复 n-gram → 生成 `C10:short-repeat` / `C10:double-repeat`；多解由合成重复结构天然产生，taxon 自动可证。
+- **无需人工盲审**；之前我将其列为"需人工判断"是误判，已更正。
+- C10 位置：`runs/research_v7_align_behavior/demo_c10_repeated_sections_20260804/`。
+
+### 仍待你确认
+- 主 cohort 长时线（≥180s）song 选择；
+- 是否继续实施蓝图 WP2-7（此前已 scaffold + smoke；正式模型采集待你批准 budget）。
