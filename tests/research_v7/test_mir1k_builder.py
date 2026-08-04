@@ -206,6 +206,9 @@ def test_builder_timeline_and_freeze(tmp_path):
     # 请求的 file sha == 实际 timeline manifest sha；每歌一个 row sha
     fr = json.loads((out / "FREEZE.json").read_text())
     import hashlib
+    # round06：决策记录——canonical_timeline_file_sha 语义 note 必须存在且非空
+    # （MIR = MIR_TIMELINE_MANIFEST.jsonl 自身 sha）
+    assert fr.get("canonical_timeline_file_sha_note")
     assert fr["labels"]["sha256"] == hashlib.sha256(mf.read_bytes()).hexdigest()
     assert fr["labels"]["path"] == str(mf)
     assert fr["files"]["MIR_TIMELINE_MANIFEST.jsonl"] == \

@@ -303,6 +303,9 @@ def main(argv=None) -> int:
         tl_rows.append(timeline_row(song["song_id"], units))
     _atomic_jsonl(out / "MIR_TIMELINE_MANIFEST.jsonl", tl_rows)
     timeline_sha = _sha(out / "MIR_TIMELINE_MANIFEST.jsonl")
+    # 决策记录（round06）：canonical_timeline_file_sha 语义 = MIR_TIMELINE_MANIFEST.jsonl
+    # 自身 sha（与 M4 builder 的源 manifest sha 语义不同）；不改 identity——
+    # 见 FREEZE.canonical_timeline_file_sha_note。
     # timeline 文件 sha 进每个请求的 canonical lineage（正式身份内容字段）
     final_reqs = []
     for song in songs:
@@ -320,6 +323,12 @@ def main(argv=None) -> int:
     freeze = {
         "schema": "research_v7_mir1k_manifest_v1",
         "labels": {"path": str(labels), "sha256": labels_sha},
+        # 决策记录（round06）：MIR builder 的 canonical_timeline_file_sha 为
+        # MIR_TIMELINE_MANIFEST.jsonl 自身 sha（与 M4 builder 的源 manifest sha 语义不同）。
+        "canonical_timeline_file_sha_note": (
+            "MIR builder 的 canonical_timeline_file_sha 为 MIR_TIMELINE_MANIFEST.jsonl "
+            "自身 sha（与 M4 builder 的源 manifest sha 语义不同）。"
+        ),
         "audio_root": str(audio_root) if audio_root else "",
         "built_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "windows_per_song": args.windows_per_song,

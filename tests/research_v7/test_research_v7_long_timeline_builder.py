@@ -108,6 +108,9 @@ def test_builder_produces_validated_requests(tmp_path):
     fr = json.loads((out / "FREEZE.json").read_text())
     for name in ("LONG_TIMELINE_MANIFEST.jsonl", "WINDOW_PLAN.jsonl", "REQUESTS.jsonl"):
         assert fr["files"][name]
+    # round06：决策记录——canonical_timeline_file_sha 语义 note 必须存在且非空
+    # （M4 = 源 m4 manifest sha；不改 identity）
+    assert fr.get("canonical_timeline_file_sha_note")
 
 
 def test_builder_missing_keeps_canonical_consistency(tmp_path):

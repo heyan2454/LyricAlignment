@@ -304,6 +304,9 @@ def main(argv=None) -> int:
 
     tl_rows, win_rows, reqs = [], [], []
     for tl in timelines:
+        # 决策记录（round06）：canonical_timeline_file_sha 语义 = 源 m4 manifest sha
+        # （非 timeline 文件自身 sha，与 MIR builder 语义不同）；不改 identity，
+        # 改会作废 120 req formal evidence 需重跑——见 FREEZE.canonical_timeline_file_sha_note。
         tl["manifest_sha"] = manifest_sha
         audio_root = Path(tl["audio_root"]) if tl.get("audio_root") else None
         segs = []
@@ -368,6 +371,14 @@ def main(argv=None) -> int:
     freeze = {
         "schema": "research_v7_long_timeline_manifest_v1",
         "m4_manifest": {"path": str(m4), "sha256": manifest_sha},
+        # 决策记录（round06）：M4 builder 的 canonical_timeline_file_sha 为源 m4
+        # manifest sha（与 MIR builder 的 timeline 文件 sha 语义不同）；此为决策记录，
+        # 不改 identity（改会作废 formal evidence 需重跑）。
+        "canonical_timeline_file_sha_note": (
+            "M4 builder 的 canonical_timeline_file_sha 为源 m4 manifest sha"
+            "（与 MIR builder 的 timeline 文件 sha 语义不同）；此为决策记录，"
+            "不改 identity（改会作废 formal evidence 需重跑）。"
+        ),
         "built_at_utc": "2026-08-05T00:00:00Z",
         "min_duration_sec": args.min_duration, "windows_per_song": args.windows_per_song,
         "songs": len(tl_rows), "requests": len(reqs),
