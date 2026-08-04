@@ -358,3 +358,20 @@ def test_failure_rows_carry_role_and_source_audit(tmp_path):
     assert auds[2] == "blocked_by_parent"
     # 分母交集：成功身份 + 失败/阻塞 都在行审计中体现
     assert all(a["source_row_sha256"] for a in rm["row_audit"])
+
+
+def test_single_array_row_yields_exactly_one_failure(tmp_path):
+    # review9-5：单个非 object 行恰好一条 malformed failure；不再因 r.get 二次抛异常重复计。
+    import json as _j
+    manifest = tmp_path / "arr.jsonl"
+    manifest.write_text(_j.dumps(["not", "object"]) + "\n")
+    outroot = tmp_path / "run"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+                        "--manifest", str(manifest), "--out-root", str(outroot), "--smoke"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    rm = _j.loads((outroot / "RUN_MANIFEST.json").read_text())
+    mal = [f for f in rm["failures"] if f["kind"] == "malformed_row"]
+    assert len(mal) == 1, mal
+    assert rm["item_count"]["failed"] == 1
+    assert rm["row_audit"][0]["status"] == "malformed_row"

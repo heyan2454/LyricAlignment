@@ -179,12 +179,21 @@ def main(argv=None) -> int:
     # review8-1/2：原曲 canonical GT 时间轴（每字 start/end），供 adapter 用【原曲窗】相交
     from lyricalign.research_v7.c3_text_adapter import bind_canonical_to_window, request_from_bound
     canon_map: dict[str, list] = {}
+    canon_buf = b""
     if args.canonical_timeline and Path(args.canonical_timeline).is_file():
-        for line in Path(args.canonical_timeline).read_text(encoding="utf-8").splitlines():
+        canon_buf = Path(args.canonical_timeline).read_bytes()
+        import hashlib as _clh
+        canon_file_sha = _clh.sha256(canon_buf).hexdigest()
+        for line in canon_buf.decode("utf-8", "ignore").splitlines():
             if not line.strip():
                 continue
             t = json.loads(line)
-            canon_map[t["item_id"]] = list(t.get("units", []))
+            canon_map[t["item_id"]] = {
+                "units": list(t.get("units", [])),
+                "row_sha": _clh.sha256(line.strip().encode("utf-8")).hexdigest(),
+            }
+    else:
+        canon_file_sha = None
 
     items = [json.loads(l) for l in Path(args.item_list).read_text().splitlines() if l.strip()]
     out_root = Path(args.out_root); out_root.mkdir(parents=True, exist_ok=True)
@@ -275,9 +284,12 @@ def main(argv=None) -> int:
             probe_flag = "acoustic_probe" if not tu else "demo_challenge"
         else:
             probe_flag = "lyrics_aligned"
-        # review8：原曲源窗（第 1 层坐标系，非生成 WAV 局部坐标），供 adapter 与 canonical GT 相交
-        source_win = [window_s, round((start + win) / rate, 1)]
+        # review8 / review9-7：原曲源窗(第1层坐标系)。bind/identity/审计用【未舍入】精确窗口，
+        # window_sec 仅作展示圆整。adapter 以精确窗口与 canonical GT 相交，避免 0.1s 舍入误纳/漏字。
+        source_win_exact = [float(window_s), round((start + win) / rate, 6)]
+        source_win_disp = [round(window_s, 1), round((start + win) / rate, 1)]
         has_canonical = bool(canon_map.get(it["item_id"]))
+        canon_info = canon_map.get(it["item_id"]) or {}
         for lab in labels.values():
             cond = conditions[lab]
             is_control = (lab == "control")
@@ -291,13 +303,20 @@ def main(argv=None) -> int:
                 "audio_path": wav_path,
                 "audio_start_sec": 0.0, "audio_end_sec": wav_dur, "duration_sec": wav_dur,
                 "audio_source": "generated_c3_wav",
-                "window_sec": source_win,
+                "window_sec": source_win_disp,
+                # review9-7：精确 source window（identity/审计用），展示类型另行圆整
+                "source_window_start_sec": round(source_win_exact[0], 6),
+                "source_window_end_sec": round(source_win_exact[1], 6),
                 "audio_path_vocals": str(vp), "audio_path_accompaniment": str(cp),
                 "vocal_sha256": vocal_sha, "acc_sha256": acc_sha,
                 "sample_rate": rate, "code_version": code_ver,
                 "request_identity": _reqid(cond, wav_sha[lab]),
                 "files": [wav_path], "files_sha256": [wav_sha[lab]],
                 "text_source": tsrc, "has_gt": has_gt,
+                # review9-3：canonical timeline 来源可追溯（file SHA + item 行 SHA + adapter 版本）
+                "canonical_timeline_file_sha": canon_file_sha,
+                "canonical_timeline_row_sha": canon_info.get("row_sha"),
+                "canonical_adapter_version": "c3_text_adapter_v1",
                 # review4-5 / review5-3：condition 显式 + target_ratio + control=ratio0
                 "mutation": ("control" if is_control else "silence_residual"),
                 "mutation_type": ("control" if is_control else "silence_residual"),
@@ -305,8 +324,8 @@ def main(argv=None) -> int:
                 "condition": cond,
             }
             if has_canonical and has_gt:
-                # review8-1：adapter 以【原曲窗】绑定；产出 request-local index + canonical mapping
-                bound = bind_canonical_to_window(canon_map[it["item_id"]], tuple(source_win))
+                # review8-1：adapter 以【未舍入原曲窗】绑定；产出 request-local index + canonical mapping
+                bound = bind_canonical_to_window(canon_info["units"], tuple(source_win_exact))
                 req = request_from_bound(bound, base=base, audio_start_sec=0.0, audio_end_sec=wav_dur)
             else:
                 # 无 canonical/无 GT → 无法证明 overlap → 显式 probe（review8 保守；带原因）

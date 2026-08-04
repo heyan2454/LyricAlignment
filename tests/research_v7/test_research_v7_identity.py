@@ -46,3 +46,44 @@ def test_identity_mutation_sensitive():
 
 def test_identity_context_sensitive():
     assert _req().request_identity(context=CTX) != _req().request_identity(context={"code": "x"})
+
+
+def _creq(units=("乙", "女"), cstart=0, cend=2, cmap=None, tl_sha="tl1",
+          sw=(40.0, 42.0), adapter="c3_text_adapter_v1"):
+    return AlignmentRequest(
+        request_id="rid", item_id="i1", parent_request_id=None,
+        audio_source="demucs_vocal", audio_start_sec=0.0, audio_end_sec=2.0,
+        text_source="canon", text_start_index=0, text_end_index=len(units),
+        text_units=units, timestamp_slot_indices=None, workflow_mode="behavior",
+        mutation_type="baseline", mutation_parameters={}, model_id="Q",
+        checkpoint_id="r2", input_variant="text",
+        canonical_text_start=cstart, canonical_text_end=cend,
+        canonical_to_local=cmap if cmap is not None else {i: i for i in range(len(units))},
+        canonical_timeline_sha=tl_sha, canonical_adapter_version=adapter,
+        source_window_sec=sw,
+    )
+
+
+def test_identity_canonical_to_local_sensitive():
+    # review9-2：仅 canonical mapping 不同 → identity 必须不同（同一音频/文本、不同原曲解释）
+    a = _creq(cmap={0: 0, 1: 1})
+    b = _creq(cmap={0: 1, 1: 0})
+    assert a.request_identity(context=CTX) != b.request_identity(context=CTX)
+
+
+def test_identity_canonical_range_sensitive():
+    a = _creq(cstart=0, cend=2)
+    b = _creq(cstart=40, cend=42)
+    assert a.request_identity(context=CTX) != b.request_identity(context=CTX)
+
+
+def test_identity_timeline_sha_sensitive():
+    a = _creq(tl_sha="tl1")
+    b = _creq(tl_sha="tl2")
+    assert a.request_identity(context=CTX) != b.request_identity(context=CTX)
+
+
+def test_identity_source_window_sensitive():
+    a = _creq(sw=(40.0, 42.0))
+    b = _creq(sw=(40.1, 42.0))
+    assert a.request_identity(context=CTX) != b.request_identity(context=CTX)

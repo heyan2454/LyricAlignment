@@ -119,6 +119,7 @@ def main(argv=None) -> int:
                                  "source_row_sha256": row_sha, "evaluation_role": None,
                                  "text_window_aligned": None, "parent_request_id": None})
                 row_aud["status"] = "malformed_row"
+                continue  # review9-5：非 object 行立即跳过，避免 r.get() 抛异常再记第二条 failure
             units = tuple(r.get("text_units", []))
             parent = r.get("parent_request_id")
             cursor_prev = cursor_after_by_request.get(parent) if parent else None
@@ -184,6 +185,18 @@ def main(argv=None) -> int:
                 model_id=args.model,
                 checkpoint_id=args.checkpoint,
                 input_variant=r.get("input_variant", "text_mutation"),
+                # review9-1/9-2：C3 canonical lineage 作为正规 content 字段（进 identity + evidence）
+                canonical_text_start=r.get("canonical_text_start"),
+                canonical_text_end=r.get("canonical_text_end"),
+                canonical_to_local={int(k): int(v) for k, v in (r.get("canonical_to_local") or {}).items()}
+                if r.get("canonical_to_local") else None,
+                canonical_timeline_sha=r.get("canonical_timeline_sha")
+                or r.get("canonical_timeline_row_sha"),
+                canonical_adapter_version=r.get("canonical_adapter_version")
+                or "c3_text_adapter_v1",
+                source_window_sec=(float(r.get("source_window_start_sec", r.get("window_sec", [None, None])[0])),
+                                   float(r.get("source_window_end_sec", r.get("window_sec", [None, None])[1])))
+                if r.get("source_window_start_sec") or r.get("source_window_end_sec") or r.get("window_sec") else None,
                 metadata={"dataset": r.get("dataset"), "split": r.get("split"),
                           "source_song_id": r.get("source_song_id") or r.get("song_id"),
                           "language": r.get("language") or "Chinese", "provenance": r.get("provenance", {}),
@@ -192,7 +205,10 @@ def main(argv=None) -> int:
                           "target_ratio": r.get("target_ratio"),
                           "evaluation_role": r.get("evaluation_role"),
                           "text_window_aligned": r.get("text_window_aligned", "unknown"),
-                          "canonical_mapping": r.get("canonical_mapping", {})},
+                          # review9-1：canonical 一并写入 metadata（人读证据），identity 由正规字段覆盖
+                          "canonical_mapping": {str(k): v for k, v in ((r.get("canonical_to_local") or {}).items())},
+                          "canonical_text_start": r.get("canonical_text_start"),
+                          "canonical_text_end": r.get("canonical_text_end")},
             )
             req.validate()
         except Exception as _ce:  # noqa

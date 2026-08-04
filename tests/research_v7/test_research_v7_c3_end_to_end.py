@@ -83,3 +83,41 @@ def test_exporter_to_runner_end_to_end(tmp_path):
     assert ri, "no requests recorded"
     assert all(x["status"] == "ok" for x in ri), rm["failures"]
     assert all(x["evaluation_role"] == "lyrics_aligned" for x in ri)
+
+
+def test_exporter_writes_canonical_lineage_into_evidence(tmp_path):
+    """review9-1/9-3/9-7：出导 REQUESTS 含 timeline SHA + 精确 source window；
+    runner 写入的 evidence.request 保留 canonical range/mapping/timeline SHA（人读证据可重建 canonical 轴）。"""
+    import json as _j
+    it = _make_item(tmp_path)
+    item_list = tmp_path / "items.jsonl"; item_list.write_text(_j.dumps(it) + "\n")
+    canon = tmp_path / "canon.jsonl"
+    canon.write_text(_j.dumps({"item_id": it["item_id"],
+        "units": [{"global_index": 0, "text": "乙", "start_sec": 0.10, "end_sec": 0.45},
+                  {"global_index": 1, "text": "女", "start_sec": 0.50, "end_sec": 0.95}]}) + "\n")
+    textm = tmp_path / "text.jsonl"
+    textm.write_text(_j.dumps({"item_id": it["item_id"], "text_units": ["乙", "女"], "has_gt": True, "source": "canon"}) + "\n")
+    out = tmp_path / "export"
+    _run([sys.executable, str(ROOT / "scripts/research_v7/export_silence_polluted_weak.py"),
+          "--item-list", str(item_list), "--out-root", str(out),
+          "--canonical-timeline", str(canon), "--text-manifest", str(textm), "--window-sec", "1.0"], expected=0)
+    reqs = [_j.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    r0 = reqs[0]
+    # review9-3/9-7：REQUESTS 记录 timeline file SHA + adapter version + 精确 source window
+    assert r0["canonical_timeline_file_sha"]
+    assert r0["canonical_adapter_version"] == "c3_text_adapter_v1"
+    assert isinstance(r0["source_window_start_sec"], float) and isinstance(r0["source_window_end_sec"], float)
+    assert r0["canonical_text_start"] == 0 and r0["canonical_text_end"] == 2
+    # 喂 runner(suite)--smoke，检查 evidence 里 request 保留 canonical 字段
+    runout = tmp_path / "run"
+    _run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+          "--manifest", str(out / "REQUESTS.jsonl"), "--out-root", str(runout), "--smoke"], expected=0)
+    import glob
+    ev_files = glob.glob(str(runout / "evidence" / "*.json"))
+    assert ev_files
+    ev = _j.load(open(ev_files[0]))
+    req = ev["attempt"]["request"]
+    assert req["canonical_text_start"] == 0 and req["canonical_text_end"] == 2
+    assert req["canonical_to_local"] == {"0": 0, "1": 1}
+    assert req["canonical_timeline_sha"]
+    assert req["source_window_sec"]  # [start, end]

@@ -35,6 +35,14 @@ class AlignmentRequest:
     model_id: str
     checkpoint_id: str
     input_variant: str
+    # review9-2：C3 canonical lineage 作为【严格 content 字段】进 request identity（非 metadata）。
+    # 任一改变（mapping/range/timeline SHA/adapter/source window）都会改变 identity，避免 cache 串台。
+    canonical_text_start: int | None = None
+    canonical_text_end: int | None = None
+    canonical_to_local: dict[int, int] | None = None
+    canonical_timeline_sha: str | None = None
+    canonical_adapter_version: str | None = None
+    source_window_sec: tuple[float, float] | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def _canonical_payload(self, *, context: dict[str, Any] | None = None) -> dict[str, Any]:
