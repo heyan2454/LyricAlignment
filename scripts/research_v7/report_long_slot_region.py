@@ -36,6 +36,16 @@ def main(argv=None) -> int:
         return 3
     smoke = json.loads(smoke_f.read_text())
 
+    # round02：formal 指标回填 —— GT_EVAL.json（research_v7_gt_eval_v1）优先于
+    # RUN_MANIFEST.metrics；仅当文件缺失/不可读时回退。只读，不覆盖任何原始 aggregate。
+    gt_eval = None
+    gt_eval_f = run / "GT_EVAL.json"
+    if gt_eval_f.is_file():
+        try:
+            gt_eval = json.loads(gt_eval_f.read_text(encoding="utf-8"))
+        except Exception:
+            gt_eval = None
+
     # P0-5 round2：formal_approved 需真实 formal evidence + frozen manifest sha + 实际预算/gates。
     formal_approved = False
     reasons = []
@@ -86,7 +96,9 @@ def main(argv=None) -> int:
                 if not ((run_man.get("runtime_budget") or {}).get("forward_count") or 0) > 0:
                     reasons.append("RUN_MANIFEST forward_count == 0 (no real forward)")
                 for field in ("timeline", "metrics", "assessor"):
-                    if not run_man.get(field):
+                    # round02：GT_EVAL.json 存在即视为 metrics 满足（RUN_MANIFEST.metrics
+                    # 可能恒 null，真实指标在 GT_EVAL）
+                    if not run_man.get(field) and not (field == "metrics" and gt_eval is not None):
                         reasons.append(f"RUN_MANIFEST missing result field {field}")
                 if not reasons:
                     formal_approved = True
@@ -110,16 +122,41 @@ def main(argv=None) -> int:
             "timeline_ge180": result_kv.get("timeline", {}).get("ge180"),
             "slot_topology": result_kv.get("slot", result_kv.get("key", {})).get("topology"),
             "non_contiguous": (result_kv.get("slot", result_kv.get("key", {}))).get("non_contiguous"),
-            "unit_recall": result_kv.get("metrics", {}).get("unit_recall")
-                      or result_kv.get("key", {}).get("unit_recall"),
-            "correct_unit_fpr": result_kv.get("metrics", {}).get("fpr")
-                      or result_kv.get("key", {}).get("correct_unit_fpr"),
-            "gap_recall": result_kv.get("metrics", {}).get("gap_recall")
-                      or result_kv.get("key", {}).get("gap_recall"),
             "assessor_op": result_kv.get("assessor", {}).get("operating_points")
                       or result_kv.get("key", {}).get("assessor_op"),
         },
     }
+    if gt_eval is not None:
+        # round02：GT_EVAL 源（schema research_v7_gt_eval_v1，键 correct_unit_fpr）
+        gm = gt_eval.get("metrics") or {}
+        auto["gt_eval_path"] = str(gt_eval_f)
+        auto["gt_axis_note"] = gt_eval.get("gt_axis_note")
+        auto["data"]["unit_recall"] = gm.get("unit_recall")
+        auto["data"]["correct_unit_fpr"] = gm.get("correct_unit_fpr")
+        auto["data"]["gap_recall"] = gm.get("gap_recall")
+        auto["data"]["gap_weighted_recall"] = gm.get("gap_weighted_recall")
+        auto["data"]["n_units_evaluated"] = gm.get("n_units_evaluated")
+        auto["data"]["n_baseline"] = gm.get("n_baseline")
+        auto["data"]["n_missing"] = gm.get("n_missing")
+        auto["data"]["n_evidence_skipped"] = gm.get("n_evidence_skipped")
+    else:
+        # 回退源：RUN_MANIFEST（formal）或 smoke（draft）；RUN_MANIFEST 键为 fpr（兼容）
+        m_src = result_kv.get("metrics") or {}
+        k_src = result_kv.get("key") or {}
+        auto["data"]["unit_recall"] = (
+            m_src.get("unit_recall") if m_src.get("unit_recall") is not None
+            else k_src.get("unit_recall"))
+        auto["data"]["correct_unit_fpr"] = (
+            m_src.get("fpr") if m_src.get("fpr") is not None
+            else k_src.get("correct_unit_fpr"))
+        auto["data"]["gap_recall"] = (
+            m_src.get("gap_recall") if m_src.get("gap_recall") is not None
+            else k_src.get("gap_recall"))
+        auto["data"]["gap_weighted_recall"] = m_src.get("gap_weighted_recall")
+        auto["data"]["n_units_evaluated"] = m_src.get("n_units_evaluated")
+        auto["data"]["n_baseline"] = m_src.get("n_baseline")
+        auto["data"]["n_missing"] = m_src.get("n_missing")
+        auto["data"]["n_evidence_skipped"] = m_src.get("n_evidence_skipped")
     (run / "report").mkdir(parents=True, exist_ok=True)
     (run / "report" / "AUTO_SUMMARY.json").write_text(json.dumps(auto, ensure_ascii=False, indent=1))
 

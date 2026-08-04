@@ -1,0 +1,41 @@
+{
+ "schema_version": "research_v7_long_slot_v1",
+ "draft": true,
+ "timeline": {
+  "id": "m4:演员:v1",
+  "duration_sec": 400.0,
+  "units": 499,
+  "seams": 99,
+  "ge180": true
+ },
+ "slot": {
+  "topology": "three_regions",
+  "group": "grp0",
+  "non_contiguous": true
+ },
+ "mapping": {
+  "missing": "ok",
+  "gap_candidates": 1,
+  "removed": [
+   28,
+   29,
+   30,
+   31
+  ]
+ },
+ "metrics": {
+  "unit_recall": 0.75,
+  "fpr": 0.5,
+  "gap_recall": 1.0,
+  "gap_weighted_recall": 1.0,
+  "wrong_output_recall": 0.75,
+  "replaced_omission_recall": 0.5
+ },
+ "assessor": {
+  "operating_points": {
+   "high_recall_95": 0.6906391262008357,
+   "high_recall_99": 0.6906391262008357
+  }
+ },
+ "status": "ok"
+}

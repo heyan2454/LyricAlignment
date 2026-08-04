@@ -1,0 +1,9 @@
+{
+ "manifest_sha256": "6ea6e47a10db52a82869c3555d17d74c48c9f086ddef581d1c01755ed515ab36",
+ "run_id": "rl-20260805_044718",
+ "all_gates_passed": true,
+ "runtime_budget_ok": true,
+ "executor": "real",
+ "real_forward": 120,
+ "note": "120 real requests on M4Singer >=180s concatenated timelines; assessor trained on real evidence"
+}

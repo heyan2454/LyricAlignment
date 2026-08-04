@@ -1,0 +1,3126 @@
+{
+ "schema": "research_v7_long_slot_v1",
+ "run_id": "rl-20260805_044718",
+ "code_identity": {
+  "git_commit": "c4902b73ad4458f2fb19ea99405f4e400d9484b5",
+  "source_tree": "71499a9d771b321770ce54a10f96d6ea49317ae46221f5813cf78cf8f6f6f2b4",
+  "imports_sha256": "654a643c0fa22a736616867595b402c3ca87bdbc09f2f5182e90af63008a5fad",
+  "imports_inventory": [
+   {
+    "path": "/home/hyan/LyricAlignment/scripts/research_v7/run_behavior_suite.py",
+    "sha256": "7601d83f3c4b4e0c062078321629ed294fd1aa973af38483502a4af6604791c4"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/__init__.py",
+    "sha256": "b877a176272f1c34fdd871b8ad9da58ad9019435c14e188615d6d78c9bb531e8"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/attempt.py",
+    "sha256": "67b09b2996b73599dfec5a926227f3bc170b9db93474cc1bf40ca02da3f8cc27"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/c3_text_adapter.py",
+    "sha256": "22c3cd4ce7d729da38e298c78b11c1a26fee41e31505a6151693a16dc630bbf4"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/canonical_mapping.py",
+    "sha256": "38f4550fbcf67d15c68626617f3df4f3fc7beafcec13b6581d23444d926d8895"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/evaluation_guard.py",
+    "sha256": "a6ef97c9b548238ef86d2d0749c238ca970e8281515d1b198ce32c3c83ac079a"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/features.py",
+    "sha256": "bb237a44fc5fde5db9ca08ae19a017b3a7f3a1eb451eb4e2683ba04b4b5ecc2a"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/mutations.py",
+    "sha256": "c5d61c39639f071287f75d09f7e4da14ce199a783792fd75fa8934e3c398efcb"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/real_executor.py",
+    "sha256": "2a0e723126fe46880fe5f7f430ab66f29dcaad16a71ae97c13ef2e76254051a8"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/region_assessor.py",
+    "sha256": "b6d8b043cd1bda97978b3b37b57b3f54bd459cb28402e34b09bc70f6be190a47"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/region_metrics.py",
+    "sha256": "54d54d4ef19036e06fad0c37bce6183ba2c0db838346e4311c19a84671030dc5"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/requests.py",
+    "sha256": "a9b39f900f945384328426c12fef73bdd49a6459c199b16e9e9302190748e11c"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/slot_planning.py",
+    "sha256": "8fb3d8bf9e2c03024b4cb568a013d91d5ea9d8b07e194657b18387d419e5586c"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/sparse_slots.py",
+    "sha256": "310dce079fef1f606dbbf91b17cdf792ea52c25d39860fbdb82605067ec89a8c"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/timeline.py",
+    "sha256": "9c9f5801a9a1b9d7fbaa779a0fd529b5d480773f89d3756aea304a490b108064"
+   }
+  ]
+ },
+ "manifest": {
+  "path": "/root/autodl-tmp/AST_storage/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_manifest/REQUESTS.jsonl",
+  "sha256": "6ea6e47a10db52a82869c3555d17d74c48c9f086ddef581d1c01755ed515ab36"
+ },
+ "untracked_inputs": [
+  {
+   "path": "/root/autodl-tmp/AST_storage/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_manifest/REQUESTS.jsonl",
+   "sha256": "6ea6e47a10db52a82869c3555d17d74c48c9f086ddef581d1c01755ed515ab36"
+  }
+ ],
+ "environment": {
+  "model": "Qwen3-ForcedAligner-0.6B-hf",
+  "revision": "main",
+  "checkpoint": "r2-step-000750",
+  "device": "cuda",
+  "executor": "real"
+ },
+ "runtime_budget": {
+  "elapsed_sec": 52.621,
+  "forward_count": 120,
+  "cache_hit": 0,
+  "cache_miss": 120,
+  "cache_total": 120
+ },
+ "item_count": {
+  "requests": 120,
+  "written": 120,
+  "cache_hit": 0,
+  "forward": 120,
+  "failed": 0,
+  "role": {
+   "lyrics_aligned": 120
+  }
+ },
+ "train_filter": {
+  "trainable_identity_count": 120,
+  "trainable": [
+   {
+    "request_identity": "sha256:99cda71705e3d4bef023cf0c580156445bba1c5c154b370fa8536d0961217027",
+    "item_id": "always_online:w0:full:missing",
+    "request_id": "always_online:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:f192b565b6a89821e074a93c311297e15e9134b73457f8d4725ea24eb1e4d0d5",
+    "item_id": "always_online:w0:full",
+    "request_id": "always_online:w0:full"
+   },
+   {
+    "request_identity": "sha256:77bf9a6beb6fca721552ae87d62c05e5a2e250df9bb8a8b2d45c316e103d29e3",
+    "item_id": "always_online:w0:sparse:missing",
+    "request_id": "always_online:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:53224c06d6517bde4aa49635adb9eb7916714e2b20d1287084a7016e35554835",
+    "item_id": "always_online:w0:sparse",
+    "request_id": "always_online:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:944481f384484b36ca0ef78618806a272e13ae0edb3b9bed9d65fcb821b4caf3",
+    "item_id": "always_online:w1:full:missing",
+    "request_id": "always_online:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:d2628513bf6874526b9cdde75306c498c1c1bec4bb1becbc6296cf7859b799e0",
+    "item_id": "always_online:w1:full",
+    "request_id": "always_online:w1:full"
+   },
+   {
+    "request_identity": "sha256:d5246ff14685e5a211e33dd0894205fc9927bf00aaa42893974d5de4144029e7",
+    "item_id": "always_online:w1:sparse:missing",
+    "request_id": "always_online:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:a90aa3bb206c99e8762132483de5aac65c6c9cd7e10247cfc257979a561be398",
+    "item_id": "always_online:w1:sparse",
+    "request_id": "always_online:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:d193ef8163733608a6d4120a374c6d2192c19c4daabf294196b729f7c94d1758",
+    "item_id": "always_online:w2:full:missing",
+    "request_id": "always_online:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:a99f35a360dc54d42e0012e96685b8371f05ea609c4155f64f1972e7357da31d",
+    "item_id": "always_online:w2:full",
+    "request_id": "always_online:w2:full"
+   },
+   {
+    "request_identity": "sha256:807d86d18db5490c3daa51c317b22235dc6b64a0b714f50a315bfe9d4041145c",
+    "item_id": "always_online:w2:sparse:missing",
+    "request_id": "always_online:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:c07199a343855042081215ea1177cca344d49b8325444bfe8de13b17d2ca684e",
+    "item_id": "always_online:w2:sparse",
+    "request_id": "always_online:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:0c585cb259a33df08fa0fdca0d638cb3451a4ed8ed0136e590937385af313dee",
+    "item_id": "newboy:w0:full:missing",
+    "request_id": "newboy:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:38bab55de89e576f990c83697dc2b6163665c23fe01b02c2981129bae65d77b8",
+    "item_id": "newboy:w0:full",
+    "request_id": "newboy:w0:full"
+   },
+   {
+    "request_identity": "sha256:aef5ef8df1453521d1957feb27ff08e2d08786558ed33db3f21c519a086d1d41",
+    "item_id": "newboy:w0:sparse:missing",
+    "request_id": "newboy:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:efa24e0786ac89be41fb0181a5dcd8bb57bd4da8b1d30f74d2466d423ef9492f",
+    "item_id": "newboy:w0:sparse",
+    "request_id": "newboy:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:a97c1dafd3c1ced4a29f3b3206c9e4e18d90e526bc3401fd543df48e64c1008d",
+    "item_id": "newboy:w1:full:missing",
+    "request_id": "newboy:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:c69a53031f1e4e29b608658f94eb7c3eda56cc674d6260329dc9d951f1bd6ca6",
+    "item_id": "newboy:w1:full",
+    "request_id": "newboy:w1:full"
+   },
+   {
+    "request_identity": "sha256:343be195d1cd78b1b748441837dec1f9a1ab61ff1aeaaba648abd19555a412b3",
+    "item_id": "newboy:w1:sparse:missing",
+    "request_id": "newboy:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:3968668d984f70290bb46f881f0742cd76390265979261fe5eca03cf69598a5c",
+    "item_id": "newboy:w1:sparse",
+    "request_id": "newboy:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:578b6a13f30776b2414da7573dd422180155c62e5aa0c592536b746b584609a2",
+    "item_id": "newboy:w2:full:missing",
+    "request_id": "newboy:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:e6a85941d03d88d7753ba933f05fd9a63b4b1959dbb165ccdcc0c7be617f909e",
+    "item_id": "newboy:w2:full",
+    "request_id": "newboy:w2:full"
+   },
+   {
+    "request_identity": "sha256:f26b4d350a851260cd797b1608481f1337d448b8d1141a1c531a2d9bb792853e",
+    "item_id": "newboy:w2:sparse:missing",
+    "request_id": "newboy:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:11e94d4787c58ce5381f0a32981e9c96563729103321eff28ce1ef556cb7349b",
+    "item_id": "newboy:w2:sparse",
+    "request_id": "newboy:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:ae854b19c30a8d008f269e952a7add52b15d45a22d23f5993f6115ec19aa3b12",
+    "item_id": "三国杀:w0:full:missing",
+    "request_id": "三国杀:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:1cba124b86cc89a1088d5ad6452da4c2c504021aca6c7f7e0b75c47067756e7e",
+    "item_id": "三国杀:w0:full",
+    "request_id": "三国杀:w0:full"
+   },
+   {
+    "request_identity": "sha256:26f6a3b5bca74c3fb0bfbf3506d076bd1078b17202be3c42b23625d119eb17da",
+    "item_id": "三国杀:w0:sparse:missing",
+    "request_id": "三国杀:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:caed594dd339cfc56892f60654120dd32ffc18296d2dc4815e30ea2c74ca40b2",
+    "item_id": "三国杀:w0:sparse",
+    "request_id": "三国杀:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:86abfbf8cb32c3b3bb2cc5c4413be48697c2a7c95d0ac98f4c61a84fec582382",
+    "item_id": "三国杀:w1:full:missing",
+    "request_id": "三国杀:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:aa5895678dd72cfb61db135e9c33b5d9103177b030bdbaf9d9a70c9305c695dc",
+    "item_id": "三国杀:w1:full",
+    "request_id": "三国杀:w1:full"
+   },
+   {
+    "request_identity": "sha256:60b091c82bf47b7227d70f0ebd48952add0a359672a87ed35103ef4cd67e5021",
+    "item_id": "三国杀:w1:sparse:missing",
+    "request_id": "三国杀:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:b204d587b9e6b7220da4b10d904364acddc9b967599f86b16b90ef7543726537",
+    "item_id": "三国杀:w1:sparse",
+    "request_id": "三国杀:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:5bc9ca3f3a1f80e99276f003e7b7e35737359467e699d97f07b8439b1d20ac4d",
+    "item_id": "三国杀:w2:full:missing",
+    "request_id": "三国杀:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:d56053c8f1130c387e810e22cdd94433c57402d63237fe4c18b679634cf615d1",
+    "item_id": "三国杀:w2:full",
+    "request_id": "三国杀:w2:full"
+   },
+   {
+    "request_identity": "sha256:c1bbaa4af998600981540ddecfe22f489db2b6f3890eebcf7760133263379fda",
+    "item_id": "三国杀:w2:sparse:missing",
+    "request_id": "三国杀:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:76dcf4559f9e8af192dba210af69d7f71c5c763fecf98f07d5c40938969d80ff",
+    "item_id": "三国杀:w2:sparse",
+    "request_id": "三国杀:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:ec02fd679bb05d24dfb3e088e2b10e691f7c5009040334134a087c306b359645",
+    "item_id": "不要说话:w0:full:missing",
+    "request_id": "不要说话:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:3027785c5ff7114a32726c72e79e4c7f52179d77915a00fe7b1744087f34985c",
+    "item_id": "不要说话:w0:full",
+    "request_id": "不要说话:w0:full"
+   },
+   {
+    "request_identity": "sha256:47cab714dde3cb0f31b74cb6e8d4530ebf0519286282bbbdadfb6be756b202bc",
+    "item_id": "不要说话:w0:sparse:missing",
+    "request_id": "不要说话:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:6e22d75e16e84da244786f4c808286fe02a7e9f77549a0ca53cf0bd70a9f1af7",
+    "item_id": "不要说话:w0:sparse",
+    "request_id": "不要说话:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:1584aa5734b029de8713312d78deb13692d998ae6f5527e66d76a3c2e0de3a41",
+    "item_id": "不要说话:w1:full:missing",
+    "request_id": "不要说话:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:75ba1cd75ed5d05a70fb9eb90507ef208d77e3279a0f8366bed8b7c7d5f7b029",
+    "item_id": "不要说话:w1:full",
+    "request_id": "不要说话:w1:full"
+   },
+   {
+    "request_identity": "sha256:a8e02f17bb195781978a560f027f84c205f5cb4b911c9f75cb199b02b278e8c1",
+    "item_id": "不要说话:w1:sparse:missing",
+    "request_id": "不要说话:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:6fc8786407a0ad37e478e7b10e88aa65f48fd74a5bae57f1b74e1f898e2eae8b",
+    "item_id": "不要说话:w1:sparse",
+    "request_id": "不要说话:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:73bde39a6a9d1d30ccc84026077622b40b8e2fb3da9a05bc0ca8b6cf5133daed",
+    "item_id": "不要说话:w2:full:missing",
+    "request_id": "不要说话:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:d51aa078d63dc5eeaff773edb089ddde26a056377f306902d7d40e5e8cd64743",
+    "item_id": "不要说话:w2:full",
+    "request_id": "不要说话:w2:full"
+   },
+   {
+    "request_identity": "sha256:ef7df0cb6573fe5800fb6d0b59d58174d6bedd1a4c16547bc44218e341d96ea4",
+    "item_id": "不要说话:w2:sparse:missing",
+    "request_id": "不要说话:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:3c9e9fc7cf2cb3a95f527cd064d970153871c65fe61190e17ebeba0a77319c3c",
+    "item_id": "不要说话:w2:sparse",
+    "request_id": "不要说话:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:e8ab35892284d037a28bad9ac86b7c8cf95a9ae335f225ee5f37514299b41db5",
+    "item_id": "云烟成雨:w0:full:missing",
+    "request_id": "云烟成雨:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:b74ac8f7e3f33507de3a560a66ce5d60282d4710e61afa59166cbdfcad7aeef6",
+    "item_id": "云烟成雨:w0:full",
+    "request_id": "云烟成雨:w0:full"
+   },
+   {
+    "request_identity": "sha256:7119f927190863e73d87282a001953053276acf0e77ee9b1729e0d9476751172",
+    "item_id": "云烟成雨:w0:sparse:missing",
+    "request_id": "云烟成雨:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:290f658a8f7cffc6bca3bafaeec912edb5584ed0b0e12ce03d33d7785e560827",
+    "item_id": "云烟成雨:w0:sparse",
+    "request_id": "云烟成雨:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:868aabd6e4f369bcf2885cf0c927e97fe934fd1a0875d2c2aa45cfed30510fc7",
+    "item_id": "云烟成雨:w1:full:missing",
+    "request_id": "云烟成雨:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:d0065de5d3091cbf210b0e59d96666d70644f76d077c94bd0dfb79250c5c5eb3",
+    "item_id": "云烟成雨:w1:full",
+    "request_id": "云烟成雨:w1:full"
+   },
+   {
+    "request_identity": "sha256:2aeff843c3022fe2fa516cdc37bb27249a46471ced1730c585b33d45c9950d82",
+    "item_id": "云烟成雨:w1:sparse:missing",
+    "request_id": "云烟成雨:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:72d9efaecf190b50eb3efad05d37b3c18d4a195a536e4f94c3ecee887ff807bd",
+    "item_id": "云烟成雨:w1:sparse",
+    "request_id": "云烟成雨:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:12678038db607ea86930931183abe318667a170e03a0ed0ea214a600d5dd9d16",
+    "item_id": "云烟成雨:w2:full:missing",
+    "request_id": "云烟成雨:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:9da7bc03d837b50eb6dc5759e581a9d596a57161c2bed0cb6b1679c953ca86b2",
+    "item_id": "云烟成雨:w2:full",
+    "request_id": "云烟成雨:w2:full"
+   },
+   {
+    "request_identity": "sha256:7455e439a0f343e5541d50333564cb71e6506da0e9e0965d78a3fad2d8d1ca95",
+    "item_id": "云烟成雨:w2:sparse:missing",
+    "request_id": "云烟成雨:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:0a9b5d167729cbdd9df894d6418b3ec9f4f1bbf1aa3c41853cc9e8000c7de9ff",
+    "item_id": "云烟成雨:w2:sparse",
+    "request_id": "云烟成雨:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:9c89a67b87c60d93c1b94c27cb212ae50456b542faf0f0844c2fc775b0b514fe",
+    "item_id": "交换余生:w0:full:missing",
+    "request_id": "交换余生:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:b784010b21e976e88acf5b3e240bb3243cb2b82bd51ccf5ac8e22047e78b48a2",
+    "item_id": "交换余生:w0:full",
+    "request_id": "交换余生:w0:full"
+   },
+   {
+    "request_identity": "sha256:e9de8fa357ecbc37cc9c78aa7ed9ed0f818c654fc4467696635b57b872fdd567",
+    "item_id": "交换余生:w0:sparse:missing",
+    "request_id": "交换余生:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:ae2a31ddcd5d2a817612817acefe386a23258bd02cbe2f806127dc0a0006c72e",
+    "item_id": "交换余生:w0:sparse",
+    "request_id": "交换余生:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:bc5ec7563ad5357eb9637ba30193efcb0bd3f6f7da50ffb110d2f389306d2bbd",
+    "item_id": "交换余生:w1:full:missing",
+    "request_id": "交换余生:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:261934d1bd3580c721394a82f15a24f18fd9a7538bf099a34caf00b53ed02238",
+    "item_id": "交换余生:w1:full",
+    "request_id": "交换余生:w1:full"
+   },
+   {
+    "request_identity": "sha256:fd3ca1fccdb6c9f85e2a891ec0c19da341f379d4a6eb49b503aed1af6fb544cc",
+    "item_id": "交换余生:w1:sparse:missing",
+    "request_id": "交换余生:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:7146a3682f2e16b2936e8fabbbbb23e9cd8b0971e416ffd76a2eb8810ff2335b",
+    "item_id": "交换余生:w1:sparse",
+    "request_id": "交换余生:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:4963608eea2e56ae55fbcc44ee85235f248dc56de61c85e9b1afd7b3231faae4",
+    "item_id": "交换余生:w2:full:missing",
+    "request_id": "交换余生:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:bbd86748bc2eb4276eef20ae189cebe51e1c532f2567835f60f504d82c984b84",
+    "item_id": "交换余生:w2:full",
+    "request_id": "交换余生:w2:full"
+   },
+   {
+    "request_identity": "sha256:182aac8fb1268651e03a09a5b23f51d40c5e0b7db86f62108d5bcbf1a66c7cdc",
+    "item_id": "交换余生:w2:sparse:missing",
+    "request_id": "交换余生:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:17a9a49e0e79b1b2cba6251ec287f756830810b1f25792fc46c4198b77c826b9",
+    "item_id": "交换余生:w2:sparse",
+    "request_id": "交换余生:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:7760fe1a2c00ad6a7c0ccb6c746c48c49ab89e7d4d14e4da84a0ef298e3b24c1",
+    "item_id": "会长大的幸福:w0:full:missing",
+    "request_id": "会长大的幸福:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:a1e39dcfffd359066b86130d2bd9d43b3626d857c58363bbefcfeba1a4f7f5cf",
+    "item_id": "会长大的幸福:w0:full",
+    "request_id": "会长大的幸福:w0:full"
+   },
+   {
+    "request_identity": "sha256:67b363482e4db270d6129a87e917695f890935e7f8ee563ac353aacabf551f8f",
+    "item_id": "会长大的幸福:w0:sparse:missing",
+    "request_id": "会长大的幸福:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:5e883a28b3edef9dd4ca31fd85f2a4d82c29f513f864188363338fc9e0966e1d",
+    "item_id": "会长大的幸福:w0:sparse",
+    "request_id": "会长大的幸福:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:13a8e06e17f8cb2a75f23019f56e7e36fe546bbb43a1110cecce401e6668d40a",
+    "item_id": "会长大的幸福:w1:full:missing",
+    "request_id": "会长大的幸福:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:9b172d890ae0576539a04526748a5a0c103f367efbad65e76d5c8d2cd04be775",
+    "item_id": "会长大的幸福:w1:full",
+    "request_id": "会长大的幸福:w1:full"
+   },
+   {
+    "request_identity": "sha256:0a8e5a89fa22887ecdd7a8b3cb0d72c063a727c0b8654cad0015ebe84c3f89f5",
+    "item_id": "会长大的幸福:w1:sparse:missing",
+    "request_id": "会长大的幸福:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:9ce7b6234ae00f90d6c6921fbab919f41cc6a5ec8361e0a4efbcecc57fb335b5",
+    "item_id": "会长大的幸福:w1:sparse",
+    "request_id": "会长大的幸福:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:983ec85bb3d5b58b1ba012a3aa42b1c89e49f5c200563c0fd112fa1bc90a865b",
+    "item_id": "会长大的幸福:w2:full:missing",
+    "request_id": "会长大的幸福:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:8d40917dbf9caebbae6ae91cc584b204e922bc3ff0a0544c122082b2c78cf3cf",
+    "item_id": "会长大的幸福:w2:full",
+    "request_id": "会长大的幸福:w2:full"
+   },
+   {
+    "request_identity": "sha256:6a1300c80cf399aa391812330dc2dc03efd328e8ee0c001f5ac73f184377d5e9",
+    "item_id": "会长大的幸福:w2:sparse:missing",
+    "request_id": "会长大的幸福:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:1dd3e2efc0cc020d6cd2629c0011a232d237b6299eb664870f154f7fd9bf269a",
+    "item_id": "会长大的幸福:w2:sparse",
+    "request_id": "会长大的幸福:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:5b091284954a7a6086e96684d315f2415d2462c6f11c269cf6568b28577d7665",
+    "item_id": "但愿人长久:w0:full:missing",
+    "request_id": "但愿人长久:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:ca3905c5d5c97e3268e1a996f954cdfd453eaabe55e954fca3b3d7cc683ef167",
+    "item_id": "但愿人长久:w0:full",
+    "request_id": "但愿人长久:w0:full"
+   },
+   {
+    "request_identity": "sha256:1ff667417a0d971464810d1be093201bc47ff603e1f124a2860075ea645310de",
+    "item_id": "但愿人长久:w0:sparse:missing",
+    "request_id": "但愿人长久:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:a3269b206e6cc53de92a754d80db0fee9eab8bd2b0e40e3e06bc45f18fb95574",
+    "item_id": "但愿人长久:w0:sparse",
+    "request_id": "但愿人长久:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:fc9ec6a60e3de16547d91cd02fefdee3dc977db97d19c86a09f27fd13ef08da0",
+    "item_id": "但愿人长久:w1:full:missing",
+    "request_id": "但愿人长久:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:14cc9357fffdab0a32bdb9e0201887ea46905f791456c3d91344b29f3d9d0c57",
+    "item_id": "但愿人长久:w1:full",
+    "request_id": "但愿人长久:w1:full"
+   },
+   {
+    "request_identity": "sha256:468929acce35bc19bf4173705c46bf8e7fb8ab766f0fa1fae56ee487ce50c3ca",
+    "item_id": "但愿人长久:w1:sparse:missing",
+    "request_id": "但愿人长久:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:b0af62b1f994b95ee4035fa50325fbfcb857452e88d928135e21cc584a842409",
+    "item_id": "但愿人长久:w1:sparse",
+    "request_id": "但愿人长久:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:e7aceaaef7c68799a2c69e0667d0ad8c96feb418740f246849415e5615d385c8",
+    "item_id": "但愿人长久:w2:full:missing",
+    "request_id": "但愿人长久:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:d08d009905124c5f61e6514d347c556ce63f67a766cbed4db766cd7756d3fa0c",
+    "item_id": "但愿人长久:w2:full",
+    "request_id": "但愿人长久:w2:full"
+   },
+   {
+    "request_identity": "sha256:b8aa7ffb84cff965df924682fc39e80f78dc0d7bac2d8205033180bc1ee0fee0",
+    "item_id": "但愿人长久:w2:sparse:missing",
+    "request_id": "但愿人长久:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:72721746f8068611e175d86c4884b997ef9b96363fd124dc612db57a27fb0956",
+    "item_id": "但愿人长久:w2:sparse",
+    "request_id": "但愿人长久:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:34a502f4d1d9b20f4d638334df6550910ca57c8656b93ef852032ced21034713",
+    "item_id": "你以为:w0:full:missing",
+    "request_id": "你以为:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:c7fd4bfe9de23e8fce92fb28030f9eab967895099015829d0a37705674651146",
+    "item_id": "你以为:w0:full",
+    "request_id": "你以为:w0:full"
+   },
+   {
+    "request_identity": "sha256:6868c506d8c9af407af45df4c85e87775fecc7da590ec1c6e035abf959fb7fcf",
+    "item_id": "你以为:w0:sparse:missing",
+    "request_id": "你以为:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:0ca35b54ca715b266e2badd5f87e8ef0929283dbdbf2d5e99e00841fca724484",
+    "item_id": "你以为:w0:sparse",
+    "request_id": "你以为:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:eba8ec150b2a69ca961f884dca0fb4d91eba3a75df7e90338f9348a43fd7746a",
+    "item_id": "你以为:w1:full:missing",
+    "request_id": "你以为:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:15921194e241f04252e3bd70be0135dd9ddb601bc35314c5a32e68d7278da620",
+    "item_id": "你以为:w1:full",
+    "request_id": "你以为:w1:full"
+   },
+   {
+    "request_identity": "sha256:dfab72fff33c69d42129c5b11b5568b37d876e63c222c00c16e9ed0c8dffb514",
+    "item_id": "你以为:w1:sparse:missing",
+    "request_id": "你以为:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:aa461d62e5f913b0030db7ba2877d905b5c343a245d65fc4618c81e502e1ae41",
+    "item_id": "你以为:w1:sparse",
+    "request_id": "你以为:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:bdc62a13b98de4329aca722ed90156ffa93fbf71feca16513d3d363e96397935",
+    "item_id": "你以为:w2:full:missing",
+    "request_id": "你以为:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:7924020492c621da6eb4302d54de216f20963d9da55e084f1410aad954532d9c",
+    "item_id": "你以为:w2:full",
+    "request_id": "你以为:w2:full"
+   },
+   {
+    "request_identity": "sha256:a34bc21d9247ecda2585e53aeb9e14ab9e33a298854b7bc02f6da94df54a63e0",
+    "item_id": "你以为:w2:sparse:missing",
+    "request_id": "你以为:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:e013913ace307794ad5aa817ff183d28129410a0bb14eee3b1450f74bc03b19d",
+    "item_id": "你以为:w2:sparse",
+    "request_id": "你以为:w2:sparse"
+   },
+   {
+    "request_identity": "sha256:332778226a3588b5b1dd0543dbc5ab725225351c44241bc1b0c42c97a7f5cb6a",
+    "item_id": "你给我听好:w0:full:missing",
+    "request_id": "你给我听好:w0:full:missing"
+   },
+   {
+    "request_identity": "sha256:b13a7d0030285568742e83201de10de57385bf04a8aed5b3a43417e9c690eb83",
+    "item_id": "你给我听好:w0:full",
+    "request_id": "你给我听好:w0:full"
+   },
+   {
+    "request_identity": "sha256:0b87fca9f79d6eb11eb7369f6b52b38cc262b0de599371e483589c597a1436dc",
+    "item_id": "你给我听好:w0:sparse:missing",
+    "request_id": "你给我听好:w0:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:e56b405f96001c30c9e6efb4fb610fe683a18500086732edd19b50cfc663a541",
+    "item_id": "你给我听好:w0:sparse",
+    "request_id": "你给我听好:w0:sparse"
+   },
+   {
+    "request_identity": "sha256:e69cfbc7b47779fa28618bc8bbbd4c91e14be3b16c44008ee237bb5a2147b8d5",
+    "item_id": "你给我听好:w1:full:missing",
+    "request_id": "你给我听好:w1:full:missing"
+   },
+   {
+    "request_identity": "sha256:2ee12e5e337119c70746d74cdc708620739e7e8950baa2b0d47efcc1a7adb499",
+    "item_id": "你给我听好:w1:full",
+    "request_id": "你给我听好:w1:full"
+   },
+   {
+    "request_identity": "sha256:2217c590a63750a10bb090c140f199079a2b7ccd8666144db52e618f7f8b2ae7",
+    "item_id": "你给我听好:w1:sparse:missing",
+    "request_id": "你给我听好:w1:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:a32ab38b97d5e594905390ede800994e81df0de7383a7fc8e15b3f41c7a9289b",
+    "item_id": "你给我听好:w1:sparse",
+    "request_id": "你给我听好:w1:sparse"
+   },
+   {
+    "request_identity": "sha256:c93e6a163ff458039a937f11683682aa43f7a2b58eb9e498773eb035b1e7aa1b",
+    "item_id": "你给我听好:w2:full:missing",
+    "request_id": "你给我听好:w2:full:missing"
+   },
+   {
+    "request_identity": "sha256:c55a1290977ae94cd1b572f3b018f8a4685eed70bcebaa2f6df6d552a84c2abd",
+    "item_id": "你给我听好:w2:full",
+    "request_id": "你给我听好:w2:full"
+   },
+   {
+    "request_identity": "sha256:4248d880988dcc2bc6787cc381d60d75fce3fe82a151eca22979250f5423669d",
+    "item_id": "你给我听好:w2:sparse:missing",
+    "request_id": "你给我听好:w2:sparse:missing"
+   },
+   {
+    "request_identity": "sha256:23ed1b3ef2f89a15b41131f2bb32f3ea5241a9e8709182560a0e6e25dde7bddb",
+    "item_id": "你给我听好:w2:sparse",
+    "request_id": "你给我听好:w2:sparse"
+   }
+  ],
+  "rejected_count": 0,
+  "rejected": [],
+  "denominator": {
+   "all_success_or_cache": 120,
+   "trainable": 120,
+   "rejected": 0
+  }
+ },
+ "row_audit": [
+  {
+   "row_index": 0,
+   "source_row_sha256": "a395bcdc01100bbd364f11d7bf12749a3653a5e77a746969300c7aed02af8e79",
+   "status": "ok"
+  },
+  {
+   "row_index": 1,
+   "source_row_sha256": "627f482ff59326aa96447d7fa69d5610d41647cef4111141a2d7926b8e9eabc9",
+   "status": "ok"
+  },
+  {
+   "row_index": 2,
+   "source_row_sha256": "b0e12c1e13e64542b94ebf27cf9ff69311d7880031af1c0889bbdb6b71efd3d7",
+   "status": "ok"
+  },
+  {
+   "row_index": 3,
+   "source_row_sha256": "0254b39bb32e60a362109fd68b75e435f32e735bed598845c20885ed08b22cab",
+   "status": "ok"
+  },
+  {
+   "row_index": 4,
+   "source_row_sha256": "0663d1e7daaeabebf844c3d42b5c0cecd76d0ced9e619ed31002bc372e104c71",
+   "status": "ok"
+  },
+  {
+   "row_index": 5,
+   "source_row_sha256": "e13e5e8f5e52d29ab57ee27095fd7fd1ad60a63465d713ed094c67e205b45b83",
+   "status": "ok"
+  },
+  {
+   "row_index": 6,
+   "source_row_sha256": "331532ce97d6d35fed7cd05be3d887b40fcd4737704f96932d5ff1376e41c3fb",
+   "status": "ok"
+  },
+  {
+   "row_index": 7,
+   "source_row_sha256": "ca5cea3313406a0d6f49e7bae91a1003e2f183ab844e939cde4b4faeffc09990",
+   "status": "ok"
+  },
+  {
+   "row_index": 8,
+   "source_row_sha256": "1ce97f01dc6d27b15c19f86585678f2aba6b5175b930c8eaee38302cf101b5bf",
+   "status": "ok"
+  },
+  {
+   "row_index": 9,
+   "source_row_sha256": "8a77b2c3c51f5cdab0619b4fc137d17904aaad54f0adcd2182ca48629bab8e41",
+   "status": "ok"
+  },
+  {
+   "row_index": 10,
+   "source_row_sha256": "8895697d7888ff4e73097155a5fd362fea62bf9ba1a5b76bf4bbda3acbf18a96",
+   "status": "ok"
+  },
+  {
+   "row_index": 11,
+   "source_row_sha256": "26b8a8a46aebf4765ad31acee116afbab1285dd54e14982bb4224f692c31fb72",
+   "status": "ok"
+  },
+  {
+   "row_index": 12,
+   "source_row_sha256": "660b89f6540e18ae8ba92fadd3d8734efc83ae5ac4059e9e9811813d4a03b299",
+   "status": "ok"
+  },
+  {
+   "row_index": 13,
+   "source_row_sha256": "c5090a8ee82d99ac8036b4ca11a35da37f1adda116d0914bd7b1dbe4c3351f6d",
+   "status": "ok"
+  },
+  {
+   "row_index": 14,
+   "source_row_sha256": "45f47407d8d2d5e2a372fb2f64690f9632ed8799521573bba4995753752f4efc",
+   "status": "ok"
+  },
+  {
+   "row_index": 15,
+   "source_row_sha256": "f7b6bb1b31e47dc6209fca65ca0fe5aca47f999988d056ed934355336d75905a",
+   "status": "ok"
+  },
+  {
+   "row_index": 16,
+   "source_row_sha256": "4b4524c902c32a537048e451d5e044c9c81eb4bfa1754acb910a6884c1000510",
+   "status": "ok"
+  },
+  {
+   "row_index": 17,
+   "source_row_sha256": "09a8fd9259a07b69230e52d14228ceeacd515e91957de205741b707e7b383c4e",
+   "status": "ok"
+  },
+  {
+   "row_index": 18,
+   "source_row_sha256": "01d7ca3ec8dbdf5386569c2b3e6c1ea490d59d2813cf72257f110bc71c6b55e8",
+   "status": "ok"
+  },
+  {
+   "row_index": 19,
+   "source_row_sha256": "ae13e853073fb8ff9c5f32ebc2c94427161c3e3971476fdbc011d87741e74172",
+   "status": "ok"
+  },
+  {
+   "row_index": 20,
+   "source_row_sha256": "9d13dbf34fece69c87414b1e2b287d22eb8a465fcc6a1fa2897d23fda988bfbe",
+   "status": "ok"
+  },
+  {
+   "row_index": 21,
+   "source_row_sha256": "8ca50c7c96c6c23928e91ca916ea7674793d96e34d5c4f93218a6ac84e3335a9",
+   "status": "ok"
+  },
+  {
+   "row_index": 22,
+   "source_row_sha256": "ce24339d8805795589f053aa98bf78cce9eede020d8db4bc11f84fa990c8c21d",
+   "status": "ok"
+  },
+  {
+   "row_index": 23,
+   "source_row_sha256": "c31e8d029361d64edfc721fc81f02b2b75417b4e328d0cc494ac3fd5a34a60be",
+   "status": "ok"
+  },
+  {
+   "row_index": 24,
+   "source_row_sha256": "76ca7d9fc75d5ddb08c96042dfeb05e71336f04dcf58d4e12cd4e70ad2fdcbd4",
+   "status": "ok"
+  },
+  {
+   "row_index": 25,
+   "source_row_sha256": "3c904cdd3e3d973e4ce0c8843035a2aab9c4331a70346894102dadb0309946a3",
+   "status": "ok"
+  },
+  {
+   "row_index": 26,
+   "source_row_sha256": "be39722a1ff423511076431364c42b60a3b9da7791d35bedf6b11db20542069f",
+   "status": "ok"
+  },
+  {
+   "row_index": 27,
+   "source_row_sha256": "767caa0e55c9434bf44b053bfafdc0ac5bd023f01fd794c6fdaadbc8a54603cc",
+   "status": "ok"
+  },
+  {
+   "row_index": 28,
+   "source_row_sha256": "375cd487c55514235767e33440a31ca22815bff08e113bf0060f062a79f68f4c",
+   "status": "ok"
+  },
+  {
+   "row_index": 29,
+   "source_row_sha256": "f4e20a6b2ca2606a46d12c9ec6d907354f5c2a600af1f6cc5db4c0565239f161",
+   "status": "ok"
+  },
+  {
+   "row_index": 30,
+   "source_row_sha256": "f2f74d171cb7410ee3b4a27004ca34f8d1b7f667c63e3f2f0c899e8c277f86ec",
+   "status": "ok"
+  },
+  {
+   "row_index": 31,
+   "source_row_sha256": "70069aa66641d8cc6d942f6e6fb16683a9f6aebd8ca4a627535e731e195c50ae",
+   "status": "ok"
+  },
+  {
+   "row_index": 32,
+   "source_row_sha256": "d82da93bc01683863031f93254ce0f7155cfffffe56faba4a1069f9acee3b5c3",
+   "status": "ok"
+  },
+  {
+   "row_index": 33,
+   "source_row_sha256": "8d2457778694a387edda66a6c09275cdcb0963c779169c239c3c08cd1118dbaa",
+   "status": "ok"
+  },
+  {
+   "row_index": 34,
+   "source_row_sha256": "b71a65311c4fcf9b5309668ee941c30bcf64a4cdf36cf5e37f847ea250b71972",
+   "status": "ok"
+  },
+  {
+   "row_index": 35,
+   "source_row_sha256": "c2e18862924a1d7a12ea85973e2c855e65602ba4c384922a074186812de94a2c",
+   "status": "ok"
+  },
+  {
+   "row_index": 36,
+   "source_row_sha256": "0c8bb322f2ed0b160abbe10842646e41e8b246324a9b1bb2da523228dc7c5eed",
+   "status": "ok"
+  },
+  {
+   "row_index": 37,
+   "source_row_sha256": "3940b778c88a14187c042873b0892654c2cefaf737e1707489168e27a99ca54f",
+   "status": "ok"
+  },
+  {
+   "row_index": 38,
+   "source_row_sha256": "c0dd5754ce1694d139d284b1f4bbdf67a1c380ba9244af465a9bf433558caa1c",
+   "status": "ok"
+  },
+  {
+   "row_index": 39,
+   "source_row_sha256": "84fdd8b4d6a1534a1e09b73e201f22545496e0355c6d60871490330ab050e3b1",
+   "status": "ok"
+  },
+  {
+   "row_index": 40,
+   "source_row_sha256": "1f6327bc8b68587aac7b27ce829196ff009e37272d51548a20a6c6bf1efabd50",
+   "status": "ok"
+  },
+  {
+   "row_index": 41,
+   "source_row_sha256": "47de8b4f2dcd228e06491621b9c30cbc8ff41d06bbb16f77490eecaafe8a196e",
+   "status": "ok"
+  },
+  {
+   "row_index": 42,
+   "source_row_sha256": "5f16972cbc3588a75f5d7c8915179c9ff5fd8ed6169980cbe02133297f0ca80e",
+   "status": "ok"
+  },
+  {
+   "row_index": 43,
+   "source_row_sha256": "aa13e1468dd0f1126bf184904be6cf16476c0b0bae47cafa3c541091e79afea6",
+   "status": "ok"
+  },
+  {
+   "row_index": 44,
+   "source_row_sha256": "42c09e9d39ecf185cb9b6b411259d7f58a17b5156f7e93ca5669a2b2f82bece0",
+   "status": "ok"
+  },
+  {
+   "row_index": 45,
+   "source_row_sha256": "42537b777ec3d8e79c49f282555e8c9100831ec1807f92b221f06e015a5380cb",
+   "status": "ok"
+  },
+  {
+   "row_index": 46,
+   "source_row_sha256": "df625a2877d7142b8d3a8c393aa867a5a2bb2b24c0010e820642ffc1b2a6154f",
+   "status": "ok"
+  },
+  {
+   "row_index": 47,
+   "source_row_sha256": "1fb5ba22846a3e3de8ce3c16e767752d3d1b8597dfbbb6110913a02f2d09c22f",
+   "status": "ok"
+  },
+  {
+   "row_index": 48,
+   "source_row_sha256": "5d63e412515d5d510e98f3f17bfc11a34336e3fa002d8579490c547a4e0a6d07",
+   "status": "ok"
+  },
+  {
+   "row_index": 49,
+   "source_row_sha256": "5f8dc160eb340f69ed8419cdf5816f27c616e6e2513661aeaf63ab54d2444bf2",
+   "status": "ok"
+  },
+  {
+   "row_index": 50,
+   "source_row_sha256": "82ac9951dd49f5ffbfe351843f50f7a448ad297dc7069c9be8bbcc6b9b6e9977",
+   "status": "ok"
+  },
+  {
+   "row_index": 51,
+   "source_row_sha256": "e5872a430cf3ea08bf98b6070d8c61c5e49233951032045a1abd4e873c8c6cb2",
+   "status": "ok"
+  },
+  {
+   "row_index": 52,
+   "source_row_sha256": "cb3f90b375b654a174ca4ffce036342f275f589078e735b78013edaa884ff36b",
+   "status": "ok"
+  },
+  {
+   "row_index": 53,
+   "source_row_sha256": "89aa9088b7b1efe0cca25f33f678a6219a5c4c824dda4ebf4994d00cc787b58b",
+   "status": "ok"
+  },
+  {
+   "row_index": 54,
+   "source_row_sha256": "c0fde2bd50b11ecf7a588bb4af363e5545f05d43c34ac7f9ee1d40a82abd1100",
+   "status": "ok"
+  },
+  {
+   "row_index": 55,
+   "source_row_sha256": "3fec22a3e92d9270743d151b3c3334be0c41f117a167bca87adc4ed7dcc12da8",
+   "status": "ok"
+  },
+  {
+   "row_index": 56,
+   "source_row_sha256": "76ba533cfde9ed706bb41af9f40b1f7816cacf527303144a703a5b19a5026cb8",
+   "status": "ok"
+  },
+  {
+   "row_index": 57,
+   "source_row_sha256": "bb5e77109c4db8cfd04ea4d00c0af2432fe1233ee23c687edd1c595d6d20a6da",
+   "status": "ok"
+  },
+  {
+   "row_index": 58,
+   "source_row_sha256": "553c620e649d8285236b699a62f6d5150f1bffb06e70a9b9c6819e2d9e13986a",
+   "status": "ok"
+  },
+  {
+   "row_index": 59,
+   "source_row_sha256": "5817b1ff88094d9c38c38a62dbcad6b3fb4f714714ca5f096c243c02b6b6d308",
+   "status": "ok"
+  },
+  {
+   "row_index": 60,
+   "source_row_sha256": "edeb66b83e4691a028edd216ae302e4faf935c0c47009930c4242c3e295da07b",
+   "status": "ok"
+  },
+  {
+   "row_index": 61,
+   "source_row_sha256": "61c820e22eb4e23604a2642c5cfa25cad6ff9952270ae635dc6d3355ef4f2ce2",
+   "status": "ok"
+  },
+  {
+   "row_index": 62,
+   "source_row_sha256": "196b1945cd3750a2f4385e94d0771ef0fd261d5172b30ec4f6f0727437883805",
+   "status": "ok"
+  },
+  {
+   "row_index": 63,
+   "source_row_sha256": "af8ba1582cd6ebacffd257c3b579e9faa461f2468ed74c3ec12ee575db893e7d",
+   "status": "ok"
+  },
+  {
+   "row_index": 64,
+   "source_row_sha256": "0684c15c140e5ad853b660f4709420630802bd62558504033b0d4b2b0c9c5606",
+   "status": "ok"
+  },
+  {
+   "row_index": 65,
+   "source_row_sha256": "16c84c96e7db9c66e25e77606dace1c105ede3817ac7dfdd7b870a1a17298f0b",
+   "status": "ok"
+  },
+  {
+   "row_index": 66,
+   "source_row_sha256": "6ac37ed886ce4df0a9193ebc94d71474a41d9e408236ec9d6290d3fb8ece5ce0",
+   "status": "ok"
+  },
+  {
+   "row_index": 67,
+   "source_row_sha256": "68295af1c2a5002aeb77be46aef73f47a8d36471c6fdc11fc03f2ed2fe0ff654",
+   "status": "ok"
+  },
+  {
+   "row_index": 68,
+   "source_row_sha256": "f1c770f4c0e7d417bf6b221b5e3dd7356cbf5d3a2a67d27bd1ba1fbf6f4089c6",
+   "status": "ok"
+  },
+  {
+   "row_index": 69,
+   "source_row_sha256": "2066538913687ae86a3e73e3cf8904327ceeecb02a8ad30abe42284d7de8a585",
+   "status": "ok"
+  },
+  {
+   "row_index": 70,
+   "source_row_sha256": "b68cc96909777fe2d0f5be1cb53137f1c13a3530b827ae2bc911c389044b78d9",
+   "status": "ok"
+  },
+  {
+   "row_index": 71,
+   "source_row_sha256": "96c83b5af6cb918357d0cbe99f6c5d1def0cbfc6a54bbd1d52605bc4167f45f8",
+   "status": "ok"
+  },
+  {
+   "row_index": 72,
+   "source_row_sha256": "d879d09634523c0773087ab42d6441aab69675f2461e008b5ce3a91db1533785",
+   "status": "ok"
+  },
+  {
+   "row_index": 73,
+   "source_row_sha256": "6bbbf1f23e156402210938f8047a333c5b7e0b00f2a20591126fa7932a90659b",
+   "status": "ok"
+  },
+  {
+   "row_index": 74,
+   "source_row_sha256": "8966bd9eb7c249e373a83b48c7c6052f31dd9663ab2596959f68a9c6fc0097fc",
+   "status": "ok"
+  },
+  {
+   "row_index": 75,
+   "source_row_sha256": "ccd80ba753669f1c019b498261b31e5031e787c8f6933c7fffd753cda0a9bf37",
+   "status": "ok"
+  },
+  {
+   "row_index": 76,
+   "source_row_sha256": "ff18615393e0ba691d25e54cc32f9ce3cfd333669474408039a3b777dd68909c",
+   "status": "ok"
+  },
+  {
+   "row_index": 77,
+   "source_row_sha256": "683ec016caceaf667464a73dca9506a6e50cb4589ace14769f959ae309bfc2f6",
+   "status": "ok"
+  },
+  {
+   "row_index": 78,
+   "source_row_sha256": "61636d8821f6fe4aa3817e502d061a0bec998798014fc857d3b3fc6078d6b2a2",
+   "status": "ok"
+  },
+  {
+   "row_index": 79,
+   "source_row_sha256": "f37f69ef1993d11f617d9889cfa8629af42d61cf23eeaa7e27558105f087fc98",
+   "status": "ok"
+  },
+  {
+   "row_index": 80,
+   "source_row_sha256": "8a7489db8f6a80d363b7781e9378ef38a824485202aead0ec586fb8673bc4264",
+   "status": "ok"
+  },
+  {
+   "row_index": 81,
+   "source_row_sha256": "d4033828dfd148bb46803e8d4a877ca0995becd43b859bbf302274c4ac16ba1d",
+   "status": "ok"
+  },
+  {
+   "row_index": 82,
+   "source_row_sha256": "8fda2b6f9b1fa49b870b61801a2b2a7615dae15e6b413fc6f7b289a098b602b3",
+   "status": "ok"
+  },
+  {
+   "row_index": 83,
+   "source_row_sha256": "8e92736d129123ff813cfb1dfedeec451780c00935caab9241215fc771458848",
+   "status": "ok"
+  },
+  {
+   "row_index": 84,
+   "source_row_sha256": "a36ab823fc4137a0876e917373e71decb956ffc76412b37165561c96ed3726a2",
+   "status": "ok"
+  },
+  {
+   "row_index": 85,
+   "source_row_sha256": "23bb9ff74638ac58d1334599dd25d89501864d6025c25f528a537af91fde10b5",
+   "status": "ok"
+  },
+  {
+   "row_index": 86,
+   "source_row_sha256": "6f70b1b3caea8134511e08e4f44687ae899feb49dcbd2d31440454501560d01b",
+   "status": "ok"
+  },
+  {
+   "row_index": 87,
+   "source_row_sha256": "5d6552caf76d108562da31b948653144ae13501c032d50978cfdc8e7280500d1",
+   "status": "ok"
+  },
+  {
+   "row_index": 88,
+   "source_row_sha256": "2d877fd38f6840de24cf4d405f394282446389e9a0c2fec912285e0e628702f8",
+   "status": "ok"
+  },
+  {
+   "row_index": 89,
+   "source_row_sha256": "5a5fcb851968106a26f8c1487c95c4358cc0bfab6981b8acd6f4432dffbc0760",
+   "status": "ok"
+  },
+  {
+   "row_index": 90,
+   "source_row_sha256": "79c9341ac7dbf4cfe749ed4a983328d889e46fefd0ecb20f16bf02d67978d3ae",
+   "status": "ok"
+  },
+  {
+   "row_index": 91,
+   "source_row_sha256": "dbd7665181f7616e71baf6aaee18026a185cbbfe7592eddd6e2196aae11a1e54",
+   "status": "ok"
+  },
+  {
+   "row_index": 92,
+   "source_row_sha256": "cde205330ddd73ffa65f3a87560eefb8109461e2f7fca0d9ddc8d590b7332744",
+   "status": "ok"
+  },
+  {
+   "row_index": 93,
+   "source_row_sha256": "861b6f0fc1b3bec03484989cab3052b1103eaf2005cad1be5aa2cda84b75b3d4",
+   "status": "ok"
+  },
+  {
+   "row_index": 94,
+   "source_row_sha256": "39956c83f7ae3c5d6cb1b49bb663f5f8854f87c6b7e3903623255dc5c24f0f07",
+   "status": "ok"
+  },
+  {
+   "row_index": 95,
+   "source_row_sha256": "e9e002c168d1035ef7fa1f9f87b4a634399e9f11f4fa6826f378d54916560ed8",
+   "status": "ok"
+  },
+  {
+   "row_index": 96,
+   "source_row_sha256": "af1af284e498aa577ab3855444269987294cecd73a8285b015b3b346dc029de6",
+   "status": "ok"
+  },
+  {
+   "row_index": 97,
+   "source_row_sha256": "4df7fd8ca73ca93c9cd5abdc84f4cf9e50e11b143adce373f48853401b418bfc",
+   "status": "ok"
+  },
+  {
+   "row_index": 98,
+   "source_row_sha256": "2296a58478bd0a5bcffd5319d69864d6a3b9b214b30e459894e63afe3f58957e",
+   "status": "ok"
+  },
+  {
+   "row_index": 99,
+   "source_row_sha256": "28d23ba72239382437400bfd1c305e90889a95f1cee67ebc969765e57821ec55",
+   "status": "ok"
+  },
+  {
+   "row_index": 100,
+   "source_row_sha256": "6064a1a12dd70226e77b423a4cdf8a5e47d521b5e51087ade70d5d64cd93c7b9",
+   "status": "ok"
+  },
+  {
+   "row_index": 101,
+   "source_row_sha256": "b4cd74e0d1ba7aa3c305e0fe94cfbe37370047af0ce851032fef83d780134ec8",
+   "status": "ok"
+  },
+  {
+   "row_index": 102,
+   "source_row_sha256": "1a4adcb93538fa8654191e41b8462dcb9ed39d1e844c187a4176e53340c371cb",
+   "status": "ok"
+  },
+  {
+   "row_index": 103,
+   "source_row_sha256": "c6eaadd9f039b47accd26bcd250187dc0dce015b6f773cbc7800b9a809df6878",
+   "status": "ok"
+  },
+  {
+   "row_index": 104,
+   "source_row_sha256": "fc281df446a81f06ba1bd15c7942f8b8e962383034ff7868a0968d1c2ee162d5",
+   "status": "ok"
+  },
+  {
+   "row_index": 105,
+   "source_row_sha256": "07056e5eff70023ce9d9586a069e717d53eb40d3c4f841655b0e532ea4c36620",
+   "status": "ok"
+  },
+  {
+   "row_index": 106,
+   "source_row_sha256": "2b517abfe18fa6e98c88e72eb89ec4ef529e7ad1d024d48f728e2274acb8b040",
+   "status": "ok"
+  },
+  {
+   "row_index": 107,
+   "source_row_sha256": "a1bf8c321944818549dd1a81dc374a1b81bc10e1ba6576cabba7c3292dc99495",
+   "status": "ok"
+  },
+  {
+   "row_index": 108,
+   "source_row_sha256": "88b6a9443cec8406dfa5349e8e8b23c9b417dec679374a7e6b71ed603f9bd0d8",
+   "status": "ok"
+  },
+  {
+   "row_index": 109,
+   "source_row_sha256": "fe6e4474ebefa2c2fe44a9e83c23f93f3f1be03241902ba20a62321f02829f7c",
+   "status": "ok"
+  },
+  {
+   "row_index": 110,
+   "source_row_sha256": "95bccd137e2e9d3b54dc170091b97043c1456799e223ea10d4c1a2921b75ff8a",
+   "status": "ok"
+  },
+  {
+   "row_index": 111,
+   "source_row_sha256": "a40e4639c4a7442baed49c2f343aea855e2d23c80d8dbda4a434fa908826abb5",
+   "status": "ok"
+  },
+  {
+   "row_index": 112,
+   "source_row_sha256": "6c6230ed9ce2b20ed06b413088f24f5e366b4f4b2927e09a31af9975b00a91d2",
+   "status": "ok"
+  },
+  {
+   "row_index": 113,
+   "source_row_sha256": "b52b2ecad1704e242b2d0f87ed0ca87db7d533186ce2f791f083a76afcde4bc8",
+   "status": "ok"
+  },
+  {
+   "row_index": 114,
+   "source_row_sha256": "df2b1512f00bede863e4cfb14c538438cf310d5e37eb48d4ba3c87bd88374dd5",
+   "status": "ok"
+  },
+  {
+   "row_index": 115,
+   "source_row_sha256": "815e543ed9e7dcd8b9869779f3eb90e6c3d5308f9de8b1be241fe66d000ea286",
+   "status": "ok"
+  },
+  {
+   "row_index": 116,
+   "source_row_sha256": "0e72dfd91270734d7d52b4a2f7bc516e46faf94a67e9ef292d788ffe28033394",
+   "status": "ok"
+  },
+  {
+   "row_index": 117,
+   "source_row_sha256": "b647d26cc1e0363efc5bc27fc9225f0ea012cb018d889dcd5b32415b110f4f13",
+   "status": "ok"
+  },
+  {
+   "row_index": 118,
+   "source_row_sha256": "05f5a2d5b75fcc10569338543f7edb974869ce9af9509053e0cc178ad1db0184",
+   "status": "ok"
+  },
+  {
+   "row_index": 119,
+   "source_row_sha256": "afd1ffdeca60534ec6a38d3c66901eb91bde625f7cf0401545fc997e617f3349",
+   "status": "ok"
+  }
+ ],
+ "cache_keys": [
+  "sha256:99cda71705e3d4bef023cf0c580156445bba1c5c154b370fa8536d0961217027",
+  "sha256:f192b565b6a89821e074a93c311297e15e9134b73457f8d4725ea24eb1e4d0d5",
+  "sha256:77bf9a6beb6fca721552ae87d62c05e5a2e250df9bb8a8b2d45c316e103d29e3",
+  "sha256:53224c06d6517bde4aa49635adb9eb7916714e2b20d1287084a7016e35554835",
+  "sha256:944481f384484b36ca0ef78618806a272e13ae0edb3b9bed9d65fcb821b4caf3",
+  "sha256:d2628513bf6874526b9cdde75306c498c1c1bec4bb1becbc6296cf7859b799e0",
+  "sha256:d5246ff14685e5a211e33dd0894205fc9927bf00aaa42893974d5de4144029e7",
+  "sha256:a90aa3bb206c99e8762132483de5aac65c6c9cd7e10247cfc257979a561be398",
+  "sha256:d193ef8163733608a6d4120a374c6d2192c19c4daabf294196b729f7c94d1758",
+  "sha256:a99f35a360dc54d42e0012e96685b8371f05ea609c4155f64f1972e7357da31d",
+  "sha256:807d86d18db5490c3daa51c317b22235dc6b64a0b714f50a315bfe9d4041145c",
+  "sha256:c07199a343855042081215ea1177cca344d49b8325444bfe8de13b17d2ca684e",
+  "sha256:0c585cb259a33df08fa0fdca0d638cb3451a4ed8ed0136e590937385af313dee",
+  "sha256:38bab55de89e576f990c83697dc2b6163665c23fe01b02c2981129bae65d77b8",
+  "sha256:aef5ef8df1453521d1957feb27ff08e2d08786558ed33db3f21c519a086d1d41",
+  "sha256:efa24e0786ac89be41fb0181a5dcd8bb57bd4da8b1d30f74d2466d423ef9492f",
+  "sha256:a97c1dafd3c1ced4a29f3b3206c9e4e18d90e526bc3401fd543df48e64c1008d",
+  "sha256:c69a53031f1e4e29b608658f94eb7c3eda56cc674d6260329dc9d951f1bd6ca6",
+  "sha256:343be195d1cd78b1b748441837dec1f9a1ab61ff1aeaaba648abd19555a412b3",
+  "sha256:3968668d984f70290bb46f881f0742cd76390265979261fe5eca03cf69598a5c",
+  "sha256:578b6a13f30776b2414da7573dd422180155c62e5aa0c592536b746b584609a2",
+  "sha256:e6a85941d03d88d7753ba933f05fd9a63b4b1959dbb165ccdcc0c7be617f909e",
+  "sha256:f26b4d350a851260cd797b1608481f1337d448b8d1141a1c531a2d9bb792853e",
+  "sha256:11e94d4787c58ce5381f0a32981e9c96563729103321eff28ce1ef556cb7349b",
+  "sha256:ae854b19c30a8d008f269e952a7add52b15d45a22d23f5993f6115ec19aa3b12",
+  "sha256:1cba124b86cc89a1088d5ad6452da4c2c504021aca6c7f7e0b75c47067756e7e",
+  "sha256:26f6a3b5bca74c3fb0bfbf3506d076bd1078b17202be3c42b23625d119eb17da",
+  "sha256:caed594dd339cfc56892f60654120dd32ffc18296d2dc4815e30ea2c74ca40b2",
+  "sha256:86abfbf8cb32c3b3bb2cc5c4413be48697c2a7c95d0ac98f4c61a84fec582382",
+  "sha256:aa5895678dd72cfb61db135e9c33b5d9103177b030bdbaf9d9a70c9305c695dc",
+  "sha256:60b091c82bf47b7227d70f0ebd48952add0a359672a87ed35103ef4cd67e5021",
+  "sha256:b204d587b9e6b7220da4b10d904364acddc9b967599f86b16b90ef7543726537",
+  "sha256:5bc9ca3f3a1f80e99276f003e7b7e35737359467e699d97f07b8439b1d20ac4d",
+  "sha256:d56053c8f1130c387e810e22cdd94433c57402d63237fe4c18b679634cf615d1",
+  "sha256:c1bbaa4af998600981540ddecfe22f489db2b6f3890eebcf7760133263379fda",
+  "sha256:76dcf4559f9e8af192dba210af69d7f71c5c763fecf98f07d5c40938969d80ff",
+  "sha256:ec02fd679bb05d24dfb3e088e2b10e691f7c5009040334134a087c306b359645",
+  "sha256:3027785c5ff7114a32726c72e79e4c7f52179d77915a00fe7b1744087f34985c",
+  "sha256:47cab714dde3cb0f31b74cb6e8d4530ebf0519286282bbbdadfb6be756b202bc",
+  "sha256:6e22d75e16e84da244786f4c808286fe02a7e9f77549a0ca53cf0bd70a9f1af7",
+  "sha256:1584aa5734b029de8713312d78deb13692d998ae6f5527e66d76a3c2e0de3a41",
+  "sha256:75ba1cd75ed5d05a70fb9eb90507ef208d77e3279a0f8366bed8b7c7d5f7b029",
+  "sha256:a8e02f17bb195781978a560f027f84c205f5cb4b911c9f75cb199b02b278e8c1",
+  "sha256:6fc8786407a0ad37e478e7b10e88aa65f48fd74a5bae57f1b74e1f898e2eae8b",
+  "sha256:73bde39a6a9d1d30ccc84026077622b40b8e2fb3da9a05bc0ca8b6cf5133daed",
+  "sha256:d51aa078d63dc5eeaff773edb089ddde26a056377f306902d7d40e5e8cd64743",
+  "sha256:ef7df0cb6573fe5800fb6d0b59d58174d6bedd1a4c16547bc44218e341d96ea4",
+  "sha256:3c9e9fc7cf2cb3a95f527cd064d970153871c65fe61190e17ebeba0a77319c3c",
+  "sha256:e8ab35892284d037a28bad9ac86b7c8cf95a9ae335f225ee5f37514299b41db5",
+  "sha256:b74ac8f7e3f33507de3a560a66ce5d60282d4710e61afa59166cbdfcad7aeef6",
+  "sha256:7119f927190863e73d87282a001953053276acf0e77ee9b1729e0d9476751172",
+  "sha256:290f658a8f7cffc6bca3bafaeec912edb5584ed0b0e12ce03d33d7785e560827",
+  "sha256:868aabd6e4f369bcf2885cf0c927e97fe934fd1a0875d2c2aa45cfed30510fc7",
+  "sha256:d0065de5d3091cbf210b0e59d96666d70644f76d077c94bd0dfb79250c5c5eb3",
+  "sha256:2aeff843c3022fe2fa516cdc37bb27249a46471ced1730c585b33d45c9950d82",
+  "sha256:72d9efaecf190b50eb3efad05d37b3c18d4a195a536e4f94c3ecee887ff807bd",
+  "sha256:12678038db607ea86930931183abe318667a170e03a0ed0ea214a600d5dd9d16",
+  "sha256:9da7bc03d837b50eb6dc5759e581a9d596a57161c2bed0cb6b1679c953ca86b2",
+  "sha256:7455e439a0f343e5541d50333564cb71e6506da0e9e0965d78a3fad2d8d1ca95",
+  "sha256:0a9b5d167729cbdd9df894d6418b3ec9f4f1bbf1aa3c41853cc9e8000c7de9ff",
+  "sha256:9c89a67b87c60d93c1b94c27cb212ae50456b542faf0f0844c2fc775b0b514fe",
+  "sha256:b784010b21e976e88acf5b3e240bb3243cb2b82bd51ccf5ac8e22047e78b48a2",
+  "sha256:e9de8fa357ecbc37cc9c78aa7ed9ed0f818c654fc4467696635b57b872fdd567",
+  "sha256:ae2a31ddcd5d2a817612817acefe386a23258bd02cbe2f806127dc0a0006c72e",
+  "sha256:bc5ec7563ad5357eb9637ba30193efcb0bd3f6f7da50ffb110d2f389306d2bbd",
+  "sha256:261934d1bd3580c721394a82f15a24f18fd9a7538bf099a34caf00b53ed02238",
+  "sha256:fd3ca1fccdb6c9f85e2a891ec0c19da341f379d4a6eb49b503aed1af6fb544cc",
+  "sha256:7146a3682f2e16b2936e8fabbbbb23e9cd8b0971e416ffd76a2eb8810ff2335b",
+  "sha256:4963608eea2e56ae55fbcc44ee85235f248dc56de61c85e9b1afd7b3231faae4",
+  "sha256:bbd86748bc2eb4276eef20ae189cebe51e1c532f2567835f60f504d82c984b84",
+  "sha256:182aac8fb1268651e03a09a5b23f51d40c5e0b7db86f62108d5bcbf1a66c7cdc",
+  "sha256:17a9a49e0e79b1b2cba6251ec287f756830810b1f25792fc46c4198b77c826b9",
+  "sha256:7760fe1a2c00ad6a7c0ccb6c746c48c49ab89e7d4d14e4da84a0ef298e3b24c1",
+  "sha256:a1e39dcfffd359066b86130d2bd9d43b3626d857c58363bbefcfeba1a4f7f5cf",
+  "sha256:67b363482e4db270d6129a87e917695f890935e7f8ee563ac353aacabf551f8f",
+  "sha256:5e883a28b3edef9dd4ca31fd85f2a4d82c29f513f864188363338fc9e0966e1d",
+  "sha256:13a8e06e17f8cb2a75f23019f56e7e36fe546bbb43a1110cecce401e6668d40a",
+  "sha256:9b172d890ae0576539a04526748a5a0c103f367efbad65e76d5c8d2cd04be775",
+  "sha256:0a8e5a89fa22887ecdd7a8b3cb0d72c063a727c0b8654cad0015ebe84c3f89f5",
+  "sha256:9ce7b6234ae00f90d6c6921fbab919f41cc6a5ec8361e0a4efbcecc57fb335b5",
+  "sha256:983ec85bb3d5b58b1ba012a3aa42b1c89e49f5c200563c0fd112fa1bc90a865b",
+  "sha256:8d40917dbf9caebbae6ae91cc584b204e922bc3ff0a0544c122082b2c78cf3cf",
+  "sha256:6a1300c80cf399aa391812330dc2dc03efd328e8ee0c001f5ac73f184377d5e9",
+  "sha256:1dd3e2efc0cc020d6cd2629c0011a232d237b6299eb664870f154f7fd9bf269a",
+  "sha256:5b091284954a7a6086e96684d315f2415d2462c6f11c269cf6568b28577d7665",
+  "sha256:ca3905c5d5c97e3268e1a996f954cdfd453eaabe55e954fca3b3d7cc683ef167",
+  "sha256:1ff667417a0d971464810d1be093201bc47ff603e1f124a2860075ea645310de",
+  "sha256:a3269b206e6cc53de92a754d80db0fee9eab8bd2b0e40e3e06bc45f18fb95574",
+  "sha256:fc9ec6a60e3de16547d91cd02fefdee3dc977db97d19c86a09f27fd13ef08da0",
+  "sha256:14cc9357fffdab0a32bdb9e0201887ea46905f791456c3d91344b29f3d9d0c57",
+  "sha256:468929acce35bc19bf4173705c46bf8e7fb8ab766f0fa1fae56ee487ce50c3ca",
+  "sha256:b0af62b1f994b95ee4035fa50325fbfcb857452e88d928135e21cc584a842409",
+  "sha256:e7aceaaef7c68799a2c69e0667d0ad8c96feb418740f246849415e5615d385c8",
+  "sha256:d08d009905124c5f61e6514d347c556ce63f67a766cbed4db766cd7756d3fa0c",
+  "sha256:b8aa7ffb84cff965df924682fc39e80f78dc0d7bac2d8205033180bc1ee0fee0",
+  "sha256:72721746f8068611e175d86c4884b997ef9b96363fd124dc612db57a27fb0956",
+  "sha256:34a502f4d1d9b20f4d638334df6550910ca57c8656b93ef852032ced21034713",
+  "sha256:c7fd4bfe9de23e8fce92fb28030f9eab967895099015829d0a37705674651146",
+  "sha256:6868c506d8c9af407af45df4c85e87775fecc7da590ec1c6e035abf959fb7fcf",
+  "sha256:0ca35b54ca715b266e2badd5f87e8ef0929283dbdbf2d5e99e00841fca724484",
+  "sha256:eba8ec150b2a69ca961f884dca0fb4d91eba3a75df7e90338f9348a43fd7746a",
+  "sha256:15921194e241f04252e3bd70be0135dd9ddb601bc35314c5a32e68d7278da620",
+  "sha256:dfab72fff33c69d42129c5b11b5568b37d876e63c222c00c16e9ed0c8dffb514",
+  "sha256:aa461d62e5f913b0030db7ba2877d905b5c343a245d65fc4618c81e502e1ae41",
+  "sha256:bdc62a13b98de4329aca722ed90156ffa93fbf71feca16513d3d363e96397935",
+  "sha256:7924020492c621da6eb4302d54de216f20963d9da55e084f1410aad954532d9c",
+  "sha256:a34bc21d9247ecda2585e53aeb9e14ab9e33a298854b7bc02f6da94df54a63e0",
+  "sha256:e013913ace307794ad5aa817ff183d28129410a0bb14eee3b1450f74bc03b19d",
+  "sha256:332778226a3588b5b1dd0543dbc5ab725225351c44241bc1b0c42c97a7f5cb6a",
+  "sha256:b13a7d0030285568742e83201de10de57385bf04a8aed5b3a43417e9c690eb83",
+  "sha256:0b87fca9f79d6eb11eb7369f6b52b38cc262b0de599371e483589c597a1436dc",
+  "sha256:e56b405f96001c30c9e6efb4fb610fe683a18500086732edd19b50cfc663a541",
+  "sha256:e69cfbc7b47779fa28618bc8bbbd4c91e14be3b16c44008ee237bb5a2147b8d5",
+  "sha256:2ee12e5e337119c70746d74cdc708620739e7e8950baa2b0d47efcc1a7adb499",
+  "sha256:2217c590a63750a10bb090c140f199079a2b7ccd8666144db52e618f7f8b2ae7",
+  "sha256:a32ab38b97d5e594905390ede800994e81df0de7383a7fc8e15b3f41c7a9289b",
+  "sha256:c93e6a163ff458039a937f11683682aa43f7a2b58eb9e498773eb035b1e7aa1b",
+  "sha256:c55a1290977ae94cd1b572f3b018f8a4685eed70bcebaa2f6df6d552a84c2abd",
+  "sha256:4248d880988dcc2bc6787cc381d60d75fce3fe82a151eca22979250f5423669d",
+  "sha256:23ed1b3ef2f89a15b41131f2bb32f3ea5241a9e8709182560a0e6e25dde7bddb"
+ ],
+ "evidence_inventory": [
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:0a8e5a89fa22887ecdd7a8b3cb0d72c063a727c0b8654cad0015ebe84c3f89f5.json",
+   "sha256": "65a56deb245d8cfc7656840e4558df3ba56a341a57411a55a7a658cc179d02c1",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:0a9b5d167729cbdd9df894d6418b3ec9f4f1bbf1aa3c41853cc9e8000c7de9ff.json",
+   "sha256": "a86a69dda3ad0a9cadd5d84d7f5a17d4a7bc53a03feb96ca70a6f4f3a62d56d5",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:0b87fca9f79d6eb11eb7369f6b52b38cc262b0de599371e483589c597a1436dc.json",
+   "sha256": "1cfa5a7ff27e041e09099943a67eec8728126c2f8ae32bfd94147efe1d4f2bb3",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:0c585cb259a33df08fa0fdca0d638cb3451a4ed8ed0136e590937385af313dee.json",
+   "sha256": "383d531b40351284e5259c3936f4f50eb2237642037e0b682a41572dffded67e",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:0ca35b54ca715b266e2badd5f87e8ef0929283dbdbf2d5e99e00841fca724484.json",
+   "sha256": "a300f5abe98bc2a1871d79bc401bca249b82c0e0c70b7930b5de78176ff38716",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:11e94d4787c58ce5381f0a32981e9c96563729103321eff28ce1ef556cb7349b.json",
+   "sha256": "736ba7a14d355a4d9fb8f42c5e189222dd33d77ef2cc00453e01dc5551e62704",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:12678038db607ea86930931183abe318667a170e03a0ed0ea214a600d5dd9d16.json",
+   "sha256": "9171fa5982d229ee344ebfeac95397df846d9fe8cc6b7c68c8d220f040250448",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:13a8e06e17f8cb2a75f23019f56e7e36fe546bbb43a1110cecce401e6668d40a.json",
+   "sha256": "e1043f163de5fa0ea1fbdd02373aeb121a628ae26b4bbcfda91e42583bf25968",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:14cc9357fffdab0a32bdb9e0201887ea46905f791456c3d91344b29f3d9d0c57.json",
+   "sha256": "06f0ac5f9700414caab2774cdc751e5f169b8443cf5fc7a09a3cf375e0f182a7",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:1584aa5734b029de8713312d78deb13692d998ae6f5527e66d76a3c2e0de3a41.json",
+   "sha256": "53d3e4504b22213fe67fd465052cfc5ed27cf999423dc1b77c2ac2864dbec266",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:15921194e241f04252e3bd70be0135dd9ddb601bc35314c5a32e68d7278da620.json",
+   "sha256": "58effaf6eee04a55b8784a2aeda98167f5c6bda8ce50d290636ec481509d5ed2",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:17a9a49e0e79b1b2cba6251ec287f756830810b1f25792fc46c4198b77c826b9.json",
+   "sha256": "aa8d91e9c4dff2e5440d029afb13806564da8ce5f0f6ab4e634c5472afdb0839",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:182aac8fb1268651e03a09a5b23f51d40c5e0b7db86f62108d5bcbf1a66c7cdc.json",
+   "sha256": "3902b7c64f79f6da9cbd5a317db9c702ed42818a5ddad9b209d2d1cb29f5ec69",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:1cba124b86cc89a1088d5ad6452da4c2c504021aca6c7f7e0b75c47067756e7e.json",
+   "sha256": "2ccdc97e7172defb3309e87a2ba45f0e38e83ef8369520522b7bc946f5b1a470",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:1dd3e2efc0cc020d6cd2629c0011a232d237b6299eb664870f154f7fd9bf269a.json",
+   "sha256": "b36bc97ad131dbff49b070e69133faeab7f652b06c1357a207f0f6770ea13d40",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:1ff667417a0d971464810d1be093201bc47ff603e1f124a2860075ea645310de.json",
+   "sha256": "9bf707a4959051a6d674628335d5361666c58d91711ae2415e56dfbbe181536a",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:2217c590a63750a10bb090c140f199079a2b7ccd8666144db52e618f7f8b2ae7.json",
+   "sha256": "8b461eced5db4146b2b8c5036410ea16e5e3bfe3e3c7ef6a251dbc932dae7d28",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:23ed1b3ef2f89a15b41131f2bb32f3ea5241a9e8709182560a0e6e25dde7bddb.json",
+   "sha256": "196463559a3c7cd4ab566926ae9f611a04f2759389243307bf658530f0413598",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:261934d1bd3580c721394a82f15a24f18fd9a7538bf099a34caf00b53ed02238.json",
+   "sha256": "6d8ed93bdd741b77ab3dfd30289a59190df32b0eb05b1c8435d5257145f4bf0c",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:26f6a3b5bca74c3fb0bfbf3506d076bd1078b17202be3c42b23625d119eb17da.json",
+   "sha256": "196f9061ce9c67eb945148e252bbfc5a893a9a053195ea9950ec40fc7913d1f9",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:290f658a8f7cffc6bca3bafaeec912edb5584ed0b0e12ce03d33d7785e560827.json",
+   "sha256": "1f3d5e7211edc3fc629e933b17a53dfb1a92660ba90846cc636aac8292901d9c",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:2aeff843c3022fe2fa516cdc37bb27249a46471ced1730c585b33d45c9950d82.json",
+   "sha256": "62f1276a61507eade6aa02f7b438b15b2dda13b4c21b50c9f3e30f59ca27d77f",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:2ee12e5e337119c70746d74cdc708620739e7e8950baa2b0d47efcc1a7adb499.json",
+   "sha256": "bb198a35cba6926c9efc7b5a1429aeb4c598c895843440f5578bb2018e4142b5",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:3027785c5ff7114a32726c72e79e4c7f52179d77915a00fe7b1744087f34985c.json",
+   "sha256": "6b6d1974f5dc0d1a72855b35c0c793d4a320f1e4c965bd216c5f595725e690af",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:332778226a3588b5b1dd0543dbc5ab725225351c44241bc1b0c42c97a7f5cb6a.json",
+   "sha256": "5df361845451d4ea8ee3e195b115dcece1765f69c0b44cfc7f0f1376388cc76d",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:343be195d1cd78b1b748441837dec1f9a1ab61ff1aeaaba648abd19555a412b3.json",
+   "sha256": "60166a7966c64c13fb2604cf7e4d9a2bdca4b7efbd39410ba93f7f3a9c18375b",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:34a502f4d1d9b20f4d638334df6550910ca57c8656b93ef852032ced21034713.json",
+   "sha256": "f3b8f028bc2abf17c2a536a9610fa32233445bd28465dee452dd6b22acf92a6c",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:38bab55de89e576f990c83697dc2b6163665c23fe01b02c2981129bae65d77b8.json",
+   "sha256": "5954ab895b9c1fb09a5464f74848355f52c3cde6ed6cdd92f10a88cb9593392b",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:3968668d984f70290bb46f881f0742cd76390265979261fe5eca03cf69598a5c.json",
+   "sha256": "22fd2b1a73f80d088e62bc1b5a7cb0c47d4c79d123ce50484a792e222cfb1122",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:3c9e9fc7cf2cb3a95f527cd064d970153871c65fe61190e17ebeba0a77319c3c.json",
+   "sha256": "1fccf3621f65a69b5e9482ca4f8d6b06ddcb5cc6bf54349b34fb7d9c985ca18a",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:4248d880988dcc2bc6787cc381d60d75fce3fe82a151eca22979250f5423669d.json",
+   "sha256": "5f3e1b9ae5d0cc8307f7ac134fe9828957fb42c80d3158bc5ab2e6221b071b8d",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:468929acce35bc19bf4173705c46bf8e7fb8ab766f0fa1fae56ee487ce50c3ca.json",
+   "sha256": "0e03c4272555b5f64986521499430ea6904606a50701a6e8d01833c441df5d99",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:47cab714dde3cb0f31b74cb6e8d4530ebf0519286282bbbdadfb6be756b202bc.json",
+   "sha256": "914ae8be94ed0aa66c6299de7c1683e4e744cee22f4037fdca2fe2f5315a38f2",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:4963608eea2e56ae55fbcc44ee85235f248dc56de61c85e9b1afd7b3231faae4.json",
+   "sha256": "103bca8388f2e2240277cc4770b743011033e673742752a699d05b319fc41eae",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:53224c06d6517bde4aa49635adb9eb7916714e2b20d1287084a7016e35554835.json",
+   "sha256": "928fa87efcd91fb9961a4e70eeda71a1a66dbb1bce7a6f4ad57c38d69f531dd6",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:578b6a13f30776b2414da7573dd422180155c62e5aa0c592536b746b584609a2.json",
+   "sha256": "be47b0612a80f9aaaebcb7619f4ff68a802e2b067463498e7f2fb7902cac7c95",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:5b091284954a7a6086e96684d315f2415d2462c6f11c269cf6568b28577d7665.json",
+   "sha256": "0204476fbdd7241ab95b8b1c3fed25edfeec5c5aefabaf5c431c6f41b1cc2c69",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:5bc9ca3f3a1f80e99276f003e7b7e35737359467e699d97f07b8439b1d20ac4d.json",
+   "sha256": "71cb1add02e444593a561ffe207b3db95a76f427d1446201b64b8f0c59038189",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:5e883a28b3edef9dd4ca31fd85f2a4d82c29f513f864188363338fc9e0966e1d.json",
+   "sha256": "88421cb006cee66c89f268815d03d44f3be83d26c4b87f6ad2081b06423d2d33",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:60b091c82bf47b7227d70f0ebd48952add0a359672a87ed35103ef4cd67e5021.json",
+   "sha256": "f0bbf33e440c794acfda049d136d1803780eefff68070a3b769475c2606cb576",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:67b363482e4db270d6129a87e917695f890935e7f8ee563ac353aacabf551f8f.json",
+   "sha256": "f9482fec3ac0eff3b5a9c6edaa73af078ae849b14f5169b7913c582651f24361",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:6868c506d8c9af407af45df4c85e87775fecc7da590ec1c6e035abf959fb7fcf.json",
+   "sha256": "76761801a108a5e19cc7eb0e6a902e8b46b635595f41af1083b5c9f24ce7f8a3",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:6a1300c80cf399aa391812330dc2dc03efd328e8ee0c001f5ac73f184377d5e9.json",
+   "sha256": "b0bb2b9f2c16292aa9026372cc5994ed5d4f9efec93248a628f39f259f2ab112",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:6e22d75e16e84da244786f4c808286fe02a7e9f77549a0ca53cf0bd70a9f1af7.json",
+   "sha256": "332a73d95522e420f457279ed90d7839784c096b128d575d79ed28bfb7727ffb",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:6fc8786407a0ad37e478e7b10e88aa65f48fd74a5bae57f1b74e1f898e2eae8b.json",
+   "sha256": "b8bef9c90f54fdae285c52554d499afd4102143296b23f4a439e2f8983adaa08",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:7119f927190863e73d87282a001953053276acf0e77ee9b1729e0d9476751172.json",
+   "sha256": "8dd641bec5fbca63ae507d4c7de7cc898ec58d4140c601ecf9e612dc651aa2cb",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:7146a3682f2e16b2936e8fabbbbb23e9cd8b0971e416ffd76a2eb8810ff2335b.json",
+   "sha256": "a5df5a4ac25c8aa3d019754fec16d3528964812bad1dff772a8f70d9a293154c",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:72721746f8068611e175d86c4884b997ef9b96363fd124dc612db57a27fb0956.json",
+   "sha256": "19a58a18910d88190efa327e96dc22eaf27baa12df0cf1d97185e97e225e0cc0",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:72d9efaecf190b50eb3efad05d37b3c18d4a195a536e4f94c3ecee887ff807bd.json",
+   "sha256": "693827b1d758fa7d8ebfee2abf597be5da078e4b95533078907bb14e6756886f",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:73bde39a6a9d1d30ccc84026077622b40b8e2fb3da9a05bc0ca8b6cf5133daed.json",
+   "sha256": "1279428694a6c7db36a013aff57871a148238dcf6a0be4ebcbd8c2f8a0ad7f1a",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:7455e439a0f343e5541d50333564cb71e6506da0e9e0965d78a3fad2d8d1ca95.json",
+   "sha256": "7ce459d7173588255f03998c11478e2e59e188185308d0b004f1f2d8437954ad",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:75ba1cd75ed5d05a70fb9eb90507ef208d77e3279a0f8366bed8b7c7d5f7b029.json",
+   "sha256": "016cf4c36fa798abc780131256c82124163ffefe281a31e57d55950b8caedab2",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:76dcf4559f9e8af192dba210af69d7f71c5c763fecf98f07d5c40938969d80ff.json",
+   "sha256": "86b24b12e9c873350fed2b57734e5f4af453dbc48f1627d5a86a12ed26a47bb7",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:7760fe1a2c00ad6a7c0ccb6c746c48c49ab89e7d4d14e4da84a0ef298e3b24c1.json",
+   "sha256": "392325b10d035080d4a38cb302fa47d29eb391bacd41c3c1ca8b1886160f2e39",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:77bf9a6beb6fca721552ae87d62c05e5a2e250df9bb8a8b2d45c316e103d29e3.json",
+   "sha256": "abe4b6e5cdf8b91ec3bef46815934d2121fd0c1bbe93161337ea819e77352e0a",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:7924020492c621da6eb4302d54de216f20963d9da55e084f1410aad954532d9c.json",
+   "sha256": "89aa819c9d3cdd4b7731f61e70b8769c63bf05e40a41630a997184a4317aff64",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:807d86d18db5490c3daa51c317b22235dc6b64a0b714f50a315bfe9d4041145c.json",
+   "sha256": "b6d65b0c7d0c327a20ba2577c611b5409d54f82c5b838ee127e07e6e5e492d1f",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:868aabd6e4f369bcf2885cf0c927e97fe934fd1a0875d2c2aa45cfed30510fc7.json",
+   "sha256": "bfc5faede93fddbfb19b19f399c824636a2a82d373ea8b846bc225c3ca7e0190",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:86abfbf8cb32c3b3bb2cc5c4413be48697c2a7c95d0ac98f4c61a84fec582382.json",
+   "sha256": "e40f98797f1675a56e0109d6ae997b47b62511f581a6be9136d13c34ec0a4f1a",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:8d40917dbf9caebbae6ae91cc584b204e922bc3ff0a0544c122082b2c78cf3cf.json",
+   "sha256": "49b16f5afdc4f7897b7582d0e38ad050a71f5fbf5442841ff7b198474f70594f",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:944481f384484b36ca0ef78618806a272e13ae0edb3b9bed9d65fcb821b4caf3.json",
+   "sha256": "8031e7540e49e2fd6b1431d40b0f5951debaf1791e7c24f551028f42a3445854",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:983ec85bb3d5b58b1ba012a3aa42b1c89e49f5c200563c0fd112fa1bc90a865b.json",
+   "sha256": "47b42fa27f6e687abf1d9fec871814ef2a7ced8d821137be04a962b92a8e5ff5",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:99cda71705e3d4bef023cf0c580156445bba1c5c154b370fa8536d0961217027.json",
+   "sha256": "5a03b2c20086640b11ca4d3719ecc2708053c4825cc4df2d617610b678c9dc28",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:9b172d890ae0576539a04526748a5a0c103f367efbad65e76d5c8d2cd04be775.json",
+   "sha256": "8c3449fe3f5d0fe997317e093bb61d73c5c04ac9606f251f3832dc5861833432",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:9c89a67b87c60d93c1b94c27cb212ae50456b542faf0f0844c2fc775b0b514fe.json",
+   "sha256": "b4dd03c228b200fc1383ac7587efcb0bc2e1539afbe53635d31b592eeb3ef10a",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:9ce7b6234ae00f90d6c6921fbab919f41cc6a5ec8361e0a4efbcecc57fb335b5.json",
+   "sha256": "d5169a04a2042e3e7e327a8cca70a33172714b5611f2c4723e820dc9965f4c61",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:9da7bc03d837b50eb6dc5759e581a9d596a57161c2bed0cb6b1679c953ca86b2.json",
+   "sha256": "89a2a122b74f2615f2f80c4eb6aa8a2485dc1fe1a83cd91e97c9f8f35be21a99",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a1e39dcfffd359066b86130d2bd9d43b3626d857c58363bbefcfeba1a4f7f5cf.json",
+   "sha256": "474a48c5c2be2ba0d2e344d15fdb8069dd3594bc029f233b67ceef25d975428b",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a3269b206e6cc53de92a754d80db0fee9eab8bd2b0e40e3e06bc45f18fb95574.json",
+   "sha256": "5524580adeb8ef1243029920433231a610b69e430f1f3c6c3cfd2c18bd61b16f",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a32ab38b97d5e594905390ede800994e81df0de7383a7fc8e15b3f41c7a9289b.json",
+   "sha256": "65023b95e172e851033c7118c578a25f8daddf1304187a34bfc20cf24d640deb",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a34bc21d9247ecda2585e53aeb9e14ab9e33a298854b7bc02f6da94df54a63e0.json",
+   "sha256": "68ba403e1e6481c289baafca5531807ab3304e51a391f09676a566703fabda28",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a8e02f17bb195781978a560f027f84c205f5cb4b911c9f75cb199b02b278e8c1.json",
+   "sha256": "a70cd3dcad47a70e433ad94899954fc787da61b82ad2eac0be84658a2c258d12",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a90aa3bb206c99e8762132483de5aac65c6c9cd7e10247cfc257979a561be398.json",
+   "sha256": "a6039f49b4f0db9330d21608e8265ecbfbd3d4db6a12ab9b6b7c75cc6d638c39",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a97c1dafd3c1ced4a29f3b3206c9e4e18d90e526bc3401fd543df48e64c1008d.json",
+   "sha256": "02f03046608a4c65f1a0e44c6d7fb3e12373c2cc87f6a1af003fcfc817f184b5",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:a99f35a360dc54d42e0012e96685b8371f05ea609c4155f64f1972e7357da31d.json",
+   "sha256": "d28c9f50802fec8358cf928498959a54956309a102ee894330ae73f85789cff7",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:aa461d62e5f913b0030db7ba2877d905b5c343a245d65fc4618c81e502e1ae41.json",
+   "sha256": "79a98e2a8213d67ee1a472295026e7548bcdb86e65317d524b70bc19abec1e40",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:aa5895678dd72cfb61db135e9c33b5d9103177b030bdbaf9d9a70c9305c695dc.json",
+   "sha256": "ca80fdc58d5e64ece2e34291562cf1b57665db0e58358c5fbe4f0fcd6e3da162",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:ae2a31ddcd5d2a817612817acefe386a23258bd02cbe2f806127dc0a0006c72e.json",
+   "sha256": "5eee6bc2c37925608c442ec506bcebb9fda5c4fc672b1cb2ac53adc5c5079262",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:ae854b19c30a8d008f269e952a7add52b15d45a22d23f5993f6115ec19aa3b12.json",
+   "sha256": "d040d11cb99909e1691da7852682d096f8efba4e9cb2e8a1606f3444f3e89272",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:aef5ef8df1453521d1957feb27ff08e2d08786558ed33db3f21c519a086d1d41.json",
+   "sha256": "212017d7772933479adfd6433d1dbcb77373642d4fd2c5269b81a784a24f51a3",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:b0af62b1f994b95ee4035fa50325fbfcb857452e88d928135e21cc584a842409.json",
+   "sha256": "edd5a53992bd10f5f56e1deca6c34b253cd9936d75e69c1cee3db2db5f5f2308",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:b13a7d0030285568742e83201de10de57385bf04a8aed5b3a43417e9c690eb83.json",
+   "sha256": "5cf23b3991d5f646853ed9de9a851b8ef442d24edb2c610cbe5d5368716e4a87",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:b204d587b9e6b7220da4b10d904364acddc9b967599f86b16b90ef7543726537.json",
+   "sha256": "84fd3acd6951be467509dc6395ea475b67bf580e0259cace9a86f16eed9ab488",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:b74ac8f7e3f33507de3a560a66ce5d60282d4710e61afa59166cbdfcad7aeef6.json",
+   "sha256": "966bb7ca7de4a496b0af2ed863143d2d6339bfd3c835d8a016ea057c7c81f8e5",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:b784010b21e976e88acf5b3e240bb3243cb2b82bd51ccf5ac8e22047e78b48a2.json",
+   "sha256": "3f19a89af36e1d5053ee779ad264e3a517acfb1f40bf0d07493b1f4041b6cd69",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:b8aa7ffb84cff965df924682fc39e80f78dc0d7bac2d8205033180bc1ee0fee0.json",
+   "sha256": "36c8131b20be5240e4608226b2132f3fcc3c34a9e8443c710b3e9ebc658ba28e",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:bbd86748bc2eb4276eef20ae189cebe51e1c532f2567835f60f504d82c984b84.json",
+   "sha256": "42b1f87824563fd0ec06a574148b9684b39b75bdea8ed6de7c3e00db1fb2c445",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:bc5ec7563ad5357eb9637ba30193efcb0bd3f6f7da50ffb110d2f389306d2bbd.json",
+   "sha256": "7881923684b53f4d4f9c5a0875a3bc918d2c3fc1e4d32a47fd3722d91c9a82f8",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:bdc62a13b98de4329aca722ed90156ffa93fbf71feca16513d3d363e96397935.json",
+   "sha256": "a1f51bedfec411a8448efdad53363eefbe165d8ba89510c4106db83ad6f834c7",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:c07199a343855042081215ea1177cca344d49b8325444bfe8de13b17d2ca684e.json",
+   "sha256": "7d4bd20b6ad731a8f0f6bb36b4b110156970a31214f624c65c8e2782b5e0d236",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:c1bbaa4af998600981540ddecfe22f489db2b6f3890eebcf7760133263379fda.json",
+   "sha256": "a6cb3bb2a7e0422c00ac75234657c4c507d2d98fa8262aca42656906f87bb044",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:c55a1290977ae94cd1b572f3b018f8a4685eed70bcebaa2f6df6d552a84c2abd.json",
+   "sha256": "60e01e6c6d6cb74146b84d078c7dc28ac9985b7b188bca9677be6a85ad3cca18",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:c69a53031f1e4e29b608658f94eb7c3eda56cc674d6260329dc9d951f1bd6ca6.json",
+   "sha256": "362dbcf57da52e1dfc990ef75ef7c7727279ed8cd3fe2b719ca4c66be78ad2d5",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:c7fd4bfe9de23e8fce92fb28030f9eab967895099015829d0a37705674651146.json",
+   "sha256": "adce6b671892320186a377def535bfb393c902fe0edefa16a2035e8978a7a275",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:c93e6a163ff458039a937f11683682aa43f7a2b58eb9e498773eb035b1e7aa1b.json",
+   "sha256": "7d5e67eb19d7e95926c32f87b25d6cb800edd7883c0d857e0288414257d7860f",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:ca3905c5d5c97e3268e1a996f954cdfd453eaabe55e954fca3b3d7cc683ef167.json",
+   "sha256": "63aedfae83e8460c884a2e4acdab0baaded99120be1d3747ad518a23fc9b2197",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:caed594dd339cfc56892f60654120dd32ffc18296d2dc4815e30ea2c74ca40b2.json",
+   "sha256": "ea41ea1d4c766033052470cd5ddf985629d14a691ea091715d3c06b13ce66a15",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:d0065de5d3091cbf210b0e59d96666d70644f76d077c94bd0dfb79250c5c5eb3.json",
+   "sha256": "af94b8eb77526028729d4f440d262c460f65483b65bf53afa9ef7e9e20d8956b",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:d08d009905124c5f61e6514d347c556ce63f67a766cbed4db766cd7756d3fa0c.json",
+   "sha256": "e7701190778783cad02ddf3b12072bcbbbb31e1e755a9bdc41534db4972dc4b2",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:d193ef8163733608a6d4120a374c6d2192c19c4daabf294196b729f7c94d1758.json",
+   "sha256": "fc0d57573bade854373420f5001360e13e3544e7fe16d106898ad1091c159a18",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:d2628513bf6874526b9cdde75306c498c1c1bec4bb1becbc6296cf7859b799e0.json",
+   "sha256": "5799c1d5ece2cd5fe180381025b8231a6240b2afc01758f922e9b6688a87da8c",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:d51aa078d63dc5eeaff773edb089ddde26a056377f306902d7d40e5e8cd64743.json",
+   "sha256": "98e405cc4f52b2129b8547b4d5112a1cdccb9ab62fc4b214abb3f267c2a4c150",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:d5246ff14685e5a211e33dd0894205fc9927bf00aaa42893974d5de4144029e7.json",
+   "sha256": "89114f5e76e23020bc137529d2f0f2747c8d54598b45203ff898d2b1b0aae4f5",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:d56053c8f1130c387e810e22cdd94433c57402d63237fe4c18b679634cf615d1.json",
+   "sha256": "ae86ba8d3338c02585601a05a78a94a725f6746be5b32c8ad2ca21ee8201232a",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:dfab72fff33c69d42129c5b11b5568b37d876e63c222c00c16e9ed0c8dffb514.json",
+   "sha256": "f4155f8202855a4894f7e128bbb6c7eb58790dca453ff693481305a6603f8b0b",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:e013913ace307794ad5aa817ff183d28129410a0bb14eee3b1450f74bc03b19d.json",
+   "sha256": "207dd6c3d22be798fa28f7f005f90b31543fabd2d2692615ee16573002ce170e",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:e56b405f96001c30c9e6efb4fb610fe683a18500086732edd19b50cfc663a541.json",
+   "sha256": "61299f92b6def16b647c9e04b43956916556dcb933568da73f23ad64fa6f3755",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:e69cfbc7b47779fa28618bc8bbbd4c91e14be3b16c44008ee237bb5a2147b8d5.json",
+   "sha256": "f6d56d7934bfeea006e1cecfea17ca90484893a9cb93f17de79f30afc46cd80f",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:e6a85941d03d88d7753ba933f05fd9a63b4b1959dbb165ccdcc0c7be617f909e.json",
+   "sha256": "fc702dfab0386fdb08b224d9b8c9ddf8ec8df5e848ebf60fd3d5105128a2a709",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:e7aceaaef7c68799a2c69e0667d0ad8c96feb418740f246849415e5615d385c8.json",
+   "sha256": "381db016cbbebf7a94090a707c61fd350af828a71f564a28d7a1834727a29a19",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:e8ab35892284d037a28bad9ac86b7c8cf95a9ae335f225ee5f37514299b41db5.json",
+   "sha256": "c189038bd7dde6c94b6167d3fd055ed13f3db3f7a3556847a8760e2f0e16a2a1",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:e9de8fa357ecbc37cc9c78aa7ed9ed0f818c654fc4467696635b57b872fdd567.json",
+   "sha256": "312fac880737bf9f77834354906f9126633ac41a60c203261a5056046a3e454c",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:eba8ec150b2a69ca961f884dca0fb4d91eba3a75df7e90338f9348a43fd7746a.json",
+   "sha256": "8f004f23a20627f81d7fd9fc1524ca0b4dd56366abc6727d3b23f57e716d3943",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:ec02fd679bb05d24dfb3e088e2b10e691f7c5009040334134a087c306b359645.json",
+   "sha256": "44e2118cb53fa1fce2dbe9e57c25152408cbe6ab27d3ba988d2e2a4c1781b662",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:ef7df0cb6573fe5800fb6d0b59d58174d6bedd1a4c16547bc44218e341d96ea4.json",
+   "sha256": "0fbcf66aa2007ccd70f5293cc6d9f4a669503c5515c43c73ad7bea69487938f8",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:efa24e0786ac89be41fb0181a5dcd8bb57bd4da8b1d30f74d2466d423ef9492f.json",
+   "sha256": "7cc7f76401d8fef676fa9be0758e53c381b057307a4fb587e093046735f55787",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:f192b565b6a89821e074a93c311297e15e9134b73457f8d4725ea24eb1e4d0d5.json",
+   "sha256": "6457b9f1cd81540199fe3eb40bc9603143c92cefc56f7beeb8824e36d6321e83",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:f26b4d350a851260cd797b1608481f1337d448b8d1141a1c531a2d9bb792853e.json",
+   "sha256": "519f162e9ad36e53eec585910fe8d58a043da14b1eea1e9adab2f2bf2b87faa9",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:fc9ec6a60e3de16547d91cd02fefdee3dc977db97d19c86a09f27fd13ef08da0.json",
+   "sha256": "05f06d386217d020d3e839a19a33f6bf2e3bde2443204ce8e94f40784bfda707",
+   "status": "ok"
+  },
+  {
+   "path": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative/cached/sha256:fd3ca1fccdb6c9f85e2a891ec0c19da341f379d4a6eb49b503aed1af6fb544cc.json",
+   "sha256": "61c03b2fc8e439e3d7334d06787c791ff509d2bc76e299ff0dd480c1416545fd",
+   "status": "ok"
+  }
+ ],
+ "failures": [],
+ "requests_identity": [
+  {
+   "item_id": "always_online:w0:full:missing",
+   "request_id": "always_online:w0:full:missing",
+   "request_identity": "sha256:99cda71705e3d4bef023cf0c580156445bba1c5c154b370fa8536d0961217027",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w0:full",
+   "request_id": "always_online:w0:full",
+   "request_identity": "sha256:f192b565b6a89821e074a93c311297e15e9134b73457f8d4725ea24eb1e4d0d5",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w0:sparse:missing",
+   "request_id": "always_online:w0:sparse:missing",
+   "request_identity": "sha256:77bf9a6beb6fca721552ae87d62c05e5a2e250df9bb8a8b2d45c316e103d29e3",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w0:sparse",
+   "request_id": "always_online:w0:sparse",
+   "request_identity": "sha256:53224c06d6517bde4aa49635adb9eb7916714e2b20d1287084a7016e35554835",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w1:full:missing",
+   "request_id": "always_online:w1:full:missing",
+   "request_identity": "sha256:944481f384484b36ca0ef78618806a272e13ae0edb3b9bed9d65fcb821b4caf3",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w1:full",
+   "request_id": "always_online:w1:full",
+   "request_identity": "sha256:d2628513bf6874526b9cdde75306c498c1c1bec4bb1becbc6296cf7859b799e0",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w1:sparse:missing",
+   "request_id": "always_online:w1:sparse:missing",
+   "request_identity": "sha256:d5246ff14685e5a211e33dd0894205fc9927bf00aaa42893974d5de4144029e7",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w1:sparse",
+   "request_id": "always_online:w1:sparse",
+   "request_identity": "sha256:a90aa3bb206c99e8762132483de5aac65c6c9cd7e10247cfc257979a561be398",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w2:full:missing",
+   "request_id": "always_online:w2:full:missing",
+   "request_identity": "sha256:d193ef8163733608a6d4120a374c6d2192c19c4daabf294196b729f7c94d1758",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w2:full",
+   "request_id": "always_online:w2:full",
+   "request_identity": "sha256:a99f35a360dc54d42e0012e96685b8371f05ea609c4155f64f1972e7357da31d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w2:sparse:missing",
+   "request_id": "always_online:w2:sparse:missing",
+   "request_identity": "sha256:807d86d18db5490c3daa51c317b22235dc6b64a0b714f50a315bfe9d4041145c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "always_online:w2:sparse",
+   "request_id": "always_online:w2:sparse",
+   "request_identity": "sha256:c07199a343855042081215ea1177cca344d49b8325444bfe8de13b17d2ca684e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w0:full:missing",
+   "request_id": "newboy:w0:full:missing",
+   "request_identity": "sha256:0c585cb259a33df08fa0fdca0d638cb3451a4ed8ed0136e590937385af313dee",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w0:full",
+   "request_id": "newboy:w0:full",
+   "request_identity": "sha256:38bab55de89e576f990c83697dc2b6163665c23fe01b02c2981129bae65d77b8",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w0:sparse:missing",
+   "request_id": "newboy:w0:sparse:missing",
+   "request_identity": "sha256:aef5ef8df1453521d1957feb27ff08e2d08786558ed33db3f21c519a086d1d41",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w0:sparse",
+   "request_id": "newboy:w0:sparse",
+   "request_identity": "sha256:efa24e0786ac89be41fb0181a5dcd8bb57bd4da8b1d30f74d2466d423ef9492f",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w1:full:missing",
+   "request_id": "newboy:w1:full:missing",
+   "request_identity": "sha256:a97c1dafd3c1ced4a29f3b3206c9e4e18d90e526bc3401fd543df48e64c1008d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w1:full",
+   "request_id": "newboy:w1:full",
+   "request_identity": "sha256:c69a53031f1e4e29b608658f94eb7c3eda56cc674d6260329dc9d951f1bd6ca6",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w1:sparse:missing",
+   "request_id": "newboy:w1:sparse:missing",
+   "request_identity": "sha256:343be195d1cd78b1b748441837dec1f9a1ab61ff1aeaaba648abd19555a412b3",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w1:sparse",
+   "request_id": "newboy:w1:sparse",
+   "request_identity": "sha256:3968668d984f70290bb46f881f0742cd76390265979261fe5eca03cf69598a5c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w2:full:missing",
+   "request_id": "newboy:w2:full:missing",
+   "request_identity": "sha256:578b6a13f30776b2414da7573dd422180155c62e5aa0c592536b746b584609a2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w2:full",
+   "request_id": "newboy:w2:full",
+   "request_identity": "sha256:e6a85941d03d88d7753ba933f05fd9a63b4b1959dbb165ccdcc0c7be617f909e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w2:sparse:missing",
+   "request_id": "newboy:w2:sparse:missing",
+   "request_identity": "sha256:f26b4d350a851260cd797b1608481f1337d448b8d1141a1c531a2d9bb792853e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "newboy:w2:sparse",
+   "request_id": "newboy:w2:sparse",
+   "request_identity": "sha256:11e94d4787c58ce5381f0a32981e9c96563729103321eff28ce1ef556cb7349b",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w0:full:missing",
+   "request_id": "三国杀:w0:full:missing",
+   "request_identity": "sha256:ae854b19c30a8d008f269e952a7add52b15d45a22d23f5993f6115ec19aa3b12",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w0:full",
+   "request_id": "三国杀:w0:full",
+   "request_identity": "sha256:1cba124b86cc89a1088d5ad6452da4c2c504021aca6c7f7e0b75c47067756e7e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w0:sparse:missing",
+   "request_id": "三国杀:w0:sparse:missing",
+   "request_identity": "sha256:26f6a3b5bca74c3fb0bfbf3506d076bd1078b17202be3c42b23625d119eb17da",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w0:sparse",
+   "request_id": "三国杀:w0:sparse",
+   "request_identity": "sha256:caed594dd339cfc56892f60654120dd32ffc18296d2dc4815e30ea2c74ca40b2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w1:full:missing",
+   "request_id": "三国杀:w1:full:missing",
+   "request_identity": "sha256:86abfbf8cb32c3b3bb2cc5c4413be48697c2a7c95d0ac98f4c61a84fec582382",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w1:full",
+   "request_id": "三国杀:w1:full",
+   "request_identity": "sha256:aa5895678dd72cfb61db135e9c33b5d9103177b030bdbaf9d9a70c9305c695dc",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w1:sparse:missing",
+   "request_id": "三国杀:w1:sparse:missing",
+   "request_identity": "sha256:60b091c82bf47b7227d70f0ebd48952add0a359672a87ed35103ef4cd67e5021",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w1:sparse",
+   "request_id": "三国杀:w1:sparse",
+   "request_identity": "sha256:b204d587b9e6b7220da4b10d904364acddc9b967599f86b16b90ef7543726537",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w2:full:missing",
+   "request_id": "三国杀:w2:full:missing",
+   "request_identity": "sha256:5bc9ca3f3a1f80e99276f003e7b7e35737359467e699d97f07b8439b1d20ac4d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w2:full",
+   "request_id": "三国杀:w2:full",
+   "request_identity": "sha256:d56053c8f1130c387e810e22cdd94433c57402d63237fe4c18b679634cf615d1",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w2:sparse:missing",
+   "request_id": "三国杀:w2:sparse:missing",
+   "request_identity": "sha256:c1bbaa4af998600981540ddecfe22f489db2b6f3890eebcf7760133263379fda",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "三国杀:w2:sparse",
+   "request_id": "三国杀:w2:sparse",
+   "request_identity": "sha256:76dcf4559f9e8af192dba210af69d7f71c5c763fecf98f07d5c40938969d80ff",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w0:full:missing",
+   "request_id": "不要说话:w0:full:missing",
+   "request_identity": "sha256:ec02fd679bb05d24dfb3e088e2b10e691f7c5009040334134a087c306b359645",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w0:full",
+   "request_id": "不要说话:w0:full",
+   "request_identity": "sha256:3027785c5ff7114a32726c72e79e4c7f52179d77915a00fe7b1744087f34985c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w0:sparse:missing",
+   "request_id": "不要说话:w0:sparse:missing",
+   "request_identity": "sha256:47cab714dde3cb0f31b74cb6e8d4530ebf0519286282bbbdadfb6be756b202bc",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w0:sparse",
+   "request_id": "不要说话:w0:sparse",
+   "request_identity": "sha256:6e22d75e16e84da244786f4c808286fe02a7e9f77549a0ca53cf0bd70a9f1af7",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w1:full:missing",
+   "request_id": "不要说话:w1:full:missing",
+   "request_identity": "sha256:1584aa5734b029de8713312d78deb13692d998ae6f5527e66d76a3c2e0de3a41",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w1:full",
+   "request_id": "不要说话:w1:full",
+   "request_identity": "sha256:75ba1cd75ed5d05a70fb9eb90507ef208d77e3279a0f8366bed8b7c7d5f7b029",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w1:sparse:missing",
+   "request_id": "不要说话:w1:sparse:missing",
+   "request_identity": "sha256:a8e02f17bb195781978a560f027f84c205f5cb4b911c9f75cb199b02b278e8c1",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w1:sparse",
+   "request_id": "不要说话:w1:sparse",
+   "request_identity": "sha256:6fc8786407a0ad37e478e7b10e88aa65f48fd74a5bae57f1b74e1f898e2eae8b",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w2:full:missing",
+   "request_id": "不要说话:w2:full:missing",
+   "request_identity": "sha256:73bde39a6a9d1d30ccc84026077622b40b8e2fb3da9a05bc0ca8b6cf5133daed",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w2:full",
+   "request_id": "不要说话:w2:full",
+   "request_identity": "sha256:d51aa078d63dc5eeaff773edb089ddde26a056377f306902d7d40e5e8cd64743",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w2:sparse:missing",
+   "request_id": "不要说话:w2:sparse:missing",
+   "request_identity": "sha256:ef7df0cb6573fe5800fb6d0b59d58174d6bedd1a4c16547bc44218e341d96ea4",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "不要说话:w2:sparse",
+   "request_id": "不要说话:w2:sparse",
+   "request_identity": "sha256:3c9e9fc7cf2cb3a95f527cd064d970153871c65fe61190e17ebeba0a77319c3c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w0:full:missing",
+   "request_id": "云烟成雨:w0:full:missing",
+   "request_identity": "sha256:e8ab35892284d037a28bad9ac86b7c8cf95a9ae335f225ee5f37514299b41db5",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w0:full",
+   "request_id": "云烟成雨:w0:full",
+   "request_identity": "sha256:b74ac8f7e3f33507de3a560a66ce5d60282d4710e61afa59166cbdfcad7aeef6",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w0:sparse:missing",
+   "request_id": "云烟成雨:w0:sparse:missing",
+   "request_identity": "sha256:7119f927190863e73d87282a001953053276acf0e77ee9b1729e0d9476751172",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w0:sparse",
+   "request_id": "云烟成雨:w0:sparse",
+   "request_identity": "sha256:290f658a8f7cffc6bca3bafaeec912edb5584ed0b0e12ce03d33d7785e560827",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w1:full:missing",
+   "request_id": "云烟成雨:w1:full:missing",
+   "request_identity": "sha256:868aabd6e4f369bcf2885cf0c927e97fe934fd1a0875d2c2aa45cfed30510fc7",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w1:full",
+   "request_id": "云烟成雨:w1:full",
+   "request_identity": "sha256:d0065de5d3091cbf210b0e59d96666d70644f76d077c94bd0dfb79250c5c5eb3",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w1:sparse:missing",
+   "request_id": "云烟成雨:w1:sparse:missing",
+   "request_identity": "sha256:2aeff843c3022fe2fa516cdc37bb27249a46471ced1730c585b33d45c9950d82",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w1:sparse",
+   "request_id": "云烟成雨:w1:sparse",
+   "request_identity": "sha256:72d9efaecf190b50eb3efad05d37b3c18d4a195a536e4f94c3ecee887ff807bd",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w2:full:missing",
+   "request_id": "云烟成雨:w2:full:missing",
+   "request_identity": "sha256:12678038db607ea86930931183abe318667a170e03a0ed0ea214a600d5dd9d16",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w2:full",
+   "request_id": "云烟成雨:w2:full",
+   "request_identity": "sha256:9da7bc03d837b50eb6dc5759e581a9d596a57161c2bed0cb6b1679c953ca86b2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w2:sparse:missing",
+   "request_id": "云烟成雨:w2:sparse:missing",
+   "request_identity": "sha256:7455e439a0f343e5541d50333564cb71e6506da0e9e0965d78a3fad2d8d1ca95",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "云烟成雨:w2:sparse",
+   "request_id": "云烟成雨:w2:sparse",
+   "request_identity": "sha256:0a9b5d167729cbdd9df894d6418b3ec9f4f1bbf1aa3c41853cc9e8000c7de9ff",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w0:full:missing",
+   "request_id": "交换余生:w0:full:missing",
+   "request_identity": "sha256:9c89a67b87c60d93c1b94c27cb212ae50456b542faf0f0844c2fc775b0b514fe",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w0:full",
+   "request_id": "交换余生:w0:full",
+   "request_identity": "sha256:b784010b21e976e88acf5b3e240bb3243cb2b82bd51ccf5ac8e22047e78b48a2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w0:sparse:missing",
+   "request_id": "交换余生:w0:sparse:missing",
+   "request_identity": "sha256:e9de8fa357ecbc37cc9c78aa7ed9ed0f818c654fc4467696635b57b872fdd567",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w0:sparse",
+   "request_id": "交换余生:w0:sparse",
+   "request_identity": "sha256:ae2a31ddcd5d2a817612817acefe386a23258bd02cbe2f806127dc0a0006c72e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w1:full:missing",
+   "request_id": "交换余生:w1:full:missing",
+   "request_identity": "sha256:bc5ec7563ad5357eb9637ba30193efcb0bd3f6f7da50ffb110d2f389306d2bbd",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w1:full",
+   "request_id": "交换余生:w1:full",
+   "request_identity": "sha256:261934d1bd3580c721394a82f15a24f18fd9a7538bf099a34caf00b53ed02238",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w1:sparse:missing",
+   "request_id": "交换余生:w1:sparse:missing",
+   "request_identity": "sha256:fd3ca1fccdb6c9f85e2a891ec0c19da341f379d4a6eb49b503aed1af6fb544cc",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w1:sparse",
+   "request_id": "交换余生:w1:sparse",
+   "request_identity": "sha256:7146a3682f2e16b2936e8fabbbbb23e9cd8b0971e416ffd76a2eb8810ff2335b",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w2:full:missing",
+   "request_id": "交换余生:w2:full:missing",
+   "request_identity": "sha256:4963608eea2e56ae55fbcc44ee85235f248dc56de61c85e9b1afd7b3231faae4",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w2:full",
+   "request_id": "交换余生:w2:full",
+   "request_identity": "sha256:bbd86748bc2eb4276eef20ae189cebe51e1c532f2567835f60f504d82c984b84",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w2:sparse:missing",
+   "request_id": "交换余生:w2:sparse:missing",
+   "request_identity": "sha256:182aac8fb1268651e03a09a5b23f51d40c5e0b7db86f62108d5bcbf1a66c7cdc",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "交换余生:w2:sparse",
+   "request_id": "交换余生:w2:sparse",
+   "request_identity": "sha256:17a9a49e0e79b1b2cba6251ec287f756830810b1f25792fc46c4198b77c826b9",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w0:full:missing",
+   "request_id": "会长大的幸福:w0:full:missing",
+   "request_identity": "sha256:7760fe1a2c00ad6a7c0ccb6c746c48c49ab89e7d4d14e4da84a0ef298e3b24c1",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w0:full",
+   "request_id": "会长大的幸福:w0:full",
+   "request_identity": "sha256:a1e39dcfffd359066b86130d2bd9d43b3626d857c58363bbefcfeba1a4f7f5cf",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w0:sparse:missing",
+   "request_id": "会长大的幸福:w0:sparse:missing",
+   "request_identity": "sha256:67b363482e4db270d6129a87e917695f890935e7f8ee563ac353aacabf551f8f",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w0:sparse",
+   "request_id": "会长大的幸福:w0:sparse",
+   "request_identity": "sha256:5e883a28b3edef9dd4ca31fd85f2a4d82c29f513f864188363338fc9e0966e1d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w1:full:missing",
+   "request_id": "会长大的幸福:w1:full:missing",
+   "request_identity": "sha256:13a8e06e17f8cb2a75f23019f56e7e36fe546bbb43a1110cecce401e6668d40a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w1:full",
+   "request_id": "会长大的幸福:w1:full",
+   "request_identity": "sha256:9b172d890ae0576539a04526748a5a0c103f367efbad65e76d5c8d2cd04be775",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w1:sparse:missing",
+   "request_id": "会长大的幸福:w1:sparse:missing",
+   "request_identity": "sha256:0a8e5a89fa22887ecdd7a8b3cb0d72c063a727c0b8654cad0015ebe84c3f89f5",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w1:sparse",
+   "request_id": "会长大的幸福:w1:sparse",
+   "request_identity": "sha256:9ce7b6234ae00f90d6c6921fbab919f41cc6a5ec8361e0a4efbcecc57fb335b5",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w2:full:missing",
+   "request_id": "会长大的幸福:w2:full:missing",
+   "request_identity": "sha256:983ec85bb3d5b58b1ba012a3aa42b1c89e49f5c200563c0fd112fa1bc90a865b",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w2:full",
+   "request_id": "会长大的幸福:w2:full",
+   "request_identity": "sha256:8d40917dbf9caebbae6ae91cc584b204e922bc3ff0a0544c122082b2c78cf3cf",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w2:sparse:missing",
+   "request_id": "会长大的幸福:w2:sparse:missing",
+   "request_identity": "sha256:6a1300c80cf399aa391812330dc2dc03efd328e8ee0c001f5ac73f184377d5e9",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "会长大的幸福:w2:sparse",
+   "request_id": "会长大的幸福:w2:sparse",
+   "request_identity": "sha256:1dd3e2efc0cc020d6cd2629c0011a232d237b6299eb664870f154f7fd9bf269a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w0:full:missing",
+   "request_id": "但愿人长久:w0:full:missing",
+   "request_identity": "sha256:5b091284954a7a6086e96684d315f2415d2462c6f11c269cf6568b28577d7665",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w0:full",
+   "request_id": "但愿人长久:w0:full",
+   "request_identity": "sha256:ca3905c5d5c97e3268e1a996f954cdfd453eaabe55e954fca3b3d7cc683ef167",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w0:sparse:missing",
+   "request_id": "但愿人长久:w0:sparse:missing",
+   "request_identity": "sha256:1ff667417a0d971464810d1be093201bc47ff603e1f124a2860075ea645310de",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w0:sparse",
+   "request_id": "但愿人长久:w0:sparse",
+   "request_identity": "sha256:a3269b206e6cc53de92a754d80db0fee9eab8bd2b0e40e3e06bc45f18fb95574",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w1:full:missing",
+   "request_id": "但愿人长久:w1:full:missing",
+   "request_identity": "sha256:fc9ec6a60e3de16547d91cd02fefdee3dc977db97d19c86a09f27fd13ef08da0",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w1:full",
+   "request_id": "但愿人长久:w1:full",
+   "request_identity": "sha256:14cc9357fffdab0a32bdb9e0201887ea46905f791456c3d91344b29f3d9d0c57",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w1:sparse:missing",
+   "request_id": "但愿人长久:w1:sparse:missing",
+   "request_identity": "sha256:468929acce35bc19bf4173705c46bf8e7fb8ab766f0fa1fae56ee487ce50c3ca",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w1:sparse",
+   "request_id": "但愿人长久:w1:sparse",
+   "request_identity": "sha256:b0af62b1f994b95ee4035fa50325fbfcb857452e88d928135e21cc584a842409",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w2:full:missing",
+   "request_id": "但愿人长久:w2:full:missing",
+   "request_identity": "sha256:e7aceaaef7c68799a2c69e0667d0ad8c96feb418740f246849415e5615d385c8",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w2:full",
+   "request_id": "但愿人长久:w2:full",
+   "request_identity": "sha256:d08d009905124c5f61e6514d347c556ce63f67a766cbed4db766cd7756d3fa0c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w2:sparse:missing",
+   "request_id": "但愿人长久:w2:sparse:missing",
+   "request_identity": "sha256:b8aa7ffb84cff965df924682fc39e80f78dc0d7bac2d8205033180bc1ee0fee0",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "但愿人长久:w2:sparse",
+   "request_id": "但愿人长久:w2:sparse",
+   "request_identity": "sha256:72721746f8068611e175d86c4884b997ef9b96363fd124dc612db57a27fb0956",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w0:full:missing",
+   "request_id": "你以为:w0:full:missing",
+   "request_identity": "sha256:34a502f4d1d9b20f4d638334df6550910ca57c8656b93ef852032ced21034713",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w0:full",
+   "request_id": "你以为:w0:full",
+   "request_identity": "sha256:c7fd4bfe9de23e8fce92fb28030f9eab967895099015829d0a37705674651146",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w0:sparse:missing",
+   "request_id": "你以为:w0:sparse:missing",
+   "request_identity": "sha256:6868c506d8c9af407af45df4c85e87775fecc7da590ec1c6e035abf959fb7fcf",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w0:sparse",
+   "request_id": "你以为:w0:sparse",
+   "request_identity": "sha256:0ca35b54ca715b266e2badd5f87e8ef0929283dbdbf2d5e99e00841fca724484",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w1:full:missing",
+   "request_id": "你以为:w1:full:missing",
+   "request_identity": "sha256:eba8ec150b2a69ca961f884dca0fb4d91eba3a75df7e90338f9348a43fd7746a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w1:full",
+   "request_id": "你以为:w1:full",
+   "request_identity": "sha256:15921194e241f04252e3bd70be0135dd9ddb601bc35314c5a32e68d7278da620",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w1:sparse:missing",
+   "request_id": "你以为:w1:sparse:missing",
+   "request_identity": "sha256:dfab72fff33c69d42129c5b11b5568b37d876e63c222c00c16e9ed0c8dffb514",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w1:sparse",
+   "request_id": "你以为:w1:sparse",
+   "request_identity": "sha256:aa461d62e5f913b0030db7ba2877d905b5c343a245d65fc4618c81e502e1ae41",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w2:full:missing",
+   "request_id": "你以为:w2:full:missing",
+   "request_identity": "sha256:bdc62a13b98de4329aca722ed90156ffa93fbf71feca16513d3d363e96397935",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w2:full",
+   "request_id": "你以为:w2:full",
+   "request_identity": "sha256:7924020492c621da6eb4302d54de216f20963d9da55e084f1410aad954532d9c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w2:sparse:missing",
+   "request_id": "你以为:w2:sparse:missing",
+   "request_identity": "sha256:a34bc21d9247ecda2585e53aeb9e14ab9e33a298854b7bc02f6da94df54a63e0",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你以为:w2:sparse",
+   "request_id": "你以为:w2:sparse",
+   "request_identity": "sha256:e013913ace307794ad5aa817ff183d28129410a0bb14eee3b1450f74bc03b19d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w0:full:missing",
+   "request_id": "你给我听好:w0:full:missing",
+   "request_identity": "sha256:332778226a3588b5b1dd0543dbc5ab725225351c44241bc1b0c42c97a7f5cb6a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w0:full",
+   "request_id": "你给我听好:w0:full",
+   "request_identity": "sha256:b13a7d0030285568742e83201de10de57385bf04a8aed5b3a43417e9c690eb83",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w0:sparse:missing",
+   "request_id": "你给我听好:w0:sparse:missing",
+   "request_identity": "sha256:0b87fca9f79d6eb11eb7369f6b52b38cc262b0de599371e483589c597a1436dc",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w0:sparse",
+   "request_id": "你给我听好:w0:sparse",
+   "request_identity": "sha256:e56b405f96001c30c9e6efb4fb610fe683a18500086732edd19b50cfc663a541",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w1:full:missing",
+   "request_id": "你给我听好:w1:full:missing",
+   "request_identity": "sha256:e69cfbc7b47779fa28618bc8bbbd4c91e14be3b16c44008ee237bb5a2147b8d5",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w1:full",
+   "request_id": "你给我听好:w1:full",
+   "request_identity": "sha256:2ee12e5e337119c70746d74cdc708620739e7e8950baa2b0d47efcc1a7adb499",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w1:sparse:missing",
+   "request_id": "你给我听好:w1:sparse:missing",
+   "request_identity": "sha256:2217c590a63750a10bb090c140f199079a2b7ccd8666144db52e618f7f8b2ae7",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w1:sparse",
+   "request_id": "你给我听好:w1:sparse",
+   "request_identity": "sha256:a32ab38b97d5e594905390ede800994e81df0de7383a7fc8e15b3f41c7a9289b",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w2:full:missing",
+   "request_id": "你给我听好:w2:full:missing",
+   "request_identity": "sha256:c93e6a163ff458039a937f11683682aa43f7a2b58eb9e498773eb035b1e7aa1b",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w2:full",
+   "request_id": "你给我听好:w2:full",
+   "request_identity": "sha256:c55a1290977ae94cd1b572f3b018f8a4685eed70bcebaa2f6df6d552a84c2abd",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w2:sparse:missing",
+   "request_id": "你给我听好:w2:sparse:missing",
+   "request_identity": "sha256:4248d880988dcc2bc6787cc381d60d75fce3fe82a151eca22979250f5423669d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "你给我听好:w2:sparse",
+   "request_id": "你给我听好:w2:sparse",
+   "request_identity": "sha256:23ed1b3ef2f89a15b41131f2bb32f3ea5241a9e8709182560a0e6e25dde7bddb",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  }
+ ]
+}
