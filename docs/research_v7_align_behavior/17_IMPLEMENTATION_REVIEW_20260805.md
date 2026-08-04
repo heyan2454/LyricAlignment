@@ -251,3 +251,72 @@ smoke 实际只构造一条合成 timeline、一个 slot plan 和一个 tail-mis
 | real executor / hidden audit / long-slot serial / pilot artifacts | 未实现；仓库仍未发现实际运行产物 |
 
 建议下一位 agent 先以失败回归测试关闭第 1--3 项（尤其是 malformed row 与 parent failure 后仍有最终 manifest），再实现 C3 的 canonical text-span adapter。完成后才值得启动一次单个真实 executor smoke；在此之前，98 项测试仅证明模块与 fake-executor scaffold，不是 real evidence。
+
+## 复审更新 8：提交 `05ede41` 至 `b47c1cd`
+
+复审时间：2026-08-05。`PYTHONPATH=src python -m pytest -q tests/research_v7` 为 **103 项通过**，`git diff --check` 通过。本轮对上一轮第 1、2、5、6 项有实质改进：
+
+- 常规 `AlignmentRequest` 构造/`validate()` 失败，以及 strict-serial 缺失父 cursor，已有 `malformed_row` / `blocked_by_parent` failure 与回归测试；独立正常行仍会继续执行并产生最终 manifest；
+- successful/cache-hit identity 已记录 `evaluation_role` 与 `text_window_aligned`，RUN_MANIFEST 的 role count 不再必然全为 unknown；
+- text-window 缺失现在默认拒绝；runner 会把 guard 的允许/拒绝数量写入 `train_filter`；
+- evidence、item view、cache 与两个 run-level 文件改为 fsync 后原子替换；imports inventory 改为递归逐文件 `{path,sha256}`。
+
+这些改动均可保留。但结论仍为：**不批准 real smoke、pilot 或 formal。** 当前最关键的新问题在于号称完成的 C3 canonical adapter 尚未能形成可运行、可序列化的 request，也尚未接入 exporter。
+
+### 本轮阻塞项
+
+1. **C3 adapter 完全未接线。** 全仓只有其自身单测调用 `bind_window()` / `bind_to_manifest_row()`；`export_silence_polluted_weak.py`、runner 和任何 manifest builder 都未导入该模块。因此 C3 exporter 仍一律输出 `text_window_aligned=false`，不会实际产生 `lyrics_aligned` C3 请求。必须让 exporter 接受/加载 canonical GT timeline，并在写 `REQUESTS.jsonl` 前调用 adapter；同时做 exporter → JSONL → runner 的端到端测试。
+2. **adapter 比较了错误的时间坐标系。** C3 生成 WAV 的 `audio_start_sec/audio_end_sec` 是局部 `[0, window_duration]`，原曲选窗存于 `window_sec=[source_start,source_end]`。`bind_to_manifest_row()` 当前却用前者与原曲 canonical GT 相交，因而会把原曲任意 20 秒窗口错误绑定为歌曲开头 0--20 秒的歌词；我以 `window_sec=[40,60]` 与 GT 40 秒起的单位复核时得到 `aligned=False`。应使用原曲窗口做 overlap，随后显式生成 “canonical global id ↔ request-local index” mapping，不能混用坐标系。
+3. **adapter 的 aligned 输出无法 JSON 序列化，也不是有效 text units。** dict 输入被转换为不含 `text` 字段的 `CanonicalUnit`；`bound_units` 因而返回 `CanonicalUnit` 对象而不是字符/string。直接 `json.dumps(bind_to_manifest_row(...))` 会报 `TypeError: Object of type CanonicalUnit is not JSON serializable`。现有测试只断言长度，未断言内容/JSON round-trip。应在数据模型中保留 `text`，拒绝缺 text 的单位，输出 `list[str]`，并新增 JSONL 写入与 `AlignmentRequest.validate()` 成功测试。
+4. **canonical global range 不能直接充当 request-local text index。** adapter 可产生例如 `text_start_index=100,text_end_index=102`，但 `text_units` 只有两个单位；现有 runner 的 request contract 是 local sequence index range，故真实运行会在 validate 阶段作为越界 malformed row 拒绝。需要明确把 request `text_start/end` 写为 `0..len(bound_units)`，另存 `canonical_text_start/end` 与完整 canonical-to-local mapping；或者统一修改并验证 request schema，不能仅通过 index 名称混用两种语义。
+5. **“whole-row isolation”仍有少量前置逃逸路径。** row 的 `r.get(...)`、`files` 音频范围算术、`timestamp_slot_indices` 读取均发生在 item-level try 之前。例如合法 JSON 行若为数组而非 object，或 `files` 搭配字符串时间导致减法 TypeError，仍会中止全批而无最终 manifest。应在循环开头立即以 `try` 包住所有 row materialization，并先验证 JSON object / 字段类型；为这两种输入增加回归测试。
+6. **guard 的“接入”仍只是 runner 事后摘要，非训练/阈值/正式评价 gate。** runner 会先执行全部 records，最后对 `requests_identity` 算 `train_filter` 的两个计数；没有 research_v7 feature、trainer、threshold freezer 或正式 evaluator 调用 guard，也没有保存被拒绝 identity 列表（只有 count）。这能提高 run audit，但尚不能阻止未来消费者把 probe 混进分母。实际各消费入口必须调用 `require_trainable()`，输出 allowed/rejected identity 清单与确切分母；在入口测试中验证 non-GT 不可绕过。
+7. **失败行仍缺少 role/text 对齐和 identity 审计。** malformed/blocked rows仅进 `failures`，不进 `requests_identity`，其 failure 也未带 `evaluation_role`、`text_window_aligned` 或可构造时的 request identity。因此 role count/train_filter 只审计成功或 cache-hit rows，无法说明失败输入是否被完整分类。应对所有 manifest row 写一个 source-row digest，并将 role/alignment/parent 及失败类型写入 failure inventory；分母统计应明确报告成功、失败、阻塞、拒绝的交集。
+
+### 状态表
+
+| 项目 | 状态 |
+|---|---|
+| 常规 malformed / serial parent failure continuation | 部分关闭；已有覆盖，仍有 pre-try 类型错误逃逸 |
+| evidence/run 文件原子写与 imports inventory | 已关闭（保留） |
+| role/text-window 成功记录与 audit count | 部分关闭；失败行和真实消费 gate 未覆盖 |
+| C3 canonical text-span adapter | 未通过；未接线、坐标系错误、输出不可序列化且 index 语义冲突 |
+| C3 → JSONL → runner lyrics-aligned 路径 | 未实现 |
+| real executor / hidden audit / long-slot serial / pilot artifacts | 未实现；仓库仍未发现实际运行产物 |
+
+建议下一位 agent 不要开始 real executor。先重做 adapter 的三层契约：**source-song timeline span**、**bound string units**、**request-local indices + canonical mapping**，并把它接入 exporter 的真实 JSONL 写入路径。随后补齐 row-type 隔离和消费入口 gate，使用端到端 fake runner 测试验证后再复审。
+
+## 复审更新 9：提交 `44aa842` 至 `2d7e6a5`
+
+复审时间：2026-08-05。`PYTHONPATH=src python -m pytest -q tests/research_v7` 为 **108 项通过**，`git diff --check` 通过。本轮已有效关闭上一轮多个代码级问题：
+
+- C3 adapter 已重构为“原曲 source window → `list[str]` bound units → request-local index / canonical mapping”三层契约，并由 exporter 的 `--canonical-timeline` 接入 `REQUESTS.jsonl`；
+- 新增 exporter → JSONL → fake runner 端到端测试，确认输出可 JSON 序列化、local text range 为 `0..N`、生成 WAV 仍以局部 0..duration 请求；
+- runner 将 JSON object/type/前置算术纳入 row-level try，并新增 array row 与字符串时间字段的回归；
+- `require_trainable()` 现在产生 allowed/rejected identity 清单，runner 持久化 `train_filter`；每行另有 `row_audit` 与 source-row SHA，failure 也带 role/alignment/parent。
+
+以上均应保留。结论仍为：**不批准 real smoke、pilot 或 formal。** 新的 C3 路径已能在 fake runner 中通行，但 canonical 映射和其来源还没有随 evidence identity 闭环；这会使同一音频/文字、不同 canonical 解释的运行不可区分。
+
+### 仍需修复的具体问题
+
+1. **`canonical_to_local` 在 runner 中被丢弃，evidence 无法重建 C3 canonical 轴。** exporter 正确将该映射写在 REQUESTS 顶层；runner 构造 request metadata 时却只取 `r["canonical_mapping"]`，C3 row 实际使用的字段是 `canonical_to_local`。因此 evidence 的 `attempt.request.metadata.canonical_mapping` 为 `{}`，且不会保存 C3 的 `canonical_text_start/end`。后续 slot/feature/evaluator 从 evidence 不能知道每个 local 文本单位对应哪个原曲 canonical id。应将 canonical range 和 mapping完整写进 metadata（或统一顶层 schema 并由 `AlignmentRequest.to_dict()` 保留），并用 evidence round-trip 断言验证。
+2. **content identity 排除了 metadata，canonical mapping 改变不会改变 identity。** `AlignmentRequest._canonical_payload()` 明确 `pop("metadata")`；runner context 只有固定 `mapping_schema` 字符串，没有实际 mapping/range digest。故即使补存 metadata，两个请求只要音频、bound text 和其他非 metadata 字段相同，canonical mapping/原曲解释不同仍会命中同一 cache/evidence identity。必须将 canonical mapping、canonical text range、source-window 及 canonical-timeline row SHA 的规范化 digest 纳入 request identity context；并新增“mapping-only drift 不得 cache hit”的回归。
+3. **canonical timeline 的来源没有可追溯记录。** exporter 读取 `--canonical-timeline`，但 REQUESTS、`AUDIO_EXPORT_MANIFEST`、RUN_MANIFEST 都不记录该文件的路径/SHA、item timeline row SHA 或 adapter version。当前只留下派生文本/映射，无法确认它来自哪一版 GT。至少记录 timeline file SHA、source-row SHA、adapter/version 与精确 source window；runner 应将它们列为 external input，并把 SHA 放入 identity context。
+4. **adapter 未验证 canonical id 的唯一、连续与时间有效性。** `_coerce()` 仅排序；重复 `global_index` 会在 `canonical_to_local` 中被后项覆盖，不连续 id 会让 `[canonical_text_start, canonical_text_end)` 表示一个包含不存在 id 的区间，负时长/重叠也不会被拒绝。既然该 mapping 被用于 canonical 解释，必须拒绝重复/非严格递增 id、`end_sec <= start_sec`，并定义是否允许 id 不连续；若允许，不能再用连续 range 表达集合，而应保存 explicit canonical id list。增加这些失败测试。
+5. **array row 会生成两条 malformed failure。** `run_behavior_suite.py` 对非 dict row 先 append 一条 failure，却未立即 `continue`；紧接着 `r.get(...)` 抛异常，except 又 append 第二条。这样一个 source row 的 `row_audit` 只有一条而 `item_count.failed` 有两条，和“完整分母视图”矛盾。应在首次非-object 记录后立即 `continue`，并测试单个 array row 对应恰好一条 failure。
+6. **train_filter 是运行后摘要，尚不是实际 train/evaluate 的强制入口。** 本轮已从只有 count 提升为可审计 identity 清单，这是进步；但调用仍在 behavior runner 的末尾，运行时并没有 feature trainer、threshold freezer 或正式 evaluator 消费该 allowed list。所有未来消费者仍可直接读 evidence inventory 而绕过它。应定义唯一的 evidence collection API/CLI：输入 RUN_MANIFEST，先验证 `train_filter` 与 mapping lineage，再只输出 `trainable` evidence paths；训练/评估命令只接收该 collection，不能直接接收原始 items。
+7. **C3 绑定使用四舍五入到 0.1 秒的 source window。** WAV 实际裁剪以 sample index 为准，但 exporter 用 `round(start / rate, 1)` 和相应 rounded end 做 canonical overlap。临界歌词单位可能因最多 50 ms 的舍入被误纳入或漏掉。应保存未舍入的 `source_window_sec`（或 start/end sample/rate）用于 bind、identity 与审计；展示字段可另行四舍五入。
+
+### 当前状态
+
+| 项目 | 状态 |
+|---|---|
+| C3 bound string / local index / JSONL / fake runner | 已通过（保留） |
+| C3 source-window 坐标分离 | 已通过，但绑定仍使用展示级 0.1 s rounding |
+| C3 canonical mapping 在 evidence 和 cache identity 中闭环 | 未通过 |
+| canonical timeline 输入版本可追溯 | 未通过 |
+| row-level malformed continuation | 基本通过；array row 会重复计失败 |
+| role/alignment rejection 清单 | runner 审计级通过；真实消费入口尚未存在 |
+| real executor / hidden audit / long-slot serial / pilot artifacts | 未实现；仓库仍未发现实际运行产物 |
+
+下一位 agent 应优先把第 1--3 项作为一个不可拆分的 lineage 修复：将 **timeline row hash + exact source window + canonical mapping** 同时放进 request/evidence/RUN_MANIFEST/identity。随后修掉 row 重复 failure 与 adapter 验证，再考虑真实 executor smoke。
