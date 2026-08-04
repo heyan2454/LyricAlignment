@@ -156,63 +156,72 @@ def main(argv=None) -> int:
                       "canonical_mapping": r.get("canonical_mapping", {})},
         )
         req.validate()
+        # review6-3/4/5：per-item 隔离 —— drift/校验/执行失败记录结构化 failure 并 continue，不中止批次
         item_dir = out_root / "items" / str(req.item_id)
-        item_dir.mkdir(parents=True, exist_ok=True)
-        # review5-1：attempt_identity = hash(source_request_identity + canonical AlignmentRequest +
-        # model/checkpoint/processor/decoder/code/env/mapping schema + 实际 audio hash)；
-        # 并校验 manifest files_sha256 与实际读音 sha（同路径换 WAV → 拒绝/cache miss）
         import hashlib as _hl
-        audio_sha = _hl.sha256(Path(req.audio_source).read_bytes()).hexdigest() if (req.audio_source and Path(req.audio_source).is_file()) else "none"
-        man_sha = next(iter(r.get("files_sha256") or []), None)
-        if man_sha and man_sha != audio_sha:
-            raise RuntimeError(f"audio drift: manifest files_sha256 {man_sha[:12]} != actual {audio_sha[:12]} for {req.item_id}")
-        ctx = {
-            "audio_content_sha256": audio_sha,
-            "manifest_files_sha256": man_sha or audio_sha,
-            "model": args.model, "checkpoint": args.checkpoint, "revision": args.revision,
-            "decoder": r.get("decoder", "official"),
-            "code_identity": _git_dirty(), "env_schema": "research_v7_long_slot_v1",
-            "mapping_schema": "research_v7_canonical_mapping_v2",
-            "source_request_identity": r.get("request_identity") or "",
-        }
-        content_idn = req.request_identity(context=ctx)
-        cache_f = out_root / "cached" / f"{content_idn}.json"
-        f = item_dir / f"behavior-{mutation}-{r.get('ratio', 1.0)}-{r.get('position', 'whole')}-{i}.json"
-        if cache_f.exists():
-            if not args.resume:
-                raise FileExistsError(f"refusing to overwrite existing evidence: {cache_f}; use --resume after content-identity verification")
-            cached = json.loads(cache_f.read_text(encoding="utf-8"))
-            if cached.get("content_identity") != content_idn:
-                raise RuntimeError(f"content identity mismatch under cache path for {content_idn[:16]}")
-            prior_attempt = cached["attempt"]
-            cursor_after_by_request[req.request_id] = prior_attempt.get("cursor_after")
-            rows_after_by_request[req.request_id] = list(prior_attempt.get("decoder_outputs", {}).get("official", {}).get("rows", []))
-            cache_hit += 1
+        try:
+            audio_sha = _hl.sha256(Path(req.audio_source).read_bytes()).hexdigest() if (req.audio_source and Path(req.audio_source).is_file()) else "none"
+            man_sha = next(iter(r.get("files_sha256") or []), None)
+            if man_sha and man_sha != audio_sha:
+                raise RuntimeError(f"audio drift: manifest files_sha256 {man_sha[:12]} != actual {audio_sha[:12]}")
+            ctx = {
+                "audio_content_sha256": audio_sha,
+                "manifest_files_sha256": man_sha or audio_sha,
+                "model": args.model, "checkpoint": args.checkpoint, "revision": args.revision,
+                "decoder": r.get("decoder", "official"),
+                "code_identity": _git_dirty(), "env_schema": "research_v7_long_slot_v1",
+                "mapping_schema": "research_v7_canonical_mapping_v2",
+                "source_request_identity": r.get("request_identity") or "",
+            }
+            content_idn = req.request_identity(context=ctx)
+            cache_f = out_root / "cached" / f"{content_idn}.json"
+            if cache_f.exists():
+                if not args.resume:
+                    raise FileExistsError(f"refusing to overwrite existing evidence: {cache_f}; use --resume")
+                cached = json.loads(cache_f.read_text(encoding="utf-8"))
+                if cached.get("content_identity") != content_idn:
+                    raise RuntimeError(f"content identity mismatch under cache path for {content_idn[:16]}")
+                prior_attempt = cached["attempt"]
+                cursor_after_by_request[req.request_id] = prior_attempt.get("cursor_after")
+                rows_after_by_request[req.request_id] = list(prior_attempt.get("decoder_outputs", {}).get("official", {}).get("rows", []))
+                cache_hit += 1
+                # review6-5：cache hit 若 status 非 ok → 也进 failures（保持 inventory/failed 一致）
+                if prior_attempt.get("status") != "ok":
+                    failures.append({"item_id": req.item_id, "request_id": req.request_id,
+                                     "request_identity": content_idn, "status": prior_attempt.get("status"),
+                                     "evidence_path": str(cache_f), "cache": "hit", "kind": "cached_error"})
+                identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
+                                   "cache": "hit", "status": prior_attempt.get("status")})
+                continue
+            ev = run_request(req, executor, cursor_prev=cursor_prev)
+            payload = ev.to_dict()
+            payload["content_identity"] = content_idn
+            payload["audio_content_sha256"] = audio_sha
+            # review6-3：evidence 唯一路径 = evidence/<attempt_identity>.json（人读 view 见 items/<item>/<idn>.json），不覆盖历史
+            item_dir.mkdir(parents=True, exist_ok=True)
+            f_author = out_root / "evidence" / f"{content_idn}.json"
+            f_author.parent.mkdir(parents=True, exist_ok=True)
+            f_author.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
+            (item_dir / f"{content_idn}.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1))
+            cache_f.parent.mkdir(parents=True, exist_ok=True)
+            cache_f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
+            cursor_after_by_request[req.request_id] = ev.attempt.cursor_after
+            rows_after_by_request[req.request_id] = list(ev.attempt.decoder_outputs.get("official", {}).get("rows", []))
+            written += 1
+            forward += 1
+            if ev.attempt.status != "ok":
+                failures.append({"item_id": req.item_id, "request_id": req.request_id,
+                                 "request_identity": content_idn, "status": ev.attempt.status,
+                                 "evidence_path": str(f_author), "cache": "miss", "kind": "exec_error"})
             identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
-                               "cache": "hit", "status": prior_attempt.get("status")})
-            continue
-        ev = run_request(req, executor, cursor_prev=cursor_prev)
-        payload = ev.to_dict()
-        payload["content_identity"] = content_idn
-        payload["audio_content_sha256"] = audio_sha  # 漂移审计：运行时实际 audio 内容 hash
-        f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
-        cache_f.parent.mkdir(parents=True, exist_ok=True)
-        cache_f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
-        if ev.attempt.status != "ok":
-            import hashlib as _hlf
-            failures.append({"item_id": req.item_id, "request_id": req.request_id,
-                             "request_identity": content_idn, "status": ev.attempt.status,
-                             "evidence_path": str(f),
-                             "evidence_sha256": _hlf.sha256(f.read_bytes()).hexdigest()})
-        cursor_after_by_request[req.request_id] = ev.attempt.cursor_after
-        rows_after_by_request[req.request_id] = list(ev.attempt.decoder_outputs.get("official", {}).get("rows", []))
-        written += 1
-        forward += 1
-        identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
-                           "cache": "miss", "status": ev.attempt.status})
+                               "cache": "miss", "status": ev.attempt.status})
+        except Exception as e:  # noqa
+            # review6-4：per-item 失败不中止批次；记录 structured failure，继续其它独立 item
+            failures.append({"item_id": req.item_id, "request_id": r.get("request_id") or req.request_id,
+                             "request_identity": locals().get("content_idn") or None,
+                             "status": "run_error", "error": str(e), "kind": "item_aborted"})
 
-    # review3/4/5：真实运行产物 RUN_MANIFEST（含 run_id、冻结 manifest sha、budget、每请求 identity、
-    # cache keys、audio/env hashes、evidence inventory(path/sha/status)、failures、source-tree 三哈希）
+    # review3/4/6：真实运行产物 RUN_MANIFEST + FAILURES.jsonl（原子写）
     import hashlib as _hl2
     manifest_sha = _hl2.sha256(Path(args.manifest).read_bytes()).hexdigest()
     cached_dir = out_root / "cached"
@@ -225,6 +234,9 @@ def main(argv=None) -> int:
                                      "status": (cd.get("attempt") or {}).get("status")})
             except Exception:
                 evidence_inv.append({"path": str(c), "sha256": None, "status": "unreadable"})
+    # review6-2：按 evaluation_role 计数
+    from collections import Counter as _C
+    role_counts = _C(i.get("evaluation_role", "unknown") or "unknown" for i in identities) or {}
     run_manifest = {
         "schema": "research_v7_long_slot_v1",
         "run_id": f"rl-{_time.strftime('%Y%m%d_%H%M%S')}",
@@ -236,17 +248,37 @@ def main(argv=None) -> int:
         "runtime_budget": {"elapsed_sec": round(_time.time() - t_start, 3), "forward_count": forward,
                            "cache_hit": cache_hit, "cache_miss": forward, "cache_total": cache_hit + forward},
         "item_count": {"requests": len(rows), "written": written, "cache_hit": cache_hit, "forward": forward,
-                       "failed": len(failures)},
+                       "failed": len(failures), "role": dict(role_counts)},
         "cache_keys": [i["request_identity"] for i in identities],
         "evidence_inventory": evidence_inv,
         "failures": failures,
         "requests_identity": identities,
     }
-    (out_root / "RUN_MANIFEST.json").write_text(json.dumps(run_manifest, ensure_ascii=False, indent=1))
+    # review6-4：原子写 RUN_MANIFEST + FAILURES.jsonl（临时文件+replace）；失败不结束仍产出
+    fd, tmp = _mkstemp(out_root)
+    with open(tmp, "w") as _f:
+        _f.write(json.dumps(run_manifest, ensure_ascii=False, indent=1))
+        _f.flush()
+    import os as _os2
+    _os2.replace(tmp, out_root / "RUN_MANIFEST.json")
+    fd2, tmp2 = _mkstemp(out_root)
+    with open(tmp2, "w") as _f:
+        for fa in failures:
+            _f.write(json.dumps(fa, ensure_ascii=False) + "\n")
+        _f.flush()
+    _os2.replace(tmp2, out_root / "FAILURES.jsonl")
     print(json.dumps({"ok": True, "rows": len(rows), "written": written,
-                      "cache_hit": cache_hit, "forward": forward,
-                      "out_root": str(out_root), "executor": "real" if args.real else "fake-smoke"}, ensure_ascii=False))
+                      "cache_hit": cache_hit, "forward": forward, "failed": len(failures),
+                      "out_root": str(out_root), "executor": "real" if args.real else "fake-smoke",
+                      "schema_version": "research_v7_long_slot_v1"}, ensure_ascii=False))
     return 0
+
+
+def _mkstemp(out_root):
+    import tempfile
+    out_root.mkdir(parents=True, exist_ok=True)
+    fd, path = tempfile.mkstemp(dir=str(out_root), suffix=".tmp")
+    return fd, path
 
 
 def _git_head() -> str:

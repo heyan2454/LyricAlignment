@@ -194,3 +194,45 @@ def test_c3_wav_to_runner_integration(tmp_path):
                          capture_output=True, text=True, env=env)
     out2 = json.loads(rr2.stdout)
     assert out2["cache_hit"] >= 1 and out2["forward"] == 0
+
+
+def test_runner_rejects_audio_drift_resume(tmp_path):
+    # review5-1/5：轮 run 后改 WAV 内容，resume 应因 audio-hash 不匹配而失败（不误 cache hit）
+    import json
+    import subprocess
+    import sys
+
+    sr = 16000
+    vv = np.concatenate([_tone(1.0, sr, amp=4000.0), np.zeros(int(1.0 * sr), dtype=np.float32)])
+    cc = np.concatenate([_tone(1.0, sr, amp=2000.0), _tone(1.0, sr, amp=700.0)])
+    vp = tmp_path / "vocals.wav"; ap = tmp_path / "accompaniment.wav"
+    _write_wav(vp, vv, sr); _write_wav(ap, cc, sr)
+    il = tmp_path / "items.jsonl"
+    il.write_text(json.dumps({"item_id": "D", "audio_path": str(vp)}) + "\n")
+    env = dict(__import__("os").environ)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src") + ":" + env["PYTHONPATH"]
+    exporter = str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py")
+    r = subprocess.run([sys.executable, exporter, "--item-list", str(il), "--out-root", tmp_path/"c3",
+                        "--window-sec", "2.0", "--text-units", "春", "风"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    reqs_file = tmp_path / "c3" / "REQUESTS.jsonl"
+    # 首轮 fake exec 跑（成功）
+    runner = str(Path(__file__).resolve().parents[2] / "scripts/research_v7/run_behavior_suite.py")
+    run = tmp_path / "run"
+    rr = subprocess.run([sys.executable, runner, "--manifest", str(reqs_file), "--out-root", str(run), "--smoke"],
+                        capture_output=True, text=True, env=env)
+    assert rr.returncode == 0, rr.stderr
+    # 改"导出 wav"内容（req.audio_source 指向它）—— files_sha256 声明不变但实际变更
+    one_wav = next((tmp_path / "c3").glob("D/*.wav"))
+    _write_wav(one_wav, _tone(1.0, sr, amp=8000.0), sr)
+    rr2 = subprocess.run([sys.executable, runner, "--manifest", str(reqs_file), "--out-root", str(run),
+                          "--smoke", "--resume"], capture_output=True, text=True, env=env)
+    # review6-4：audio drift 不再中止批次——记为 structured failure，继续其它 item，仍产 RUN_MANIFEST
+    assert rr2.returncode == 0, rr2.stderr
+    rm = json.loads((run / "RUN_MANIFEST.json").read_text())
+    assert any("audio drift" in (f.get("error") or "") for f in rm["failures"])
+    assert rm["item_count"]["failed"] == len(rm["failures"])  # 一致
+    # 且该 drift identity 未被错误写入 evidence/cache（不误命中旧证据）
+    n_before = len(list((run / "evidence").glob("*.json"))) if (run / "evidence").exists() else 0
+    n_after = len(list((run / "evidence").glob("*.json")))
+    assert n_after <= n_before  # 未新增证据

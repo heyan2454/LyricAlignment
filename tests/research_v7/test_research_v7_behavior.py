@@ -54,7 +54,7 @@ def test_run_behavior_suite_smoke(tmp_path):
                         "--manifest", str(man), "--out-root", str(outroot), "--smoke"],
                        capture_output=True, text=True, env=ENV)
     assert r.returncode == 0, r.stderr
-    evs = list(outroot.glob("items/*/behavior-*.json"))
+    evs = list(outroot.glob("evidence/*.json"))
     manifest_rows = [json.loads(line) for line in man.read_text().splitlines() if line.strip()]
     assert len(evs) == len(manifest_rows)  # position variants must never overwrite each other
     ev = json.loads(evs[0].read_text())
@@ -78,8 +78,11 @@ def test_run_behavior_suite_resume_requires_identical_request(tmp_path):
     assert r1["cache_hit"] == 0 and r1["written"] == 1
     r2 = _j.loads(subprocess.run(base + ["--resume"], capture_output=True, text=True, env=ENV).stdout)
     assert r2["cache_hit"] == 1 and r2["forward"] == 0   # 相同 identity → 命中
-    # 不改 --resume 时重跑但已有缓存 → 拒绝覆盖
-    assert subprocess.run(base, capture_output=True, text=True, env=ENV).returncode != 0
+    # review6-4：不改 --resume 重跑同 identity → 拒覆盖记 failure，但批次不崩(rc==0)，旧 evidence 未被覆盖
+    r_over = subprocess.run(base, capture_output=True, text=True, env=ENV)
+    assert r_over.returncode == 0, r_over.stderr
+    rm = _j.loads((outroot / "RUN_MANIFEST.json").read_text())
+    assert any("refusing to overwrite" in (f.get("error") or "") for f in rm["failures"])
     # 请求变化(text_units) → 不同 content identity → 重新执行(非误命中)，且不拒绝
     row["text_units"] = list("ABC")
     manifest.write_text(json.dumps(row) + "\n")
@@ -228,7 +231,7 @@ def test_workflow_manifest_runs_p1_p2_d_and_sparse_smoke(tmp_path):
     subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
                     "--manifest", str(workflow), "--out-root", str(outroot), "--smoke"],
                    capture_output=True, text=True, env=ENV, check=True)
-    evidence = [json.loads(path.read_text()) for path in outroot.glob("items/song-1/behavior-*.json")]
+    evidence = [json.loads(path.read_text()) for path in outroot.glob("evidence/*.json")]
     p2 = next(row for row in evidence if row["attempt"]["request"]["workflow_mode"] == "strict_serial_progressive_crop"
               and row["attempt"]["request"]["parent_request_id"] is not None)
     assert p2["attempt"]["cursor_prev_end"] is not None
