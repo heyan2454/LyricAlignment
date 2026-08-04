@@ -45,7 +45,10 @@ def test_forward_all_gates_approved(tmp_path):
     assert r.returncode == 0, r.stderr
     s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
     assert s["formal_approved"] is True and s["draft"] is False
-    assert "RUN_MANIFEST.json" in s["result_source"]  # 读真实 formal，不读 smoke
+    assert "RUN_MANIFEST.json" in s["result_source"]
+    # review3-3：formal approved 时 RUNTIME_BUDGET 必须非 draft 且引用实际 budget
+    b = json.loads((run / "report" / "RUNTIME_BUDGET.json").read_text())
+    assert b["draft"] is False and b["budget"].get("elapsed_sec") == 600  # 读真实 formal，不读 smoke
 
 
 def test_reverse_missing_budget_stays_draft(tmp_path):

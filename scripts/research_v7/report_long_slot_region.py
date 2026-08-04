@@ -111,11 +111,19 @@ def main(argv=None) -> int:
     (run / "report").mkdir(parents=True, exist_ok=True)
     (run / "report" / "AUTO_SUMMARY.json").write_text(json.dumps(auto, ensure_ascii=False, indent=1))
 
-    budget = {
-        "schema": "runtime_budget_v1", "draft": True,
-        "formal_target_h": 10, "formal_hard_cap_h": 12,
-        "smoke": "run in CPU (no model)", "note": "pilot must measure elapsed/forward/cache before formal",
-    }
+    # P0(review3-3)：formal approved 时保留/引用实际 formal budget（不再写 draft=true 的自相矛盾占位）
+    if formal_approved:
+        budget = {
+            "schema": "runtime_budget_v1", "draft": False,
+            "source": "formal", "budget": result_kv.get("runtime_budget", {}) or run_man.get("runtime_budget", {}),
+            "note": "actual formal run budget (elapsed/forward from RUN_MANIFEST)",
+        }
+    else:
+        budget = {
+            "schema": "runtime_budget_v1", "draft": True,
+            "formal_target_h": 10, "formal_hard_cap_h": 12,
+            "smoke": "run in CPU (no model)", "note": "pilot must measure elapsed/forward/cache before formal",
+        }
     (run / "report" / "RUNTIME_BUDGET.json").write_text(json.dumps(budget, ensure_ascii=False, indent=1))
 
     md = f"""# AUTO_FINDINGS_{(not draft and 'SUMMARY' or 'DRAFT')}
