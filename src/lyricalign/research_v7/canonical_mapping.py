@@ -92,6 +92,13 @@ def build_gaps(ius, removed, replaced, canonic_n, *, head_tail=True):
             gaps.append({"gap_id": f"g:{last_c}:END", "left_canonical_unit_id": last_c,
                          "right_canonical_unit_id": END, "omitted_canonical_unit_ids": tail_omitted,
                          "positive": True})
+    elif not retained:
+        # P0-2：100% replace/全删 → whole-region omission candidate（覆盖所有 removed/replaced canonical）
+        whole = [c for c in range(canonic_n) if c in removed_replaced]
+        if whole:
+            gaps.append({"gap_id": "g:START:END", "left_canonical_unit_id": START,
+                         "right_canonical_unit_id": END, "omitted_canonical_unit_ids": whole,
+                         "whole_region_omission": True, "positive": True})
     return tuple(gaps)
 
 
@@ -107,18 +114,36 @@ def build_mapping(
     output_row_canonical_ids: Sequence[int | None] | None = None,
     canonic_n: int | None = None,
 ) -> CanonicalMapping:
-    """显式 canonical mapping。P0-2：input_canonical_ids 必须全传（可为 None=inserted）。"""
+    """显式 canonical mapping（P0-2 round2：完整约束校验）。"""
     n = len(input_units)
     if len(input_canonical_ids) != n:
         raise ValueError("input_canonical_ids must match len(input_units)")
+    if len(role) != n:
+        raise ValueError("role must match len(input_units)")
+    allowed = {"retained", "inserted", "replacement"}
     canonical_n = len(canonical_units) if canonic_n is None else canonic_n
+    # P0-2 约束：role 枚举、id 范围/唯一、inserted 必 None、retained/replacement 必非 None
+    seen_ids = set()
+    for i in range(n):
+        r = role[i]; cid = input_canonical_ids[i]
+        if r not in allowed:
+            raise ValueError(f"role {r!r} not in {allowed}")
+        if r == "inserted":
+            if cid is not None:
+                raise ValueError("inserted unit must have canonical_unit_id=None")
+        else:  # retained / replacement
+            if cid is None:
+                raise ValueError(f"{r} unit must have non-None canonical id")
+            if not (0 <= cid < canonical_n):
+                raise ValueError(f"canonical id {cid} out of range [0,{canonical_n})")
+            if cid in seen_ids:
+                raise ValueError(f"duplicate canonical id {cid} in retained/replacement units")
+            seen_ids.add(cid)
     ius = [InputUnit(input_index=i, text=input_units[i], role=role[i], canonical_unit_id=input_canonical_ids[i])
            for i in range(n)]
-    # output_row_map：显式 output→canonical（默认=input canonical；replacement 保留被替代 id 不丢 None）
+    # output_row_canonical_ids 可表达 decoder 缺行/多行（!= input 长度合法）；每行独立给 canonical 或 None
     if output_row_canonical_ids is not None:
-        if len(output_row_canonical_ids) != n:
-            raise ValueError("output_row_canonical_ids len mismatch")
-        out_map = [(i, i, output_row_canonical_ids[i]) for i in range(n)]
+        out_map = [(row_i, row_i, c) for row_i, c in enumerate(output_row_canonical_ids)]
     else:
         out_map = [(i, ius[i].input_index, ius[i].canonical_unit_id) for i in range(n)]
     gaps = build_gaps(ius, removed_canonical_ids, replaced_canonical_ids, canonical_n)

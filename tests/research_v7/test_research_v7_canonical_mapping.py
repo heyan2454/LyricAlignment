@@ -81,7 +81,7 @@ def test_middle_replace_sentinel_and_middle_gap():
 
 
 def test_100pct_replace_head_tail():
-    # 全替换：无 retained → 所有 canonical 都是 replaced，无 sentinel 边界 gap（但 row-map 全保留）
+    # 全替换：无 retained → 应产生 whole-region omission candidate（review P0-2），row-map 全保留
     n = len(BASE)
     repl = list("子丑寅卯辰巳午未申酉戌亥")[:n]
     role = ["replacement"] * n
@@ -89,6 +89,50 @@ def test_100pct_replace_head_tail():
     m = build_mapping(request_id="t-100", canonical_units=BASE, input_units=repl,
                       role=role, input_canonical_ids=cids, replaced_canonical_ids=list(range(n)))
     assert len([u for u in m.input_units if u.role == "replacement"]) == n
-    # 全删/全替：无 retained → 不含 sentinel gap（可据此判定“完全不对应”）
-    assert all(g["left_canonical_unit_id"] != START and g["right_canonical_unit_id"] != END
-               for g in m.gap_candidates)
+    # 全删/全替 → whole-region omission gap 覆盖全部 canonical
+    whole = [g for g in m.gap_candidates if g.get("whole_region_omission")]
+    assert whole and set(whole[0]["omitted_canonical_unit_ids"]) == set(range(n))
+
+
+def test_bad_role_rejected():
+    with pytest.raises(ValueError):
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["bad"] * len(BASE), input_canonical_ids=list(range(len(BASE))))
+
+
+def test_inserted_must_be_none():
+    with pytest.raises(ValueError):
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["inserted"] * len(BASE), input_canonical_ids=list(range(len(BASE))))
+
+
+def test_retained_must_be_non_none():
+    with pytest.raises(ValueError):
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * len(BASE), input_canonical_ids=[None] * len(BASE))
+
+
+def test_duplicate_canonical_id_rejected():
+    with pytest.raises(ValueError):
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * len(BASE), input_canonical_ids=[0, 0] + list(range(2, len(BASE))))
+
+
+def test_output_row_canonical_ids_can_be_multiline():
+    # decoder 缺行：output rows 数 != input 数合法（表达缺行）
+    n = len(BASE)
+    out_rows = list(range(n - 1)) + [None]  # 末行缺(canonly None)
+    m = build_mapping(request_id="t-ml", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * n, input_canonical_ids=list(range(n)),
+                      output_row_canonical_ids=out_rows)
+    assert len(m.output_row_map) == n
+    assert m.output_row_map[-1][2] is None  # 缺行表达为 None
+
+
+def test_100pct_replace_produces_whole_region_omission():
+    n = len(BASE)
+    m = build_mapping(request_id="t-wr", canonical_units=BASE, input_units=BASE,
+                      role=["replacement"] * n, input_canonical_ids=list(range(n)),
+                      replaced_canonical_ids=list(range(n)))
+    whole = [g for g in m.gap_candidates if g.get("whole_region_omission")]
+    assert whole and whole[0]["omitted_canonical_unit_ids"] == list(range(n))
