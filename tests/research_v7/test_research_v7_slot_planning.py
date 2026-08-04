@@ -79,3 +79,30 @@ def test_build_density_plans_true_sparse_and_common():
     assert all(n <= 30 for n in s2_n)  # stride2 每 phase <=30，真稀疏，非 60
     assert all(p.comparison_group_id == "g" for p in plans)
     assert all(p.strategy and p.local_indices for p in plans)
+
+
+def test_missing_canonical_to_local_key_reports():
+    c2l = {0: 1, 1: 2}  # 缺 2
+    with pytest.raises(SlotPlanError, match="missing keys"):
+        plan_slots(plan_id="x", canonical_unit_count=60, queried_canonical_ids=[0, 1, 2], canonical_to_local=c2l)
+
+
+def test_local_upper_bound_with_request_local_count():
+    c2l = {0: 2, 1: 5, 2: 9}
+    with pytest.raises(SlotPlanError, match="out of request_local_count"):
+        plan_slots(plan_id="x", canonical_unit_count=60, queried_canonical_ids=[0, 1, 2],
+                   canonical_to_local=c2l, request_local_count=8)
+
+
+def test_canonical_ids_must_be_strictly_increasing():
+    c2l = {0: 1, 3: 2, 2: 9}
+    with pytest.raises(SlotPlanError, match="canonical ids not strictly increasing"):
+        plan_slots(plan_id="x", canonical_unit_count=60, queried_canonical_ids=[0, 3, 2], canonical_to_local=c2l)
+
+
+def test_common_only_pairs_intersects_plans():
+    from lyricalign.research_v7.slot_planning import common_only_pairs
+    p1 = plan_slots(plan_id="p1", canonical_unit_count=60, queried_canonical_ids=[0, 1, 2, 3, 4, 5, 6, 7])
+    p2 = plan_slots(plan_id="p2", canonical_unit_count=60, queried_canonical_ids=[0, 2, 4, 6])
+    p3 = plan_slots(plan_id="p3", canonical_unit_count=60, queried_canonical_ids=[0, 4])
+    assert common_only_pairs([p1, p2, p3]) == [0, 4]  # 交集

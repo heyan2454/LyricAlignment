@@ -94,16 +94,19 @@ def plan_slots(
     phase: str = "p0",
     requested: Sequence[int] = (),
     canonical_to_local: Mapping[int, int] | None = None,
+    request_local_count: int | None = None,   # 本地 timestamp token 总数（缺省=canonical count，宽松）
 ) -> SlotPlan:
     """为 queried canonical ids 生成严格递增的本地 timestamp slots。
 
-    P0-3 整改：canonical_to_local 把 canonical id → 本地 timestamp token index（历史/future 文本
-    会占用本地 index，故 canonical 不等同 local）。若给出，local_indices = [map[c] for c in queried]；
-    并校验本地严格递增。requested 仍可显式给本地 index（兼容旧测试）；二者互斥。
+    P0-3：canonical_to_local 把 canonical id → 本地 timestamp token index；校验缺键/本地递增/
+    local 在 request_local_count 内（若给）。requested 显式给本地 index 仍兼容旧测试。
     """
     which = "canonical"
     if canonical_to_local is not None:
-        # canonical → local 映射路径（P0-3 正确路径）
+        # P0-3：缺键应报明确错误（不抛裸 KeyError）
+        missing = [c for c in queried_canonical_ids if c not in canonical_to_local]
+        if missing:
+            raise SlotPlanError(f"canonical_to_local missing keys: {missing}")
         local = [canonical_to_local[c] for c in queried_canonical_ids]
         which = "mapped"
     elif requested:
@@ -116,9 +119,17 @@ def plan_slots(
         raise SlotPlanError("empty queried canonical ids")
     if any(i < 0 or i >= canonical_unit_count for i in queried_canonical_ids):
         raise SlotPlanError("queried canonical id out of range")
+    # canonical id 本身须严格递增
+    for i in range(len(queried_canonical_ids) - 1):
+        if queried_canonical_ids[i] >= queried_canonical_ids[i + 1]:
+            raise SlotPlanError(f"canonical ids not strictly increasing: {queried_canonical_ids}")
     for i in range(len(local) - 1):
         if local[i] >= local[i + 1]:
             raise SlotPlanError(f"local indices not strictly increasing: {local}")
+    if request_local_count is not None:
+        for L in local:
+            if not (0 <= L < request_local_count):
+                raise SlotPlanError(f"local index {L} out of request_local_count {request_local_count}")
     # density_anchor_ids 是"汇总时跨 phase 共同评估"的范围标记，非每 request 必须包含；
     # 故不硬校验必须 ∈ queried（P0-3：phase 轮换使不同 plan 覆盖不同 anchor 子集）。
     topology = detect_topology(queried_canonical_ids)
@@ -180,3 +191,14 @@ def build_density_plans(
             )
             plans.append(p)
     return plans, common
+
+
+def common_only_pairs(plans: Sequence[SlotPlan], *, canonical_to_local: Mapping[int, int] | None = None) -> list[int]:
+    """P0-3：汇总器强制只对“所有 plan 共同 queried”的 canonical 单位评分（成对公平）。"""
+    common = None
+    for p in plans:
+        s = set(p.requested_canonical_ids)
+        common = s if common is None else (common & s)
+    if common is None:
+        return []
+    return sorted(common)
