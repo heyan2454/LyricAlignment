@@ -1,81 +1,94 @@
 # -*- coding: utf-8 -*-
-"""WP3 canonical_mapping 单测（15 蓝图 §5.3）。"""
+"""WP3 canonical_mapping 单测（P0-2 整改：显式 canonical id、sentinel gap、可逆 row-map）。"""
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from lyricalign.research_v7.canonical_mapping import _left_right_retained, build_mapping, masks_for_mutation
+from lyricalign.research_v7.canonical_mapping import START, END, build_mapping
 
-BASE = list("春风又绿江南岸明月")
-
-
-def _len_mask(n, true_up_to):
-    return [i < true_up_to for i in range(n)]
+BASE = list("一二三四五六七八九十甲乙")  # 12 字（明确长度）
 
 
-def test_baseline_mapping():
-    retained, _, _, removed, replaced = masks_for_mutation(len(BASE), BASE, "baseline", base_units=BASE)
+def _cids(input_len):
+    return list(range(input_len))  # 显式：input i -> canonical i（无插入时）
+
+
+def test_baseline_mapping_explicit_canonical():
+    n = len(BASE)
     m = build_mapping(request_id="t-b", canonical_units=BASE, input_units=BASE,
-                      retained_mask=retained, inserted_mask=[False] * len(BASE),
-                      replacement_mask=[False] * len(BASE), removed_canonical_ids=removed,
-                      replaced_canonical_ids=replaced)
+                      role=["retained"] * n, input_canonical_ids=_cids(n))
     assert all(u.role == "retained" for u in m.input_units)
-    assert len(m.output_row_map) == len(BASE)
+    assert len(m.output_row_map) == n
     assert m.gap_candidates == ()
 
 
-def test_extra_mapping_generates_no_gap():
-    extra_units = BASE + ["错", "词", "补"]
-    _, inserted, _, removed, replaced = masks_for_mutation(len(BASE), extra_units, "extra", base_units=BASE)
-    retained = [not x and not y for x, y in zip(inserted, inserted)]
-    # 修正 retained：非 inserted 即 retained
-    retained = [not ins for ins in inserted]
-    m = build_mapping(request_id="t-e", canonical_units=BASE, input_units=extra_units,
-                      retained_mask=retained, inserted_mask=inserted,
-                      replacement_mask=[False] * len(extra_units),
-                      removed_canonical_ids=removed, replaced_canonical_ids=replaced)
-    assert len(m.input_units) == len(extra_units)
-    roles = {u.role for u in m.input_units}
-    assert "inserted" in roles and "retained" in roles
-    # extra 不删除原型 → 无 gap
-    assert m.removed_canonical_unit_ids == ()
+def test_identity_canonical_id_must_be_explicit():
+    with pytest.raises(ValueError):
+        # len mismatch → 显式传入被强制
+        build_mapping(request_id="x", canonical_units=BASE, input_units=BASE,
+                      role=["retained"] * 5, input_canonical_ids=_cids(6))
 
 
-def test_missing_mapping_creates_gap():
-    missing_units = BASE[: len(BASE) - 3]
-    kept = len(missing_units)
-    retained = _len_mask(kept, kept)
-    m = build_mapping(request_id="t-m", canonical_units=BASE, input_units=missing_units,
-                      retained_mask=retained, inserted_mask=[False] * kept,
-                      replacement_mask=[False] * kept,
-                      removed_canonical_ids=list(range(kept, len(BASE))),
-                      replaced_canonical_ids=[])
-    assert m.removed_canonical_unit_ids == tuple(range(kept, len(BASE)))
-    # 末尾缺失落到最后一个 boundary → 无 positive gap（最后一个 retained 之后无右锚）
-    assert all(not g["positive"] for g in m.gap_candidates) or True
+def test_head_missing_sentinel_gap():
+    # 删掉 canonical 0..2（head missing）
+    kept = list(BASE[3:])
+    n = len(kept)
+    role = ["retained"] * n
+    # input i -> canonical i+3（head 缺 0,1,2）
+    cids = [i + 3 for i in range(n)]
+    removed = [0, 1, 2]
+    m = build_mapping(request_id="t-hm", canonical_units=BASE, input_units=kept,
+                      role=role, input_canonical_ids=cids, removed_canonical_ids=removed)
+    gaps = list(m.gap_candidates)
+    head_gap = [g for g in gaps if g["left_canonical_unit_id"] == START]
+    assert head_gap and head_gap[0]["omitted_canonical_unit_ids"] == [0, 1, 2]
+    assert head_gap[0]["right_canonical_unit_id"] == 3
 
 
-def test_replace_mapping_marks_replacement_and_wrong_output():
-    replaced = [False] * len(BASE)
-    replaced_ids = []
-    # 替换中段 5..8，保留末尾 anchor index9(月) 以形成跨段 gap
-    for i in range(len(BASE)):
-        if 5 <= i < len(BASE) - 1:
-            replaced[i] = True
-            replaced_ids.append(i)
-    retained = [not r for r in replaced]
-    m = build_mapping(request_id="t-r", canonical_units=BASE, input_units=BASE,
-                      retained_mask=retained, inserted_mask=[False] * len(BASE),
-                      replacement_mask=replaced, removed_canonical_ids=[],
-                      replaced_canonical_ids=replaced_ids)
-    repl = [u for u in m.input_units if u.role == "replacement"]
-    assert len(repl) == len(replaced_ids)
-    assert m.replaced_canonical_unit_ids == tuple(replaced_ids)
-    # 被替换 canonical(5..8) 出现于 gap omitted（左 anchor=4，右 anchor=9）
-    omitted = set()
-    for g in m.gap_candidates:
-        omitted.update(g["omitted_canonical_unit_ids"])
-    assert set(replaced_ids).issubset(omitted)
+def test_tail_missing_sentinel_gap():
+    kept = list(BASE[: len(BASE) - 3])
+    n = len(kept)
+    removed = list(range(n, len(BASE)))
+    m = build_mapping(request_id="t-tm", canonical_units=BASE, input_units=kept,
+                      role=["retained"] * n, input_canonical_ids=_cids(n), removed_canonical_ids=removed)
+    tail_gap = [g for g in m.gap_candidates if g["right_canonical_unit_id"] == END]
+    assert tail_gap and tail_gap[0]["omitted_canonical_unit_ids"] == removed
+
+
+def test_middle_replace_sentinel_and_middle_gap():
+    # 替换 canonical 4..9 为错输出（replacement），保留首尾 anchor 0..3 和 10,11
+    n = len(BASE)
+    kept_front = [BASE[i] for i in range(4)]
+    kept_tail = [BASE[i] for i in range(10, 12)]
+    repl = list("甲乙丙丁戊己")  # 6 个 replacement，长 6
+    input_units = kept_front + repl + kept_tail
+    role = ["retained"] * 4 + ["replacement"] * len(repl) + ["retained"] * 2
+    cids = list(range(4)) + list(range(4, 10)) + list(range(10, 12))  # replacement 保留被替代 canonical
+    replaced = list(range(4, 10))
+    m = build_mapping(request_id="t-mr", canonical_units=BASE, input_units=input_units,
+                      role=role, input_canonical_ids=cids, replaced_canonical_ids=replaced)
+    # 中部 gap：4..9 被 replaced → omitted=[4,5,6,7,8,9]
+    mid = [g for g in m.gap_candidates if g["left_canonical_unit_id"] == 3 and g["right_canonical_unit_id"] == 10]
+    assert mid and set(mid[0]["omitted_canonical_unit_ids"]) == set(replaced)
+    # replacement 的 output_row_map 保留被替代 canonical（不丢 None）
+    mrow = [x for x in m.output_row_map if x[1] in range(4, 10)]
+    assert all(x[2] is not None for x in mrow)
+
+
+def test_100pct_replace_head_tail():
+    # 全替换：无 retained → 所有 canonical 都是 replaced，无 sentinel 边界 gap（但 row-map 全保留）
+    n = len(BASE)
+    repl = list("子丑寅卯辰巳午未申酉戌亥")[:n]
+    role = ["replacement"] * n
+    cids = list(range(n))
+    m = build_mapping(request_id="t-100", canonical_units=BASE, input_units=repl,
+                      role=role, input_canonical_ids=cids, replaced_canonical_ids=list(range(n)))
+    assert len([u for u in m.input_units if u.role == "replacement"]) == n
+    # 全删/全替：无 retained → 不含 sentinel gap（可据此判定“完全不对应”）
+    assert all(g["left_canonical_unit_id"] != START and g["right_canonical_unit_id"] != END
+               for g in m.gap_candidates)

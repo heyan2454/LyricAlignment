@@ -21,7 +21,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from lyricalign.research_v7.canonical_mapping import build_mapping, masks_for_mutation
 from lyricalign.research_v7.features import unit_features
 from lyricalign.research_v7.region_metrics import gap_metrics, unit_metrics
 from lyricalign.research_v7.region_assessor import fit_and_freeze
@@ -61,13 +60,13 @@ def main(argv=None) -> int:
     assert win0.topology != "contiguous"  # 非连续
 
     # 3) canonical_mapping：missing + replace
+    from lyricalign.research_v7.canonical_mapping import build_mapping
+
     base_units = [u["text"] for u in units[:32]]
     missing_units = base_units[:28]
-    retained = [True] * 28
     mp = build_mapping(request_id="m", canonical_units=base_units, input_units=missing_units,
-                       retained_mask=retained, inserted_mask=[False] * 28,
-                       replacement_mask=[False] * 28, removed_canonical_ids=[28, 29, 30, 31],
-                       replaced_canonical_ids=[])
+                       role=["retained"] * 28, input_canonical_ids=list(range(28)),
+                       removed_canonical_ids=[28, 29, 30, 31], replaced_canonical_ids=[])
 
     # 4) features + metrics（合成 rows）
     rows = [{"raw_start_sec": i * 0.1, "raw_end_sec": i * 0.1 + 0.12,
