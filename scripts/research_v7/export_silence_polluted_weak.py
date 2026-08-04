@@ -18,8 +18,8 @@ from pathlib import Path
 
 import numpy as np
 
-ALPHAS = [0.0, 0.01]  # 用户最终选 α=1%（弱残响目标=normal×1%）
-LOUDNESS_SCALE = 0.5  # 响度再降为一半 => 实际弱电平 = normal×1%×0.5
+ALPHAS = [0.0, 0.02]  # 用户最终定档 α=2%（weak_silence_samples_2pct 为正式档）
+LOUDNESS_SCALE = 1.0  # 1.0 = 不做响度缩放（导出 2%）
 
 
 def read_mono16(path, start_sec=None, end_sec=None):
