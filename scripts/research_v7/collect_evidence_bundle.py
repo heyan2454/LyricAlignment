@@ -97,6 +97,41 @@ def assemble(tmp: Path, prcheck_path: str | None) -> None:
         "limit_bytes": LIMIT,
     }
     tmp.joinpath("BUNDLE_MANIFEST.json").write_text(json.dumps(manifest, indent=1))
+
+
+def collect_experiment_summaries(tmp: Path) -> int:
+    """把已跑的真实实验结果(weak/accomp/C10/demo 主批)提炼为轻量摘要写入包裹。
+
+    只取每个 evidence.json 的状态/句法/几何摘要/decoder 名，避免把大 evidence 打进包裹；
+    返回纳入的 evidence 数。不复制 wav/模型/大数据。
+    """
+    base = Path("/home/hyan/Data/lyricalign/runs/research_v7_align_behavior")
+    runs = [d for d in base.iterdir() if d.is_dir() and d.name in (
+        "demo_low_vocal_energy_controls_20260804",
+        "demo_accompaniment_controls_20260804",
+        "demo_c10_repeated_sections_20260804",
+        "demo_all_partitioned_20260804",
+    )]
+    out_rows = []
+    for run in runs:
+        for ev in sorted(run.glob("items/*/behavior-*.json")):
+            try:
+                d = json.loads(ev.read_text())
+                req = d.get("metadata", {}).get("mutation")
+                a = d.get("attempt", {})
+                dec = list((a.get("decoder_outputs") or {}).keys())
+                out_rows.append({
+                    "run": run.name, "item": ev.parent.name,
+                    "mutation": (a.get("request") or {}).get("mutation_type") or req,
+                    "status": a.get("status"), "decoder_outputs": dec,
+                    "fa_taxonomy": a.get("fa_taxonomy"),
+                    "src": str(ev),
+                })
+            except Exception:
+                continue
+    (tmp / "EXPERIMENT_SUMMARIES.jsonl").write_text("\n".join(
+        json.dumps(r, ensure_ascii=False) for r in out_rows))
+    return len(out_rows)
     # 现状小结
     summary = {
         "pytest": "28 passed (identity/wp1/behavior/manifest/suite)",
@@ -119,6 +154,7 @@ def main(argv=None) -> int:
         tmp = Path(td)
         inv = build_inventory(tmp)
         assemble(tmp, args.prcheck)
+        n_exp = collect_experiment_summaries(tmp)
         out = Path(args.out)
         out.parent.mkdir(parents=True, exist_ok=True)
         with tarfile.open(out, "w:gz") as tar:
@@ -128,7 +164,7 @@ def main(argv=None) -> int:
         size = out.stat().st_size
         status = "OK" if size <= LIMIT else "OVER_LIMIT"
         print(json.dumps({"ok": status == "OK", "bytes": size, "limit": LIMIT,
-                          "files": len(inv), "out": args.out}, ensure_ascii=False))
+                          "files": len(inv), "experiments_summarized": n_exp, "out": args.out}, ensure_ascii=False))
         if size > LIMIT:
             return 2
     return 0
