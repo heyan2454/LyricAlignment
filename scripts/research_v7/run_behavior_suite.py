@@ -150,30 +150,43 @@ def main(argv=None) -> int:
         )
         req.validate()
         item_dir = out_root / "items" / str(req.item_id)
+        item_dir.mkdir(parents=True, exist_ok=True)
+        # review4-3：用统一 canonical payload(含 audio content sha+code+mapping schema) 计算身份，
+        # 不用 request dict equality；resume 命中按 content identity 的缓存文件判断。
+        import hashlib as _hl
+        audio_sha = _hl.sha256(Path(req.audio_source).read_bytes()).hexdigest() if req.audio_source and Path(req.audio_source).is_file() else "none"
+        ctx = {"audio_content_sha256": audio_sha, "code_identity": _git_head(), "mapping_schema": "research_v7_canonical_mapping_v2"}
+        content_idn = req.request_identity(context=ctx)
+        # 校验输入 request_identity(若有) 与重算一致（漂移即拒绝）
+        in_idn = r.get("request_identity")
+        if in_idn and in_idn != content_idn:
+            raise RuntimeError(f"manifest request_identity mismatch for {req.item_id}: {in_idn[:16]} vs {content_idn[:16]}")
+        cache_f = out_root / "cached" / f"{content_idn}.json"
         f = item_dir / f"behavior-{mutation}-{r.get('ratio', 1.0)}-{r.get('position', 'whole')}-{i}.json"
-        if f.exists():
+        if cache_f.exists():
             if not args.resume:
-                raise FileExistsError(f"refusing to overwrite existing evidence: {f}; use --resume after identity verification")
-            existing = json.loads(f.read_text(encoding="utf-8"))
-            prior = existing.get("attempt", {}).get("request")
-            expected = json.loads(json.dumps(req.to_dict()))
-            if prior != expected:
-                raise RuntimeError(f"resume identity mismatch for {f}")
-            prior_attempt = existing["attempt"]
+                raise FileExistsError(f"refusing to overwrite existing evidence: {cache_f}; use --resume after content-identity verification")
+            cached = json.loads(cache_f.read_text(encoding="utf-8"))
+            if cached.get("content_identity") != content_idn:
+                raise RuntimeError(f"content identity mismatch under cache path for {content_idn[:16]}")
+            prior_attempt = cached["attempt"]
             cursor_after_by_request[req.request_id] = prior_attempt.get("cursor_after")
             rows_after_by_request[req.request_id] = list(prior_attempt.get("decoder_outputs", {}).get("official", {}).get("rows", []))
             cache_hit += 1
-            identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": req.request_identity(),
+            identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
                                "cache": "hit", "status": prior_attempt.get("status")})
             continue
         ev = run_request(req, executor, cursor_prev=cursor_prev)
-        item_dir.mkdir(parents=True, exist_ok=True)
-        f.write_text(json.dumps(ev.to_dict(), ensure_ascii=False, indent=1))
+        payload = ev.to_dict()
+        payload["content_identity"] = content_idn
+        f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
+        cache_f.parent.mkdir(parents=True, exist_ok=True)
+        cache_f.write_text(json.dumps(payload, ensure_ascii=False, indent=1))
         cursor_after_by_request[req.request_id] = ev.attempt.cursor_after
         rows_after_by_request[req.request_id] = list(ev.attempt.decoder_outputs.get("official", {}).get("rows", []))
         written += 1
         forward += 1
-        identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": req.request_identity(),
+        identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
                            "cache": "miss", "status": ev.attempt.status})
 
     # review3：真实运行产物 RUN_MANIFEST（含 run_id、budget、每请求 identity、cache hit/miss、forward）

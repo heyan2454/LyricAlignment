@@ -21,6 +21,7 @@ import numpy as np
 
 ALPHAS = [0.0, 0.02]  # 用户最终定档 α=2%（weak_silence_samples_2pct 为正式档）
 LOUDNESS_SCALE = 1.0  # 1.0 = 不做响度缩放（导出 2%）
+TEXT_UNITS: list = []  # 可选：同窗歌词逐字（REQUESTS 写 text_units）；缺省=纯声学 probe
 
 
 def read_mono16(path, start_sec=None, end_sec=None):
@@ -159,7 +160,10 @@ def main(argv=None) -> int:
     p.add_argument("--out-root", required=True)
     p.add_argument("--limit", type=int, default=5)
     p.add_argument("--window-sec", type=float, default=20.0)
+    p.add_argument("--text-units", nargs="*", default=[], help="同窗歌词逐字（供 REQUESTS 写 text_units；缺省=纯声学 probe）")
     args = p.parse_args(argv)
+    global TEXT_UNITS
+    TEXT_UNITS = list(args.text_units)
 
     items = [json.loads(l) for l in Path(args.item_list).read_text().splitlines() if l.strip()]
     out_root = Path(args.out_root); out_root.mkdir(parents=True, exist_ok=True)
@@ -241,18 +245,28 @@ def main(argv=None) -> int:
                      "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})
         for lab in labels.values():
             cond = conditions[lab]
+            is_control = (lab == "control")
+            wav_path = str(d / f"{lab}.wav")
+            wav_dur = round(win / rate, 4)  # 生成 WAV 实际时长
             req = {
                 "schema_version": "research_v7_long_slot_v1",
                 "request_type": "c3_weak_vocal_calibration",
                 "condition": cond, "pair_id": pair_id, "item_id": it["item_id"],
+                # review4-2：显式 audio 范围(0..wav 时长) + audio_path，供 runner/executor 正确消费
+                "audio_path": wav_path,
+                "audio_start_sec": 0.0, "audio_end_sec": wav_dur, "duration_sec": wav_dur,
                 "audio_source": "generated_c3_wav",
                 "window_sec": [window_s, round((start + win) / rate, 1)],
                 "audio_path_vocals": str(vp), "audio_path_accompaniment": str(cp),
                 "vocal_sha256": vocal_sha, "acc_sha256": acc_sha,
                 "sample_rate": rate, "code_version": code_ver,
                 "request_identity": _reqid(cond, wav_sha[lab]),
-                "files": [str(d / f"{lab}.wav")], "files_sha256": [wav_sha[lab]],
-                "mutation": "silence_residual", "target_ratio": target_ratio,
+                "files": [wav_path], "files_sha256": [wav_sha[lab]],
+                # review4-1：歌词 units/range（缺省空=纯声学 probe；有则用同窗歌词）
+                "text_units": TEXT_UNITS, "text_start_index": 0, "text_end_index": len(TEXT_UNITS),
+                # review4-5：control 显式 ratio 0/baseline，不伪装成污染样本
+                "mutation": ("control" if is_control else "silence_residual"),
+                "target_ratio": (0.0 if is_control else target_ratio),
             }
             _reqs.append(req)
         done += 1

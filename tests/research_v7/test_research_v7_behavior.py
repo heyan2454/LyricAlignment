@@ -65,6 +65,7 @@ def test_run_behavior_suite_smoke(tmp_path):
 
 
 def test_run_behavior_suite_resume_requires_identical_request(tmp_path):
+    # review4-3：resume 按 content identity 命中；同一请求重复→cache hit；请求变化→不同 key 重新执行(不误命中旧缓存)
     manifest = tmp_path / "manifest.jsonl"
     row = {"request_id": "stable", "item_id": "song", "duration_sec": 10,
            "mutation_type": "baseline", "text_units": list("AB")}
@@ -72,14 +73,18 @@ def test_run_behavior_suite_resume_requires_identical_request(tmp_path):
     outroot = tmp_path / "suite"
     base = [sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
             "--manifest", str(manifest), "--out-root", str(outroot), "--smoke"]
-    assert subprocess.run(base, capture_output=True, text=True, env=ENV).returncode == 0
-    assert subprocess.run(base + ["--resume"], capture_output=True, text=True, env=ENV).returncode == 0
-    refused = subprocess.run(base, capture_output=True, text=True, env=ENV)
-    assert refused.returncode != 0
+    import json as _j
+    r1 = _j.loads(subprocess.run(base, capture_output=True, text=True, env=ENV).stdout)
+    assert r1["cache_hit"] == 0 and r1["written"] == 1
+    r2 = _j.loads(subprocess.run(base + ["--resume"], capture_output=True, text=True, env=ENV).stdout)
+    assert r2["cache_hit"] == 1 and r2["forward"] == 0   # 相同 identity → 命中
+    # 不改 --resume 时重跑但已有缓存 → 拒绝覆盖
+    assert subprocess.run(base, capture_output=True, text=True, env=ENV).returncode != 0
+    # 请求变化(text_units) → 不同 content identity → 重新执行(非误命中)，且不拒绝
     row["text_units"] = list("ABC")
     manifest.write_text(json.dumps(row) + "\n")
-    mismatch = subprocess.run(base + ["--resume"], capture_output=True, text=True, env=ENV)
-    assert mismatch.returncode != 0
+    r3 = _j.loads(subprocess.run(base + ["--resume"], capture_output=True, text=True, env=ENV).stdout)
+    assert r3["cache_hit"] == 0 and r3["forward"] == 1  # 旧缓存未被当命中，重算新 identity
 
 
 def test_provenance_index_hashes_existing_artifacts_and_keeps_missing_visible(tmp_path):
