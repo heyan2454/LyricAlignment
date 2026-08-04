@@ -319,3 +319,42 @@ def test_train_filter_gate_lists_rejected_not_trainable(tmp_path):
     assert tf["rejected"][0]["reason"] == "role_not_lyrics_aligned"
     assert tf["denominator"]["all_success_or_cache"] == 2              # 全部成功/命中身份
     assert tf["denominator"]["trainable"] == 1 and tf["denominator"]["rejected"] == 1
+
+
+def test_failure_rows_carry_role_and_source_audit(tmp_path):
+    # review8-8：malformed/blocked 行 failure 均带 role/alignment/parent/source_row_sha256；
+    # row_audit 对每 manifest 行给出 status 分类，包含成功与失败/阻塞行。
+    import json as _j
+    manifest = tmp_path / "aud.jsonl"
+    manifest.write_text("\n".join([
+        _j.dumps({"request_id": "ok", "item_id": "s", "text_units": ["a"], "text_start_index": 0,
+                  "text_end_index": 1, "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline",
+                  "evaluation_role": "lyrics_aligned", "text_window_aligned": True}),
+        _j.dumps({"request_id": "bad", "item_id": "s2", "text_units": [],
+                  "text_start_index": 0, "text_end_index": 5, "audio_path": "/tmp/nonexistent.wav",
+                  "mutation_type": "baseline", "evaluation_role": "lyrics_aligned"}),
+        _j.dumps({"request_id": "blk", "item_id": "s3", "parent_request_id": "ghost",
+                  "text_units": ["x"], "workflow_mode": "strict_serial_progressive_crop",
+                  "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline",
+                  "evaluation_role": "lyrics_aligned", "text_window_aligned": True}),
+    ]) + "\n")
+    outroot = tmp_path / "run"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+                        "--manifest", str(manifest), "--out-root", str(outroot), "--smoke"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    rm = _j.loads((outroot / "RUN_MANIFEST.json").read_text())
+    # 失败/阻塞行 failure 带 role + source digest（review8-8）
+    for f in rm["failures"]:
+        assert "source_row_sha256" in f
+        if f["kind"] == "blocked_by_parent":
+            assert f["parent_request_id"] == "ghost"
+        if f["kind"] in ("malformed_row",):
+            assert f["evaluation_role"] in ("lyrics_aligned",)
+    # row_audit 每行有 status 分类，覆盖成功/阻塞/失败
+    auds = {a["row_index"]: a["status"] for a in rm["row_audit"]}
+    assert auds[0] == "ok"
+    assert auds[1] == "malformed_row"
+    assert auds[2] == "blocked_by_parent"
+    # 分母交集：成功身份 + 失败/阻塞 都在行审计中体现
+    assert all(a["source_row_sha256"] for a in rm["row_audit"])

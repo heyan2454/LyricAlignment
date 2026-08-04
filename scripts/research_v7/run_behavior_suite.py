@@ -101,7 +101,12 @@ def main(argv=None) -> int:
     rows_after_by_request: dict[str, list[dict]] = {}
     import time as _time
     t_start = _time.time()
+    import hashlib as _hl0
+    row_audit: list[dict] = []  # review8-8：每 manifest 行一个 status 记录（成功/命中/阻塞/拒绝/失败）
     for i, raw in enumerate(rows):
+        row_sha = _hl0.sha256(raw.encode("utf-8", "ignore")).hexdigest()
+        row_aud = {"row_index": i, "source_row_sha256": row_sha, "status": None}  # 占位，后续各分支回填
+        row_audit.append(row_aud)
         # review8-6：循环开头立即以 try 包住全部 row materialization（解析/字段类型/算术），
         # 避免数组行、字符串时间算术等在前置阶段逃逸中止全批；失败全记 malformed 并继续。
         units = ()
@@ -110,8 +115,10 @@ def main(argv=None) -> int:
             r = json.loads(raw)
             if not isinstance(r, dict):
                 failures.append({"item_id": None, "request_id": None, "status": "malformed_row",
-                                 "error": f"manifest row is {type(r).__name__}, expected object", "kind": "malformed_row"})
-                continue
+                                 "error": f"manifest row is {type(r).__name__}, expected object", "kind": "malformed_row",
+                                 "source_row_sha256": row_sha, "evaluation_role": None,
+                                 "text_window_aligned": None, "parent_request_id": None})
+                row_aud["status"] = "malformed_row"
             units = tuple(r.get("text_units", []))
             parent = r.get("parent_request_id")
             cursor_prev = cursor_after_by_request.get(parent) if parent else None
@@ -126,7 +133,12 @@ def main(argv=None) -> int:
         except Exception as _re:  # noqa
             failures.append({"item_id": (r.get("item_id") if isinstance(r, dict) else None),
                              "request_id": (r.get("request_id") if isinstance(r, dict) else None),
-                             "status": "malformed_row", "error": str(_re), "kind": "malformed_row"})
+                             "status": "malformed_row", "error": str(_re), "kind": "malformed_row",
+                             "source_row_sha256": row_sha,
+                             "evaluation_role": (r.get("evaluation_role") if isinstance(r, dict) else None),
+                             "text_window_aligned": (r.get("text_window_aligned") if isinstance(r, dict) else None),
+                             "parent_request_id": (r.get("parent_request_id") if isinstance(r, dict) else None)})
+            row_aud["status"] = "malformed_row"
             continue
         # review7-1：构造 + validate + serial 前置（strict_serial 缺失父 cursor）也做 per-item try
         try:
@@ -134,7 +146,11 @@ def main(argv=None) -> int:
                 if cursor_prev is None:
                     failures.append({"item_id": r.get("item_id"), "request_id": r.get("request_id"),
                                      "status": "blocked_by_parent",
-                                     "error": f"P2 requires completed parent cursor {parent}", "kind": "blocked_by_parent"})
+                                     "error": f"P2 requires completed parent cursor {parent}", "kind": "blocked_by_parent",
+                                     "parent_request_id": parent, "source_row_sha256": row_sha,
+                                     "evaluation_role": r.get("evaluation_role"),
+                                     "text_window_aligned": r.get("text_window_aligned")})
+                    row_aud["status"] = "blocked_by_parent"
                     continue
                 a0 = max(float(a0), float(cursor_prev) - float(r.get("left_context_sec", 10.0)))
             if r.get("provisional_policy") == "last_predicted_seconds" and parent:
@@ -182,7 +198,12 @@ def main(argv=None) -> int:
         except Exception as _ce:  # noqa
             # review7-1/8-6：构造/validate/serial 前置失败 → malformed_row failure，批次继续
             failures.append({"item_id": r.get("item_id"), "request_id": r.get("request_id"),
-                             "status": "malformed_row", "error": str(_ce), "kind": "malformed_row"})
+                             "status": "malformed_row", "error": str(_ce), "kind": "malformed_row",
+                             "source_row_sha256": row_sha,
+                             "evaluation_role": r.get("evaluation_role"),
+                             "text_window_aligned": r.get("text_window_aligned"),
+                             "parent_request_id": r.get("parent_request_id")})
+            row_aud["status"] = "malformed_row"
             continue
         item_dir = out_root / "items" / str(req.item_id)
         import hashlib as _hl
@@ -211,6 +232,7 @@ def main(argv=None) -> int:
                 prior_attempt = cached["attempt"]
                 cursor_after_by_request[req.request_id] = prior_attempt.get("cursor_after")
                 rows_after_by_request[req.request_id] = list(prior_attempt.get("decoder_outputs", {}).get("official", {}).get("rows", []))
+                row_aud["status"] = prior_attempt.get("status")  # review8-8：cache 命中也记行状态
                 cache_hit += 1
                 # review6-5：cache hit 若 status 非 ok → 也进 failures（保持 inventory/failed 一致）
                 if prior_attempt.get("status") != "ok":
@@ -236,10 +258,14 @@ def main(argv=None) -> int:
             rows_after_by_request[req.request_id] = list(ev.attempt.decoder_outputs.get("official", {}).get("rows", []))
             written += 1
             forward += 1
+            row_aud["status"] = ev.attempt.status or "ok"  # review8-8：成功/失败行状态回填
             if ev.attempt.status != "ok":
                 failures.append({"item_id": req.item_id, "request_id": req.request_id,
                                  "request_identity": content_idn, "status": ev.attempt.status,
-                                 "evidence_path": str(f_author), "cache": "miss", "kind": "exec_error"})
+                                 "evidence_path": str(f_author), "cache": "miss", "kind": "exec_error",
+                                 "source_row_sha256": row_sha,
+                                 "evaluation_role": r.get("evaluation_role"),
+                                 "text_window_aligned": r.get("text_window_aligned")})
             identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": content_idn,
                                "cache": "miss", "status": ev.attempt.status,
                                "evaluation_role": r.get("evaluation_role"),
@@ -248,7 +274,12 @@ def main(argv=None) -> int:
             # review6-4：per-item 失败不中止批次；记录 structured failure，继续其它独立 item
             failures.append({"item_id": req.item_id, "request_id": r.get("request_id") or req.request_id,
                              "request_identity": locals().get("content_idn") or None,
-                             "status": "run_error", "error": str(e), "kind": "item_aborted"})
+                             "status": "run_error", "error": str(e), "kind": "item_aborted",
+                             "source_row_sha256": row_sha,
+                             "evaluation_role": r.get("evaluation_role"),
+                             "text_window_aligned": r.get("text_window_aligned"),
+                             "parent_request_id": r.get("parent_request_id")})
+            row_aud["status"] = "run_error"
 
     # review3/4/6：真实运行产物 RUN_MANIFEST + FAILURES.jsonl（原子写）
     import hashlib as _hl2
@@ -300,6 +331,7 @@ def main(argv=None) -> int:
         "item_count": {"requests": len(rows), "written": written, "cache_hit": cache_hit, "forward": forward,
                        "failed": len(failures), "role": dict(role_counts)},
         "train_filter": train_filter,
+        "row_audit": row_audit,  # review8-8：每 manifest 行 {row_index, source_row_sha256, status}
         "cache_keys": [i["request_identity"] for i in identities],
         "evidence_inventory": evidence_inv,
         "failures": failures,
