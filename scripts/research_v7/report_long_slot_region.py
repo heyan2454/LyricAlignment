@@ -32,38 +32,59 @@ def main(argv=None) -> int:
     if not smoke_f.exists():
         print(json.dumps({"ok": False, "reason": "no smoke result"}), ensure_ascii=False)
         return 3
-    d = json.loads(smoke_f.read_text())
+    smoke = json.loads(smoke_f.read_text())
 
-    # P0-5：formal_approved 需“真实 formal evidence 已完成”+ sha 匹配；仅 sha 匹配不构成 formal。
+    # P0-5 round2：formal_approved 需真实 formal evidence + frozen manifest sha + 实际预算/gates。
     formal_approved = False
     reasons = []
+    formal_manifest = run / "formal" / "RUN_MANIFEST.json"
     marker = run / "formal" / "FORMAL_MARKER.json"
     if not args.formal_approved_manifest:
         reasons.append("no formal-approved-manifest")
     elif not marker.is_file():
         reasons.append("no real formal evidence: run/formal/FORMAL_MARKER.json missing")
-    elif args.formal_approved_manifest:
+    elif not formal_manifest.is_file():
+        reasons.append("missing real formal result: run/formal/RUN_MANIFEST.json")
+    else:
         mp = Path(args.formal_approved_manifest)
+        got_sha = _sha256(mp) if mp.is_file() else None
         if not mp.is_file():
             reasons.append("formal-approved-manifest not a file")
         elif not args.expected_manifest_sha256:
             reasons.append("expected-manifest-sha256 not provided")
-        elif _sha256(mp) != args.expected_manifest_sha256:
+        elif got_sha != args.expected_manifest_sha256:
             reasons.append("manifest sha256 mismatch (frozen expected)")
         else:
-            # sha 匹配 + 真实 formal marker 存在 → 读取 marker 校验 gate
             try:
                 marker_d = json.loads(marker.read_text())
+                run_man = json.loads(formal_manifest.read_text())
             except Exception as e:
-                reasons.append(f"FORMAL_MARKER unreadable: {e}")
+                reasons.append(f"formal marker/manifest unreadable: {e}")
             else:
-                if not marker_d.get("all_gates_passed"):
-                    reasons.append("FORMAL_MARKER all_gates_passed != true")
-                elif not marker_d.get("runtime_budget_ok"):
-                    reasons.append("FORMAL_MARKER runtime_budget_ok != true")
+                # marker 必须绑定 frozen manifest hash + run identity + 实际预算
+                if marker_d.get("manifest_sha256") != args.expected_manifest_sha256:
+                    reasons.append("FORMAL_MARKER manifest_sha256 != frozen expected")
+                    formal_runner = None
                 else:
+                    formal_runner = run_man.get("run_id") == marker_d.get("run_id")
+                    if not formal_runner:
+                        reasons.append("FORMAL_MARKER run_id != RUN_MANIFEST.run_id")
+                if not (marker_d.get("all_gates_passed") and marker_d.get("runtime_budget_ok")):
+                    reasons.append("FORMAL_MARKER gates/budget not all passed")
+                else:
+                    # 真实结果应有实测预算字段（elapsed/forward/cache），不是凭空
+                    fb = run_man.get("runtime_budget") or {}
+                    if not (fb.get("elapsed_sec") and fb.get("forward_count") is not None):
+                        reasons.append("RUN_MANIFEST.runtime_budget missing actual elapsed/forward")
+                if not reasons:
                     formal_approved = True
     draft = not formal_approved
+
+    # 数据源：formal→真实 RUN_MANIFEST；否则 smoke（draft）
+    if formal_approved:
+        result_kv = run_man
+    else:
+        result_kv = smoke
 
     auto = {
         "schema": "research_v7_long_slot_report_v1",
@@ -71,19 +92,22 @@ def main(argv=None) -> int:
         "draft": draft,
         "formal_approved": formal_approved,
         "draft_reasons": reasons,
-        "status": "formal" if formal_approved else "smoke_draft",
-        "key": {
-            "timeline_duration_sec": d.get("timeline", {}).get("duration_sec"),
-            "timeline_ge180": d.get("timeline", {}).get("ge180"),
-            "slot_topology": d.get("slot", {}).get("topology"),
-            "non_contiguous": d.get("slot", {}).get("non_contiguous"),
-            "unit_recall": d.get("metrics", {}).get("unit_recall"),
-            "correct_unit_fpr": d.get("metrics", {}).get("fpr"),
-            "gap_recall": d.get("metrics", {}).get("gap_recall"),
-            "assessor_op": d.get("assessor", {}).get("operating_points"),
+        "result_source": str(formal_manifest) if formal_approved else str(smoke_f),
+        "data": {
+            "timeline_duration_sec": result_kv.get("timeline", {}).get("duration_sec"),
+            "timeline_ge180": result_kv.get("timeline", {}).get("ge180"),
+            "slot_topology": result_kv.get("slot", result_kv.get("key", {})).get("topology"),
+            "non_contiguous": (result_kv.get("slot", result_kv.get("key", {}))).get("non_contiguous"),
+            "unit_recall": result_kv.get("metrics", {}).get("unit_recall")
+                      or result_kv.get("key", {}).get("unit_recall"),
+            "correct_unit_fpr": result_kv.get("metrics", {}).get("fpr")
+                      or result_kv.get("key", {}).get("correct_unit_fpr"),
+            "gap_recall": result_kv.get("metrics", {}).get("gap_recall")
+                      or result_kv.get("key", {}).get("gap_recall"),
+            "assessor_op": result_kv.get("assessor", {}).get("operating_points")
+                      or result_kv.get("key", {}).get("assessor_op"),
         },
     }
-
     (run / "report").mkdir(parents=True, exist_ok=True)
     (run / "report" / "AUTO_SUMMARY.json").write_text(json.dumps(auto, ensure_ascii=False, indent=1))
 
@@ -97,17 +121,17 @@ def main(argv=None) -> int:
     md = f"""# AUTO_FINDINGS_{(not draft and 'SUMMARY' or 'DRAFT')}
 
 - status: {'formal (approved)' if formal_approved else 'smoke/pilot draft'}
-- Timeline: {auto['key']['timeline_duration_sec']}s (ge180={auto['key']['timeline_ge180']})
-- Slot topology: {auto['key']['slot_topology']} (non-contiguous={auto['key']['non_contiguous']})
-- unit_recall={auto['key']['unit_recall']}, correct_unit_fpr={auto['key']['correct_unit_fpr']}, gap_recall={auto['key']['gap_recall']}
-- Assessor operating points: {auto['key']['assessor_op']}
+- Timeline: {auto['data']['timeline_duration_sec']}s (ge180={auto['data']['timeline_ge180']})
+- Slot topology: {auto['data']['slot_topology']} (non-contiguous={auto['data']['non_contiguous']})
+- unit_recall={auto['data']['unit_recall']}, correct_unit_fpr={auto['data']['correct_unit_fpr']}, gap_recall={auto['data']['gap_recall']}
+- Assessor operating points: {auto['data']['assessor_op']}
 
 > 自动。draft={draft}; reasons={reasons}。正式结论需 sha-matched frozen manifest；否则仅作 draft。
 """
     (run / "report" / "AUTO_FINDINGS_DRAFT.md").write_text(md)
 
     print(json.dumps({"ok": True, "draft": draft, "formal_approved": formal_approved,
-                      "reasons": reasons, "out": str(run / "report"), "key": auto["key"]}, ensure_ascii=False))
+                      "reasons": reasons, "out": str(run / "report"), "data": auto["data"]}, ensure_ascii=False))
     return 0
 
 
