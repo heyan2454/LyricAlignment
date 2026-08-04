@@ -63,11 +63,27 @@ def partition_by_role(records: Sequence[dict]) -> tuple[list[dict], list[dict], 
 
 
 def require_trainable(records: Sequence[dict]) -> dict:
-    """train/evaluate 入口的硬过滤：只放行 lyrics_aligned；返回拒绝汇总（供日志），拒绝项不入训练。"""
+    """train/evaluate 入口的硬过滤：只放行 lyrics_aligned（且 text_window_aligned=True）。
+
+    review8-7：返回 allowed 身份清单 + rejected 完整身份记录（含 role/alignment/原因），
+    供消费入口保存清单与确切分母；被拒项一律不入训练/阈值/正式评价。
+    """
     allowed, probe, other = partition_by_role(records)
+    rejected = []
+    for r in probe + other:
+        role = r.get("evaluation_role")
+        reason = ("role_not_lyrics_aligned" if not guard_role(role).allowed
+                  else "text_window_not_aligned")
+        rejected.append({
+            "item_id": r.get("item_id"), "request_id": r.get("request_id"),
+            "request_identity": r.get("request_identity"),
+            "evaluation_role": role,
+            "text_window_aligned": r.get("text_window_aligned"),
+            "reason": reason,
+        })
     return {
         "trainable": allowed,
-        "rejected_count": len(probe) + len(other),
-        "rejected_probe": [r.get("item_id") for r in probe],
-        "rejected_other": [r.get("item_id") for r in other],
+        "trainable_count": len(allowed),
+        "rejected": rejected,
+        "rejected_count": len(rejected),
     }

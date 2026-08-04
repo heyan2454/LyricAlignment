@@ -291,3 +291,31 @@ def test_array_row_and_type_error_row_do_not_abort_batch(tmp_path):
     # 数组行被记为 malformed（id=None），字符串时间同样 malformed；正常行 ok 且列身份中可见
     assert any(i["request_id"] == "ok" and i["status"] == "ok" for i in rm["requests_identity"])
     assert len([f for f in rm["failures"] if f["kind"] == "malformed_row"]) >= 2
+
+
+def test_train_filter_gate_lists_rejected_not_trainable(tmp_path):
+    # review8-7：入口把 probe demo 明确拒绝并列出 rejected 身份，lyrics_aligned 才进 trainable。
+    import json as _j
+    manifest = tmp_path / "mf.jsonl"
+    manifest.write_text("\n".join([
+        _j.dumps({"request_id": "ok", "item_id": "song1", "text_units": ["a"], "text_start_index": 0,
+                  "text_end_index": 1, "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline",
+                  "evaluation_role": "lyrics_aligned", "text_window_aligned": True}),
+        _j.dumps({"request_id": "pr", "item_id": "probe1", "text_units": ["p"], "text_start_index": 0,
+                  "text_end_index": 1, "audio_path": "/tmp/nonexistent.wav", "mutation_type": "baseline",
+                  "evaluation_role": "acoustic_probe", "text_window_aligned": False}),
+    ]) + "\n")
+    outroot = tmp_path / "run"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+                        "--manifest", str(manifest), "--out-root", str(outroot), "--smoke"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    rm = _j.loads((outroot / "RUN_MANIFEST.json").read_text())
+    tf = rm["train_filter"]
+    assert tf["trainable_identity_count"] == 1
+    assert [t["item_id"] for t in tf["trainable"]] == ["song1"]        # 只放行 lyrics_aligned
+    assert tf["rejected_count"] == 1
+    assert [t["item_id"] for t in tf["rejected"]] == ["probe1"]        # probe 被拒且列出
+    assert tf["rejected"][0]["reason"] == "role_not_lyrics_aligned"
+    assert tf["denominator"]["all_success_or_cache"] == 2              # 全部成功/命中身份
+    assert tf["denominator"]["trainable"] == 1 and tf["denominator"]["rejected"] == 1

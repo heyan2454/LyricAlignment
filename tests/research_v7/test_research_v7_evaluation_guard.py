@@ -51,7 +51,10 @@ def test_require_trainable_excludes_non_lyrics():
     ])
     assert [r["item_id"] for r in out["trainable"]] == ["ok"]
     assert out["rejected_count"] == 2
-    assert set(out["rejected_probe"]) == {"probe1", "demo1"}
+    # review8-7：被拒项有完整身份记录 + 明确原因（non-GT 不可绕过 train 入口）
+    assert {r["item_id"] for r in out["rejected"]} == {"probe1", "demo1"}
+    assert all(r["reason"] == "role_not_lyrics_aligned" for r in out["rejected"])
+    assert all(r["text_window_aligned"] is not True for r in out["rejected"])
 
 
 def test_partition_rejects_text_not_window_aligned():

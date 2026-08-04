@@ -266,11 +266,21 @@ def main(argv=None) -> int:
     # review6-2：按 evaluation_role 计数
     from collections import Counter as _C
     role_counts = _C(i.get("evaluation_role", "unknown") or "unknown" for i in identities) or {}
-    # review7-3：训练/阈值/正式评价入口硬过滤（实际调用 guard，记拒绝清单与分母）
+    # review7-3 / review8-7：训练/阈值/正式评价入口硬过滤（实际调用 guard），
+    # 输出 trainable/rejected 完整身份清单与确切分母（而非只有 count），供消费者保存。
     try:
         from lyricalign.research_v7.evaluation_guard import require_trainable
         _tr = require_trainable([{**i, "text_window_aligned": i.get("text_window_aligned")} for i in identities])
-        train_filter = {"trainable_identity_count": len(_tr["trainable"]), "rejected": _tr["rejected_count"]}
+        train_filter = {
+            "trainable_identity_count": _tr["trainable_count"],
+            "trainable": [{"request_identity": i.get("request_identity"), "item_id": i.get("item_id"),
+                           "request_id": i.get("request_id")} for i in _tr["trainable"]],
+            "rejected_count": _tr["rejected_count"],
+            "rejected": _tr["rejected"],
+            "denominator": {"all_success_or_cache": len(identities),
+                            "trainable": _tr["trainable_count"],
+                            "rejected": _tr["rejected_count"]},
+        }
     except Exception as _ge:  # noqa
         train_filter = {"error": str(_ge)}
     run_manifest = {
