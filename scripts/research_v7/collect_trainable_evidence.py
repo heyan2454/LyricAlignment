@@ -87,14 +87,47 @@ def collect(run_manifest_path: Path, out: Path) -> dict:
     return collection
 
 
+
+
+def finalize_collection(collection: dict, out: Path) -> dict:
+    """写 collection 并返回带 collection_sha（消费者 run manifest 引用其 SHA，防绕过）。"""
+    import hashlib as _h
+    data = json.dumps(collection, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
+    collection = dict(collection)
+    collection["collection_sha256"] = _h.sha256(data).hexdigest()
+    _atomic_write(out, collection)
+    return collection
+
+
+def load_verified(path: Path | str) -> tuple[dict, str]:
+    """消费者【唯一】入口：加载 collection 并校验 guard 与显式 evidence 路径存在。
+
+    未来 feature trainer / threshold freezer / formal evaluator 只允许接收此结果，
+    不允许直接读原始 items/evidence（review10-5）。
+    """
+    p = Path(path)
+    c = json.loads(p.read_text(encoding="utf-8"))
+    g = c.get("guard")
+    if not isinstance(g, dict) or g.get("present") is not True:
+        raise ValueError("collection missing guard (present=True) — refuses bypass")
+    if "collection_sha256" not in c:
+        raise ValueError("collection missing collection_sha256 — may be stale bypass")
+    paths = [t["path"] for t in c.get("trainable_evidence", [])]
+    for fp in paths:
+        if not Path(fp).is_file():
+            raise ValueError(f"collection lists missing evidence file: {fp}")
+    return c, c["collection_sha256"]
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--run-manifest", required=True)
     p.add_argument("--out", required=True)
     a = p.parse_args(argv)
     c = collect(Path(a.run_manifest), Path(a.out))
+    c = finalize_collection(c, Path(a.out))  # review10-5：collection 自带 sha，消费者引用
     print(json.dumps({"ok": True, "trainable": len(c["trainable_evidence"]),
-                      "rejected": c["guard"]["rejected_count"], "out": a.out}, indent=2))
+                      "rejected": c["guard"]["rejected_count"],
+                      "collection_sha256": c["collection_sha256"], "out": a.out}, indent=2))
     return 0
 
 

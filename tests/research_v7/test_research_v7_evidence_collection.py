@@ -80,3 +80,32 @@ def test_collect_importable():
     import importlib
     m = importlib.import_module("collect_trainable_evidence")
     assert callable(m.collect)
+
+
+def test_collection_has_sha_and_verified_load(tmp_path):
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import collect, finalize_collection, load_verified
+    run, train_idn = _make_run(tmp_path)
+    c = collect(run / "RUN_MANIFEST.json", tmp_path / "c.json")
+    c = finalize_collection(c, tmp_path / "c.json")
+    # 带 collection_sha256
+    assert c["collection_sha256"]
+    # 消费者唯一入口：校验 guard + evidence 存在
+    loaded, sha = load_verified(tmp_path / "c.json")
+    assert sha == c["collection_sha256"]
+    assert loaded["trainable_evidence"][0]["request_identity"] == train_idn
+
+
+def test_verified_load_rejects_un_guarded_collection(tmp_path):
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    from collect_trainable_evidence import load_verified
+    # 手工构造缺 guard 的 collection
+    run, _ = _make_run(tmp_path, with_guard=False)
+    c = {"collection_sha256": "x", "trainable_evidence": [], "guard": {}}
+    (tmp_path / "bad.json").write_text(json.dumps(c)) if isinstance(tmp_path, object) else None
+    # guard present is False → 拒绝
+    import pytest as _pt
+    with _pt.raises(ValueError):
+        load_verified(tmp_path / "bad.json")
