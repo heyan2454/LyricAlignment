@@ -245,3 +245,53 @@ def test_gt_eval_missing_without_baseline_skipped_not_inflated(tmp_path):
     assert res["metrics"]["n_missing"] == 0, res   # missing 未评价（无 baseline 配对）
     assert res["metrics"]["n_units_evaluated"] == 0
     assert res["metrics"]["unit_recall"] is None or res["metrics"]["unit_recall"] != 1.0
+
+
+def test_gt_eval_missing_ratio_suffix_pairing(tmp_path):
+    """round08 CRITICAL：多档 missing 后缀（:missing0.10/0.25/0.50）必须能与 baseline 配对，
+    不能只匹配旧精确后缀 ":missing"（否则所有 missing 被静默跳过）。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_long_slot_gt as m
+    run = tmp_path / "run"; ev_dir = run / "evidence"; ev_dir.mkdir(parents=True)
+    base_req = {
+        "request_id": "s1:w0:full", "item_id": "s1:w0:full", "mutation_type": "baseline",
+        "song_id": "s1", "text_units": [chr(97 + i) for i in range(20)],
+        "text_start_index": 0, "text_end_index": 20,
+        "canonical_ids": list(range(20)), "canonical_to_local": {"0": 0, "1": 1},
+        "source_window_sec": [0.0, 20.0],
+    }
+    base_rows = _rows(20, [chr(97 + i) for i in range(20)], offset=0)
+    base_ev = {"content_identity": "b", "attempt": {"status": "ok", "request": base_req,
+               "decoder_outputs": {"official": {"rows": base_rows}}}}
+    (ev_dir / "b.json").write_text(json.dumps(base_ev))
+    # 两档 missing：:missing0.10（删 2）与 :missing0.50（删 10）
+    for ratio, tag, n_keep in [(0.10, "missing0.10", 18), (0.50, "missing0.50", 10)]:
+        miss_req = dict(base_req)
+        miss_req["request_id"] = f"s1:w0:full:{tag}"
+        miss_req["item_id"] = f"s1:w0:full:{tag}"
+        miss_req["mutation_type"] = "missing"
+        miss_req["text_units"] = [chr(97 + i) for i in range(n_keep)]
+        miss_req["text_end_index"] = n_keep
+        miss_req["canonical_ids"] = list(range(n_keep))
+        miss_req["canonical_to_local"] = {str(i): i for i in range(n_keep)}
+        miss_req["mutation_parameters"] = {"baseline_unit_count": 20, "requested_ratio": ratio}
+        miss_rows = _rows(n_keep, [chr(97 + i) for i in range(n_keep)], offset=0)
+        miss_ev = {"content_identity": tag, "attempt": {"status": "ok", "request": miss_req,
+                   "decoder_outputs": {"official": {"rows": miss_rows}}}}
+        (ev_dir / f"{tag}.json").write_text(json.dumps(miss_ev))
+    tl = tmp_path / "timeline.jsonl"
+    tl.write_text(json.dumps(TIMELINE) + "\n")
+    res = m.evaluate(run_root=run, timeline_manifest=tl)
+    # 两档 missing 都必须被评价（配对成功），不落入 skipped
+    assert res["metrics"]["n_missing"] == 2, res["metrics"]
+    assert res["metrics"]["n_evidence_skipped"] == 0, res["metrics"]
+    assert res["metrics"]["n_gt_gaps"] == 2, res["metrics"]
+    # 每档真 unsafe = 被删单位数（2 与 10）
+    per = {r["request_id"]: r for r in res["per_request"]}
+    assert len(per["s1:w0:full:missing0.10"]["unit"]["truly_unsafe_canonical_ids"]) == 2
+    assert len(per["s1:w0:full:missing0.50"]["unit"]["truly_unsafe_canonical_ids"]) == 10
+    # 辅助函数直接验证
+    assert m._is_missing_rid("s1:w0:full:missing") == "s1:w0:full"
+    assert m._is_missing_rid("s1:w0:full:missing0.25") == "s1:w0:full"
+    assert m._is_missing_rid("s1:w0:full") is None
