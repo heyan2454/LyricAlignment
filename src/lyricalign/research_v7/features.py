@@ -3,11 +3,25 @@
 对应 15 蓝图 §6.3：unit 特征分 raw(R)/official(O)/hidden(H) 三类，gap 特征用它左右 unit 的
 同类特征 + 时间跳变/跨视图差。特征提取必须**拒绝 GT/mutation 字段**（feature extractor 不得
 消费 canonical_mapping 中出现的 label 字段）。纯函数、可单测。
+
+hidden 未启用（HIDDEN_FEATURES_ENABLED=False）：在 real_executor 产出 hidden 且经过 hidden 抽取
+审计之前，不产出非零 hidden 特征；row_hidden_features 对无 hidden 行只返回全零占位（不伪造非零）。
+调用方必须显式接受全零占位（如 assessor_train_eval --allow-zero-hidden）或拒绝，不得把占位当
+真实特征用于训练/评价。
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Mapping, Sequence
+
+
+HIDDEN_FEATURES_ENABLED = False
+"""hidden 未启用：无 hidden 抽取审计前不产出非零 hidden 特征。
+
+real_executor 从不产出 row["hidden"]，因此所有 evidence 的 hidden 特征恒为全零占位；
+在此为 False 期间，调用方（如 assessor_train_eval）必须显式接受全零占位或拒绝，
+不得把占位当真实特征训练。
+"""
 
 
 @dataclass(frozen=True)
@@ -71,7 +85,12 @@ def row_official_features(row: Mapping) -> dict[str, float]:
 
 
 def row_hidden_features(row: Mapping) -> dict[str, float]:
-    """H 类：hidden vector 统计（若存在；无则 0——hidden 抽取需 via audit）。"""
+    """H 类：hidden vector 统计（若存在；无则 0——hidden 抽取需 via audit）。
+
+    hidden 未启用（HIDDEN_FEATURES_ENABLED=False）：real_executor 行恒无 hidden，
+    本函数只返回全零占位，不伪造非零；调用方必须显式接受全零占位（如
+    assessor_train_eval --allow-zero-hidden）或拒绝，不得把占位当真实特征训练。
+    """
     f = {}
     h = row.get("hidden")
     if isinstance(h, dict) and h.get("available"):

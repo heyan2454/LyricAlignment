@@ -16,6 +16,11 @@
 用法：
   PYTHONPATH=src python scripts/research_v7/assessor_train_eval.py \
       --collection <collection.json> --out <run_dir> [--train-frac 0.7] [--include-hidden]
+      [--allow-zero-hidden]
+
+hidden 特征当前为声明停用（features.HIDDEN_FEATURES_ENABLED=False）：real_executor 不产 hidden，
+`--include-hidden` 喂给模型的是全零占位。因此 `--include-hidden` 无 `--allow-zero-hidden` 时
+确定性失败（非零退出并说明原因）；`--allow-zero-hidden` 是显式逃逸，仅供兼容旧 smoke。
 """
 from __future__ import annotations
 
@@ -27,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from lyricalign.research_v7.features import unit_features  # noqa: E402
+from lyricalign.research_v7.features import HIDDEN_FEATURES_ENABLED, unit_features  # noqa: E402
 from lyricalign.research_v7.region_assessor import fit_and_freeze  # noqa: E402
 
 COLLECTION_SCHEMA = "research_v7_trainable_evidence_collection_v1"
@@ -79,8 +84,13 @@ def _labels_from_gt_eval(attempt: dict) -> tuple[set[int] | None, str | None]:
 
 
 def consume(collection_path: Path, out: Path, *, train_frac: float = 0.7,
-            include_hidden: bool = False) -> dict:
+            include_hidden: bool = False, allow_zero_hidden: bool = False) -> dict:
     """消费 collection：特征提取 + 标签 + assessor train/freeze；返回 run manifest dict。"""
+    if include_hidden and not HIDDEN_FEATURES_ENABLED and not allow_zero_hidden:
+        # review17 #4：hidden 未启用时拒绝把全零占位当真实特征训练（确定性失败）
+        raise ValueError(
+            "hidden extraction not enabled; refusing to train on zero-placeholder hidden features "
+            "(pass --allow-zero-hidden to explicitly accept the zero-placeholder)")
     if not (0.0 < train_frac < 1.0):
         raise ValueError(f"train_frac must be in (0,1), got {train_frac}")
     c, collection_sha = _load_verified_collection(collection_path)
@@ -191,6 +201,8 @@ def consume(collection_path: Path, out: Path, *, train_frac: float = 0.7,
         "feature_keys": feature_keys,
         "labels": {"available": labels_available, "evidence_with_labels": len(labels),
                    "error_count": len(label_errors)},
+        "hidden": {"enabled": bool(HIDDEN_FEATURES_ENABLED),
+                   "note": "zero-placeholder rejected unless --allow-zero-hidden"},
         "assessor": {k: v for k, v in assessor.items()},
         "outputs": {"features": str(features_file), "assessor": str(assessor_file),
                     "manifest": str(out / "ASSESSOR_RUN_MANIFEST.json")},
@@ -205,9 +217,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", required=True)
     p.add_argument("--train-frac", type=float, default=0.7)
     p.add_argument("--include-hidden", action="store_true")
+    p.add_argument("--allow-zero-hidden", action="store_true",
+                   help="显式接受全零占位 hidden 特征（hidden 未启用时 --include-hidden 的逃逸口）")
     a = p.parse_args(argv)
-    m = consume(Path(a.collection), Path(a.out), train_frac=a.train_frac,
-                include_hidden=a.include_hidden)
+    try:
+        m = consume(Path(a.collection), Path(a.out), train_frac=a.train_frac,
+                    include_hidden=a.include_hidden, allow_zero_hidden=a.allow_zero_hidden)
+    except ValueError as e:
+        # 确定性失败：原因写 stderr、退出码非 0（如 hidden 未启用却 --include-hidden）
+        print(f"error: {e}", file=sys.stderr)
+        return 1
     print(json.dumps({"ok": True, "collection_sha256": m["collection_sha256"][:16],
                       "trainable_evidence": m["denominator"]["trainable_evidence"],
                       "units": m["denominator"]["units"],
