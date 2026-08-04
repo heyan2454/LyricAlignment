@@ -170,7 +170,7 @@ def main(argv=None) -> int:
 
         recs.append({"item_id": it["item_id"], "window_sec": [round(start / rate, 1), round((start + win) / rate, 1)],
                      "sample_rate": rate,
-                     "vocal_sha256": hashlib.sha256(vpath.read_bytes()).hexdigest(),
+                     "vocal_sha256": hashlib.sha256(vp.read_bytes()).hexdigest(),
                      "acc_sha256": hashlib.sha256(cp.read_bytes()).hexdigest(), **meta,
                      "rms": {k: round(v, 3) for k, v in rms_all.items()},
                      "files": {lab: str(d / f"{lab}.wav") for lab in labels.values()}, "done": True})

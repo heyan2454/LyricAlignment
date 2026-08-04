@@ -105,3 +105,34 @@ def test_detect_no_silence_when_full_sing():
     sil, _ = detect_silence_frames(vr, sung_median, 16000, 0.05)
     # 全程唱 → 应几乎无静音帧（绝对上限 400 与相对 0.35 联合排除）
     assert sil.sum() <= nf * 0.05
+
+
+def test_successful_export_branch_done_and_files(tmp_path):
+    # 覆盖 reviewer 指出的 vpath NameError：合格 export 成功返回、done=true、两文件+sha 存在
+    import json
+    import subprocess
+    import sys
+
+    sr = 16000
+    sing = _tone(1.0, sr, amp=4000.0)                   # 唱 1s
+    sil = np.zeros(int(1.0 * sr), dtype=np.float32)     # 静 1s
+    vv = np.concatenate([sing, sil])                    # 2s：1s 唱 + 1s 静（单窗混合）
+    cc = np.concatenate([_tone(1.0, sr, amp=2000.0), _tone(1.0, sr, amp=700.0)])  # 静音区有伴奏
+    vv_p = tmp_path / "vocals.wav"; aa_p = tmp_path / "accompaniment.wav"
+    _write_wav(vv_p, vv, sr); _write_wav(aa_p, cc, sr)
+    il = tmp_path / "items.jsonl"
+    il.write_text(json.dumps({"item_id": "Z", "audio_path": str(vv_p)}) + "\n")
+    out = tmp_path / "outs"
+    env = dict(__import__("os").environ)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src") + ":" + env["PYTHONPATH"]
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/research_v7/export_silence_polluted_weak.py"),
+                        "--item-list", str(il), "--out-root", str(out), "--window-sec", "2.0"],
+                       capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    man = json.loads((out / "AUDIO_EXPORT_MANIFEST.json").read_text())
+    done = [x for x in man if x.get("done") is True]
+    assert done, f"no done=true record; manifest={man}"
+    d = done[0]
+    assert d.get("vocal_sha256") and d.get("acc_sha256")   # sha 存在（vpath 已修）
+    assert "control" in d["files"] and "weak_2" in d["files"]
+    assert (Path(d["files"]["control"]).is_file()) and (Path(d["files"]["weak_2"]).is_file())

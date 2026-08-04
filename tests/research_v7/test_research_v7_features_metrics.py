@@ -81,3 +81,19 @@ def test_summarize_by_split():
     assert k in out
     assert out[k]["unit_recall_mean"] == 0.75
     assert out[k]["n_items"] == 2
+
+
+def test_wrong_output_two_directions_independent():
+    from lyricalign.research_v7.region_metrics import wrong_output_metrics
+    m = wrong_output_metrics(gt_replaced=10, wrong_output_hits=6, replaced_omission_hits=3, replaced_omission_gt=9)
+    assert m["wrong_output_recall"] == round(6 / 10, 4)
+    assert m["replaced_gt_omission_recall"] == round(3 / 9, 4)
+
+
+def test_gap_metrics_no_dead_params():
+    from lyricalign.research_v7.region_metrics import gap_metrics
+    # 不再接受 pred_gap_omitted/weighted_deleted_gt（死参数已移除）
+    import inspect
+    sig = inspect.signature(gap_metrics)
+    assert "pred_gap_omitted" not in sig.parameters
+    assert "weighted_deleted_gt" not in sig.parameters

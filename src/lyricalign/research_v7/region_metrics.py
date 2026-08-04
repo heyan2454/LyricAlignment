@@ -39,13 +39,8 @@ def gap_metrics(
     gt_gaps: Sequence[int],                        # 真 gap id 集
     pred_gap_ids: Sequence[int],                   # 检出的 gap id
     gt_gap_omitted: Mapping[int, Sequence[int]] | None = None,  # gap_id -> omitted canonical units
-    pred_gap_omitted: Mapping[int, Sequence[int]] | None = None,
-    weighted_deleted_gt: Sequence[int] | None = None,
 ) -> dict[str, float]:
-    """P0-4：gap 指标按 omitted canonical units 加权（不再只用 gap-id set）。
-
-    deleted-GT weighted recall = 命中的 GT omitted units / GT omitted units 总数。
-    """
+    """P0-4：gap 指标按 omitted canonical units 加权（不使用未实现/死参数 pred_gap_omitted、weighted_deleted_gt）。"""
     gtg = set(gt_gaps); pgs = set(pred_gap_ids)
     tp = len(gtg & pgs); fp = len(pgs - gtg); fn = len(gtg - pgs)
     # omitted-units 加权
@@ -66,11 +61,21 @@ def gap_metrics(
     }
 
 
-def wrong_output_metrics(*, gt_replaced: int, pred_wrong_output: int, replaced_omission_gt: int) -> dict[str, float]:
-    """P0-4：wrong-output recall（replaced 命中）+ replaced-GT omission recall。"""
+def wrong_output_metrics(
+    *,
+    gt_replaced: int,                     # 应为 wrong-output 的 GT replaced 数
+    wrong_output_hits: int,               # 判为 wrong-output 且命中 GT replaced 的 token 数
+    replaced_omission_hits: int,          # 判为“被替换 GT 遗漏”且命中 omitted-original 的候选数
+    replaced_omission_gt: int,            # GT 中“原词被替代省略”的总数
+) -> dict[str, float]:
+    """P0-4b：wrong-output 与 replaced-omission 两个方向用独立命中量，不复用一个数。
+
+    wrong_output_recall = wrong_output 命中 / 应标记 wrong-output 的 GT。
+    replaced_gt_omission_recall = omission(被替代 GT) 候选命中 / 应标记 omission 的 GT。
+    """
     return {
-        "wrong_output_recall": round(_safe_p(pred_wrong_output, gt_replaced), 4),
-        "replaced_gt_omission_recall": round(_safe_p(pred_wrong_output, replaced_omission_gt), 4),
+        "wrong_output_recall": round(_safe_p(wrong_output_hits, gt_replaced), 4),
+        "replaced_gt_omission_recall": round(_safe_p(replaced_omission_hits, replaced_omission_gt), 4),
     }
 
 

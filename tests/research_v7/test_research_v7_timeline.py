@@ -85,3 +85,15 @@ def test_seam_silence_shifts_subsequent_timestamps():
     s2_sil = first_of_seg(t_sil, 2); s2_none = first_of_seg(t_none, 2)
     assert s2_sil is not None and s2_none is not None
     assert abs((s2_sil - s2_none) - 1.0) < 1e-6  # 两段 seam ×0.5 =1.0
+
+
+def test_seam_duration_not_double_counted():
+    # P0-4a：总时长 == 最后一 canonical end == sum(dur) + silence*(n-1)，不双计
+    n = 3
+    segs = _segs(n)  # 每段 dur=2.0
+    t = build_timeline(timeline_id="d", source_song_id="演员", dataset="m4", language="zh",
+                       segments=segs, order_field="order", artificial_silence_sec=0.5)
+    last_end = max(c["end_sec"] for c in t.canonical_units)
+    expect = n * 2.0 + 0.5 * (n - 1)  # sum dur + 2×seam silence
+    assert abs(t.duration_sec - expect) < 1e-6
+    assert abs(t.duration_sec - last_end) < 1e-6  # 不双计 → 总时长==末 unit end

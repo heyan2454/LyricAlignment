@@ -126,7 +126,8 @@ def build_timeline(
                 "segment_order": si,
             })
 
-    duration = cursor if not artificial_silence_sec else cursor + artificial_silence_sec * (len(ordered) - 1)
+    # P0-4a：cursor 已在每段前计入 artificial_silence（seam 平移），总时长直接用 cursor，勿再二次加。
+    duration = cursor
     return Timeline(
         timeline_id=timeline_id,
         source_song_id=source_song_id,
