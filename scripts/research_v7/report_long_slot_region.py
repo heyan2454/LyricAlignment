@@ -34,10 +34,15 @@ def main(argv=None) -> int:
         return 3
     d = json.loads(smoke_f.read_text())
 
-    # P0-5：formal_approved 必须 manifest 存在 + sha256 匹配；否则 draft
+    # P0-5：formal_approved 需“真实 formal evidence 已完成”+ sha 匹配；仅 sha 匹配不构成 formal。
     formal_approved = False
     reasons = []
-    if args.formal_approved_manifest:
+    marker = run / "formal" / "FORMAL_MARKER.json"
+    if not args.formal_approved_manifest:
+        reasons.append("no formal-approved-manifest")
+    elif not marker.is_file():
+        reasons.append("no real formal evidence: run/formal/FORMAL_MARKER.json missing")
+    elif args.formal_approved_manifest:
         mp = Path(args.formal_approved_manifest)
         if not mp.is_file():
             reasons.append("formal-approved-manifest not a file")
@@ -46,9 +51,18 @@ def main(argv=None) -> int:
         elif _sha256(mp) != args.expected_manifest_sha256:
             reasons.append("manifest sha256 mismatch (frozen expected)")
         else:
-            formal_approved = True
-    else:
-        reasons.append("no formal-approved-manifest (smoke/pilot draft)")
+            # sha 匹配 + 真实 formal marker 存在 → 读取 marker 校验 gate
+            try:
+                marker_d = json.loads(marker.read_text())
+            except Exception as e:
+                reasons.append(f"FORMAL_MARKER unreadable: {e}")
+            else:
+                if not marker_d.get("all_gates_passed"):
+                    reasons.append("FORMAL_MARKER all_gates_passed != true")
+                elif not marker_d.get("runtime_budget_ok"):
+                    reasons.append("FORMAL_MARKER runtime_budget_ok != true")
+                else:
+                    formal_approved = True
     draft = not formal_approved
 
     auto = {
