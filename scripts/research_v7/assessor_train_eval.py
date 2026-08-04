@@ -50,10 +50,12 @@ ASSESSOR_V1_COMPAT_NOTE = (
 
 
 def _load_assessor(path: Path | str) -> tuple[dict | None, str | None]:
-    """加载 ASSESSOR.json；旧文件（无 model 字段）/损坏/缺失 → (None, reason)。
+    """加载 ASSESSOR.json（compat 契约）；旧文件（无 model 字段）/损坏/缺失 → (None, reason)。
 
-    round04/op-persist：consumers（T4 scorer 等）只经此函数取冻结权重，
-    不得直接读 ASSESSOR.json 假设 model 存在。
+    round04/op-persist：consumers 一律经此函数取冻结权重，不得直接读 ASSESSOR.json
+    假设 model 存在。加载方需处理 (None, reason)：例如
+    evaluate_cross_domain_assessor.load_m4_assessor 先复用本函数 base 校验，
+    被拒时把 reason 转成 ValueError，再叠加 strict 校验（形状/有限值/feature_keys 非空）。
     """
     p = Path(path)
     if not p.is_file():

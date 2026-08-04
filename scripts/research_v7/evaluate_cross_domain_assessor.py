@@ -43,7 +43,6 @@ from collect_trainable_evidence import load_verified  # noqa: E402
 SCHEMA = "research_v7_assessor_cross_domain_eval_v1"
 GT_AXIS_NOTE = "weak_labeled_qwen_fa_timestamps (not human GT)"
 DEFAULT_OPERATING_POINTS = {"high_recall_95": 0.5, "high_recall_99": 0.5}
-MODEL_WEIGHT_KEYS = ("beta", "mean", "std", "feature_keys")
 OUTPUT_NAME = "ASSESSOR_CROSS_DOMAIN_EVAL.json"
 
 
@@ -61,17 +60,21 @@ def _atomic_write(path: Path, payload: dict) -> None:
 
 
 def load_m4_assessor(path: Path) -> dict:
-    """加载 T3 冻结 assessor；旧格式（无 model 权重）→ ValueError（可读错误）。"""
-    data = json.loads(path.read_text(encoding="utf-8"))
-    model = data.get("model")
-    if not isinstance(model, dict):
-        raise ValueError(
-            "assessor lacks persisted model weights; "
-            "run assessor_train_eval with op persistence first")
-    missing = [k for k in MODEL_WEIGHT_KEYS if k not in model]
-    if missing:
-        raise ValueError(f"assessor model missing weights keys: {missing}")
-    feature_keys = model["feature_keys"]
+    """加载 T3 冻结 assessor（strict 契约）；不合法 → ValueError（可读错误）。
+
+    与 assessor_train_eval._load_assessor（compat 契约：(None, reason) 返回）的差异：
+    本函数先复用 _load_assessor 的 base 校验（文件缺失/JSON 损坏/无 model 字段/
+    beta/mean/std 非 list → (None, reason)），若被拒则抛 ValueError(reason)；
+    通过后再叠加 strict 校验（feature_keys 非空字符串列表、权重形状与 feature_keys
+    一致、有限且 std > 0），保证返回的 model 可直接喂 LogisticAssessor。
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
+    import assessor_train_eval
+    data, reason = assessor_train_eval._load_assessor(path)
+    if reason is not None:
+        raise ValueError(reason)
+    model = data["model"]
+    feature_keys = model.get("feature_keys")
     if not isinstance(feature_keys, list) or not feature_keys:
         raise ValueError("assessor model feature_keys must be a non-empty list")
     if not all(isinstance(k, str) for k in feature_keys):
@@ -291,7 +294,10 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(a.out)
     try:
         result = evaluate(Path(a.m4_assessor), Path(a.mir1k_collection))
-    except ValueError as e:
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as e:
+        # 确定性失败：原因写 stderr、退出码非 0（无 traceback）。
+        # load_m4_assessor 的 (None, reason) 已转成 ValueError；
+        # FileNotFoundError/JSONDecodeError 来自 collection/evidence 文件读取。
         print(f"error: {e}", file=sys.stderr)
         return 1
     out_file = out / OUTPUT_NAME

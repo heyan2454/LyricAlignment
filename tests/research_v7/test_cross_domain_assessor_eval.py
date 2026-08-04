@@ -185,25 +185,30 @@ def test_cross_domain_metrics_values(tmp_path):
 
 
 def test_old_assessor_without_model_fails_nonzero(tmp_path):
-    """旧格式 ASSESSOR.json（只有 operating_points、无 model）→ 非零退出 + 明确报错。"""
+    """旧格式 ASSESSOR.json（只有 operating_points、无 model）→ 非零退出 + 明确报错。
+
+    load_m4_assessor 复用 _load_assessor 的 (None, reason) 并把 reason 转 ValueError。"""
     ap = _make_assessor(tmp_path, with_model=False)
     cp = _make_collection(tmp_path)
     r = _run_cli(ap, cp, tmp_path / "out3")
     assert r.returncode != 0
-    assert "lacks persisted model weights" in r.stderr
-    assert "op persistence" in r.stderr
+    assert "lacks model weights" in r.stderr
+    assert "Traceback" not in r.stderr
     assert not (tmp_path / "out3" / "ASSESSOR_CROSS_DOMAIN_EVAL.json").exists()
 
 
 def test_assessor_missing_weight_key_raises(tmp_path):
-    """model 缺 feature_keys 等权重键 → load_m4_assessor 抛 ValueError。"""
+    """model 缺 std/feature_keys 等权重键 → _load_assessor (None, reason) → load_m4_assessor 抛 ValueError。"""
     sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
     import evaluate_cross_domain_assessor as m
+    import assessor_train_eval as at
     bad = tmp_path / "bad.json"
     bad.write_text(json.dumps({"model": {"beta": [0.0], "mean": [0.0]}}))
+    data, reason = at._load_assessor(bad)
+    assert data is None and "missing" in reason
     with pytest.raises(ValueError) as ei:
         m.load_m4_assessor(bad)
-    assert "missing weights keys" in str(ei.value)
+    assert reason in str(ei.value)
 
 
 def test_feature_alignment_fills_missing_with_zero(tmp_path):
@@ -261,3 +266,60 @@ def test_empty_collection_reports_null_metrics(tmp_path):
     assert m["n_evidence"] == 0 and m["n_units"] == 0
     assert m["unit_recall_95"] is None and m["unit_recall_99"] is None
     assert m["score_distribution"] == {"min": None, "p50": None, "p90": None, "max": None}
+
+
+def test_v2_assessor_accepted_by_both_loaders_consistently(tmp_path):
+    """同一 v2 文件：_load_assessor 与 load_m4_assessor 都接受，数值一致。"""
+    sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_cross_domain_assessor as ev
+    import assessor_train_eval as at
+    ap = _make_assessor(tmp_path, weights={"raw_duration_sec": 0.5, "raw_zero": 1.25},
+                        mean=0.4, std=0.8, name="ASSESSOR_v2.json")
+    data, reason = at._load_assessor(ap)
+    assert reason is None
+    m4 = ev.load_m4_assessor(ap)
+    src = data["model"]
+    assert m4["model"]["feature_keys"] == src["feature_keys"] == FEATURE_KEYS
+    assert list(m4["model"]["beta"]) == src["beta"]
+    assert list(m4["model"]["mean"]) == src["mean"]
+    assert list(m4["model"]["std"]) == src["std"]
+    assert m4["operating_points"] == data["operating_points"]
+
+
+def test_v1_assessor_rejected_by_both_loaders(tmp_path):
+    """v1 文件（无 model）：_load_assessor → (None, reason)；load_m4_assessor → ValueError 同 reason。"""
+    sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_cross_domain_assessor as ev
+    import assessor_train_eval as at
+    ap = _make_assessor(tmp_path, with_model=False, name="ASSESSOR_v1.json")
+    data, reason = at._load_assessor(ap)
+    assert data is None and "lacks model weights" in reason
+    with pytest.raises(ValueError) as ei:
+        ev.load_m4_assessor(ap)
+    assert str(ei.value) == reason
+
+
+def test_missing_collection_file_exits_1_with_reason(tmp_path):
+    """--mir1k-collection 指向不存在的文件 → exit 1 + stderr 含原因，无 traceback。"""
+    ap = _make_assessor(tmp_path)
+    missing = tmp_path / "no_such_collection.json"
+    out = tmp_path / "out7"
+    r = _run_cli(ap, missing, out)
+    assert r.returncode == 1
+    assert "no_such_collection.json" in r.stderr
+    assert "Traceback" not in r.stderr
+    assert not (out / "ASSESSOR_CROSS_DOMAIN_EVAL.json").exists()
+
+
+def test_load_m4_assessor_strict_shape_check_on_top_of_base(tmp_path):
+    """base 通过（beta/mean/std 为 list）但形状与 feature_keys 不符 → strict ValueError。"""
+    sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_cross_domain_assessor as ev
+    bad = tmp_path / "bad_shape.json"
+    bad.write_text(json.dumps({
+        "model": {"beta": [0.0, 0.1, 0.2, 0.3], "mean": [0.0, 0.0], "std": [1.0, 1.0],
+                  "feature_keys": ["raw_duration_sec", "raw_zero"]},
+    }))
+    with pytest.raises(ValueError) as ei:
+        ev.load_m4_assessor(bad)
+    assert "shapes inconsistent" in str(ei.value)
