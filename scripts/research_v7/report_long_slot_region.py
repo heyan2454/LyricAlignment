@@ -27,6 +27,8 @@ def main(argv=None) -> int:
     p.add_argument("--expected-manifest-sha256", default="", help="冻结 manifest 的 sha256（须匹配才 formal_approved）")
     p.add_argument("--extrapolate-requests", type=int, default=600,
                    help="pilot/formal 预算外推请求数（默认 600，13 计划 pilot 规模量级）")
+    p.add_argument("--cross-domain-eval", default="",
+                   help="跨域评估产物（research_v7_assessor_cross_domain_eval_v1）；可选，只记录 finding，不参与 formal gate")
     args = p.parse_args(argv)
 
     run = Path(args.run_root)
@@ -35,6 +37,40 @@ def main(argv=None) -> int:
         print(json.dumps({"ok": False, "reason": "no smoke result"}, ensure_ascii=False))
         return 3
     smoke = json.loads(smoke_f.read_text())
+
+    # T1（round06）：跨域评估发现（M4→MIR）——可选输入，只读记录进 report。
+    # 不提供/文件缺失/不可读/schema 不匹配 → cross_domain=None，不阻塞 formal_approved，行为不变。
+    cross_domain = None
+    cross_domain_path = Path(args.cross_domain_eval) if args.cross_domain_eval else None
+    if cross_domain_path is not None:
+        try:
+            cd = json.loads(cross_domain_path.read_text(encoding="utf-8"))
+        except Exception:
+            cd = None
+        if not isinstance(cd, dict) or cd.get("schema") != "research_v7_assessor_cross_domain_eval_v1":
+            print(f"WARN: cross-domain eval {cross_domain_path} unreadable or schema "
+                  f"!= research_v7_assessor_cross_domain_eval_v1; skipped", file=sys.stderr)
+            cd = None
+        if cd is not None:
+            mir = cd.get("mir1k") or {}
+            m4_op = (cd.get("m4_assessor") or {}).get("operating_points") or {}
+            cross_domain = {
+                "schema": cd.get("schema"),
+                "path": str(cross_domain_path),
+                "unsafe_rate_95": mir.get("unsafe_rate_95"),
+                "unsafe_rate_99": mir.get("unsafe_rate_99"),
+                "unit_recall_95": mir.get("unit_recall_95"),
+                "unit_recall_99": mir.get("unit_recall_99"),
+                "correct_unit_fpr_95": mir.get("correct_unit_fpr_95"),
+                "correct_unit_fpr_99": mir.get("correct_unit_fpr_99"),
+                "score_distribution": mir.get("score_distribution"),
+                "n_units": mir.get("n_units"),
+                "m4_operating_points": m4_op,
+                "inputs": cd.get("inputs") or {},
+                "cross_domain_finding": (
+                    "M4 frozen operating points do not transfer to MIR (near-all-unsafe); "
+                    "cross-domain recalibration required, not a pass"),
+            }
 
     # round02：formal 指标回填 —— GT_EVAL.json（research_v7_gt_eval_v1）优先于
     # RUN_MANIFEST.metrics；仅当文件缺失/不可读/schema 不合法（schema !=
@@ -136,6 +172,7 @@ def main(argv=None) -> int:
             "non_contiguous": (result_kv.get("slot", result_kv.get("key", {}))).get("non_contiguous"),
             "assessor_op": result_kv.get("assessor", {}).get("operating_points")
                       or result_kv.get("key", {}).get("assessor_op"),
+            "cross_domain": cross_domain,
         },
     }
     if gt_eval is not None:
@@ -206,6 +243,16 @@ def main(argv=None) -> int:
 - Assessor operating points: {auto['data']['assessor_op']}
 
 > 自动。draft={draft}; reasons={reasons}。正式结论需 sha-matched frozen manifest；否则仅作 draft。
+"""
+    if cross_domain is not None:
+        md += f"""
+## Cross-domain assessor
+
+- Source: {cross_domain_path}
+- unsafe_rate_95={cross_domain['unsafe_rate_95']}, unsafe_rate_99={cross_domain['unsafe_rate_99']},
+  unit_recall_95={cross_domain['unit_recall_95']}, correct_unit_fpr_95={cross_domain['correct_unit_fpr_95']}
+- n_units={cross_domain['n_units']}, M4 operating points={cross_domain['m4_operating_points']}
+- Finding: {cross_domain['cross_domain_finding']}
 """
     md_name = f"AUTO_FINDINGS_{'SUMMARY' if not draft else 'DRAFT'}.md"
     (run / "report" / md_name).write_text(md)
