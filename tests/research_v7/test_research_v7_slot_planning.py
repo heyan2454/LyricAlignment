@@ -106,3 +106,24 @@ def test_common_only_pairs_intersects_plans():
     p2 = plan_slots(plan_id="p2", canonical_unit_count=60, queried_canonical_ids=[0, 2, 4, 6])
     p3 = plan_slots(plan_id="p3", canonical_unit_count=60, queried_canonical_ids=[0, 4])
     assert common_only_pairs([p1, p2, p3]) == [0, 4]  # 交集
+
+
+def test_build_density_plans_can_pass_request_local_count():
+    from lyricalign.research_v7.slot_planning import build_density_plans, SlotPlanError
+    c2l = {i: i for i in range(60)}
+    sel = {"100": {"p0": list(range(0, 60))}, "2": {"p0": list(range(0, 60, 2))},
+           "4": {"p0": list(range(0, 60, 4))}, "8": {"p0": list(range(0, 60, 8))}}
+    # local 上界只有 30：s100 需 60 → 应抛错（builder 路径校验真实长度）
+    with pytest.raises(SlotPlanError, match="out of request_local_count"):
+        build_density_plans(plan_group="g", canonical_unit_count=60, selected_by_stride_phase=sel,
+                            canonical_to_local=c2l, request_local_count=30)
+
+
+def test_evaluate_on_common_only_uses_common():
+    from lyricalign.research_v7.slot_planning import evaluate_on_common
+    # common=[0,4,8]；评分给 0(0.9)、4(0.7)、以及 99(非common 1.0) → mean 只算 common
+    score = {0: 0.9, 4: 0.7, 99: 1.0}
+    r = evaluate_on_common([0, 4, 8], score)
+    assert r["common_units_scored"] == 2
+    assert r["mean"] == round((0.9 + 0.7) / 2, 6)  # 99 被排除
+    assert r["missing_from_score"] == [8]

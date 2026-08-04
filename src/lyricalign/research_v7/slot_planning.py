@@ -162,16 +162,17 @@ def build_density_plans(
     canonical_unit_count: int,
     selected_by_stride_phase: Mapping[str, Mapping[str, Sequence[int]]],
     canonical_to_local: Mapping[int, int],
+    request_local_count: int | None = None,
 ) -> tuple[list[SlotPlan], list[int]]:
     """P0-3：为真实 density 已选集生成 slots 并求 common anchors。
 
-    selected_by_stride_phase: {stride: {phase: [canonical_ids]}} —— 由 caller 提供每个 stride、
+    selected_by_stride_phase: {stride: {phase: [canonical_ids]}} —— caller 提供每个 stride、
     每个 phase 的真实子采样（**不再 base∪stride 合成**，保证每个 phase 真稀疏）。
     canonical_to_local: canonical id → 本地 timestamp index。
-    返回 (plans, common_anchors)；common_anchors = 所有 stride 的**交集**（每 phase 独立或 全局）。
+    request_local_count: 传入则各 plan 校验 local 上界（review：builder 路径必须校验真实长度）。
+    返回 (plans, common_anchors)；common_anchors = 所有 stride 的**交集**。
     """
     plans: list[SlotPlan] = []
-    # common anchors：取所有 stride 的交集（union of each stride's phases）
     all_sets = []
     for step, phases in selected_by_stride_phase.items():
         union = set()
@@ -188,9 +189,25 @@ def build_density_plans(
                 strategy="contiguous" if step == 1 else f"strided{step}",
                 step=step, canonical_to_local=canonical_to_local,
                 density_anchor_ids=common, comparison_group_id=plan_group, phase=phase,
+                request_local_count=request_local_count,
             )
             plans.append(p)
     return plans, common
+
+
+def evaluate_on_common(
+    common: Sequence[int],
+    per_unit_score: Mapping[int, float],
+) -> dict:
+    """P0-3 review：汇总/评估只对 common queried 单位取值（强制公平，不并入非共同分数）。"""
+    present = {c: per_unit_score[c] for c in common if c in per_unit_score}
+    vals = list(present.values())
+    return {
+        "common_units_scored": len(present),
+        "common_union": list(common),
+        "mean": (round(sum(vals) / len(vals), 6) if vals else None),
+        "missing_from_score": [c for c in common if c not in per_unit_score],
+    }
 
 
 def common_only_pairs(plans: Sequence[SlotPlan], *, canonical_to_local: Mapping[int, int] | None = None) -> list[int]:
