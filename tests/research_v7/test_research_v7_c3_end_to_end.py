@@ -108,6 +108,7 @@ def test_exporter_writes_canonical_lineage_into_evidence(tmp_path):
     assert r0["canonical_adapter_version"] == "c3_text_adapter_v1"
     assert isinstance(r0["source_window_start_sec"], float) and isinstance(r0["source_window_end_sec"], float)
     assert r0["canonical_text_start"] == 0 and r0["canonical_text_end"] == 2
+    assert r0["canonical_ids"] == [0, 1]      # review10-1：explicit canonical id list 进 REQUESTS
     # 喂 runner(suite)--smoke，检查 evidence 里 request 保留 canonical 字段
     runout = tmp_path / "run"
     _run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
@@ -119,5 +120,7 @@ def test_exporter_writes_canonical_lineage_into_evidence(tmp_path):
     req = ev["attempt"]["request"]
     assert req["canonical_text_start"] == 0 and req["canonical_text_end"] == 2
     assert req["canonical_to_local"] == {"0": 0, "1": 1}
-    assert req["canonical_timeline_sha"]
+    assert req["canonical_ids"] == [0, 1]     # review10-1：evidence 保留
+    assert req["canonical_timeline_file_sha"]   # review10-3
+    assert req["canonical_timeline_row_sha"]
     assert req["source_window_sec"]  # [start, end]

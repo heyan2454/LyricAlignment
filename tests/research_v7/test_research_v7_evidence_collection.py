@@ -25,7 +25,8 @@ def _make_run(tmp_path, with_guard=True):
     _write(ev_dir / f"{train_idn}.json", {
         "content_identity": train_idn,
         "attempt": {"status": "ok", "request": {
-            "item_id": "song1", "canonical_timeline_sha": "tl1",
+            "item_id": "song1", "canonical_timeline_file_sha": "tlf1",
+            "canonical_timeline_row_sha": "tl1", "canonical_ids": [0, 1],
             "source_window_sec": [40.0, 42.0], "canonical_to_local": {"0": 0, "1": 1}}},
     })
     guard = {
@@ -57,7 +58,9 @@ def test_collect_returns_only_trainable_evidence(tmp_path):
     assert c["trainable_evidence"][0]["request_identity"] == train_idn
     assert c["guard"]["rejected_count"] == 1
     # canonical lineage 从 evidence.request 带入 collection
-    assert c["trainable_evidence"][0]["canonical_timeline_sha"] == "tl1"
+    assert c["trainable_evidence"][0]["canonical_timeline_row_sha"] == "tl1"
+    assert c["trainable_evidence"][0]["canonical_timeline_file_sha"] == "tlf1"
+    assert c["trainable_evidence"][0]["canonical_ids"] == [0, 1]
     assert c["trainable_evidence"][0]["source_window_sec"] == [40.0, 42.0]
 
 

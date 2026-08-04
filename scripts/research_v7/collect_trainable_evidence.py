@@ -64,8 +64,10 @@ def collect(run_manifest_path: Path, out: Path) -> dict:
             "request_identity": idn,
             "path": str(p),
             "sha256": _sha(p),
-            # review9-6：确保 identity 中 canonical lineage 确实进入 evidence（mapping 串台时此处断言失败）
-            "canonical_timeline_sha": req.get("canonical_timeline_sha"),
+            # review9-6 / review10-1/10-3：确保 identity 中 canonical lineage 确实进入 evidence（mapping 串台时此处失败）
+            "canonical_ids": req.get("canonical_ids"),
+            "canonical_timeline_file_sha": req.get("canonical_timeline_file_sha"),
+            "canonical_timeline_row_sha": req.get("canonical_timeline_row_sha"),
             "source_window_sec": req.get("source_window_sec"),
             "canonical_to_local": req.get("canonical_to_local"),
         })

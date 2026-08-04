@@ -40,7 +40,9 @@ class AlignmentRequest:
     canonical_text_start: int | None = None
     canonical_text_end: int | None = None
     canonical_to_local: dict[int, int] | None = None
-    canonical_timeline_sha: str | None = None
+    canonical_ids: list[int] | None = None                 # review10-1：bound 字逐字 canonical id
+    canonical_timeline_file_sha: str | None = None         # review10-3：timeline 文件级 SHA
+    canonical_timeline_row_sha: str | None = None          # review10-3：本 item 行 SHA
     canonical_adapter_version: str | None = None
     source_window_sec: tuple[float, float] | None = None
     metadata: dict[str, Any] = field(default_factory=dict)

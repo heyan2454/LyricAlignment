@@ -284,10 +284,12 @@ def main(argv=None) -> int:
             probe_flag = "acoustic_probe" if not tu else "demo_challenge"
         else:
             probe_flag = "lyrics_aligned"
-        # review8 / review9-7：原曲源窗(第1层坐标系)。bind/identity/审计用【未舍入】精确窗口，
-        # window_sec 仅作展示圆整。adapter 以精确窗口与 canonical GT 相交，避免 0.1s 舍入误纳/漏字。
-        source_win_exact = [float(window_s), round((start + win) / rate, 6)]
-        source_win_disp = [round(window_s, 1), round((start + win) / rate, 1)]
+        # review8 / review10-4：原曲源窗(第1层坐标系)。bind/identity/审计直接用【未舍入】sample 推导
+        # 的精确窗口 start_s=(start/rate)、end_s=((start+win)/rate)；window_sec/source_win_disp 仅作展示圆整与去重。
+        start_s_exact = start / rate
+        end_s_exact = (start + win) / rate
+        source_win_exact = [start_s_exact, end_s_exact]
+        source_win_disp = [round(start_s_exact, 1), round(end_s_exact, 1)]
         has_canonical = bool(canon_map.get(it["item_id"]))
         canon_info = canon_map.get(it["item_id"]) or {}
         for lab in labels.values():

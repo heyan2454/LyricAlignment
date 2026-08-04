@@ -185,13 +185,14 @@ def main(argv=None) -> int:
                 model_id=args.model,
                 checkpoint_id=args.checkpoint,
                 input_variant=r.get("input_variant", "text_mutation"),
-                # review9-1/9-2：C3 canonical lineage 作为正规 content 字段（进 identity + evidence）
+                # review9-1/9-2 / review10-1/10-3：C3 canonical lineage 正规 content 字段（进 identity + evidence）
                 canonical_text_start=r.get("canonical_text_start"),
                 canonical_text_end=r.get("canonical_text_end"),
                 canonical_to_local={int(k): int(v) for k, v in (r.get("canonical_to_local") or {}).items()}
                 if r.get("canonical_to_local") else None,
-                canonical_timeline_sha=r.get("canonical_timeline_sha")
-                or r.get("canonical_timeline_row_sha"),
+                canonical_ids=list(r["canonical_ids"]) if r.get("canonical_ids") else None,
+                canonical_timeline_file_sha=r.get("canonical_timeline_file_sha"),
+                canonical_timeline_row_sha=r.get("canonical_timeline_row_sha"),
                 canonical_adapter_version=r.get("canonical_adapter_version")
                 or "c3_text_adapter_v1",
                 source_window_sec=(float(r.get("source_window_start_sec", r.get("window_sec", [None, None])[0])),
@@ -207,8 +208,11 @@ def main(argv=None) -> int:
                           "text_window_aligned": r.get("text_window_aligned", "unknown"),
                           # review9-1：canonical 一并写入 metadata（人读证据），identity 由正规字段覆盖
                           "canonical_mapping": {str(k): v for k, v in ((r.get("canonical_to_local") or {}).items())},
+                          "canonical_ids": (list(r["canonical_ids"]) if r.get("canonical_ids") else None),
                           "canonical_text_start": r.get("canonical_text_start"),
-                          "canonical_text_end": r.get("canonical_text_end")},
+                          "canonical_text_end": r.get("canonical_text_end"),
+                          "canonical_timeline_file_sha": r.get("canonical_timeline_file_sha"),
+                          "canonical_timeline_row_sha": r.get("canonical_timeline_row_sha")},
             )
             req.validate()
         except Exception as _ce:  # noqa

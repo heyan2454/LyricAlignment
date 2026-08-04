@@ -82,10 +82,10 @@ def bind_canonical_to_window(
     units = _coerce(canonical)
     w0, w1 = float(source_window[0]), float(source_window[1])
     if w1 <= w0:
-        return BoundResult(False, [], 0, 0, None, None, {}, "invalid source_window")
+        return BoundResult(False, [], 0, 0, None, None, {}, reason="invalid source_window")
     in_win = [u for u in units if _overlap(u, w0, w1)]
     if not in_win:
-        return BoundResult(False, [], 0, 0, None, None, {}, "no canonical unit overlaps source_window")
+        return BoundResult(False, [], 0, 0, None, None, {}, reason="no canonical unit overlaps source_window")
     g0 = in_win[0].global_index
     g1 = max(u.global_index for u in in_win) + 1              # exclusive (canonical global)
     gap_ids = [u.global_index for u in in_win]                 # 实际落入窗的 canonical id（逐字，可能不连续）
@@ -118,6 +118,7 @@ def request_from_bound(
     out["canonical_text_start"] = bound.canonical_text_start
     out["canonical_text_end"] = bound.canonical_text_end
     out["canonical_to_local"] = dict(bound.canonical_to_local)
+    out["canonical_ids"] = list(bound.canonical_ids) if bound.canonical_ids else None  # review10-1
     out["audio_start_sec"] = audio_start_sec      # 局部 [0,wav_dur]
     out["audio_end_sec"] = audio_end_sec
     if bound.aligned:
