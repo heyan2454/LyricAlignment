@@ -1,18 +1,30 @@
 #!/usr/bin/env python3
 """round01：GT 逐字符评价接线 —— formal 指标分子计算（GT_EVAL）。
+round02：--domain mir1k 跨域复用（MIR 弱标签 timeline 作 GT 轴，按域分开汇报）。
 
 输入：
   --run-root            formal_run_authoritative 目录（内含 evidence/，每份 json 的
                         attempt.decoder_outputs.official.rows[*] 带 request-local
                         global_character_index / character / official_fixed_global_*_sec）
-  --timeline-manifest   LONG_TIMELINE_MANIFEST.jsonl（每行 {song_id, canonical_units:
-                        [{canonical_unit_id, text, start_sec, end_sec}]}）
+  --timeline-manifest   --domain m4: LONG_TIMELINE_MANIFEST.jsonl；--domain mir1k:
+                        MIR_TIMELINE_MANIFEST.jsonl。两者每行 schema 相同
+                        {song_id, canonical_units: [{canonical_unit_id, text,
+                        start_sec, end_sec}]}
 输出（不修改 RUN_MANIFEST / evidence）：
-  --out                 默认 <run-root>/GT_EVAL.json，schema: research_v7_gt_eval_v1
+  --out                 默认 <run-root>/GT_EVAL.json（schema: research_v7_gt_eval_v1）
+                        或 <run-root>/MIR_CROSS_DOMAIN_EVAL.json
+                        （schema: research_v7_mir1k_cross_domain_eval_v1）
 
 GT 轴说明：
   LONG_TIMELINE_MANIFEST 是 timeline 均匀合成轴（synthetic uniform），不是人工逐字 GT；
   输出统一带 gt_axis_note="synthetic_uniform_timeline_axis (not human GT)"。
+  MIR_TIMELINE_MANIFEST 是 qwen_fa 弱标注时间戳轴（validation_basis=null，非人工 GT）；
+  输出带 gt_axis_note="weak_labeled_qwen_fa_timestamps (validation_basis=null, not human GT)"。
+
+跨域口径（13 §10.3）：评价逻辑与 m4 完全同一套（evaluate_evidence/evaluate），
+metrics 保持单域不合并分母；mir1k 输出顶层并列 domain="mir1k" 与可选的
+m4_reference（--m4-gt-eval 指向真实 M4 GT_EVAL.json，只读 unit_recall/gap_recall/
+n_units_evaluated 并列展示，不参与本域计算）。
 
 评价口径（baseline/missing 配对，missing request_id = baseline request_id + ":missing"）：
   - row -> canonical unit：request.canonical_ids[global_character_index]；越界时若 canonical_ids
@@ -40,7 +52,11 @@ from pathlib import Path
 from lyricalign.research_v7.region_metrics import gap_metrics, unit_metrics
 
 SCHEMA = "research_v7_gt_eval_v1"
+SCHEMA_MIR1K = "research_v7_mir1k_cross_domain_eval_v1"
 GT_AXIS_NOTE = "synthetic_uniform_timeline_axis (not human GT)"
+MIR1K_GT_AXIS_NOTE = "weak_labeled_qwen_fa_timestamps (validation_basis=null, not human GT)"
+DOMAINS = ("m4", "mir1k")
+M4_REFERENCE_KEYS = ("unit_recall", "gap_recall", "n_units_evaluated")
 
 
 def _sha256(path: Path) -> str:
@@ -250,7 +266,22 @@ def evaluate_evidence(
     return result
 
 
-def evaluate(run_root: Path, timeline_manifest: Path) -> dict:
+def _load_m4_reference(m4_gt_eval: Path | None) -> dict | None:
+    """从 M4 GT_EVAL.json 读取并列展示的 m4_reference（只读，不参与本域计算）。
+
+    文件缺失/不存在时返回 None；metrics 键缺失时对应值为 None（不做兜底数值）。
+    """
+    if m4_gt_eval is None or not m4_gt_eval.is_file():
+        return None
+    data = json.loads(m4_gt_eval.read_text(encoding="utf-8"))
+    m = data.get("metrics") or {}
+    return {k: m.get(k) for k in M4_REFERENCE_KEYS}
+
+
+def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
+             m4_gt_eval: Path | None = None) -> dict:
+    if domain not in DOMAINS:
+        raise ValueError(f"domain must be one of {DOMAINS}, got {domain!r}")
     timeline = load_timeline(timeline_manifest)
     evs = load_evidence(run_root)
 
@@ -312,13 +343,13 @@ def evaluate(run_root: Path, timeline_manifest: Path) -> dict:
         if set(r["gap"]["pred_gap_ids"]) & set(r["gap"]["gt_gap_ids"]):
             hit_omitted += len(r["gap"]["omitted_canonical_ids"])
 
-    return {
-        "schema": SCHEMA,
+    result = {
+        "schema": SCHEMA_MIR1K if domain == "mir1k" else SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "run_root": str(run_root),
         "timeline_manifest": str(timeline_manifest),
         "timeline_sha256": _sha256(timeline_manifest),
-        "gt_axis_note": GT_AXIS_NOTE,
+        "gt_axis_note": MIR1K_GT_AXIS_NOTE if domain == "mir1k" else GT_AXIS_NOTE,
         "metrics": {
             "unit_recall": unit_recall,
             "correct_unit_fpr": fpr,
@@ -346,6 +377,12 @@ def evaluate(run_root: Path, timeline_manifest: Path) -> dict:
             for r in per_request for row in r["rows"]
         ],
     }
+    if domain == "mir1k":
+        # 跨域并列字段：domain 标识 GT 轴来源；m4_reference 只读 M4 GT_EVAL 并列展示，
+        # 不合并分母、不参与本域 metrics 计算（13 §10.3）。
+        result["domain"] = "mir1k"
+        result["m4_reference"] = _load_m4_reference(m4_gt_eval)
+    return result
 
 
 def _atomic_write(path: Path, payload: dict) -> None:
@@ -365,19 +402,32 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--run-root", required=True,
                    help="formal run 目录（含 evidence/），只读")
     p.add_argument("--timeline-manifest", required=True,
-                   help="LONG_TIMELINE_MANIFEST.jsonl（synthetic uniform GT 轴）")
+                   help="GT 轴 timeline manifest：--domain m4 用 LONG_TIMELINE_MANIFEST.jsonl，"
+                        "--domain mir1k 用 MIR_TIMELINE_MANIFEST.jsonl（两者 schema 相同）")
+    p.add_argument("--domain", choices=DOMAINS, default="m4",
+                   help="GT 轴域：m4=synthetic uniform timeline（默认），"
+                        "mir1k=weak_labeled_qwen_fa_timestamps 跨域评价")
+    p.add_argument("--m4-gt-eval", default=None,
+                   help="M4 GT_EVAL.json 路径（仅 --domain mir1k 有意义）："
+                        "只读 unit_recall/gap_recall/n_units_evaluated 并列展示")
     p.add_argument("--out", default=None,
-                   help="输出 GT_EVAL.json 路径（默认 <run-root>/GT_EVAL.json）")
+                   help="输出路径（默认 <run-root>/GT_EVAL.json 或 "
+                        "<run-root>/MIR_CROSS_DOMAIN_EVAL.json）")
     a = p.parse_args(argv)
     run_root = Path(a.run_root)
-    out = Path(a.out) if a.out else (run_root / "GT_EVAL.json")
-    result = evaluate(run_root, Path(a.timeline_manifest))
+    default_name = "MIR_CROSS_DOMAIN_EVAL.json" if a.domain == "mir1k" else "GT_EVAL.json"
+    out = Path(a.out) if a.out else (run_root / default_name)
+    m4_gt_eval = Path(a.m4_gt_eval) if a.m4_gt_eval else None
+    result = evaluate(run_root, Path(a.timeline_manifest),
+                      domain=a.domain, m4_gt_eval=m4_gt_eval)
     _atomic_write(out, result)
     m = result["metrics"]
     print(json.dumps({
         "ok": True,
         "schema": result["schema"],
+        "domain": result.get("domain", "m4"),
         "gt_axis_note": result["gt_axis_note"],
+        "m4_reference": result.get("m4_reference"),
         "unit_recall": m["unit_recall"],
         "correct_unit_fpr": m["correct_unit_fpr"],
         "gap_recall": m["gap_recall"],
