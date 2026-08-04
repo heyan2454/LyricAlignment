@@ -18,7 +18,8 @@ from pathlib import Path
 
 import numpy as np
 
-ALPHAS = [0.0, 0.03]  # 用户试听后冻结 α=3%（对照 + weak_3 主档）
+ALPHAS = [0.0, 0.01]  # 用户最终选 α=1%（弱残响目标=normal×1%）
+LOUDNESS_SCALE = 0.5  # 响度再降为一半 => 实际弱电平 = normal×1%×0.5
 
 
 def read_mono16(path, start_sec=None, end_sec=None):
@@ -65,7 +66,7 @@ def build_window(v, c, rate, alphas):
     acc_sil_rms = float(np.sqrt(np.mean(np.array(leak_energy) ** 2) + 1e-12))
     outs = {}
     for a in alphas:
-        target = normal_rms * a
+        target = normal_rms * a * (LOUDNESS_SCALE if a > 0 else 1.0)
         gain = (target / (acc_sil_rms + 1e-9)) if acc_sil_rms > 0 and a > 0 else 0.0
         gain = min(gain, 1.0)  # 防爆响
         out = v.copy() if isinstance(v, np.ndarray) else np.array(v)
