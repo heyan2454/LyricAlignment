@@ -142,14 +142,17 @@ def test_builder_produces_validated_requests(tmp_path):
         assert req.metadata["evaluation_role"] == "lyrics_aligned"
         assert rrow["canonical_adapter_version"] == "mir1k_weak_labels_v1"
         assert rrow["dataset"] == "mir1k" and rrow["split"] == "test"
+        assert rrow["condition"] == rrow["mutation_type"]  # baseline/missing 各自标注
         assert Path(rrow["audio_path"]).is_file()  # 音频路径存在
     # 配对完整性：每 baseline 有对应 missing（同 pair_id），且 removed 单位数 = 1/4
     base = [x for x in reqs if x["mutation_type"] == "baseline"]
     miss = {x["request_id"] for x in reqs if x["mutation_type"] == "missing"}
     assert len(base) == 6
     for b in base:
+        assert b["condition"] == "baseline"
         assert f"{b['request_id']}:missing" in miss, b["request_id"]
         m = next(x for x in reqs if x["request_id"] == f"{b['request_id']}:missing")
+        assert m["condition"] == "missing"
         assert m["pair_id"] == b["pair_id"]
         assert m["mutation_parameters"]["actual_removed_units"] == max(1, len(b["text_units"]) // 4)
 
@@ -212,6 +215,20 @@ def test_builder_timeline_and_freeze(tmp_path):
     reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
     assert reqs[0]["canonical_timeline_file_sha"] == fr["files"]["MIR_TIMELINE_MANIFEST.jsonl"]
     assert len({x["canonical_timeline_row_sha"] for x in reqs}) == 2  # 每歌一个行 sha
+    # row_sha 复验：必须等于 MIR_TIMELINE_MANIFEST.jsonl 实际行（默认 json.dumps 分隔符）的 sha256
+    import hashlib
+    row_shas = {}
+    for line in (out / "MIR_TIMELINE_MANIFEST.jsonl").read_text().splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        row_shas[row["song_id"]] = hashlib.sha256(
+            json.dumps(row, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    assert set(row_shas) == {"songA_1.wav", "songB_1.wav"}
+    assert {x["canonical_timeline_row_sha"] for x in reqs} == set(row_shas.values())
+    for x in reqs:
+        song = x["pair_id"].rsplit(":", 1)[0]  # pair_id = f"{song_id}:w{wi}"
+        assert x["canonical_timeline_row_sha"] == row_shas[song], x["request_id"]
 
 
 def test_builder_refuses_without_audio(tmp_path):

@@ -40,6 +40,10 @@ def _sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+def _sha_bytes(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
 def _atomic_jsonl(path: Path, rows) -> None:
     import os
     import tempfile
@@ -121,8 +125,13 @@ def _canonical_units_for_window(canonical_units, w0: float, w1: float) -> list[d
 
 
 def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
-                   language: str = "Chinese") -> list[dict]:
-    """从一条时间线生成 fixed-60s 窗请求（baseline + 缺失/替换 mutation 配对）。"""
+                   row_sha: str, language: str = "Chinese") -> list[dict]:
+    """从一条时间线生成 fixed-60s 窗请求（baseline + 缺失/替换 mutation 配对）。
+
+    row_sha：LONG_TIMELINE_MANIFEST.jsonl 中本歌实际行的序列化 sha256
+    （调用方在 main 中对该行 dict 以 json.dumps(ensure_ascii=False, sort_keys=True)
+    求值，保证可从文件复验）。
+    """
     units = list(timeline.canonical_units)
     n = len(units)
     duration = float(timeline.duration_sec)
@@ -157,8 +166,9 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
             queried_canonical_ids=cids[::step], strategy=f"strided{step}",
             canonical_to_local=canonical_to_local, request_local_count=len(texts),
             comparison_group_id=f"{tl['song_id']}:w{wi}", phase="sparse")
-        tl_sha = hashlib.sha256(
-            json.dumps([u["text"] for u in units], ensure_ascii=False).encode()).hexdigest()
+        # canonical lineage（review12：guard/collect/assessor 消费）
+        # canonical_timeline_row_sha 由 main 对实际写入行求值后传入（可从文件复验）
+        tl_sha = tl.get("manifest_sha")
         for plan in (plan_full, plan_sparse):
             base = {
                 "schema_version": "research_v7_long_slot_v1",
@@ -182,8 +192,8 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 "canonical_text_start": c0, "canonical_text_end": c1,
                 "canonical_to_local": {str(k): v for k, v in canonical_to_local.items()},
                 "canonical_ids": cids,
-                "canonical_timeline_file_sha": tl.get("manifest_sha"),
-                "canonical_timeline_row_sha": tl_sha,
+                "canonical_timeline_file_sha": tl_sha,
+                "canonical_timeline_row_sha": row_sha,
                 "canonical_adapter_version": "long_timeline_v1",
                 "source_window_start_sec": round(w0, 4), "source_window_end_sec": round(w1, 4),
                 "condition": "baseline", "pair_id": f"{tl['song_id']}:w{wi}",
@@ -198,6 +208,7 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
             miss["request_id"] = f"{base['request_id']}:missing"
             miss["item_id"] = f"{base['item_id']}:missing"
             miss["mutation_type"] = "missing"
+            miss["condition"] = "missing"
             kept = texts[:-n_miss]
             kept_ids = cids[:-n_miss]
             kept_to_local = {cid: i for i, cid in enumerate(kept_ids)}
@@ -325,7 +336,7 @@ def main(argv=None) -> int:
                              ensure_ascii=False))
             return 3
         tl["segs_audio"] = [str(concat_wav)] * len(segs)
-        tl_rows.append({
+        tl_row = {
             "timeline_id": timeline.timeline_id, "song_id": tl["song_id"],
             "singer_id": tl["singer_id"], "n_segments": tl["n_segments"],
             "duration_sec": round(timeline.duration_sec, 3),
@@ -335,8 +346,15 @@ def main(argv=None) -> int:
             "seams": list(timeline.seams),
             "source_audio_paths": [s["audio_path"] for s in segs],
             "concat_audio_path": str(concat_wav),
-        })
-        song_reqs = build_requests(tl, timeline, windows_per_song=args.windows_per_song)
+        }
+        tl_rows.append(tl_row)
+        # row_sha：对【实际写入 LONG_TIMELINE_MANIFEST.jsonl 的序列化】求值
+        # （与 _atomic_jsonl 的 json.dumps(r, ensure_ascii=False, sort_keys=True) 一致），
+        # 保证可从文件逐行复验；texts-only hash 口径废弃。
+        row_sha = _sha_bytes(
+            json.dumps(tl_row, ensure_ascii=False, sort_keys=True).encode("utf-8"))
+        song_reqs = build_requests(tl, timeline, windows_per_song=args.windows_per_song,
+                                   row_sha=row_sha)
         reqs.extend(song_reqs)
         for r in song_reqs:
             win_rows.append({"song_id": tl["song_id"], "request_id": r["request_id"],

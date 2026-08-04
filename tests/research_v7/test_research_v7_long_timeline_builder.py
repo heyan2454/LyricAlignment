@@ -85,6 +85,20 @@ def test_builder_produces_validated_requests(tmp_path):
         assert abs((req.audio_end_sec - req.audio_start_sec) - 60.0) < 1e-6, "window must be fixed 60s"
         # missing 变体：canonical_ids 必须与 text_units 等长（缺失单位不得残留）
         assert len(req.canonical_ids) == len(req.text_units)
+        # condition 语义：baseline/missing 各自标注（不再继承 baseline）
+        assert rrow["condition"] == rrow["mutation_type"]
+    # row_sha 复验：必须等于 LONG_TIMELINE_MANIFEST.jsonl 实际行（默认 json.dumps 分隔符）的 sha256
+    import hashlib
+    row_shas = {}
+    for line in (out / "LONG_TIMELINE_MANIFEST.jsonl").read_text().splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        row_shas[row["song_id"]] = hashlib.sha256(
+            json.dumps(row, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    for rrow in reqs:
+        song = rrow["pair_id"].rsplit(":", 1)[0]  # pair_id = f"{song_id}:w{wi}"
+        assert rrow["canonical_timeline_row_sha"] == row_shas[song], rrow["request_id"]
     tr = require_trainable([{"item_id": x["item_id"], "request_id": x["request_id"],
                              "evaluation_role": x["evaluation_role"],
                              "text_window_aligned": x["text_window_aligned"]} for x in reqs])
@@ -110,6 +124,8 @@ def test_builder_missing_keeps_canonical_consistency(tmp_path):
     miss = [x for x in reqs if x["mutation_type"] == "missing"]
     base = [x for x in reqs if x["mutation_type"] == "baseline"]
     assert miss and base
+    assert all(x["condition"] == "missing" for x in miss)
+    assert all(x["condition"] == "baseline" for x in base)
     m0 = miss[0]
     # 截断后 canonical 同步
     assert len(m0["canonical_ids"]) == len(m0["text_units"])

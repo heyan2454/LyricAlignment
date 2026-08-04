@@ -246,6 +246,7 @@ def build_requests(song: dict, units: list[dict], windows: list[tuple[float, flo
             miss["request_id"] = f"{base['request_id']}:missing"
             miss["item_id"] = f"{base['item_id']}:missing"
             miss["mutation_type"] = "missing"
+            miss["condition"] = "missing"
             kept = texts[:-n_miss]
             kept_ids = cids[:-n_miss]
             kept_to_local = {cid: i for i, cid in enumerate(kept_ids)}
@@ -307,8 +308,10 @@ def main(argv=None) -> int:
     for song in songs:
         units = build_canonical_units(song)
         row = timeline_row(song["song_id"], units)
-        row_sha = _sha_bytes(json.dumps(row, ensure_ascii=False, sort_keys=True,
-                                        separators=(",", ":")).encode("utf-8"))
+        # row_sha 必须对【实际写入 MIR_TIMELINE_MANIFEST.jsonl 的序列化】求值：
+        # 与 _atomic_jsonl 的 json.dumps(r, ensure_ascii=False, sort_keys=True) 一致，
+        # 保证可从文件逐行复验（不用紧凑 separators）。
+        row_sha = _sha_bytes(json.dumps(row, ensure_ascii=False, sort_keys=True).encode("utf-8"))
         final_reqs.extend(build_requests(
             song, units,
             window_plan(float(song.get("duration_sec", 0) or 0), args.windows_per_song),
