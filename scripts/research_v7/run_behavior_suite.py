@@ -261,8 +261,9 @@ def main(argv=None) -> int:
         "schema": "research_v7_long_slot_v1",
         "run_id": f"rl-{_time.strftime('%Y%m%d_%H%M%S')}",
         "code_identity": {"git_commit": _git_head(), "source_tree": _git_dirty(),
-                          # review6-6：实际 import 的 research_v7 模块文件 SHA（run 代码快照，含 untracked）。
-                          "imports_sha256": _imports_hash()},
+                          # review7-5：实际 import 文件逐条 {path,sha} inventory（含 untracked），另保留摘要。
+                          "imports_sha256": _imports_hash(),
+                          "imports_inventory": _imports_inventory()},
         "manifest": {"path": str(Path(args.manifest).resolve()), "sha256": manifest_sha},
         "untracked_inputs": [{"path": str(Path(args.manifest).resolve()), "sha256": manifest_sha}],
         "environment": {"model": args.model, "revision": args.revision, "checkpoint": args.checkpoint,
@@ -371,6 +372,24 @@ def _imports_hash() -> str:
         except Exception:
             continue
     return hashlib.sha256("|".join(parts).encode()).hexdigest()
+
+
+
+
+def _imports_inventory() -> list:
+    """实际 import 文件逐条 {path, sha}（research_v7 包含子目录 + runner 脚本），供重放/审计。"""
+    import hashlib
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    files = set((root / "src" / "lyricalign" / "research_v7").rglob("*.py"))
+    files.add(Path(__file__).resolve())
+    out = []
+    for f in sorted(files):
+        try:
+            out.append({"path": str(f), "sha256": hashlib.sha256(f.read_bytes()).hexdigest()})
+        except Exception:
+            continue
+    return out
 
 
 if __name__ == "__main__":
