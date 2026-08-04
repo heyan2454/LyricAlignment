@@ -40,9 +40,10 @@ def guard_role(role: str | None) -> EvaluationGuard:
 
 
 def partition_by_role(records: Sequence[dict]) -> tuple[list[dict], list[dict], list[dict]]:
-    """返回 (allowed_for_train_eval, rejected_probe, rejected_other)。
+    """返回 (allowed_for_train_eval, rejected_text_or_probe, rejected_other)。
 
-    allowed：evaluation_role==lyrics_aligned；probe：acoustic_probe/demo_challenge；other：拒的 unknown。
+    allowed：evaluation_role==lyrics_aligned **且** text_window_aligned 为真（文本须与所选窗对齐）；
+    probe：acoustic_probe/demo_challenge 或 text_window_aligned=False；other：unknown role。
     """
     allowed: list[dict] = []
     probe: list[dict] = []
@@ -50,9 +51,10 @@ def partition_by_role(records: Sequence[dict]) -> tuple[list[dict], list[dict], 
     for r in records:
         role = r.get("evaluation_role")
         g = guard_role(role)
-        if g.allowed:
+        window_aligned = r.get("text_window_aligned", True) is not False
+        if g.allowed and window_aligned:
             allowed.append(r)
-        elif role in ("acoustic_probe", "demo_challenge"):
+        elif role in ("acoustic_probe", "demo_challenge") or not window_aligned:
             probe.append(r)
         else:
             other.append(r)

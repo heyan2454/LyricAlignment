@@ -240,8 +240,11 @@ def main(argv=None) -> int:
     run_manifest = {
         "schema": "research_v7_long_slot_v1",
         "run_id": f"rl-{_time.strftime('%Y%m%d_%H%M%S')}",
-        "code_identity": {"git_commit": _git_head(), "source_tree": _git_dirty()},
+        "code_identity": {"git_commit": _git_head(), "source_tree": _git_dirty(),
+                          # review6-6：实际 import 的 research_v7 模块文件 SHA（run 代码快照，含 untracked）。
+                          "imports_sha256": _imports_hash()},
         "manifest": {"path": str(Path(args.manifest).resolve()), "sha256": manifest_sha},
+        "untracked_inputs": [{"path": str(Path(args.manifest).resolve()), "sha256": manifest_sha}],
         "environment": {"model": args.model, "revision": args.revision, "checkpoint": args.checkpoint,
                         "device": getattr(args, "device", "cuda" if args.real else "cpu"),
                         "executor": "real" if args.real else "fake-smoke"},
@@ -312,6 +315,23 @@ def _git_dirty() -> str:
     except Exception:  # noqa
         return hashlib.sha256(b"unknown").hexdigest()
     return _h(head, staged, unstaged)
+
+
+def _imports_hash() -> str:
+    """实际参与本次运行的 research_v7 代码文件 SHA 摘要（含 untracked；供 RUN_MANIFEST。）。"""
+    import hashlib
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    files = sorted((root / "src" / "lyricalign" / "research_v7").glob("*.py"))
+    files.append(Path(__file__).resolve())
+    parts = []
+    for f in files:
+        try:
+            parts.append(f"{f.name}:{hashlib.sha256(f.read_bytes()).hexdigest()}")
+        except Exception:
+            continue
+    return hashlib.sha256("|".join(parts).encode()).hexdigest()
 
 
 if __name__ == "__main__":

@@ -288,6 +288,7 @@ def main(argv=None) -> int:
                 # review4-1 / review5-2：歌词 units/range（per-item；空=声学 probe）
                 "text_units": tu, "text_start_index": 0, "text_end_index": len(tu),
                 "text_source": tsrc, "has_gt": has_gt, "evaluation_role": probe_flag,
+                "text_window_aligned": False,  # review6-1：当前 window 为自动选择，无法证明与歌词 overlap；需 text-manifest 提供 canonical bounds 才 true，
                 # review4-5 / review5-3：condition 显式 + target_ratio + control=ratio0
                 "mutation": ("control" if is_control else "silence_residual"),
                 "mutation_type": ("control" if is_control else "silence_residual"),
