@@ -25,6 +25,8 @@ def main(argv=None) -> int:
     p.add_argument("--run-root", required=True)
     p.add_argument("--formal-approved-manifest", default="", help="正式汇总才使用该 manifest")
     p.add_argument("--expected-manifest-sha256", default="", help="冻结 manifest 的 sha256（须匹配才 formal_approved）")
+    p.add_argument("--extrapolate-requests", type=int, default=600,
+                   help="pilot/formal 预算外推请求数（默认 600，13 计划 pilot 规模量级）")
     args = p.parse_args(argv)
 
     run = Path(args.run_root)
@@ -123,11 +125,21 @@ def main(argv=None) -> int:
 
     # P0(review3-3)：formal approved 时保留/引用实际 formal budget（不再写 draft=true 的自相矛盾占位）
     if formal_approved:
+        fb = result_kv.get("runtime_budget", {}) or run_man.get("runtime_budget", {})
+        elapsed = fb.get("elapsed_sec")
+        forward = fb.get("forward_count")
+        sec_per_forward = (elapsed / forward) if (elapsed and forward) else None
         budget = {
             "schema": "runtime_budget_v1", "draft": False,
-            "source": "formal", "budget": result_kv.get("runtime_budget", {}) or run_man.get("runtime_budget", {}),
+            "source": "formal", "budget": fb,
             "note": "actual formal run budget (elapsed/forward from RUN_MANIFEST)",
         }
+        if sec_per_forward is not None:
+            n_ext = max(int(args.extrapolate_requests), 1)
+            budget["estimated_runtime_sec"] = sec_per_forward * n_ext
+            budget["estimated_runtime_sec_n_requests"] = n_ext
+            budget["estimated_forward_capacity_h12"] = int(12 * 3600 / sec_per_forward)
+            budget["extrapolation_note"] = "单机 GPU 串行、不含批处理并行/cache 复用折算"
     else:
         budget = {
             "schema": "runtime_budget_v1", "draft": True,
