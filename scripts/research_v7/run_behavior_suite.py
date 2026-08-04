@@ -90,13 +90,22 @@ def main(argv=None) -> int:
         executor = _fake_executor(None)
     out_root = Path(args.out_root)
     written = 0
+    cache_hit = 0
+    forward = 0
+    identities: list[dict] = []
     cursor_after_by_request: dict[str, float | None] = {}
     rows_after_by_request: dict[str, list[dict]] = {}
+    import time as _time
+    t_start = _time.time()
     for i, r in enumerate(rows):
         units = tuple(r.get("text_units", []))
-        a0, a1 = r.get("audio_start_sec", 0.0), r.get("audio_end_sec", r.get("duration_sec", 0.0) or 60.0)
         parent = r.get("parent_request_id")
         cursor_prev = cursor_after_by_request.get(parent) if parent else None
+        # review3-1：若为 C3 生成的 WAV（提供 files），用 generated wav 作为 audio 源并重算窗口
+        if r.get("files"):
+            a0, a1 = 0.0, (r.get("duration_sec") or 0.0) if r.get("duration_sec") else (r.get("audio_end_sec", 60.0) - r.get("audio_start_sec", 0.0))
+        else:
+            a0, a1 = r.get("audio_start_sec", 0.0), r.get("audio_end_sec", r.get("duration_sec", 0.0) or 60.0)
         if r.get("workflow_mode") == "strict_serial_progressive_crop" and parent:
             if cursor_prev is None:
                 raise RuntimeError(f"{r.get('request_id')}: P2 requires completed parent cursor {parent}")
@@ -113,8 +122,8 @@ def main(argv=None) -> int:
         req = AlignmentRequest(
             request_id=r.get("request_id") or f"{r['item_id']}:{mutation}:{r.get('ratio', 1.0)}:{r.get('position', 'whole')}:{i}",
             item_id=r.get("item_id", f"r{i}"),
-            parent_request_id=parent,
-            audio_source=r.get("audio_path", "demucs_vocal"),
+            parent_request_id=r.get("parent_request_id"),
+            audio_source=r.get("files")[0] if r.get("files") else (r.get("audio_path", "demucs_vocal")),
             audio_start_sec=a0,
             audio_end_sec=a1,
             text_source=r.get("text_source") or r.get("gt_path") or "labels",
@@ -122,8 +131,8 @@ def main(argv=None) -> int:
             text_end_index=int(r.get("text_end_index", len(units))),
             text_units=units,
             timestamp_slot_indices=slot,
-            workflow_mode=r.get("workflow_mode", "behavior_suite"),
-            mutation_type=mutation,
+            workflow_mode=r.get("workflow_mode", "behavior_suite") or "behavior_suite",
+            mutation_type=mutation or "baseline",
             mutation_parameters={key: r.get(key) for key in (
                 "ratio", "requested_ratio", "actual_ratio", "position", "mutation_position", "source", "text_relation",
                 "audio_relation", "source_text_start_index", "source_text_end_index", "baseline_unit_count", "n_base",
@@ -135,7 +144,9 @@ def main(argv=None) -> int:
             input_variant=r.get("input_variant", "text_mutation"),
             metadata={"dataset": r.get("dataset"), "split": r.get("split"),
                       "source_song_id": r.get("source_song_id") or r.get("song_id"),
-                      "language": r.get("language") or "Chinese", "provenance": r.get("provenance", {})},
+                      "language": r.get("language") or "Chinese", "provenance": r.get("provenance", {}),
+                      "request_identity": r.get("request_identity"),
+                      "canonical_mapping": r.get("canonical_mapping", {})},
         )
         req.validate()
         item_dir = out_root / "items" / str(req.item_id)
@@ -151,6 +162,9 @@ def main(argv=None) -> int:
             prior_attempt = existing["attempt"]
             cursor_after_by_request[req.request_id] = prior_attempt.get("cursor_after")
             rows_after_by_request[req.request_id] = list(prior_attempt.get("decoder_outputs", {}).get("official", {}).get("rows", []))
+            cache_hit += 1
+            identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": req.request_identity(),
+                               "cache": "hit", "status": prior_attempt.get("status")})
             continue
         ev = run_request(req, executor, cursor_prev=cursor_prev)
         item_dir.mkdir(parents=True, exist_ok=True)
@@ -158,10 +172,42 @@ def main(argv=None) -> int:
         cursor_after_by_request[req.request_id] = ev.attempt.cursor_after
         rows_after_by_request[req.request_id] = list(ev.attempt.decoder_outputs.get("official", {}).get("rows", []))
         written += 1
+        forward += 1
+        identities.append({"item_id": req.item_id, "request_id": req.request_id, "request_identity": req.request_identity(),
+                           "cache": "miss", "status": ev.attempt.status})
 
+    # review3：真实运行产物 RUN_MANIFEST（含 run_id、budget、每请求 identity、cache hit/miss、forward）
+    run_manifest = {
+        "schema": "research_v7_long_slot_v1",
+        "run_id": f"rl-{_time.strftime('%Y%m%d_%H%M%S')}",
+        "code_identity": {"git_commit": _git_head(), "dirty_tree_hash": _git_dirty()},
+        "runtime_budget": {"elapsed_sec": round(_time.time() - t_start, 3), "forward_count": forward,
+                           "cache_hit": cache_hit, "cache_miss": forward, "cache_total": cache_hit + forward},
+        "item_count": {"requests": len(rows), "written": written, "cache_hit": cache_hit, "forward": forward},
+        "requests_identity": identities,
+    }
+    (out_root / "RUN_MANIFEST.json").write_text(json.dumps(run_manifest, ensure_ascii=False, indent=1))
     print(json.dumps({"ok": True, "rows": len(rows), "written": written,
+                      "cache_hit": cache_hit, "forward": forward,
                       "out_root": str(out_root), "executor": "real" if args.real else "fake-smoke"}, ensure_ascii=False))
     return 0
+
+
+def _git_head() -> str:
+    import subprocess
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    except Exception:  # noqa
+        return ""
+
+
+def _git_dirty() -> str:
+    import subprocess
+    try:
+        out = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True).stdout.strip()
+        return "dirty" if out else "clean"
+    except Exception:  # noqa
+        return "unknown"
 
 
 if __name__ == "__main__":
