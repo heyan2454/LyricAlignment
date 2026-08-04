@@ -378,8 +378,28 @@ def test_real_executor_rejects_multi_char_units(tmp_path, monkeypatch):
     (tmp_path / "c.wav").write_bytes(b"RIFF")
     # "春风" 是一个 multi-char unit → document 2 chars vs 1 unit → 拒绝
     req = _real_request(units=("春风",), a0=0.0, a1=10.0, audio_source=str(tmp_path / "c.wav"))
-    import pytest as _pt
-    with _pt.raises(ValueError, match="character↔unit"):
+    with pytest.raises(ValueError, match="character-aligned"):
+        aligner.align_request(req)
+
+
+def test_real_executor_rejects_english_word_unit(tmp_path, monkeypatch):
+    """T3：英文单词（"hello"）是词级 unit，v7 仅支持字符级 unit（英单字）。
+    区别于中文多字 unit（"春风"），同样被显式拒绝，错误消息含 character-aligned。"""
+    import sys as _sys
+    from types import SimpleNamespace as _SN
+
+    from lyricalign.research_v7 import real_executor as re_mod
+    _sys.modules["qwen_fa_serial_demo"] = _StubAudioModule
+    monkeypatch.setattr(re_mod, "_load_serial_demo", lambda: _StubAudioModule())
+    import numpy as np
+    _patch_decode_audio(monkeypatch, np.zeros(10 * 16000, dtype=np.float32))
+    aligner = re_mod.RealAligner("m", "r", "c", device="cpu")
+    aligner._mod = _StubAudioModule()
+    aligner._args = _SN(timestamp_segment_sec=0.08)
+    (tmp_path / "d.wav").write_bytes(b"RIFF")
+    # "hello" 是英文单词 unit → document 5 chars vs 1 unit → 拒绝
+    req = _real_request(units=("hello",), a0=0.0, a1=10.0, audio_source=str(tmp_path / "d.wav"))
+    with pytest.raises(ValueError, match="character-aligned"):
         aligner.align_request(req)
 
 

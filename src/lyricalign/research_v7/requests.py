@@ -7,6 +7,10 @@ request 只携带一次模型调用的全部输入踪迹；mutation 与 workflow
 request_identity：内容寻址严格 identity（15 蓝图 WP1 §3）——对 canonic 序列化（键排序、
 UTF-8、无空白）+ context（code/env/model/checkpoint/audio/text/slot/mutation/decoder/
 mapping-schema）做 SHA-256；相同输入稳定，slot/crop/text/decoder/mapping 任一不同必变。
+
+text_units 多语言边界：v7 仅支持字符级 unit（中/日/英单字）；英文单词、日文词级 unit 是
+known limitation（超出 v7 字符级范围），real_executor.align_units 会显式拒绝
+（character↔unit 断言）。
 """
 from __future__ import annotations
 

@@ -113,8 +113,9 @@ class RealAligner:
         """units 逐字符 -> 对齐 rows（含 fixed start/end）。audio 为 16k mono numpy。
 
         M4（review12）：text_start/end_index 是 request-local 索引，必须映射到 document
-        character 空间；slot_indices 同样是 request-local unit 索引。多字 unit（英文词/日文词）
-        会破坏 character↔unit 一一对应，这里显式断言，不做静默错位。
+        character 空间；slot_indices 同样是 request-local unit 索引。v7 仅支持字符级 unit
+        （中/日/英单字）；英文单词、日文词级 unit 是 known limitation（超出 v7 字符级范围），
+        会显式拒绝（character↔unit 断言），不做静默错位。
         """
         self._ensure()
         m = self._mod
