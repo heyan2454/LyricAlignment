@@ -97,3 +97,22 @@ def test_gap_metrics_no_dead_params():
     sig = inspect.signature(gap_metrics)
     assert "pred_gap_omitted" not in sig.parameters
     assert "weighted_deleted_gt" not in sig.parameters
+
+
+def test_unit_features_real_executor_fixed_global_rows():
+    from lyricalign.research_v7.features import unit_features
+    # real executor 行：只用 fixed_global_start/end + raw（无 official_fixed_*）
+    row = {"raw_global_start_sec": 0.5, "raw_global_end_sec": 0.9,
+           "fixed_global_start_sec": 0.4, "fixed_global_end_sec": 1.0,
+           "start_sec": 99.0}  # start_sec 是噪声，官向必须用 fixed_global，不得退回
+    f = unit_features(row)
+    assert f["official_duration_sec"] == round(0.6, 6)  # 1.0-0.4，非 99
+    assert f["official_missing_geometry"] == 0.0
+
+
+def test_unit_features_missing_official_marks_missing():
+    from lyricalign.research_v7.features import unit_features
+    row = {"raw_global_start_sec": 0.5, "raw_global_end_sec": 0.9}  # 无任何 official 几何
+    f = unit_features(row)
+    assert f["official_missing_geometry"] == 1.0
+    assert f["official_duration_sec"] is None  # 不悄悄退回 start_sec

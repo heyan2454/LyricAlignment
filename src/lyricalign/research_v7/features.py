@@ -39,18 +39,33 @@ def row_raw_features(row: Mapping) -> dict[str, float]:
 
 
 def row_official_features(row: Mapping) -> dict[str, float]:
-    """O 类：official/候选对齐的几何。"""
+    """O 类：official/候选对齐的几何。
+
+    P0-4 review：支持 real executor 行（fixed_global_start_sec/end），并校验不退回默认 start_sec。
+    """
     f = {}
-    try:
-        os_ = float(row.get("official_fixed_global_start_sec") if row.get("official_fixed_global_start_sec") is not None else row.get("official_start_sec", row.get("start_sec", 0.0)))
-        oe_ = float(row.get("official_fixed_global_end_sec") if row.get("official_fixed_global_end_sec") is not None else row.get("end_sec", os_ + 0.1))
-        dur = max(0.0, oe_ - os_)
-        f["official_duration_sec"] = round(dur, 6)
-    except (TypeError, ValueError):
-        f["official_duration_sec"] = 0.0
+    start_key = next((k for k in ("official_fixed_global_start_sec", "official_global_start_sec",
+                                  "official_start_sec", "fixed_global_start_sec")
+                      if row.get(k) is not None), None)
+    end_key = next((k for k in ("official_fixed_global_end_sec", "official_global_end_sec",
+                                "official_end_sec", "fixed_global_end_sec")
+                    if row.get(k) is not None), None)
+    if start_key is None or end_key is None:
+        # 无任何 official 几何 → 置 None 而非悄悄退回 start_sec（review：不允许默认倒退）
+        f["official_duration_sec"] = None
+        f["official_geometry_source"] = None
+        f["official_missing_geometry"] = 1.0
+    else:
+        os_ = float(row[start_key]); oe_ = float(row[end_key])
+        f["official_duration_sec"] = round(max(0.0, oe_ - os_), 6)
+        f["official_geometry_source"] = f"{start_key}|{end_key}"
+        f["official_missing_geometry"] = 0.0
     # 跨 R/O 视图差
     r = row_raw_features(row)
-    f["ro_official_minus_raw_sec"] = round(f["official_duration_sec"] - r["raw_duration_sec"], 6)
+    if f.get("official_duration_sec") is not None:
+        f["ro_official_minus_raw_sec"] = round(f["official_duration_sec"] - r["raw_duration_sec"], 6)
+    else:
+        f["ro_official_minus_raw_sec"] = None
     f["has_repair"] = float(bool(row.get("repair") or row.get("seam_repaired") or row.get("repair_run")))
     return f
 
