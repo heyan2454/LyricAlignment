@@ -387,3 +387,39 @@ smoke 实际只构造一条合成 timeline、一个 slot plan 和一个 tail-mis
 | real executor / hidden audit / long-slot serial / pilot artifacts | 未实现 |
 
 建议下一位 agent 先关闭第 1--3 项并加真实 consumer，再跑单个 real executor request；随后再以实际产物复审。
+
+## 复审更新 12（2026-08-05，探索轮 round1-11 收尾）
+
+### 代码/测试状态
+
+`PYTHONPATH=src python -m pytest -q tests/research_v7` 为 **239 项通过**，`git diff --check` 干净。本轮新增/修复（12 个 main 提交）：
+
+- **review11 残余关闭**：validate() canonical 自洽性、adapter 时间序+bound 限定、exporter per-item 收敛、trainable collection consumer、long-timeline builder（≥180s 真实拼接 + fixed-60s 窗 + canonical lineage）
+- **formal 前置（子 agent review 后修复）**：real_executor 全 global 键平移（C1）、checkpoint 内容 SHA 进 identity（C2）、manifest builder 写 role/canonical lineage 消除空 collection（C3）、report gate 校验 executor=real+forward>0+结果字段（M1）、audio range 容差（M2）、text range 尊重（M4）、assessor 特征列统一/无标签退出码 2
+- **探索轮新增**：GT 逐字符评价（evaluate_long_slot_gt.py，--domain m4/mir1k）、跨域 assessor 评价（evaluate_cross_domain_assessor.py）、baseline 质量分析（analyze_long_slot_baseline_quality.py）、missing 比例多档（--missing-ratios 0.10/0.25/0.50）、op 权重持久化（ASSESSOR.json v2）、标签固化（label_evidence_gt_eval.py）、report 三选参数（--cross-domain-eval/--baseline-quality/--missing-ratio-curve）
+- **最终 review 3 个 MAJOR 全部关闭**：①轴敏感性改同口径边界误差对比（47.94x，明确归因 GT 轴构造非 decoder 质量）；②git 卫生（解除 373 产物+2 模型权重跟踪）；③load_verified 重算 collection_sha256 检测断环
+
+### 真实运行产物（runs/research_v7_align_behavior/smoke_20260805_review12/）
+
+| 项目 | 结果 |
+|---|---|
+| formal（M4，10 歌 ≥180s 拼接，120 req 60s 窗） | **120/120 real forward 成功**，52.6s 总耗时；unit_recall=0（结构性：被删单位无行）、gap_recall=1.0、n_units_evaluated=10330；**formal_approved=true**（frozen manifest sha 匹配 + executor=real + forward>0 + 指标非空） |
+| MIR（17 歌，120 req） | 120/120 forward 成功，81s；跨域 GT 评价 8472 units |
+| 跨域 assessor | M4 冻结 op 不迁移 MIR（unsafe_rate_95=0.9665、FPR@95=0.9673）——**需按 MIR 重校准，非通过** |
+| missing 比例曲线 | 10/25/50% 三档全 gap_recall=1.0，omitted 588/1480/2950 单调 |
+| baseline 质量 | row 覆盖 53.4%（full 100%/sparse 6.9% 结构性）；start MAE median 0.272s；seam 近/远无差异；特征 AUC 全 ~0.5 |
+| GT 轴敏感性（同口径） | M4 synthetic 66.6% vs MIR weak 1.4% = **47.94x**，归因 GT 轴构造方式（synthetic 均匀分字）非 decoder 质量 |
+
+### 研究结论（诚实性声明）
+
+- unit_recall=0 是**结构性**结果（被删单位无 output row，由 virtual-gap 评价捕获），非 decoder 失败；MIR 真实弱轴下模型边界误差 median 0.051s、98.6% 在 250ms 内。
+- M4 synthetic 轴 66.6% 边界误差率是**轴构造方式的人为产物**，不能解读为对齐质量差。
+- MIR 弱标签（validation_basis=null）非人工 GT，跨域/绝对 unsafe 率必须先声明 GT 轴来源。
+- 正式报告（AUTO_SUMMARY.json）formal_approved=true，但**结论解读必须结合上述结构性声明**。
+
+### 遗留（known limitations，不阻塞）
+
+- 多字 unit（英/日词级）被 real_executor 显式拒绝（字符级范围约束，有测试）。
+- hidden 特征正式停用（--include-hidden 需 --allow-zero-hidden 逃逸）。
+- M4 builder 的 canonical_timeline_file_sha 为源 manifest sha（MIR 为 timeline 文件 sha），语义差异已记录于 FREEZE note。
+- 覆盖率 53.4% 为 full/sparse 混合均值（sparse 上界由 slot 密度决定）。
