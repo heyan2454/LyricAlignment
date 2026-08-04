@@ -1,7 +1,7 @@
 {
   "schema": "research_v7_gt_eval_v1",
-  "generated_at_utc": "2026-08-04T21:43:41+00:00",
-  "run_root": "/tmp/opencode/wt_a/out/formal_run_copy",
+  "generated_at_utc": "2026-08-04T21:59:25+00:00",
+  "run_root": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_run_authoritative",
   "timeline_manifest": "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke_20260805_review12/formal_manifest/LONG_TIMELINE_MANIFEST.jsonl",
   "timeline_sha256": "6f2ec20601bd6f05602fa934fc1925a042bd414846a6d091ad2b43a79071f8ae",
   "gt_axis_note": "synthetic_uniform_timeline_axis (not human GT)",
@@ -26,7 +26,14 @@
     "n_baseline": 60,
     "n_missing": 60,
     "n_evidence_ok": 120,
-    "n_evidence_skipped": 0
+    "n_evidence_skipped": 0,
+    "self_check": {
+      "units_match_text_units": true,
+      "n_units_from_text_units": 10330,
+      "sparse_subset_ok": true,
+      "n_sparse_requests": 0,
+      "counts_consistent": true
+    }
   },
   "per_request": [
     {

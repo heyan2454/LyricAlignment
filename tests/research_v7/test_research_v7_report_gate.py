@@ -220,6 +220,125 @@ def test_reverse_smoke_only_draft(tmp_path):
     assert "smoke" in s["result_source"]  # 无 formal → 用 smoke 且 draft
 
 
+def _baseline_quality_eval(tmp):
+    # 合成 baseline 质量分析产物（research_v7_baseline_quality_analysis_v1），
+    # 数值对齐真实 smoke_20260805_review12 formal 产物，不引用真实 run 文件
+    f = tmp / "baseline_quality_analysis.json"
+    f.write_text(json.dumps({
+        "schema": "research_v7_baseline_quality_analysis_v1",
+        "generated_at_utc": "2026-08-04T22:58:05+00:00",
+        "inputs": {"gt_eval_path": "run/GT_EVAL.json",
+                   "gt_axis_note": "synthetic_uniform_timeline_axis (not human GT)"},
+        "coverage": {"overall": {"n_rows": 5521, "n_units_evaluated": 10330,
+                                 "row_coverage": 0.534463}},
+        "boundary_error": {
+            "by_boundary": {"start_abs_error_sec": {"n": 5521, "median": 0.2723, "p90": 0.9703}},
+            "thresholds": {"0.25": {"threshold_sec": 0.25,
+                                    "exceed_rate": {"start": 0.5338, "end": 0.5296,
+                                                    "either": 0.6664}}},
+        },
+        "axis_sensitivity": {
+            "m4_synthetic_axis": {"unsafe_rate_gt_0_25": 0.6664},
+            "mir_weak_axis": {"n_gt_unsafe_units": 592, "n_units_labeled": 4592,
+                              "unsafe_rate": 0.1289},
+            "ratio_m4_over_mir": 5.17,
+        },
+        "seam_strata": {
+            "near_seam": {"n_rows": 3273, "unsafe_rate_gt_0_25": 0.6612},
+            "far_from_seam": {"n_rows": 2248, "unsafe_rate_gt_0_25": 0.6739},
+        },
+        "feature_auc": {"per_feature": {
+            "has_repair": {"auc": 0.5, "n_valid": 5521},
+            "official_duration_sec": {"auc": 0.5348, "n_valid": 5521},
+            "raw_end_entropy": {"auc": 0.5779, "n_valid": 5521},
+            "either_max_boundary_error_sec": {"auc": 1.0, "n_valid": 5521},
+        }},
+        "self_check": {"ok": True, "checks": {}},
+    }))
+    return f
+
+
+def test_forward_baseline_quality_in_summary(tmp_path):
+    # round09：提供 --baseline-quality（合成 json）→ AUTO_SUMMARY.data.baseline_quality 含
+    # 8 个提取字段 + baseline_quality_finding；md 增加 Baseline quality 段；formal 判定不受影响。
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    bq = _baseline_quality_eval(tmp_path)
+    r = _call(run, man, sha, extra=["--baseline-quality", str(bq)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    bq_out = s["data"]["baseline_quality"]
+    assert bq_out["row_coverage"] == 0.534463
+    assert bq_out["start_mae_median"] == 0.2723
+    assert bq_out["unsafe_rate_gt_0_25"] == 0.6664
+    assert bq_out["axis_ratio_m4_over_mir"] == 5.17
+    assert bq_out["seam_near_unsafe"] == 0.6612
+    assert bq_out["seam_far_unsafe"] == 0.6739
+    assert bq_out["feature_auc_top"] == 0.5779  # 排除标签特征 either_max_boundary_error_sec
+    assert bq_out["self_check_ok"] is True
+    fnd = s["data"]["baseline_quality_finding"]
+    assert "GT axis sensitivity: 66.6% (M4 synthetic) vs 12.9% (MIR weak) = 5.17x" in fnd
+    assert "boundary start MAE median 0.272s" in fnd
+    assert "seam has no measurable effect" in fnd
+    assert "feature AUC top 0.578 (raw_end_entropy)" in fnd
+    assert "self_check=True" in fnd
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "## Baseline quality" in md
+    assert "GT axis sensitivity" in md and "self_check=True" in md
+
+
+def test_forward_baseline_quality_structural_note_with_gt_eval(tmp_path):
+    # round09：GT_EVAL 存在且 unit_recall==0（synthetic 轴缺失单元无行）→ finding 追加结构性说明
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    (run / "GT_EVAL.json").write_text(json.dumps(
+        {"schema": "research_v7_gt_eval_v1",
+         "metrics": {"unit_recall": 0.0, "correct_unit_fpr": 0.0, "gap_recall": 1.0}}))
+    bq = _baseline_quality_eval(tmp_path)
+    r = _call(run, man, sha, extra=["--baseline-quality", str(bq)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True
+    assert "unit_recall=0 is structural (deleted units have no rows), not decoder failure" \
+        in s["data"]["baseline_quality_finding"]
+
+
+def test_forward_baseline_quality_absent_is_none(tmp_path):
+    # round09：不传 --baseline-quality → baseline_quality/finding 为 None，formal 判定与既有断言不变
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    assert s["data"]["baseline_quality"] is None
+    assert s["data"]["baseline_quality_finding"] is None
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "## Baseline quality" not in md
+
+
+def test_forward_baseline_quality_missing_or_bad_schema_is_none(tmp_path):
+    # round09：路径缺失/schema 不匹配 → None（缺省），不阻塞 formal_approved
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    bad = tmp_path / "bad_baseline_quality.json"
+    bad.write_text(json.dumps({"schema": "research_v7_baseline_quality_analysis_v2"}))
+    r = _call(run, man, sha, extra=["--baseline-quality", str(bad)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True
+    assert s["data"]["baseline_quality"] is None
+    r2 = _call(run, man, sha, extra=["--baseline-quality", str(tmp_path / "nope.json")])
+    s2 = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s2["formal_approved"] is True
+    assert s2["data"]["baseline_quality"] is None
+
+
 def test_forward_cross_domain_finding_in_summary(tmp_path):
     # T1：提供 --cross-domain-eval（合成 json）→ AUTO_SUMMARY.data.cross_domain 含
     # M4→MIR finding 与 inputs sha；formal_approved 不受影响；md 增加 Cross-domain assessor 段。

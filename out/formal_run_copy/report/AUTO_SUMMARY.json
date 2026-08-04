@@ -4,7 +4,7 @@
  "draft": false,
  "formal_approved": true,
  "draft_reasons": [],
- "result_source": "/tmp/opencode/wt_a/out/formal_run_copy/formal/RUN_MANIFEST.json",
+ "result_source": "out/formal_run_copy/formal/RUN_MANIFEST.json",
  "data": {
   "timeline_duration_sec": 201.078,
   "timeline_ge180": true,
@@ -14,6 +14,20 @@
    "high_recall_95": 0.1727820246703941,
    "high_recall_99": 0.1547679996332282
   },
+  "cross_domain": null,
+  "baseline_quality": {
+   "schema": "research_v7_baseline_quality_analysis_v1",
+   "path": "out/formal_run_copy/BASELINE_QUALITY_ANALYSIS.json",
+   "row_coverage": 0.534463,
+   "start_mae_median": 0.2723,
+   "unsafe_rate_gt_0_25": 0.6664,
+   "axis_ratio_m4_over_mir": 5.17,
+   "seam_near_unsafe": 0.6612,
+   "seam_far_unsafe": 0.6739,
+   "feature_auc_top": 0.5779,
+   "self_check_ok": true
+  },
+  "baseline_quality_finding": "GT axis sensitivity: 66.6% (M4 synthetic) vs 12.9% (MIR weak) = 5.17x; boundary start MAE median 0.272s; seam near/far unsafe 66.1%/67.4% (seam has no measurable effect); feature AUC top 0.578 (raw_end_entropy) ~0.5, no discriminative power; self_check=True; unit_recall=0 is structural (deleted units have no rows), not decoder failure",
   "unit_recall": 0.0,
   "correct_unit_fpr": 0.0,
   "gap_recall": 1.0,
@@ -23,6 +37,6 @@
   "n_missing": 60,
   "n_evidence_skipped": 0
  },
- "gt_eval_path": "/tmp/opencode/wt_a/out/formal_run_copy/GT_EVAL.json",
+ "gt_eval_path": "out/formal_run_copy/GT_EVAL.json",
  "gt_axis_note": "synthetic_uniform_timeline_axis (not human GT)"
 }

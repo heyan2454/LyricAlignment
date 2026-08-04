@@ -3,7 +3,9 @@
 
 读取 smoke/pilot/formal 结果，输出 AUTO_SUMMARY.json + AUTO_FINDINGS_DRAFT.md + RUNTIME_BUDGET.json。
 P0-5：除非提供的 --formal-approved-manifest 真实存在且其 sha256 与 --expected-manifest-sha256
-一致，否则一律 draft=true；不可仅凭“传了参数”就降级。
+一致，否则一律 draft=true；不可仅凭"传了参数"就降级。
+round09：可选 --baseline-quality（research_v7_baseline_quality_analysis_v1）只读记录进
+AUTO_SUMMARY.data.baseline_quality + baseline_quality_finding，不参与 formal gate。
 """
 from __future__ import annotations
 
@@ -29,6 +31,8 @@ def main(argv=None) -> int:
                    help="pilot/formal 预算外推请求数（默认 600，13 计划 pilot 规模量级）")
     p.add_argument("--cross-domain-eval", default="",
                    help="跨域评估产物（research_v7_assessor_cross_domain_eval_v1）；可选，只记录 finding，不参与 formal gate")
+    p.add_argument("--baseline-quality", default="",
+                   help="baseline 质量分析产物（research_v7_baseline_quality_analysis_v1）；可选，只记录 finding，不参与 formal gate")
     args = p.parse_args(argv)
 
     run = Path(args.run_root)
@@ -91,6 +95,77 @@ def main(argv=None) -> int:
             gt_eval_invalid_reason = "GT_EVAL metrics empty"
         else:
             gt_eval = parsed
+
+    # round09：baseline 质量分析（research_v7_baseline_quality_analysis_v1）——
+    # 可选输入，只读记录进 report。不提供/文件缺失/不可读/schema 不匹配 →
+    # baseline_quality=None 且 baseline_quality_finding=None，不阻塞 formal_approved，行为不变。
+    baseline_quality = None
+    baseline_quality_finding = None
+    bq_path = Path(args.baseline_quality) if args.baseline_quality else None
+    if bq_path is not None:
+        try:
+            bq = json.loads(bq_path.read_text(encoding="utf-8"))
+        except Exception:
+            bq = None
+        if not isinstance(bq, dict) or bq.get("schema") != "research_v7_baseline_quality_analysis_v1":
+            print(f"WARN: baseline quality {bq_path} unreadable or schema "
+                  f"!= research_v7_baseline_quality_analysis_v1; skipped", file=sys.stderr)
+            bq = None
+        if bq is not None:
+            coverage = bq.get("coverage") or {}
+            b_err = bq.get("boundary_error") or {}
+            axis = bq.get("axis_sensitivity") or {}
+            seams = bq.get("seam_strata") or {}
+            auc = bq.get("feature_auc") or {}
+            # 阈值表键 = str(threshold_sec)（analyze 脚本 UNSAFE_THRESHOLD_SEC=0.25 → "0.25"）
+            th = (b_err.get("thresholds") or {}).get("0.25")
+            near = ((seams.get("near_seam") or {}) or {}).get("unsafe_rate_gt_0_25")
+            far = ((seams.get("far_from_seam") or {}) or {}).get("unsafe_rate_gt_0_25")
+            # feature AUC 顶值：排除标签特征 either_max_boundary_error_sec（AUC=1.0 是标签自身）
+            top_name, top_auc = None, None
+            for name, entry in ((auc.get("per_feature") or {}).items()):
+                if name == "either_max_boundary_error_sec":
+                    continue
+                v = (entry or {}).get("auc")
+                if v is not None and (top_auc is None or v > top_auc):
+                    top_auc, top_name = v, name
+            baseline_quality = {
+                "schema": bq.get("schema"),
+                "path": str(bq_path),
+                "row_coverage": ((coverage.get("overall") or {}) or {}).get("row_coverage"),
+                "start_mae_median": (((b_err.get("by_boundary") or {}).get("start_abs_error_sec")
+                                      or {}) or {}).get("median"),
+                "unsafe_rate_gt_0_25": (th or {}).get("exceed_rate", {}).get("either"),
+                "axis_ratio_m4_over_mir": axis.get("ratio_m4_over_mir"),
+                "seam_near_unsafe": near,
+                "seam_far_unsafe": far,
+                "feature_auc_top": top_auc,
+                "self_check_ok": (bq.get("self_check") or {}).get("ok"),
+            }
+            parts = []
+            m4_rate = baseline_quality["unsafe_rate_gt_0_25"]
+            mir_rate = (axis.get("mir_weak_axis") or {}).get("unsafe_rate")
+            ratio = baseline_quality["axis_ratio_m4_over_mir"]
+            if m4_rate is not None and mir_rate is not None and ratio is not None:
+                parts.append(f"GT axis sensitivity: {m4_rate:.1%} (M4 synthetic) "
+                             f"vs {mir_rate:.1%} (MIR weak) = {ratio:.2f}x")
+            if baseline_quality["start_mae_median"] is not None:
+                parts.append(f"boundary start MAE median {baseline_quality['start_mae_median']:.3f}s")
+            if near is not None and far is not None:
+                seam_note = ("seam has no measurable effect" if abs(near - far) < 0.05
+                             else f"seam near/far differ by {abs(near - far):.1%}")
+                parts.append(f"seam near/far unsafe {near:.1%}/{far:.1%} ({seam_note})")
+            if top_auc is not None:
+                parts.append(f"feature AUC top {top_auc:.3f} ({top_name}) "
+                             "~0.5, no discriminative power")
+            if parts:
+                parts.append(f"self_check={baseline_quality['self_check_ok']}")
+                # GT 轴为 synthetic-uniform：缺失单元无行、经 virtual gap 评价，unit_recall=0
+                # 是结构性结果而非 decoder 失败（GT_EVAL 存在且 unit_recall==0 时才声明）
+                if gt_eval is not None and (gt_eval.get("metrics") or {}).get("unit_recall") == 0:
+                    parts.append("unit_recall=0 is structural (deleted units have no rows), "
+                                 "not decoder failure")
+                baseline_quality_finding = "; ".join(parts)
 
     # P0-5 round2：formal_approved 需真实 formal evidence + frozen manifest sha + 实际预算/gates。
     formal_approved = False
@@ -173,6 +248,8 @@ def main(argv=None) -> int:
             "assessor_op": result_kv.get("assessor", {}).get("operating_points")
                       or result_kv.get("key", {}).get("assessor_op"),
             "cross_domain": cross_domain,
+            "baseline_quality": baseline_quality,
+            "baseline_quality_finding": baseline_quality_finding,
         },
     }
     if gt_eval is not None:
@@ -253,6 +330,18 @@ def main(argv=None) -> int:
   unit_recall_95={cross_domain['unit_recall_95']}, correct_unit_fpr_95={cross_domain['correct_unit_fpr_95']}
 - n_units={cross_domain['n_units']}, M4 operating points={cross_domain['m4_operating_points']}
 - Finding: {cross_domain['cross_domain_finding']}
+"""
+    if baseline_quality is not None:
+        bq = baseline_quality
+        md += f"""
+## Baseline quality
+
+- Source: {bq_path}
+- row_coverage={bq['row_coverage']}, start MAE median={bq['start_mae_median']}s,
+  unsafe_rate>250ms={bq['unsafe_rate_gt_0_25']}
+- GT axis ratio M4/MIR={bq['axis_ratio_m4_over_mir']}x; seam near={bq['seam_near_unsafe']},
+  far={bq['seam_far_unsafe']}; feature AUC top={bq['feature_auc_top']}; self_check={bq['self_check_ok']}
+- Finding: {baseline_quality_finding}
 """
     md_name = f"AUTO_FINDINGS_{'SUMMARY' if not draft else 'DRAFT'}.md"
     (run / "report" / md_name).write_text(md)
