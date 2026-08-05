@@ -423,3 +423,50 @@ smoke 实际只构造一条合成 timeline、一个 slot plan 和一个 tail-mis
 - hidden 特征正式停用（--include-hidden 需 --allow-zero-hidden 逃逸）。
 - M4 builder 的 canonical_timeline_file_sha 为源 manifest sha（MIR 为 timeline 文件 sha），语义差异已记录于 FREEZE note。
 - 覆盖率 53.4% 为 full/sparse 混合均值（sparse 上界由 slot 密度决定）。
+
+## 复审更新 13（2026-08-05，探索轮 round13-21）
+
+### 代码/测试状态
+
+`tests/research_v7` **271 项通过**，git 干净。本轮 8 个提交：
+
+- round13：MIR 域内 assessor（generic --assessor/--collection）、replace/extra 变体全链路（builder+label+evaluate）、seam 主版本（--seam-silence-sec 0.0）、density 三档（--density-strides full/s2/s4 + phase 轮换）、runner 嵌套 mutation_parameters 透传修复（replaced_canonical_ids/extra_start_index）
+- round14：formal v2（20 歌 720 req）真实运行 + density 对比发现
+- round15：seam 主版真实运行（60 req）
+- round16：density 档间对比（missing 鲁棒 1.0/1.0/1.0 vs replace wrong-output 线性 1.000/0.500/0.254）
+- round17：density 对比入报告
+- round18：family-LOO + song-LOO（assessor_family_eval.py）、replace omission 数值化、extra baseline_drift 配对
+- round19：family eval 入报告
+- round20：coverage overall/self_check 改 baseline-missing 域（v2 replace/extra 兼容）；formal v2 报告 approved
+- round21：M4 30 歌 v3（1080 req，710 缓存复用）+ MIR replace/extra（240 req）
+
+### 真实运行产物（smoke_20260805_review12/）
+
+| 运行 | 规模 | 关键指标 |
+|---|---|---|
+| formal v1（10 歌） | 120 req | approved；unit_recall=0 结构性、gap_recall=1.0 |
+| formal v2（20 歌） | 720 req | wrong_output_recall=0.5845；density 分层 1.0/0.5/0.254 |
+| **formal v3（30 歌）** | **1080 req** | **approved；wrong_output_recall=0.5844（指标稳定）；46020 units** |
+| MIR mutation（17 歌） | 240 req | wrong_output_recall=0.5469（跨域一致） |
+| seam 主版（10 歌） | 60 req | seam 近/远误差与对照无实质差异 |
+| family/song LOO | CPU | family 改变 op（delta 0.904）；song-LOO op 稳定（std 0.0006） |
+
+### 本轮关键研究结论
+
+1. **replace wrong-output 检出跨域稳定**：M4 0.5844 vs MIR 0.5469（几乎一致）——与 assessor op 不迁移（0.9665）形成对比：模型对替换文本的检出能力跨域稳定，不迁移的是阈值。
+2. **density 对 gap 检出鲁棒、对 wrong-output 线性敏感**（1.0/0.5/0.254）——稀疏采样跳过被替换单位。
+3. **family 改变 op**（baseline/extra vacuous 1.0、missing 0.212、replace 0.261 vs mixed 0.102）；baseline+missing 训练的 assessor 不迁移到 replace（recall99 0.99→0.177）。
+4. **replaced_gt_omission_recall=1.0 结构性虚高**（行不延伸窗尾→平凡检出），不能当检出能力读。
+5. **extra 对 retained 文本扰动可忽略**（>250ms 0.03%）。
+6. **30 歌指标与 20 歌一致**（wrong_output 0.5844 vs 0.5845）——统计稳定性验证。
+
+### 正式报告（formal_approved=true 两个版本并存）
+
+- v1 报告（formal_run_authoritative/）：5 分析段（cross-domain、baseline quality、missing curve、density、family）
+- **v3 报告（formal_v3_run/）：30 歌权威版本**，approved=true，含 density + family + baseline quality
+
+### 遗留（known limitations）
+
+- replaced_gt_omission_recall 结构性虚高（见结论 4）；extra 无 canonical GT
+- MIR 弱标签（validation_basis=null）非人工 GT；M4 synthetic 轴 66.6% 误差率为轴构造产物
+- 覆盖率 overall 仅 baseline/missing 域（v2+ 兼容口径）
