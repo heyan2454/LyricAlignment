@@ -59,27 +59,28 @@ def temperature_scale(p_tr, y_tr, p_va, y_va):
 
 
 def isotonic_pav(p, y):
-    """PAV isotonic 回归（对 p 单调变换到 [0,1] 概率，weighted_isotonic 同族）。"""
+    """栈式 PAV isotonic 回归（O(n)）：p 升序，单调不减的阶梯拟合。"""
     import numpy as np
     order = np.argsort(p)
-    ps, ys = p[order], y[order]
-    # 简单 PAV（unweighted）
-    n = len(ps)
-    w, v = np.ones(n), ys.astype(float)
-    i = 0
-    while i < n - 1:
-        if v[i] <= v[i + 1]:
-            i += 1
-            continue
-        j = i
-        sw, sv = w[j], v[j] * w[j]
-        while j < n - 1 and v[j] > v[j + 1]:
-            j += 1
-            sw += w[j]; sv += v[j] * w[j]
-        for k in range(i, j + 1):
-            v[k] = sv / sw
-        i = 0
-    return ps, v  # 阶梯：p 区间 -> 常数值
+    ps, ys = p[order], y[order].astype(float)
+    # 栈：(块起点, 块和, 块计数)
+    start = [0]; ssum = [float(ys[0])]; cnt = [1]
+    for i in range(1, len(ps)):
+        start.append(i); ssum.append(float(ys[i])); cnt.append(1)
+        while len(start) > 1:
+            v_prev = ssum[-2] / cnt[-2]
+            v_cur = ssum[-1] / cnt[-1]
+            if v_prev <= v_cur:
+                break
+            # 合并
+            ssum[-2] += ssum[-1]; cnt[-2] += cnt[-1]
+            start.pop(); ssum.pop(); cnt.pop()
+    vs = np.empty(len(ps))
+    for bi in range(len(start)):
+        b0 = start[bi]
+        b1 = start[bi + 1] if bi + 1 < len(start) else len(ps)
+        vs[b0:b1] = ssum[bi] / cnt[bi]
+    return ps, vs  # 阶梯：p 区间 -> 常数值
 
 
 def calibrate(*, run_root: Path, frozen_op: dict, target: str = "official",
