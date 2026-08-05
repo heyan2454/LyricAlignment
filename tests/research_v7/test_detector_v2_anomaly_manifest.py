@@ -156,12 +156,13 @@ def test_anomaly_manifest_window_guards(tmp_path):
     crop_early = [r for r in reqs if r["family"] == "crop_early"]
     assert crop_early and all(r["window_index"] in (1, 2) for r in crop_early)
     assert all(r["audio_start_sec"] > 0 for r in crop_early)
-    # M8：crop_late audio_end <= duration（最后一窗封顶 160s）
+    # M8：crop_late audio_end <= duration（最后一窗封顶 160s，留 1ms 余量防取整越界）
     duration = 160.0
     for r in reqs:
         if r["family"] in ("crop_late", "end_late"):
             assert r["audio_end_sec"] <= duration
-    assert by_id["s1:2:crop_late:8:full"]["audio_end_sec"] == duration
+    assert by_id["s1:2:crop_late:8:full"]["audio_end_sec"] <= duration
+    assert by_id["s1:2:crop_late:8:full"]["audio_end_sec"] >= duration - 0.002
 
 
 def test_anomaly_manifest_split_file(tmp_path):
