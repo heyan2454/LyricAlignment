@@ -1,6 +1,32 @@
 # AI Session Entry
 
-## 2026-08-03 Current Stage Override
+## 2026-08-05 Detector V2 Current Stage Override
+
+The active planning entry is now:
+
+```text
+docs/research_v7_align_behavior/README.md
+docs/research_v7_align_behavior/18_DETECTOR_V2_EXPERIMENT_PLAN.md
+docs/research_v7_align_behavior/19_DETECTOR_V2_AGENT_CONTRACT.md
+docs/research_v7_align_behavior/20_DETECTOR_V2_IMPLEMENTATION_BLUEPRINT.md
+docs/research_v7_align_behavior/21_PREVIOUS_DETECTOR_RESULT_CORRECTIONS.md
+```
+
+Current stage:
+
+```text
+Detector V2 contract / metrics / coverage gate merged
+→ audit GT, source-song split, hidden extraction and request identity
+→ build product-like crop/cursor/end-early/repeat/acoustic and matched multi-view evidence
+→ freeze H/R/O/V features, models, tri-state thresholds and interval post-processing on validation
+→ run M4 heldout, family-LOO, M4→MIR, stress and real serial closed-loop evaluation
+```
+
+Completion is governed by the coverage matrix. Missing a required non-zero-denominator artifact means
+`partial_exploratory=true`, not detector completion. The older entries below are preserved for history;
+where they conflict with documents 18–21, documents 18–21 take precedence.
+
+## Previous 2026-08-03 Stage Override (preserved)
 
 The active planning entry is now:
 
@@ -146,3 +172,25 @@ manifest/input audit
 ```
 
 硬约束：formal 目标 10 小时、硬上限 12 小时；禁止人工静音凑长数据；baseline 必须按完整 request identity 配对；机制消融与系统配置分开；density 使用 common units 和 phase 轮换；英文不得切断单词，日文不得切断 processor 最小对齐 unit；人工 review 结果与标签已经存在，须先定位审计，不得继续写“未填写”。
+
+## 2026-08-05 Detector V2 执行快照（压缩上下文前的续接点）
+
+阶段进度（最新优先）：
+- **Phase3-1 完成**：M4 song-heldout + family-LOO 真实结果已落盘 run1/
+  （M4_SONG_HELDOUT.json：raw reject_recall=0.909/protected_recall=0.999/interval@75=0.948；
+  official reject_recall=0.883/protected=1.000/interval@75=0.990；family-LOO 全 family protected≈1.0，
+  crop_early 最弱 0.641）。真实结果证明 detector 有效（protected≈1.0、long interval 零全接受）。
+- **Phase2 完成**：signal atlas（单信号弱判别 AUC 0.46-0.53，需组合）+ train/freeze 真实跑通
+  （raw/official 最优组合 O，H 五组合 blocked，T_accept≈0.835/0.845、T_reject≈0.865/0.870）。
+- **Phase1 完成**：run1 真实 forward 740 请求（51 边界失败已修）+ converter（137k rows）+ labeling
+  （unsafe_rate 91.4% 合成轴口径，gt_unavailable ~60%）。
+- **Phase0 完成**：labels/evidence/identity/gt_split + 402→410 测试。
+
+**下一步（未完成）**：
+- Phase3-2 serial closed-loop（detector_v2_serial.py 已侦察未实现：/tmp/opencode/wt_a 分支 detv2_serial）
+- Phase3-3a M4→MIR 跨域（MIR anomaly manifest 已建 974 行在 /tmp/opencode/wt_c/out；真实 forward 未跑）
+- Phase3-3b coverage matrix 全绿 + 18 交付物核对 + completed/partial_exploratory 判定
+
+关键产物：/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/run1/（FROZEN_OPERATING_POINTS/
+MODEL_SELECTION/M4_SONG_HELDOUT/FAMILY_LOO/LABEL_SUMMARY/RUN_NOTES）+ manifests/（ANOMALY 740 行）。
+代码：main 分支（408+ 测试）；opencode.json 已配 steps=8；运行约定见 AGENTS.md。
