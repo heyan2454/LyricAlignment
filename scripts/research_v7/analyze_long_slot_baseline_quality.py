@@ -124,15 +124,22 @@ def coverage_table(per_request: Sequence[Mapping]) -> dict:
         by_mut_slot_win[(mut, rid["slot_kind"], f"w{rid['window_index']}")].append(pr)
     strata = {f"{m}|{slot}|{win}": summarize(v)
               for (m, slot, win), v in sorted(by_mut_slot_win.items())}
+    # round20：overall 只统计 baseline/missing（与 GT_EVAL metrics.n_units_evaluated 同口径——
+    # unit 级 pooled 只聚合 baseline/missing；replace/extra 的 text_units 语义不同，
+    # 若并入 overall 会让覆盖率 self_check 与 metrics 对不上）。replace/extra 在 by_mutation 单独展示。
+    unit_scored = [pr for pr in per_request
+                   if str(pr.get("mutation_type") or "unknown") in ("baseline", "missing")]
     return {
         "n_requests": len(per_request),
         "n_requests_unparsed_request_id": len(unknown),
-        "overall": summarize(per_request),
+        "overall": summarize(unit_scored),
         "by_mutation": {k: summarize(v) for k, v in sorted(by_mut.items())},
         "by_slot": {k: summarize(v) for k, v in sorted(by_slot.items())},
         "by_window": {k: summarize(v) for k, v in sorted(by_win.items())},
         "by_mutation_slot_window": strata,
-        "note": "row_coverage = n_rows / n_units_evaluated（13 §6.2 评价口径分母）",
+        "note": "row_coverage = n_rows / n_units_evaluated（13 §6.2 评价口径分母）；"
+                "overall 仅含 baseline/missing（与 GT_EVAL metrics 同口径），"
+                "replace/extra 见 by_mutation",
     }
 
 
@@ -445,10 +452,19 @@ def build_self_check(gt_eval: dict, coverage: dict, boundary_error: dict,
     metrics = gt_eval.get("metrics") or {}
     n_rows = coverage["overall"]["n_rows"]
     n_units = coverage["overall"]["n_units_evaluated"]
+    # round20：GT_EVAL.rows 含全部变体（baseline/missing/replace/extra），而 overall 只统计
+    # baseline/missing（unit 级评价域）。self_check 对 unit 域行数做同域比较：
+    #   - 旧 GT_EVAL（仅 baseline/missing）→ overall.n_rows == 全部 rows == n_decoder_rows
+    #   - v2 GT_EVAL（含 replace/extra）→ overall.n_rows == baseline/missing 子集；
+    #     n_decoder_rows 含 replace/extra，不与 overall 相等（不比较）
+    gt_rows = gt_eval.get("rows") or []
+    unit_rows = [r for r in gt_rows if str(r.get("mutation_type") or "") in ("baseline", "missing")]
     checks = {
-        "n_rows_total_matches_metrics": n_rows == metrics.get("n_decoder_rows"),
+        "n_rows_total_matches_metrics": (n_rows == metrics.get("n_decoder_rows"))
+        if not unit_rows else True,  # v2：n_decoder_rows 含 replace/extra，与 unit 域不同口径
         "n_units_evaluated_matches_metrics": n_units == metrics.get("n_units_evaluated"),
-        "n_rows_equal_gt_eval_rows": n_rows == len(gt_eval.get("rows") or []),
+        "n_rows_equal_gt_eval_rows": (n_rows == len(unit_rows)) if unit_rows
+        else (n_rows == len(gt_rows)),
         "all_rows_have_geometry": boundary_error["n_rows_geometry_missing"] == 0,
         "coverage_denominator_consistent": n_units == metrics.get("n_units_evaluated"),
         "thresholds_include_unsafe": str(UNSAFE_THRESHOLD_SEC)

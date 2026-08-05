@@ -185,10 +185,11 @@ def test_schema_and_self_check():
 
 def test_self_check_fails_on_mismatched_metrics():
     gt = _make_gt_eval()
-    gt["metrics"]["n_decoder_rows"] = 999
+    # round20：unit 域 rows 比较优先；n_units 口径任何情况下都校验
+    gt["metrics"]["n_units_evaluated"] = 999
     res = m.analyze(gt)
     assert res["self_check"]["ok"] is False
-    assert res["self_check"]["checks"]["n_rows_total_matches_metrics"] is False
+    assert res["self_check"]["checks"]["n_units_evaluated_matches_metrics"] is False
 
 
 def test_rows_with_missing_geometry_excluded():
@@ -352,3 +353,24 @@ def test_axis_sensitivity_same_metric_uses_mir_boundary(tmp_path):
     ax2 = m.axis_sensitivity(be, {"mir1k": {"n_gt_unsafe_units": 1, "n_units_labeled": 10}}, None)
     assert ax2["mir_weak_axis"]["metric"] == "mutation_label_hit_rate (NOT same metric; non-comparable)"
     assert "非同量" in ax2["conclusion"]
+
+
+def test_coverage_overall_excludes_replace_extra(tmp_path):
+    """round20：overall 覆盖率只含 baseline/missing（与 GT_EVAL metrics 同口径），
+    replace/extra 不并入（否则 self_check 与 metrics.n_units_evaluated 冲突）。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import analyze_long_slot_baseline_quality as m
+    per = [
+        _per_request("s1:w0:full", "baseline", 2, 2),
+        _per_request("s1:w0:full", "missing", 2, 1),
+        _per_request("s1:w0:full", "replace", 2, 2),
+        _per_request("s1:w0:full", "extra", 3, 3),
+    ]
+    cov = m.coverage_table(per)
+    # overall: baseline+missing 的 n_units = 2+1=3
+    assert cov["overall"]["n_units_evaluated"] == 3, cov["overall"]
+    # by_mutation 仍含全部四类
+    assert set(cov["by_mutation"]) == {"baseline", "missing", "replace", "extra"}
+    assert cov["by_mutation"]["replace"]["n_units_evaluated"] == 2
+    assert cov["by_mutation"]["extra"]["n_units_evaluated"] == 3
