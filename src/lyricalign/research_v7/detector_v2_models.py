@@ -599,6 +599,29 @@ def _make_trainer(model_kind: str, seed: int):
     elif model_kind == "small_mlp":
         def trainer(Xtr, ytr, Xva, _seed=seed):
             return small_mlp(Xtr, ytr, seed=_seed)["predict_fn"](Xva)
+    elif model_kind == "rule_baseline":
+        def trainer(Xtr, ytr, Xva):
+            # 单特征阈值 rule：train 上选 protected_recall>=0.95 下 safe_accept 最优的
+            # (feature, threshold)；无满足组合时输出全 0（全 accept 语义，配合阈值回退）。
+            import numpy as np
+            best = (None, None, -1.0)
+            unsafe = ytr == 1
+            safe = ytr == 0
+            if unsafe.sum() == 0 or safe.sum() == 0:
+                return np.zeros(len(Xva), dtype=float)
+            for j in range(Xtr.shape[1]):
+                col = Xtr[:, j]
+                for thr in np.unique(col):
+                    pred = (col > thr).astype(float)
+                    prot = (pred[unsafe] == 1).mean()
+                    if prot < 0.95:
+                        continue
+                    safe_acc = 1.0 - (pred[safe] == 1).mean()
+                    if safe_acc > best[2]:
+                        best = (j, float(thr), safe_acc)
+            if best[0] is None:
+                return np.zeros(len(Xva), dtype=float)
+            return (Xva[:, best[0]] > best[1]).astype(float)
     else:
         raise ValueError(
             f"model_kind {model_kind!r} not in {MODEL_KINDS}; 序列模型/rule 走单独入口")

@@ -114,6 +114,7 @@ def freeze_thresholds(
     labels: Mapping[int, str],
     *,
     target_protected_recalls: tuple[float, ...] = (0.95, 0.99),
+    min_safe_accept_rate: float = 0.0,
 ) -> dict | None:
     """Freeze T_reject/T_accept on a validation set; None if no unsafe units.
 
@@ -126,12 +127,20 @@ def freeze_thresholds(
     computed with :func:`tri_state_unit_metrics` on the final frozen output
     after light merging; empty unsafe sets return None rather than fabricated
     thresholds.
+
+    ``min_safe_accept_rate > 0`` (22 §Phase B dual constraint): after the
+    protection-first pass, walk reject candidates downward while
+    ``safe_accept_rate >= min_safe_accept_rate`` holds, keeping protection;
+    when the constraint cannot be met at any reject threshold, the
+    protection-first point is returned with ``constraint_violated=True``.
     """
     if not target_protected_recalls:
         raise ValueError("target_protected_recalls must not be empty")
     for target in target_protected_recalls:
         if not 0.0 < target < 1.0:
             raise ValueError(f"target_protected_recalls must lie in (0, 1): {target}")
+    if not 0.0 <= min_safe_accept_rate <= 1.0:
+        raise ValueError(f"min_safe_accept_rate must lie in [0, 1]: {min_safe_accept_rate}")
     units = sorted(int(u) for u in probabilities)
     if not units:
         return None
@@ -166,6 +175,28 @@ def freeze_thresholds(
         else:
             break
 
+    constraint_violated = False
+    if min_safe_accept_rate > 0.0:
+        output_tmp = tristate_from_p_bad(
+            probabilities, accept_threshold, reject_threshold,
+            queried_intervals=[UnitInterval(units[0], units[-1] + 1)])
+        safe_accept = tri_state_unit_metrics(
+            output=output_tmp, unsafe_units=unsafe, safe_units=safe)["safe_accept_rate"]
+        if safe_accept < min_safe_accept_rate:
+            constraint_violated = True
+            for threshold in reject_candidates:
+                if threshold >= reject_threshold:
+                    continue
+                out_t = tristate_from_p_bad(
+                    probabilities, accept_threshold, threshold,
+                    queried_intervals=[UnitInterval(units[0], units[-1] + 1)])
+                m = tri_state_unit_metrics(output=out_t, unsafe_units=unsafe, safe_units=safe)
+                if m["safe_accept_rate"] >= min_safe_accept_rate \
+                        and m["protected_recall"] >= min_target:
+                    reject_threshold = threshold
+                    constraint_violated = False
+                    break
+
     output = tristate_from_p_bad(
         probabilities,
         accept_threshold,
@@ -179,6 +210,8 @@ def freeze_thresholds(
         "safe_accept_rate": metrics["safe_accept_rate"],
         "n_val_units": len(units),
     }
+    if constraint_violated:
+        result["constraint_violated"] = True
     for target in target_protected_recalls:
         result[f"protected_recall_{int(round(target * 100))}"] = metrics["protected_recall"]
     return result
