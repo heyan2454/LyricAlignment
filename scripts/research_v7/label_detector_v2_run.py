@@ -63,11 +63,18 @@ def build_song_gt(rows, timeline_row=None, valid_statuses=GTLABEL_VALID_STATUSES
     每段 GT 坐标 = 段局部坐标（timestamp_class_ids × timestamp_segment_sec）+
     timeline 的 segment_offsets.global_start_sec（前序段 duration + seam silence 累计）。
     不做整歌字符拼接：段内第 k 个字符的全局 GT 由 (item_id, k) 唯一决定。
-    返回 {"by_item": {item_id: {"chars","starts","ends"}}, "excluded": [...]}。
+    返回 {"by_item": {item_id: {"chars","starts","ends"}}, "excluded": [...],
+    "fallback_single_segment": bool}。
+
+    单段回退（MIR 弱标签整曲，timeline 无 segment_offsets/source_segment_id）：
+    单 GT row 且 timeline 无段映射时，GT 全局坐标 = 段局部坐标（单段偏移 0）。
     """
     offs = {o["source_segment_id"]: o for o in (timeline_row or {}).get("segment_offsets") or []}
+    units0 = (timeline_row or {}).get("canonical_units") or []
+    has_seg_map = bool(offs) or any(u.get("source_segment_id") for u in units0)
     by_item: dict[str, dict] = {}
     excluded: list[dict] = []
+    fallback_single_segment = (not has_seg_map) and len(rows) == 1
     for r in rows:
         status = r.get("mapping_status")
         if status not in valid_statuses:
@@ -76,9 +83,12 @@ def build_song_gt(rows, timeline_row=None, valid_statuses=GTLABEL_VALID_STATUSES
         item = r.get("item_id")
         off = offs.get(item)
         if off is None:
-            excluded.append({"item_id": item, "reason": "no_segment_offset"})
-            continue
-        base = float(off["global_start_sec"])
+            if not fallback_single_segment:
+                excluded.append({"item_id": item, "reason": "no_segment_offset"})
+                continue
+            base = 0.0  # 单段整曲：局部坐标即全局坐标
+        else:
+            base = float(off["global_start_sec"])
         ids = list(r.get("timestamp_class_ids") or [])
         lyrics = str(r.get("lyrics_normalized") or "")
         if len(ids) != 2 * len(lyrics):
@@ -98,16 +108,21 @@ def build_song_gt(rows, timeline_row=None, valid_statuses=GTLABEL_VALID_STATUSES
             ends.append(e)
         else:
             by_item[item] = {"chars": chars, "starts": starts, "ends": ends}
-    return {"by_item": by_item, "excluded": excluded}
+    return {"by_item": by_item, "excluded": excluded,
+            "fallback_single_segment": fallback_single_segment}
 
 
 def gt_map_for_request(timeline_row, song_gt, request_canonical_ids):
     """canonical unit → (source_segment_id, source_unit_index) 确定性映射到全局 GT（22 §2.3）。
 
     无唯一映射（unit 缺 source_segment_id/source_unit_index、段无 GT、下标越界）→
-    gt_unavailable，禁止整歌字符贪心猜测 occurrence。"""
+    gt_unavailable，禁止整歌字符贪心猜测 occurrence。单段回退：timeline 无段映射
+    （MIR 弱标签整曲）时用 canonical_unit_id 作为段内下标。
+    """
     canon_units = list(timeline_row.get("canonical_units") or [])
     by_item = song_gt.get("by_item", {})
+    fallback = bool(song_gt.get("fallback_single_segment"))
+    fallback_item = next(iter(by_item)) if fallback else None
     request_ids = set(int(c) for c in (request_canonical_ids or []))
     canon_gt: dict[int, tuple[float, float]] = {}
     unavailable: set[int] = set()
@@ -117,6 +132,8 @@ def gt_map_for_request(timeline_row, song_gt, request_canonical_ids):
             continue
         seg_id = u.get("source_segment_id")
         idx = u.get("source_unit_index")
+        if fallback and (seg_id is None or idx is None):
+            seg_id, idx = fallback_item, cid  # MIR 单段 1:1：canonical id = 段内下标
         seg_gt = by_item.get(seg_id) if seg_id else None
         if seg_gt is None or idx is None or not (0 <= int(idx) < len(seg_gt["chars"])):
             unavailable.add(cid)

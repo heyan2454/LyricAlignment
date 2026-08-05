@@ -283,16 +283,46 @@ def _window_feature_rows(ev_dir: Path, rid: str, label_map: dict,
     return [{"rows": out, "unsafe_flags": flags, "rid": rid}]
 
 
-def _build_series(run_root: Path, *, n_songs: int, max_windows: int) -> list[dict]:
-    """基于 items/ 目录（item_id=<song>:<wi>:<family>:<view>，内部 <sha>.json）构建连续窗序列。
-
-    manifest 的 baseline_request_identity 是 builder 阶段的音频身份而非请求 content
-    identity；sha 映射在 items/<item_id>/<content_identity>.json 文件名中。
+def _build_series(run_root: Path, *, n_songs: int, max_windows: int,
+                  serial_mode: bool = False) -> list[dict]:
+    """连续窗序列：serial_mode 用 serial manifest（stride=30s 重叠窗，22 §5.2）；
+    否则用 items/ 目录（item_id=<song>:<wi>:<family>:<view>）构建 0/50%/100% 窗。
     """
     label_map, song_map = _load_labels(run_root)
     ev_dir = run_root / "evidence_v2"
     items_root = run_root / "items"
 
+    if serial_mode:
+        manifest = [json.loads(l) for l in
+                    (run_root / "manifests" / "ANOMALY_MANIFEST.jsonl").read_text(
+                        encoding="utf-8").splitlines() if l.strip()]
+        series_out: list[dict] = []
+        songs: dict[str, list] = {}
+        for m in manifest:
+            rid = m.get("request_id")
+            item_id = m.get("item_id")
+            item_dir = items_root / item_id
+            if not item_dir.is_dir():
+                continue
+            shas = [p.stem for p in item_dir.glob("*.json")]
+            if not shas:
+                continue
+            parts = item_id.split(":")
+            song = parts[0]
+            fr = _window_feature_rows(ev_dir, shas[0], label_map)
+            if fr is None:
+                continue
+            fr[0].update({"wi": int(parts[1]), "song": song,
+                          "mutation_type": m.get("family") or "serial",
+                          "injected": m.get("family") != "serial_baseline"})
+            songs.setdefault(song, []).append(fr[0])
+        for song in sorted(songs)[:n_songs]:
+            w = sorted(songs[song], key=lambda x: x["wi"])[:max_windows]
+            if w:
+                series_out.append({"song": song, "windows": w})
+        return series_out
+
+    # 旧路径：items/ 目录（非 overlap 窗）
     songs: dict[str, dict] = {}
     for item_dir in sorted(items_root.iterdir()):
         if not item_dir.is_dir():
@@ -358,15 +388,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--max-windows", type=int, default=4)
     p.add_argument("--budget-requests", type=int, default=2)
     p.add_argument("--n-songs", type=int, default=3)
+    p.add_argument("--frozen-op", default=None,
+                   help="冻结 op json（缺省 <run-root>/FROZEN_OPERATING_POINTS.json）")
+    p.add_argument("--serial-mode", action="store_true",
+                   help="serial manifest 轨迹（stride=30s 重叠窗，22 §5.2）")
     a = p.parse_args(argv)
 
     run_root = Path(a.run_root)
-    frozen = _load_frozen_op(run_root)
+    frozen = _load_frozen_op(Path(a.frozen_op)) if a.frozen_op else _load_frozen_op(run_root)
     from train_detector_v2 import build_matrix
 
     by_target = build_matrix(run_root / "evidence_v2", run_root / "LABELS.jsonl")
     scorer = _FrozenScorer(by_target, frozen)
-    series = _build_series(run_root, n_songs=a.n_songs, max_windows=a.max_windows)
+    series = _build_series(run_root, n_songs=a.n_songs, max_windows=a.max_windows,
+                           serial_mode=a.serial_mode)
     if not series:
         raise SystemExit("no usable song series")
 

@@ -333,3 +333,30 @@ def test_split_override_from_source_song_split(tmp_path):
     rows = [json.loads(l) for l in (out / "LABELS.jsonl").read_text().splitlines()]
     assert all(r["split"] == "validation" for r in rows)
     assert "baseline_legal|validation|raw" in summary["by_family_split_target"]
+
+
+def test_mir_single_segment_fallback():
+    """MIR 弱标签整曲回退：timeline 无 segment_offsets、单 GT row → 全局=局部、id 即下标。"""
+    timeline = {"song_id": "khair_1.wav", "canonical_units": [
+        {"canonical_unit_id": i, "text": ch, "start_sec": i * 0.4, "end_sec": i * 0.4 + 0.4}
+        for i, ch in enumerate("abcd")]}
+    gt = mod.build_song_gt([_gt_row("khair_1", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])],
+                           timeline_row=timeline)
+    assert gt["fallback_single_segment"] is True
+    assert gt["by_item"]["khair_1"]["starts"] == [0.40, 0.80, 1.20, 1.60]
+    canon_gt, unavailable = mod.gt_map_for_request(timeline, gt, [0, 1, 2, 3])
+    assert canon_gt == {0: (0.40, 0.80), 1: (0.80, 1.20), 2: (1.20, 1.60), 3: (1.60, 2.00)}
+    assert unavailable == set()
+
+
+def test_multi_segment_no_fallback_when_seg_map_exists():
+    """有 segment 映射时不得回退：缺 source_segment_id 的 unit → gt_unavailable。"""
+    timeline = _timeline("abcd", seg_id="s#0")
+    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])],
+                           timeline_row=timeline)
+    assert gt["fallback_single_segment"] is False
+    # 去掉 source_segment_id → 不可回退 → gt_unavailable
+    no_seg = {"song_id": "songA", "canonical_units": [
+        {"canonical_unit_id": i, "text": ch} for i, ch in enumerate("abcd")]}
+    canon_gt, unavailable = mod.gt_map_for_request(no_seg, gt, [0, 1, 2, 3])
+    assert canon_gt == {} and unavailable == {0, 1, 2, 3}
