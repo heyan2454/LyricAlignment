@@ -206,6 +206,9 @@ def main(argv=None) -> int:
                 source_window_sec=(float(r.get("source_window_start_sec", r.get("window_sec", [None, None])[0])),
                                    float(r.get("source_window_end_sec", r.get("window_sec", [None, None])[1])))
                 if r.get("source_window_start_sec") or r.get("source_window_end_sec") or r.get("window_sec") else None,
+                # Detector V2（19 G2）：view/hidden schema 为 content 字段（进 identity）
+                view_id=r.get("view_id"),
+                hidden_schema=r.get("hidden_schema"),
                 metadata={"dataset": r.get("dataset"), "split": r.get("split"),
                           "source_song_id": r.get("source_song_id") or r.get("song_id"),
                           "language": r.get("language") or "Chinese", "provenance": r.get("provenance", {}),

@@ -49,6 +49,10 @@ class AlignmentRequest:
     canonical_timeline_row_sha: str | None = None          # review10-3：本 item 行 SHA
     canonical_adapter_version: str | None = None
     source_window_sec: tuple[float, float] | None = None
+    # Detector V2（19 G2）：view 与 hidden schema 必须是 content 字段——
+    # 同一 crop 的 full/sparse/overlap/review 视图 identity 不同，hidden schema 变化也改变 identity。
+    view_id: str | None = None
+    hidden_schema: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def _canonical_payload(self, *, context: dict[str, Any] | None = None) -> dict[str, Any]:
