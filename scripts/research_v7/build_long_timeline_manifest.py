@@ -564,13 +564,36 @@ def main(argv=None) -> int:
                              ensure_ascii=False))
             return 3
         tl["segs_audio"] = [str(concat_wav)] * len(segs)
+        # segment_offsets：每段全局起点（与 build_timeline cursor 同序累加：si>0 段前
+        # +artificial_silence_sec），供 label 侧把段局部 GT 转整歌全局坐标（22 §2 P0-1 修复）。
+        seg_offsets: list[dict] = []
+        cursor = 0.0
+        for si, seg in enumerate(timeline.source_segments):
+            if si > 0:
+                cursor += timeline.artificial_silence_sec
+            seg_id = seg.get("item_id") or f"{tl['song_id']}#seg{si}"
+            seg_units = [u for u in timeline.canonical_units
+                         if u.get("source_segment_id") == seg_id]
+            first = seg_units[0]["start_sec"] if seg_units else None
+            if first is not None and abs(float(first) - round(cursor, 4)) > 1e-6:
+                raise ValueError(
+                    f"segment offset mismatch for {seg_id}: cursor={cursor:.4f} first_unit={first}")
+            seg_offsets.append({"source_segment_id": seg_id,
+                                "global_start_sec": round(cursor, 4),
+                                "duration_sec": round(float(seg.get("duration_sec") or 0.0), 4),
+                                "n_units": len(seg_units)})
+            cursor += float(seg.get("duration_sec") or 0.0)
         tl_row = {
             "timeline_id": timeline.timeline_id, "song_id": tl["song_id"],
             "singer_id": tl["singer_id"], "n_segments": tl["n_segments"],
             "duration_sec": round(timeline.duration_sec, 3),
+            "artificial_silence_sec": round(timeline.artificial_silence_sec, 4),
             "canonical_units": [{"canonical_unit_id": u["canonical_unit_id"], "text": u["text"],
-                                 "start_sec": u["start_sec"], "end_sec": u["end_sec"]}
+                                 "start_sec": u["start_sec"], "end_sec": u["end_sec"],
+                                 "source_segment_id": u.get("source_segment_id"),
+                                 "source_unit_index": u.get("source_unit_index")}
                                 for u in timeline.canonical_units],
+            "segment_offsets": seg_offsets,
             "seams": list(timeline.seams),
             "source_audio_paths": [s["audio_path"] for s in segs],
             "concat_audio_path": str(concat_wav),

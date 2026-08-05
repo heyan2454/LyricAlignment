@@ -57,50 +57,71 @@ def align_units_to_gt(canonical_chars, gt_chars):
     return out
 
 
-def build_song_gt(rows, valid_statuses=GTLABEL_VALID_STATUSES) -> dict:
-    """按 song 拼接真实逐字 GT；非法行进 excluded（不进训练标签）。"""
-    chars, starts, ends = [], [], []
-    excluded = []
+def build_song_gt(rows, timeline_row=None, valid_statuses=GTLABEL_VALID_STATUSES) -> dict:
+    """按 item_id（=timeline source_segment_id）索引真实逐字 GT（22 §2 P0-1 修复）。
+
+    每段 GT 坐标 = 段局部坐标（timestamp_class_ids × timestamp_segment_sec）+
+    timeline 的 segment_offsets.global_start_sec（前序段 duration + seam silence 累计）。
+    不做整歌字符拼接：段内第 k 个字符的全局 GT 由 (item_id, k) 唯一决定。
+    返回 {"by_item": {item_id: {"chars","starts","ends"}}, "excluded": [...]}。
+    """
+    offs = {o["source_segment_id"]: o for o in (timeline_row or {}).get("segment_offsets") or []}
+    by_item: dict[str, dict] = {}
+    excluded: list[dict] = []
     for r in rows:
         status = r.get("mapping_status")
         if status not in valid_statuses:
             excluded.append({"item_id": r.get("item_id"), "reason": f"status:{status}"})
             continue
+        item = r.get("item_id")
+        off = offs.get(item)
+        if off is None:
+            excluded.append({"item_id": item, "reason": "no_segment_offset"})
+            continue
+        base = float(off["global_start_sec"])
         ids = list(r.get("timestamp_class_ids") or [])
         lyrics = str(r.get("lyrics_normalized") or "")
         if len(ids) != 2 * len(lyrics):
-            excluded.append({"item_id": r.get("item_id"), "reason": "class_ids_len_mismatch"})
+            excluded.append({"item_id": item, "reason": "class_ids_len_mismatch"})
             continue
         seg = float(r.get("timestamp_segment_sec") or 0.08)
+        chars, starts, ends = [], [], []
         for i, ch in enumerate(lyrics):
-            s = float(ids[2 * i]) * seg
-            e = float(ids[2 * i + 1]) * seg
-            if not (e > s >= 0):
-                excluded.append({"item_id": r.get("item_id"), "reason": "invalid_time",
+            s = float(ids[2 * i]) * seg + base
+            e = float(ids[2 * i + 1]) * seg + base
+            if not (e > s >= base):
+                excluded.append({"item_id": item, "reason": "invalid_time",
                                  "start_sec": s, "end_sec": e})
                 break
             chars.append(ch)
             starts.append(s)
             ends.append(e)
-    return {"chars": chars, "starts": starts, "ends": ends, "excluded": excluded}
+        else:
+            by_item[item] = {"chars": chars, "starts": starts, "ends": ends}
+    return {"by_item": by_item, "excluded": excluded}
 
 
 def gt_map_for_request(timeline_row, song_gt, request_canonical_ids):
-    """canonical unit → 真实 (gt_start, gt_end)；无匹配的 unit → gt_unavailable。"""
+    """canonical unit → (source_segment_id, source_unit_index) 确定性映射到全局 GT（22 §2.3）。
+
+    无唯一映射（unit 缺 source_segment_id/source_unit_index、段无 GT、下标越界）→
+    gt_unavailable，禁止整歌字符贪心猜测 occurrence。"""
     canon_units = list(timeline_row.get("canonical_units") or [])
-    chars = [str(u.get("text") or "") for u in canon_units]
-    binds = align_units_to_gt(chars, song_gt["chars"])
+    by_item = song_gt.get("by_item", {})
     request_ids = set(int(c) for c in (request_canonical_ids or []))
     canon_gt: dict[int, tuple[float, float]] = {}
     unavailable: set[int] = set()
-    for u, gi in zip(canon_units, binds):
+    for u in canon_units:
         cid = int(u["canonical_unit_id"])
         if cid not in request_ids:
             continue
-        if gi is None:
+        seg_id = u.get("source_segment_id")
+        idx = u.get("source_unit_index")
+        seg_gt = by_item.get(seg_id) if seg_id else None
+        if seg_gt is None or idx is None or not (0 <= int(idx) < len(seg_gt["chars"])):
             unavailable.add(cid)
-        else:
-            canon_gt[cid] = (song_gt["starts"][gi], song_gt["ends"][gi])
+            continue
+        canon_gt[cid] = (seg_gt["starts"][int(idx)], seg_gt["ends"][int(idx)])
     return canon_gt, unavailable
 
 
@@ -112,6 +133,20 @@ def ambiguous_ids(request_row) -> set[int]:
     if isinstance(ga, (list, tuple)):
         return set(int(x) for x in ga)
     return set(int(c) for c in (request_row.get("canonical_ids") or []))
+
+
+def query_set_for_request(request_row) -> set[int]:
+    """真实查询集合（22 §3 P0-2 修复）：timestamp_slot_indices（local indices）反查
+    canonical_to_local → canonical ids。无 slots 信息时回退全量 canonical_ids。"""
+    all_ids = set(int(c) for c in (request_row.get("canonical_ids") or []))
+    slots = request_row.get("timestamp_slot_indices")
+    if not slots:
+        return all_ids
+    c2l = request_row.get("canonical_to_local") or {}
+    local_to_cid = {int(v): int(k) for k, v in c2l.items()}
+    qset = {local_to_cid.get(int(s)) for s in slots}
+    qset.discard(None)
+    return qset if qset else all_ids
 
 
 def flat_labeling_rows(evidence_rows) -> list[dict]:
@@ -137,7 +172,9 @@ def label_one_request(request_row, evidence_json, timeline_row, song_gt,
     family = request_row.get("family")
     split = split_override or request_row.get("split")
     song_id = (timeline_row or {}).get("song_id")
-    request_ids = set(int(c) for c in (request_row.get("canonical_ids") or []))
+    # query_set（22 §3 P0-2 修复）：真实查询集合 = timestamp_slot_indices（local indices）
+    # 经 canonical_to_local 反查的 canonical ids；未查询单位不进 correctness 分母。
+    request_ids = query_set_for_request(request_row)
     amb = ambiguous_ids(request_row)
 
     def row_for(cid, target, label, audit, gt_unavailable):
@@ -149,7 +186,7 @@ def label_one_request(request_row, evidence_json, timeline_row, song_gt,
         }
 
     out: list[dict] = []
-    if not timeline_row or not song_gt or not song_gt["chars"]:
+    if not timeline_row or not song_gt or not song_gt.get("by_item"):
         for cid in sorted(request_ids):
             for t in TARGETS:
                 out.append(row_for(cid, t, "gt_unavailable",
@@ -255,7 +292,9 @@ def label_run(run_root, timeline_manifest, gt_labels, out_root,
         r = json.loads(line)
         if r.get("song_id"):
             gt_by_song[str(r["song_id"])].append(r)
-    song_gt = {song: build_song_gt(rows, valid_statuses or GTLABEL_VALID_STATUSES)
+    valid = valid_statuses or GTLABEL_VALID_STATUSES
+    song_gt = {song: build_song_gt(rows, timeline_row=timeline_by_song.get(song),
+                                   valid_statuses=valid)
                for song, rows in gt_by_song.items()}
 
     gt_audit = read_json_optional(run_root / "preflight" / "GT_LABEL_AUDIT.json",

@@ -13,7 +13,7 @@
   含 transformers 5.15.0.dev0、torch、nagisa、soundfile、numpy、pytest 等全部相关依赖）。
   项目包尚未 `pip install -e .`，当前以 `PYTHONPATH=src` 运行即可（`src/` 为 setuptools package root）。
 - 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 stage override 指向
-  `docs/research_v7_align_behavior/` 的 `README` / `18` Detector V2 冻结计划 / `19` 执行合同 /
+  `docs/research_v7_align_behavior/` 的 `README` / `18` Detector V2 冻结计划 / `19` 执行合同 / `22` 2026-08-06 结果复审（completed=false, partial_exploratory=true，Phase A-D 返工）/
   `20` 实现蓝图 / `21` 旧结果纠偏；`17` 及更早文档仅作上一轮实现追溯。
 
 ## Commands

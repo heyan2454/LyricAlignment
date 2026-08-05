@@ -555,3 +555,47 @@ def test_builder_density_tiers_custom_and_invalid(tmp_path):
                              "--density-strides", bad],
                             capture_output=True, text=True, env=ENV)
         assert r2.returncode == 1 and "density-strides" in r2.stdout, (bad, r2.stdout)
+
+
+def test_builder_segment_offsets_and_source_map(tmp_path):
+    """22 §2 Phase A：canonical_units 保留 source_segment_id/source_unit_index 6 键；
+    segment_offsets 每段全局起点 = 前序 duration 累计 + seam 静音；首单位 start 校验一致。"""
+    mf, audio_root = _make_m4_manifest(tmp_path, n_segments=3, seg_sec=2.0)
+    out = tmp_path / "fm_seg"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "4",
+                        "--windows-per-song", "1", "--limit", "1",
+                        "--seam-silence-sec", "0.5"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    tl = json.loads((out / "LONG_TIMELINE_MANIFEST.jsonl").read_text().splitlines()[0])
+    units = tl["canonical_units"]
+    # 1) 6 键齐全
+    for u in units:
+        for k in ("canonical_unit_id", "text", "start_sec", "end_sec",
+                  "source_segment_id", "source_unit_index"):
+            assert k in u, k
+    # 2) segment_offsets：第二段起点 = 2.0 + 0.5 = 2.5；第三段 = 2.0+0.5+2.0+0.5 = 5.0
+    offs = tl["segment_offsets"]
+    assert len(offs) == 3
+    assert offs[0]["global_start_sec"] == 0.0
+    assert offs[1]["global_start_sec"] == 2.5
+    assert offs[2]["global_start_sec"] == 5.0
+    assert tl["artificial_silence_sec"] == 0.5
+    # 3) 每段首单位 start_sec == 段全局起点
+    for off in offs:
+        seg_units = [u for u in units if u["source_segment_id"] == off["source_segment_id"]]
+        assert seg_units, off
+        assert abs(float(seg_units[0]["start_sec"]) - off["global_start_sec"]) < 1e-6
+        assert len(seg_units) == off["n_units"]
+    # 4) source_unit_index 段内连续 0..n-1
+    for off in offs:
+        seg_units = [u for u in units if u["source_segment_id"] == off["source_segment_id"]]
+        idxs = [u["source_unit_index"] for u in seg_units]
+        assert idxs == list(range(len(seg_units))), idxs
+    # 5) 末单位 end ≈ 总 duration（2.0*3 + 0.5*2 = 7.0）
+    assert abs(float(units[-1]["end_sec"]) - 7.0) < 1e-3
+    # 6) seams 交叉校验：seams[i].timeline_sec == offs[i+1].global_start_sec
+    for si, seam in enumerate(tl["seams"]):
+        assert abs(seam["timeline_sec"] - offs[si + 1]["global_start_sec"]) < 1e-6

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Detector V2 run labeling CLI tests (Dev-G)：字符对齐 / gt_unavailable / 双目标独立 /
+"""Detector V2 run labeling CLI tests (Dev-G)：全局 GT 映射 / gt_unavailable / 双目标独立 /
 family×split 分层分母 / 防泄漏（只写 LABELS.jsonl，不写 evidence_v2）。"""
 from __future__ import annotations
 
@@ -22,6 +22,17 @@ def _gt_row(item_id, lyrics, ids, status="accepted_rule_based_pinyin_validated")
             "mapping_status": status}
 
 
+def _timeline(chars, seg_id="s#0", base=0.0, seg_dur=2.0):
+    """单段 timeline fixture（22 §2 schema：canonical_units 6 键 + segment_offsets）。"""
+    return {"song_id": "songA", "canonical_units": [
+        {"canonical_unit_id": i, "text": ch, "start_sec": base + i * 0.4,
+         "end_sec": base + i * 0.4 + 0.4, "source_segment_id": seg_id,
+         "source_unit_index": i} for i, ch in enumerate(chars)],
+        "segment_offsets": [{"source_segment_id": seg_id, "global_start_sec": base,
+                             "duration_sec": seg_dur, "n_units": len(chars)}],
+        "seams": [], "artificial_silence_sec": 0.0}
+
+
 def _evidence(request_id, gci_rows):
     return {"content_identity": request_id, "attempt": {
         "ok": True, "request": {"request_id": request_id},
@@ -38,17 +49,6 @@ def _request_row(rid, family, split, n_canonical, item="songA", gt_ambiguity=Fal
             "audio_path": f"/x/audio/{item}.wav"}
 
 
-def test_align_units_to_gt_exact_and_unavailable():
-    binds = mod.align_units_to_gt(["a", "b", "c", "d", "x"], ["a", "b", "c", "d"])
-    assert binds == [0, 1, 2, 3, None]
-    assert mod.align_units_to_gt([], []) == []
-
-
-def test_align_units_to_gt_skips_gt_extra():
-    binds = mod.align_units_to_gt(["a", "b", "c", "d"], ["a", "x", "b", "c", "d"])
-    assert binds == [0, 2, 3, 4]
-
-
 def test_build_song_gt_times_and_exclusions():
     rows = [
         _gt_row("s#0", "ab", [5, 10, 10, 15]),
@@ -57,22 +57,68 @@ def test_build_song_gt_times_and_exclusions():
         _gt_row("s#3", "zz", [1, 2, 3], status="accepted_rule_based_pinyin_validated"),  # 长度不符
         _gt_row("s#4", "yy", [5, 2, 10, 15]),                      # end<=start 无效
     ]
-    gt = mod.build_song_gt(rows)
-    assert gt["chars"] == ["a", "b", "c", "d"]
-    assert gt["starts"] == [0.40, 0.80, 1.20, 1.60]
-    assert gt["ends"] == [0.80, 1.20, 1.60, 2.00]
-    assert len(gt["excluded"]) == 3
+    tl = _timeline("abcd", seg_id="s#0")
+    gt = mod.build_song_gt(rows, timeline_row=tl)
+    # s#0 有 timeline 段偏移 0 → 局部=全局
+    assert gt["by_item"]["s#0"]["chars"] == ["a", "b"]
+    assert gt["by_item"]["s#0"]["starts"] == [0.40, 0.80]
+    assert gt["by_item"]["s#0"]["ends"] == [0.80, 1.20]
+    # s#1/s#3/s#4 无 timeline segment_offsets → excluded（no_segment_offset 优先于内容校验）
+    reasons = [e["reason"] for e in gt["excluded"]]
+    assert reasons.count("no_segment_offset") == 3
+    assert reasons.count("status:rejected") == 1
+    assert len(gt["excluded"]) == 4
+
+
+def test_build_song_gt_second_segment_global_offset():
+    """22 §2.4.1：两段拼接，第二段首字 GT = 段内局部 + 段1 duration + seam。"""
+    tl = {"song_id": "songA",
+          "canonical_units": [
+              {"canonical_unit_id": 0, "text": "a", "start_sec": 0.0, "end_sec": 0.4,
+               "source_segment_id": "s#0", "source_unit_index": 0},
+              {"canonical_unit_id": 1, "text": "b", "start_sec": 10.5, "end_sec": 10.9,
+               "source_segment_id": "s#1", "source_unit_index": 0},
+          ],
+          "segment_offsets": [
+              {"source_segment_id": "s#0", "global_start_sec": 0.0, "duration_sec": 10.0,
+               "n_units": 1},
+              {"source_segment_id": "s#1", "global_start_sec": 10.5, "duration_sec": 4.0,
+               "n_units": 1},
+          ], "seams": [], "artificial_silence_sec": 0.5}
+    gt = mod.build_song_gt([_gt_row("s#0", "a", [5, 10]),
+                            _gt_row("s#1", "b", [15, 20])], timeline_row=tl)
+    assert gt["by_item"]["s#0"]["starts"] == [0.40]
+    assert gt["by_item"]["s#1"]["starts"] == [10.5 + 1.20]   # 10.5 (段起点) + 1.2 (局部)
+    assert gt["by_item"]["s#1"]["ends"] == [10.5 + 1.60]
 
 
 def test_gt_map_for_request_binds_real_times():
-    timeline = {"song_id": "songA", "canonical_units": [
-        {"canonical_unit_id": i, "text": ch} for i, ch in enumerate("abcdx")]}
-    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])])
+    timeline = _timeline("abcdx", seg_id="s#0")
+    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])],
+                           timeline_row=timeline)
     canon_gt, unavailable = mod.gt_map_for_request(timeline, gt, [0, 1, 2, 3])
     assert canon_gt == {0: (0.40, 0.80), 1: (0.80, 1.20), 2: (1.20, 1.60), 3: (1.60, 2.00)}
     assert unavailable == set()
     canon_gt2, unavailable2 = mod.gt_map_for_request(timeline, gt, [0, 1, 2, 3, 4])
-    assert unavailable2 == {4} and 4 not in canon_gt2
+    assert unavailable2 == {4} and 4 not in canon_gt2  # x 无 GT（index 越界）
+
+
+def test_gt_map_for_request_deterministic_no_greedy():
+    """22 §2.4.4：重复文本 occurrence 由 source id/index 唯一决定，不做字符贪心。"""
+    timeline = {"song_id": "songA", "canonical_units": [
+        {"canonical_unit_id": 0, "text": "爱", "start_sec": 0.0, "end_sec": 0.4,
+         "source_segment_id": "s#0", "source_unit_index": 0},
+        {"canonical_unit_id": 1, "text": "爱", "start_sec": 10.5, "end_sec": 10.9,
+         "source_segment_id": "s#1", "source_unit_index": 0},
+    ], "segment_offsets": [
+        {"source_segment_id": "s#0", "global_start_sec": 0.0, "duration_sec": 10.0, "n_units": 1},
+        {"source_segment_id": "s#1", "global_start_sec": 10.5, "duration_sec": 4.0, "n_units": 1},
+    ], "seams": [], "artificial_silence_sec": 0.5}
+    gt = mod.build_song_gt([_gt_row("s#0", "爱", [5, 10]), _gt_row("s#1", "爱", [20, 25])],
+                           timeline_row=timeline)
+    canon_gt, unavailable = mod.gt_map_for_request(timeline, gt, [0, 1])
+    assert canon_gt == {0: (0.40, 0.80), 1: (10.5 + 1.60, 10.5 + 2.00)}  # 各绑定各自段
+    assert unavailable == set()
 
 
 def test_dual_target_independent_no_cross_fallback():
@@ -86,9 +132,9 @@ def test_dual_target_independent_no_cross_fallback():
              "official_fixed_global_start_sec": 1.70, "official_fixed_global_end_sec": 2.00}),
         (3, {"raw_global_start_sec": 1.65, "raw_global_end_sec": 2.05}),  # official 单边 → 不跨 target 回退
     ]
-    timeline = {"song_id": "songA", "canonical_units": [
-        {"canonical_unit_id": i, "text": ch} for i, ch in enumerate("abcd")]}
-    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])])
+    timeline = _timeline("abcd", seg_id="s#0")
+    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])],
+                           timeline_row=timeline)
     out, labeled, n_gu = mod.label_one_request(req, _evidence(req["request_id"], gci_rows),
                                                timeline, gt, [], split_override=None)
     assert n_gu == 0 and len(labeled) == 8
@@ -105,9 +151,9 @@ def test_ambiguous_whole_request_independent():
     gci_rows = [(i, {"raw_global_start_sec": 0.42 + i, "raw_global_end_sec": 0.80 + i,
                      "official_fixed_global_start_sec": 0.42 + i,
                      "official_fixed_global_end_sec": 0.80 + i}) for i in range(3)]
-    timeline = {"song_id": "songA", "canonical_units": [
-        {"canonical_unit_id": i, "text": ch} for i, ch in enumerate("abcd")]}
-    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])])
+    timeline = _timeline("abcd", seg_id="s#0")
+    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])],
+                           timeline_row=timeline)
     out, _, _ = mod.label_one_request(req, _evidence(req["request_id"], gci_rows),
                                       timeline, gt, [], split_override="test")
     assert all(r["label"] == "ambiguous" for r in out)
@@ -119,10 +165,8 @@ def test_gt_unavailable_rows_both_targets_and_song_missing():
     gci_rows = [(i, {"raw_global_start_sec": 0.4 + i, "raw_global_end_sec": 0.8 + i,
                      "official_fixed_global_start_sec": 0.4 + i,
                      "official_fixed_global_end_sec": 0.8 + i}) for i in range(3)]
-    timeline = {"song_id": "songA", "canonical_units": [
-        {"canonical_unit_id": 0, "text": "a"}, {"canonical_unit_id": 1, "text": "b"},
-        {"canonical_unit_id": 2, "text": "z"}]}   # z 无 GT
-    gt = mod.build_song_gt([_gt_row("s#0", "ab", [5, 10, 10, 15])])
+    timeline = _timeline("abz", seg_id="s#0")   # z 无 GT（index 2 越界）
+    gt = mod.build_song_gt([_gt_row("s#0", "ab", [5, 10, 10, 15])], timeline_row=timeline)
     out, labeled, n_gu = mod.label_one_request(req, _evidence(req["request_id"], gci_rows),
                                                timeline, gt, [], split_override=None)
     assert n_gu == 2
@@ -137,14 +181,56 @@ def test_gt_unavailable_rows_both_targets_and_song_missing():
     assert all(r["audit"]["reason"] == "song_gt_unavailable" for r in out2)
 
 
+def test_query_set_sparse_not_queried_excluded():
+    """22 §3.3.1-3.3.3：sparse 只查询 slots；未查询单位不进 correctness 分母、不产生 unsafe。"""
+    req = _request_row("songA:0:baseline_legal:legal:sparse", "baseline_legal", "train", 4)
+    req["timestamp_slot_indices"] = [0, 2]          # 只查询 2 个 local slots
+    gci_rows = [(0, {"raw_global_start_sec": 0.42, "raw_global_end_sec": 0.78,
+                     "official_fixed_global_start_sec": 0.42,
+                     "official_fixed_global_end_sec": 0.78}),
+                (2, {"raw_global_start_sec": 1.70, "raw_global_end_sec": 2.00,
+                     "official_fixed_global_start_sec": 1.70,
+                     "official_fixed_global_end_sec": 2.00})]
+    timeline = _timeline("abcd", seg_id="s#0")
+    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])],
+                           timeline_row=timeline)
+    out, labeled, n_gu = mod.label_one_request(req, _evidence(req["request_id"], gci_rows),
+                                               timeline, gt, [], split_override=None)
+    # 分母只含 query_set {0, 2}；1/3 未查询 → 无行输出
+    assert {r["canonical_unit_id"] for r in out} == {0, 2}
+    assert len(labeled) == 4  # 2 units × 2 targets
+    assert n_gu == 0
+    by = {(r["canonical_unit_id"], r["target"]): r["label"] for r in out}
+    assert by[(0, "raw")] == "safe" and by[(2, "raw")] == "unsafe"
+
+
+def test_query_set_missing_row_still_unsafe():
+    """22 §3.3.3：query unit 真缺 row 仍标 unsafe。"""
+    req = _request_row("songA:0:baseline_legal:legal:sparse", "baseline_legal", "train", 4)
+    req["timestamp_slot_indices"] = [0, 1, 2, 3]   # 全量查询
+    gci_rows = [(0, {"raw_global_start_sec": 0.42, "raw_global_end_sec": 0.78,
+                     "official_fixed_global_start_sec": 0.42,
+                     "official_fixed_global_end_sec": 0.78}),
+                (2, {"raw_global_start_sec": 1.70, "raw_global_end_sec": 2.00,
+                     "official_fixed_global_start_sec": 1.70,
+                     "official_fixed_global_end_sec": 2.00})]   # 1/3 缺 row
+    timeline = _timeline("abcd", seg_id="s#0")
+    gt = mod.build_song_gt([_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])],
+                           timeline_row=timeline)
+    out, _, _ = mod.label_one_request(req, _evidence(req["request_id"], gci_rows),
+                                      timeline, gt, [], split_override=None)
+    by = {(r["canonical_unit_id"], r["target"]): r["label"] for r in out}
+    assert by[(1, "raw")] == "unsafe" and by[(3, "raw")] == "unsafe"  # missing_output_geometry
+
+
 def _write_fixture_run(tmp_path):
     run = tmp_path / "run"
     ev = run / "evidence"
     ev.mkdir(parents=True)
     (run / "manifests").mkdir(parents=True)
 
-    timeline = {"song_id": "songA", "concat_audio_path": "/x/audio/songA.wav", "canonical_units": [
-        {"canonical_unit_id": i, "text": ch} for i, ch in enumerate("abcdx")]}
+    timeline = _timeline("abcdx", seg_id="s#0")
+    timeline["concat_audio_path"] = "/x/audio/songA.wav"
     (tmp_path / "LONG_TIMELINE_MANIFEST.jsonl").write_text(
         json.dumps(timeline, ensure_ascii=False) + "\n")
     gt = [_gt_row("s#0", "abcd", [5, 10, 10, 15, 15, 20, 20, 25])]
