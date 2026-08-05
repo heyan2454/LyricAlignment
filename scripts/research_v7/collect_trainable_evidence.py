@@ -102,6 +102,9 @@ def collect(run_manifest_path: Path, out: Path) -> dict:
             "canonical_timeline_row_sha": req.get("canonical_timeline_row_sha"),
             "source_window_sec": req.get("source_window_sec"),
             "canonical_to_local": req.get("canonical_to_local"),
+            # round18（family LOO）：mutation family 转存（baseline/missing/replace/extra），
+            # 供 assessor 分层与 family-LOO；只用于分层/评价，不进特征（13 §10.1）。
+            "mutation_type": req.get("mutation_type"),
         })
     # review17-minor：转存一致性校验（防收集时串台）——缺失字段容错，仅“存在但冲突”拒绝
     _verify_lineage_transfer(trainable)
