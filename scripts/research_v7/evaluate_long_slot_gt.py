@@ -48,6 +48,13 @@ round13 新增评价分支（replace/extra，13 §A3/§A1）：
     identity_error_extra_rows = max(0, n_rows - n_text_units)（多余行 = 疑似插入错位）。
   - pooled unit 指标只聚合 baseline/missing（replace/extra 无 unit-level GT），replace/extra
     分别聚合 wrong_output_recall / identity_error_extra_rows。
+
+round13 T5（slot density 档位）：
+  - runner 构造 request 时丢弃 phase 字段，slot 档位只从 request_id 后缀解析
+    （:full/:s2/:s4，旧数据含 :sparse）——修复 self_check.n_sparse_requests 恒为 0 的
+    识别口径 bug（此前依赖恒 False 的 req.get("phase")=="sparse"）；
+  - metrics 增加 density_strata：按档位分层的 n_requests / n_units_evaluated
+    （13 §S2：full/stride 档分别汇报，档间汇总只评共同 queried 单位）。
 """
 from __future__ import annotations
 
@@ -168,6 +175,24 @@ def _is_missing_rid(request_id: str) -> str | None:
     if m:
         return request_id[: m.start()]
     return None
+
+
+def _density_tier(request_id: str | None) -> str | None:
+    """从 request_id 后缀解析 slot 密度档位（:full/:s2/:s4/:sparse）；无法解析返回 None。
+
+    round13 T5：runner 构造 request 时丢弃 phase 字段（只复制已知字段），档位只能
+    从 request_id 后缀恢复（:full 连续全量；:s2/:s4 为 stride2/4 档；:sparse 为旧版
+    单档 strided 后缀，兼容旧数据）。兼容 mutation 后缀
+    （:missing[:ratio] / :replace{r} / :extra{r}）。
+    """
+    if not request_id:
+        return None
+    import re as _re
+    m = _re.search(
+        r":w\d+:(full|s\d+|sparse)"
+        r"(?::(?:missing(?:\d+(?:\.\d+)?)?|replace\d+(?:\.\d+)?|extra\d+(?:\.\d+)?))?$",
+        request_id)
+    return m.group(1) if m else None
 
 
 def _gap_omitted_ids(units: dict[int, dict], deleted: list[int],
@@ -399,7 +424,9 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
         # canonical 子集之外另有 wrong-output/identity-error 评价，不并入 unit 口径）
         if r["mutation_type"] in ("baseline", "missing"):
             sum_text_units += len(req.get("text_units") or [])
-        if req.get("phase") == "sparse":
+        # round13 T5：phase 字段会被 runner 丢弃，档位从 request_id 后缀解析；
+        # 非 full 档（stride 2/4 或旧版 sparse）纳入 sparse 子集自检。
+        if _density_tier(rid) not in (None, "full"):
             sparse_checked.append((r, req))
 
     # ---- pooled 汇总 ----
@@ -449,8 +476,9 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
 
     # ---- self-check（只读诊断，不改任何指标语义）----
     # 1) n_units_evaluated 应等于所有已评价请求 text_units 数之和；
-    # 2) phase=="sparse" 请求的 n_units_evaluated 应等于共同评分子集长度
-    #    （text 覆盖 canonical ids 的子集，即 _request_text_ids 口径）；
+    # 2) 非 full 档（:s2/:s4/:sparse，从 request_id 后缀解析）请求的
+    #    n_units_evaluated 应等于共同评分子集长度（text 覆盖 canonical ids 的子集，
+    #    即 _request_text_ids 口径）；
     # 3) counts_consistent：n_units_evaluated == n_retained_units。
     sparse_subset_ok = all(
         rr["n_units_evaluated"] == len(_request_text_ids(rq))
@@ -462,6 +490,18 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
         "sparse_subset_ok": sparse_subset_ok,
         "n_sparse_requests": len(sparse_checked),
         "counts_consistent": n_units_evaluated == n_retained,
+    }
+
+    # ---- density 档位分层（13 §S2：full/stride 档分别汇总）----
+    by_tier: dict[str, list[dict]] = {}
+    for r in per_request:
+        tier = _density_tier(r["request_id"])
+        if tier is not None:
+            by_tier.setdefault(tier, []).append(r)
+    density_strata = {
+        tier: {"n_requests": len(rs),
+               "n_units_evaluated": sum(x["n_units_evaluated"] for x in rs)}
+        for tier, rs in sorted(by_tier.items())
     }
 
     result = {
@@ -489,6 +529,9 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             "n_missing": n_missing,
             "n_replace": n_replace,
             "n_extra": n_extra,
+            # round13 T5：按 density 档位分层（n_requests 与 n_units_evaluated），
+            # 档位从 request_id 后缀解析（:full/:s2/:s4，旧数据含 :sparse）
+            "density_strata": density_strata,
             # round13：replace 双向评价（wrong-output 实现；omission 方向未实现 → None + note）
             "wrong_output_recall": wrong_output_recall,
             "replaced_gt_omission_recall": None,
@@ -574,6 +617,7 @@ def main(argv: list[str] | None = None) -> int:
         "n_missing": m["n_missing"],
         "n_replace": m["n_replace"],
         "n_extra": m["n_extra"],
+        "density_strata": m.get("density_strata"),
         "out": str(out),
     }, indent=2, ensure_ascii=False))
     return 0

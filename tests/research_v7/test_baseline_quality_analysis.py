@@ -306,6 +306,11 @@ def test_parse_request_id():
     assert m.parse_request_id("song:w2:sparse:missing") == {
         "song_id": "song", "window_index": 2, "slot_kind": "sparse"}
     assert m.parse_request_id("song:w0:full")["slot_kind"] == "full"
+    # round13 T5：density 档位集合（s2/s4）解析
+    assert m.parse_request_id("song:w2:s2:missing0.25") == {
+        "song_id": "song", "window_index": 2, "slot_kind": "s2"}
+    assert m.parse_request_id("song:w2:s4")["slot_kind"] == "s4"
+    assert m.parse_request_id("song:w1:s4:missing")["slot_kind"] == "s4"
     assert m.parse_request_id("nonsense") is None
 
 

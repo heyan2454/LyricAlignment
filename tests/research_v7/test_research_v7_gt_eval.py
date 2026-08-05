@@ -216,7 +216,7 @@ def test_gt_eval_self_check_counts_consistent(tmp_path):
     assert sc["counts_consistent"] is True, sc
     assert sc["units_match_text_units"] is True, sc
     assert sc["n_units_from_text_units"] == 20 + 14
-    assert sc["n_sparse_requests"] == 0  # fixture 无 phase=sparse 请求（vacuous ok）
+    assert sc["n_sparse_requests"] == 0  # fixture 全为 :full 请求（无 stride 档，vacuous ok）
     assert sc["sparse_subset_ok"] is True, sc
 
 
@@ -408,3 +408,60 @@ def test_gt_eval_extra_identity_error(tmp_path):
     # unit 级 pooling 不混入 extra：只有 baseline 参与
     assert met["n_units_evaluated"] == 20
     assert met["unit_recall"] == 1.0
+
+
+def test_gt_eval_density_tier_parsing_and_strata(tmp_path):
+    """round13 T5：runner 丢弃 phase 字段后，slot 档位只从 request_id 后缀解析
+    （:full/:s2/:sparse），n_sparse_requests 正确计数（此前恒 0）；metrics 输出
+    density_strata 按档位分层（n_requests 与 n_units_evaluated）；旧 :sparse 后缀兼容。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_long_slot_gt as m
+    run = tmp_path / "run"; ev_dir = run / "evidence"; ev_dir.mkdir(parents=True)
+    text = [chr(97 + i) for i in range(20)]
+
+    def _mk(rid, mutation="baseline", n_keep=20):
+        req = {
+            "request_id": rid, "item_id": rid, "mutation_type": mutation,
+            "song_id": "s1", "text_units": text[:n_keep],
+            "text_start_index": 0, "text_end_index": n_keep,
+            "canonical_text_start": 0, "canonical_text_end": n_keep,
+            "canonical_ids": list(range(n_keep)),
+            "canonical_to_local": {str(i): i for i in range(n_keep)},
+            "source_window_sec": [0.0, 20.0],
+        }
+        if mutation == "missing":
+            req["mutation_parameters"] = {"baseline_unit_count": 20, "requested_ratio": 0.25}
+        ev = {"content_identity": rid, "attempt": {"status": "ok", "request": req,
+              "decoder_outputs": {"official": {"rows": _rows(n_keep, text[:n_keep])}}}}
+        (ev_dir / f"{rid.replace(':', '_')}.json").write_text(json.dumps(ev))
+
+    # 故意不带 phase 字段（模拟 runner 丢弃）；s2 missing 需配对 s2 baseline
+    _mk("s1:w0:full")
+    _mk("s1:w0:s2")
+    _mk("s1:w0:sparse")  # 旧版单档 strided 后缀（兼容）
+    _mk("s1:w0:s2:missing0.25", mutation="missing", n_keep=15)
+    tl = tmp_path / "timeline.jsonl"
+    tl.write_text(json.dumps(TIMELINE) + "\n")
+    res = m.evaluate(run_root=run, timeline_manifest=tl)
+    sc = res["metrics"]["self_check"]
+    # 修复验证：phase 字段缺失也能正确计数（s2×2 + sparse×1）
+    assert sc["n_sparse_requests"] == 3, sc
+    assert sc["sparse_subset_ok"] is True, sc
+    assert res["metrics"]["n_evidence_skipped"] == 0
+    # density 档位分层：n_units_evaluated = full 20 + s2 (20+15) + sparse 20
+    d = res["metrics"]["density_strata"]
+    assert d == {
+        "full": {"n_requests": 1, "n_units_evaluated": 20},
+        "s2": {"n_requests": 2, "n_units_evaluated": 35},
+        "sparse": {"n_requests": 1, "n_units_evaluated": 20},
+    }, d
+    # 辅助函数直接验证（含 replace/extra 后缀）
+    assert m._density_tier("s1:w0:full") == "full"
+    assert m._density_tier("s1:w0:s2") == "s2"
+    assert m._density_tier("s1:w0:s4:replace0.10") == "s4"
+    assert m._density_tier("s1:w0:sparse:missing") == "sparse"
+    assert m._density_tier("s1:w0:full:missing0.25") == "full"
+    assert m._density_tier("s1:w0:full:extra0.10") == "full"
+    assert m._density_tier("weird") is None
+    assert m._density_tier(None) is None

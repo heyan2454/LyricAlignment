@@ -3,8 +3,13 @@
 
 formal 契约（13/14）：主体 ≥180s（同歌同歌手按元数据顺序拼接，禁人工静音凑长数据）、
 主模型请求 fixed 60s、baseline 按完整 request identity 配对、每窗携带 canonical lineage
-（canonical_ids/canonical_to_local/canonical range/timeline SHA/source window），
+（canonical_ids/canonical_to_local/canonical range/timeline SHA/source window）、
 role=lyrics_aligned + text_window_aligned=true——保证 guard/collect/assessor 链路不空转。
+
+slot 密度（13 §S2）：--density-strides 控制档位（full=连续全量、strided2/4=等距取样），
+stride 档按窗位轮换 phase 起点（offset=window_index % step），每档独立 slot plan
+（slot_planning.build_density_plans 求全档 common anchors），request_id 后缀=档位名
+（:full/:s2/:s4）——汇总/评价只对共同 queried 单位公平比较。
 
 用法：
   PYTHONPATH=src python scripts/research_v7/build_long_timeline_manifest.py \
@@ -12,6 +17,7 @@ role=lyrics_aligned + text_window_aligned=true——保证 guard/collect/assesso
       --out-root <run>/formal_manifest \
       --min-duration 180 --windows-per-song 3 --window-sec 60 [--limit 5] \
       [--seam-silence-sec 0.5] \
+      [--density-strides full,strided2,strided4] \
       [--missing-ratios 0.10,0.25,0.50] [--replace-ratios 0.10,0.25,0.50] \
       [--extra-ratios 0.10,0.25,0.50]
 
@@ -34,8 +40,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
+from typing import Sequence
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -45,10 +53,44 @@ from lyricalign.research_v7.mutations import (  # noqa: E402
     extra_ratio,
     replace_ratio,
 )
-from lyricalign.research_v7.slot_planning import plan_slots  # noqa: E402
+from lyricalign.research_v7.slot_planning import (  # noqa: E402
+    build_density_plans,
+    id_at_stride,
+    plan_slots,
+)
 from lyricalign.research_v7.timeline import build_timeline  # noqa: E402
 
 WINDOW_SEC = 60.0
+DEFAULT_DENSITY_TIERS: tuple[tuple[str, int], ...] = (
+    ("full", 1), ("s2", 2), ("s4", 4),
+)
+
+
+def parse_density_strides(raw: str) -> list[tuple[str, int]]:
+    """'full,strided2,strided4' -> [('full', 1), ('s2', 2), ('s4', 4)]。
+
+    full=连续全量；strided<N>=从 phase offset 起等距取样（N≥2）。phase 名=档位名
+    （request_id 后缀 :full/:s2/:s4）。拒绝空档位/重复档位/非法 step。
+    """
+    out: list[tuple[str, int]] = []
+    for tok in raw.split(","):
+        tok = tok.strip()
+        if not tok:
+            continue
+        if tok == "full":
+            phase, step = "full", 1
+        else:
+            mm = re.fullmatch(r"strided(\d+)", tok)
+            if mm is None or int(mm.group(1)) < 2:
+                raise ValueError(f"bad token {tok!r} (expect 'full' or 'stridedN' with N>=2)")
+            step = int(mm.group(1))
+            phase = f"s{step}"
+        if any(p == phase for p, _ in out):
+            raise ValueError(f"duplicate density stride {tok!r}")
+        out.append((phase, step))
+    if not out:
+        raise ValueError("empty list")
+    return out
 
 
 def _sha(p: Path) -> str:
@@ -141,11 +183,17 @@ def _canonical_units_for_window(canonical_units, w0: float, w1: float) -> list[d
 
 def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                    row_sha: str, language: str = "Chinese",
+                   density_tiers: Sequence[tuple[str, int]] = DEFAULT_DENSITY_TIERS,
                    missing_ratios: tuple[float, ...] = (0.25,),
                    replace_ratios: tuple[float, ...] = (),
                    extra_ratios: tuple[float, ...] = (),
                    donor_pool: dict[str, list[str]] | None = None) -> list[dict]:
     """从一条时间线生成 fixed-60s 窗请求（baseline + missing/replace/extra mutation 多档配对）。
+
+    slot 密度（13 §S2）：density_tiers 每档生成独立 slot plan（phase 名=档位名，
+    request_id 后缀 :full/:s2/:s4）；stride 档等距取样且起点按窗位轮换
+    （offset=window_index % step，不同窗错开取样位置）；档间 common anchors 由
+    build_density_plans 求交集（汇总/评价只评共同 queried 单位）。
 
     每个 missing/replace/extra ratio 档生成一个独立变体（request_id 后缀
     :missing{r}/:replace{r}/:extra{r}，如 :missing0.25），避免多档 identity 冲突；
@@ -198,22 +246,26 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
         texts = [u["text"] for u in in_win]
         canonical_to_local = {cid: i for i, cid in enumerate(cids)}
         c0, c1 = cids[0], cids[-1] + 1
-        # slot：full（默认）与非连续 strided 各一个（density 对比）
-        plan_full = plan_slots(
-            plan_id=f"{tl['song_id']}:w{wi}:full", canonical_unit_count=n,
-            queried_canonical_ids=cids, strategy="contiguous",
-            canonical_to_local=canonical_to_local, request_local_count=len(texts),
-            comparison_group_id=f"{tl['song_id']}:w{wi}", phase="full")
-        step = max(2, len(cids) // 6)
-        plan_sparse = plan_slots(
-            plan_id=f"{tl['song_id']}:w{wi}:sparse", canonical_unit_count=n,
-            queried_canonical_ids=cids[::step], strategy=f"strided{step}",
-            canonical_to_local=canonical_to_local, request_local_count=len(texts),
-            comparison_group_id=f"{tl['song_id']}:w{wi}", phase="sparse")
+        # slot：按 density 档位生成（13 §S2）。full=连续全量；strided<N>=从
+        # phase offset 等距取样，offset=window_index % step 实现 phase 轮换
+        # （不同窗错开取样位置，不固定只取一种位置）。每档独立 slot plan，
+        # phase 名=档位名（request_id 后缀 :full/:s2/:s4）；common anchors 由
+        # build_density_plans 求全档交集（汇总只评共同 queried 单位）。
+        selected_by_stride_phase: dict[str, dict[str, list[int]]] = {}
+        for phase_name, step in density_tiers:
+            if step == 1:
+                selected = list(cids)
+            else:
+                selected = [cids[i] for i in id_at_stride(len(cids), step, wi % step)]
+            selected_by_stride_phase[str(step)] = {phase_name: selected}
+        plans, _common_anchors = build_density_plans(
+            plan_group=f"{tl['song_id']}:w{wi}", canonical_unit_count=n,
+            selected_by_stride_phase=selected_by_stride_phase,
+            canonical_to_local=canonical_to_local, request_local_count=len(texts))
         # canonical lineage（review12：guard/collect/assessor 消费）
         # canonical_timeline_row_sha 由 main 对实际写入行求值后传入（可从文件复验）
         tl_sha = tl.get("manifest_sha")
-        for plan in (plan_full, plan_sparse):
+        for plan in plans:
             base = {
                 "schema_version": "research_v7_long_slot_v1",
                 "request_type": "long_timeline_60s",
@@ -400,6 +452,10 @@ def main(argv=None) -> int:
     p.add_argument("--limit", type=int, default=10,
                    help="最多取几首歌曲构造时间线（13 §3.3 每条件 ≥12 首 gate："
                         "正式重建请传 20；默认 10 仅快速验证）")
+    p.add_argument("--density-strides", type=str, default="full,strided2,strided4",
+                   help="slot 密度档位（逗号分隔；full=连续全量，strided2=stride2，"
+                        "strided4=stride4；stride 档按窗位轮换起点 offset=window_index % step，"
+                        "request_id 后缀=档位名 :full/:s2/:s4）")
     p.add_argument("--missing-ratios", type=str, default="0.25",
                    help="missing 尾部缺失核心档（逗号分隔 float，如 0.10,0.25,0.50）")
     p.add_argument("--replace-ratios", type=str, default="",
@@ -412,6 +468,13 @@ def main(argv=None) -> int:
 
     if args.seam_silence_sec < 0.0:
         print(json.dumps({"ok": False, "reason": "seam_silence_sec must be >= 0.0"},
+                         ensure_ascii=False))
+        return 1
+
+    try:
+        density_tiers = parse_density_strides(args.density_strides)
+    except ValueError as e:
+        print(json.dumps({"ok": False, "reason": f"bad --density-strides: {e}"},
                          ensure_ascii=False))
         return 1
 
@@ -525,7 +588,8 @@ def main(argv=None) -> int:
         row_sha = _sha_bytes(
             json.dumps(tl_row, ensure_ascii=False, sort_keys=True).encode("utf-8"))
         song_reqs = build_requests(tl, timeline, windows_per_song=args.windows_per_song,
-                                   row_sha=row_sha, missing_ratios=missing_ratios,
+                                   row_sha=row_sha, density_tiers=density_tiers,
+                                   missing_ratios=missing_ratios,
                                    replace_ratios=replace_ratios, extra_ratios=extra_ratios,
                                    donor_pool=donor_pool)
         reqs.extend(song_reqs)
@@ -552,6 +616,7 @@ def main(argv=None) -> int:
         "built_at_utc": "2026-08-05T00:00:00Z",
         "min_duration_sec": args.min_duration, "windows_per_song": args.windows_per_song,
         "seam_silence_sec": args.seam_silence_sec,
+        "density_strides": [p if s == 1 else f"strided{s}" for p, s in density_tiers],
         "missing_ratios": list(missing_ratios),
         "replace_ratios": list(replace_ratios),
         "extra_ratios": list(extra_ratios),

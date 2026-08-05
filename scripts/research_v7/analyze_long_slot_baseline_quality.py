@@ -3,8 +3,8 @@
 
 输入 GT_EVAL.json（research_v7_gt_eval_v1，rows 已物化 row→canonical join），输出
 BASELINE_QUALITY_ANALYSIS.json（schema research_v7_baseline_quality_analysis_v1）：
-- 覆盖率分层：按 mutation（baseline/missing）× slot（full/sparse）× 窗位（:wN:）的
-  row 覆盖率（n_rows / n_units_evaluated）；
+- 覆盖率分层：按 mutation（baseline/missing）× slot（density 档位：full/s2/s4，
+  兼容旧 sparse）× 窗位（:wN:）的 row 覆盖率（n_rows / n_units_evaluated）；
 - 边界误差分布：有 row 行 start/end 的 |pred−gt| 分布（median/p90/p99/max）与阈值表
   （0.25/0.5/1/2/5s 超过比例；unsafe 定义 = 任一边界误差 >250ms，13 §10.1）；
 - GT 轴敏感性：M4 synthetic-uniform 轴 unsafe 率 与 MIR weak（qwen_fa）轴 unsafe 率并列
@@ -51,11 +51,13 @@ MIR_WEAK_AXIS_REFERENCE = {
 }
 
 # round08：兼容旧 ":missing" 与多档 ":missing0.10/0.25/0.50" 后缀
-REQUEST_ID_RE = re.compile(r"^(.+):w(\d+):(full|sparse)(?::missing(?:\d+(?:\.\d+)?)?)?$")
+# round13 T5：slot 档位扩展到 density 档位集合（full/s2/s4，兼容旧 sparse）
+REQUEST_ID_RE = re.compile(r"^(.+):w(\d+):(full|sparse|s\d+)(?::missing(?:\d+(?:\.\d+)?)?)?$")
 
 
 def parse_request_id(request_id: str) -> dict | None:
-    """'song:w2:sparse:missing0.25' -> {song_id, window_index, slot_kind}。"""
+    """'song:w2:sparse:missing0.25' / 'song:w2:s2:missing0.25' -> {song_id, window_index,
+    slot_kind}（slot_kind = density 档位名 full/s2/s4，旧数据为 sparse）。"""
     m = REQUEST_ID_RE.match(request_id)
     if not m:
         return None

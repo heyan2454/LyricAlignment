@@ -255,7 +255,7 @@ def test_builder_replace_extra_variants(tmp_path):
     - extra：request_id 后缀 :extra{r}；canonical_ids 保持 baseline（不扩展）；text_units
       更长且前缀与 baseline 一致；extra 单位无 canonical id（extra_start_index 标记）；
       validate 全部通过。
-    - 每档各发 full+sparse 两个 slot 版本（与 missing 一致）；FREEZE 记录 ratios。
+    - 每档各发 3 个 density 档位（full+s2+s4，与 missing 一致）；FREEZE 记录 ratios。
     """
     from lyricalign.research_v7.requests import AlignmentRequest
 
@@ -275,10 +275,10 @@ def test_builder_replace_extra_variants(tmp_path):
     miss = [x for x in reqs if x["mutation_type"] == "missing"]
     rep = [x for x in reqs if x["mutation_type"] == "replace"]
     ext = [x for x in reqs if x["mutation_type"] == "extra"]
-    assert len(base) == 4 and len(miss) == 4, "2 歌 × 1 窗 × 2 slot × (baseline+missing0.25)"
-    # 每档每歌各发 full+sparse 两个 slot 版本
-    assert len(rep) == 2 * 2 * 2, "2 歌 × 2 档 × 2 slot(full+sparse)"
-    assert len(ext) == 2 * 2 * 2, "2 歌 × 2 档 × 2 slot(full+sparse)"
+    assert len(base) == 6 and len(miss) == 6, "2 歌 × 1 窗 × 3 档位 × (baseline+missing0.25)"
+    # 每档每歌各发 3 个 density 档位（full+s2+s4）
+    assert len(rep) == 2 * 2 * 3, "2 歌 × 2 档 × 3 档位(full+s2+s4)"
+    assert len(ext) == 2 * 2 * 3, "2 歌 × 2 档 × 3 档位(full+s2+s4)"
     by_base = {b["request_id"]: b for b in base}
     for b in base:
         for tag in (":replace0.10", ":replace0.50", ":extra0.10", ":extra0.50", ":missing0.25"):
@@ -441,3 +441,117 @@ def test_builder_replace_extra_requires_donor_pool(tmp_path):
     reqs = _load_reqs(out)
     assert all(x["mutation_type"] in ("baseline", "missing") for x in reqs)
     assert any(x["mutation_type"] == "missing" for x in reqs)
+
+
+def test_builder_density_tiers_stride_semantics(tmp_path):
+    """round13 T5（13 §S2）：--density-strides full,strided2,strided4——
+
+    - 每窗三档独立 slot plan，request_id 后缀=档位名（:full/:s2/:s4），请求数各半；
+    - full 档 local indices = 全量连续；stride 档 = 等距取样，起点 offset=window_index % step
+      （w1 的 s2/s4 起点=1，与 w0 错开——phase 轮换）；
+    - missing 变体 slot 同步为保留单位上的档位子集；validate 全部通过；
+    - FREEZE 记录 density_strides。
+    """
+    from lyricalign.research_v7.requests import AlignmentRequest
+
+    mf, audio_root = _make_m4_manifest(tmp_path)
+    out = tmp_path / "fm_density"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "180",
+                        "--windows-per-song", "2", "--limit", "1",
+                        "--density-strides", "full,strided2,strided4",
+                        "--missing-ratios", "0.25"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    reqs = _load_reqs(out)
+    base = [x for x in reqs if x["mutation_type"] == "baseline"]
+    miss = [x for x in reqs if x["mutation_type"] == "missing"]
+    # 1 歌 × 2 窗 × 3 档 × (baseline+missing) = 12 行；每档各 4 行（2 窗 × 2 变体）
+    assert len(reqs) == 12, len(reqs)
+    assert len(base) == 6 and len(miss) == 6
+    by_key = {}
+    for b in base:
+        parts = b["request_id"].split(":")
+        wi, tier = int(parts[-2][1:]), parts[-1]
+        by_key[(wi, tier)] = b
+    assert set(by_key) == {(w, t) for w in (0, 1) for t in ("full", "s2", "s4")}
+    for wi in (0, 1):
+        full = by_key[(wi, "full")]
+        n_win = len(full["text_units"])
+        # full：连续全量 local indices
+        assert full["timestamp_slot_indices"] == list(range(n_win))
+        assert full["slot_plan_id"] == f"测试歌:w{wi}:s1:full"
+        assert full["phase"] == "full"
+        for tier, step in (("s2", 2), ("s4", 4)):
+            b = by_key[(wi, tier)]
+            offset = wi % step  # phase 轮换：stride 起点 = window_index % step
+            assert b["timestamp_slot_indices"] == list(range(offset, n_win, step)), \
+                (wi, tier, b["timestamp_slot_indices"][:6])
+            assert b["timestamp_slot_indices"][0] == offset
+            assert b["slot_plan_id"] == f"测试歌:w{wi}:s{step}:{tier}"
+            assert b["phase"] == tier
+            # common anchors：s4 取样 ⊆ s2 取样（同奇偶 phase 轮换保证嵌套）
+            s2_set = set(by_key[(wi, "s2")]["timestamp_slot_indices"])
+            assert set(b["timestamp_slot_indices"]) <= s2_set
+    # missing：canonical 同步截断 + slot 为保留单位上的档位子集（新 local 空间 = 窗口局部坐标）
+    for mi in miss:
+        parts = mi["request_id"].split(":")
+        wi, tier = int(parts[-3][1:]), parts[-2]
+        b = by_key[(wi, tier)]
+        kept = len(mi["text_units"])
+        assert mi["timestamp_slot_indices"] == [i for i in b["timestamp_slot_indices"] if i < kept]
+        assert all(0 <= i < kept for i in mi["timestamp_slot_indices"])
+    # validate 全部通过
+    for rrow in reqs:
+        req = AlignmentRequest(
+            request_id=rrow["request_id"], item_id=rrow["item_id"], parent_request_id=None,
+            audio_source=rrow["audio_path"], audio_start_sec=rrow["audio_start_sec"],
+            audio_end_sec=rrow["audio_end_sec"],
+            text_source=rrow["text_source"], text_start_index=rrow["text_start_index"],
+            text_end_index=rrow["text_end_index"], text_units=tuple(rrow["text_units"]),
+            timestamp_slot_indices=tuple(rrow["timestamp_slot_indices"]),
+            workflow_mode=rrow["workflow_mode"], mutation_type=rrow["mutation_type"],
+            mutation_parameters=rrow["mutation_parameters"], model_id=rrow["model_id"],
+            checkpoint_id=rrow["checkpoint_id"], input_variant=rrow["input_variant"],
+            canonical_text_start=rrow["canonical_text_start"], canonical_text_end=rrow["canonical_text_end"],
+            canonical_to_local={int(k): int(v) for k, v in (rrow["canonical_to_local"] or {}).items()},
+            canonical_ids=list(rrow["canonical_ids"]),
+            canonical_timeline_file_sha=rrow["canonical_timeline_file_sha"],
+            canonical_timeline_row_sha=rrow["canonical_timeline_row_sha"],
+            canonical_adapter_version=rrow["canonical_adapter_version"],
+            source_window_sec=(rrow["source_window_start_sec"], rrow["source_window_end_sec"]),
+            metadata={"evaluation_role": rrow["evaluation_role"]})
+        req.validate()
+    # FREEZE 记录档位
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["density_strides"] == ["full", "strided2", "strided4"]
+    assert fr["requests"] == 12
+
+
+def test_builder_density_tiers_custom_and_invalid(tmp_path):
+    """round13 T5：自定义档位（--density-strides full,strided2）只发两档并记录；
+    非法档位（strided1/重复/空）拒绝并返回非零。"""
+    mf, audio_root = _make_m4_manifest(tmp_path)
+    out = tmp_path / "fm_density_custom"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "180",
+                        "--windows-per-song", "1", "--limit", "1",
+                        "--density-strides", "full,strided2"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    reqs = _load_reqs(out)
+    base = [x for x in reqs if x["mutation_type"] == "baseline"]
+    assert len(base) == 2 and {x["request_id"].split(":")[-1] for x in base} == {"full", "s2"}
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["density_strides"] == ["full", "strided2"]
+    for bad in ("strided1", "full,full", ""):
+        out2 = tmp_path / f"fm_density_bad_{len(bad)}"
+        r2 = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                             "--m4-manifest", str(mf), "--out-root", str(out2),
+                             "--audio-root", str(audio_root), "--min-duration", "180",
+                             "--windows-per-song", "1", "--limit", "1",
+                             "--density-strides", bad],
+                            capture_output=True, text=True, env=ENV)
+        assert r2.returncode == 1 and "density-strides" in r2.stdout, (bad, r2.stdout)

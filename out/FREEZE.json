@@ -1,15 +1,16 @@
 {
  "built_at_utc": "2026-08-05T00:00:00Z",
  "canonical_timeline_file_sha_note": "M4 builder 的 canonical_timeline_file_sha 为源 m4 manifest sha（与 MIR builder 的 timeline 文件 sha 语义不同）；此为决策记录，不改 identity（改会作废 formal evidence 需重跑）。",
- "extra_ratios": [
-  0.1,
-  0.25,
-  0.5
+ "density_strides": [
+  "full",
+  "strided2",
+  "strided4"
  ],
+ "extra_ratios": [],
  "files": {
-  "LONG_TIMELINE_MANIFEST.jsonl": "ef105728e28135eb9fd581796cbd62d1d15dd4de835c9e435ea6108cb726e0ad",
-  "REQUESTS.jsonl": "a4aaed34bd5588a27b4b292bb2aad153db800d9c95c879d88b1838cf98144543",
-  "WINDOW_PLAN.jsonl": "50e01d9fb197cb27c61dd1321285f4bb8bd83d010d4867b48048a2a2aa08ccb0"
+  "LONG_TIMELINE_MANIFEST.jsonl": "5468ff80457920817f6a5a7afdfb9e4a00ad7a6b6d80302a2c3f506f93887cae",
+  "REQUESTS.jsonl": "189fd645d2ad26b63d09a3373726425a93f30756c807db3965f7d0825927f7f2",
+  "WINDOW_PLAN.jsonl": "937c320d2eb33097f41febbf98c093568edc5216964ab2e7b30666f4fa1f8d09"
  },
  "m4_manifest": {
   "path": "/home/hyan/Data/lyricalign/derived/m4singer_meta_v1/m4singer_manifest.jsonl",
@@ -17,17 +18,11 @@
  },
  "min_duration_sec": 180.0,
  "missing_ratios": [
-  0.1,
-  0.25,
-  0.5
+  0.25
  ],
- "replace_ratios": [
-  0.1,
-  0.25,
-  0.5
- ],
- "requests": 1200,
+ "replace_ratios": [],
+ "requests": 180,
  "schema": "research_v7_long_timeline_manifest_v1",
- "songs": 20,
+ "songs": 10,
  "windows_per_song": 3
 }
