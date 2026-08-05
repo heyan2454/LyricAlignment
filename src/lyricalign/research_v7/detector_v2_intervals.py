@@ -193,9 +193,12 @@ def freeze_thresholds(
                     relaxed = th
                     break
             if relaxed > accept_threshold:
-                accept_threshold = relaxed
-                reject_candidates = [t for t in candidates if t > accept_threshold]
-                if reject_candidates:
+                reject_candidates = [t for t in candidates if t > relaxed]
+                if not reject_candidates:
+                    # 无法构成合法阈值对（accept 需 < reject）：回退保护优先点
+                    relaxed = accept_threshold
+                else:
+                    accept_threshold = relaxed
                     reject_threshold = reject_candidates[0]
                     for th in reject_candidates:
                         reject_recall = sum(probabilities[u] >= th for u in unsafe) / len(unsafe)
