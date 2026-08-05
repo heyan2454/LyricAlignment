@@ -130,21 +130,22 @@ def test_canonical_units_tolerance_and_ids():
 
 
 def test_builder_produces_validated_requests(tmp_path):
-    """3 窗（60s×1 + 70s×2）× full/sparse × baseline/missing = 12 行，全部 validate。"""
+    """3 窗（60s×1 + 70s×2）× full/sparse × baseline/missing/replace/extra = 24 行，全部 validate。"""
     mf, audio_root, out, r = _run_builder(tmp_path)
     assert r.returncode == 0, r.stderr
     reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
-    assert len(reqs) == 12, len(reqs)  # 3 窗 × 2 slot 档 × 2 mutation
+    assert len(reqs) == 24, len(reqs)  # 3 窗 × 2 slot 档 × 4 mutation（baseline/missing/replace/extra）
     for rrow in reqs:
         req = _req_from_row(rrow)
         req.validate()  # 任何行不过 validate 即失败
-        assert len(req.canonical_ids) == len(req.text_units)
+        if rrow["mutation_type"] != "extra":
+            assert len(req.canonical_ids) == len(req.text_units)
         assert req.metadata["evaluation_role"] == "lyrics_aligned"
         assert rrow["canonical_adapter_version"] == "mir1k_weak_labels_v1"
         assert rrow["dataset"] == "mir1k" and rrow["split"] == "test"
-        assert rrow["condition"] == rrow["mutation_type"]  # baseline/missing 各自标注
+        assert rrow["condition"] == rrow["mutation_type"]  # baseline/missing/replace/extra 各自标注
         assert Path(rrow["audio_path"]).is_file()  # 音频路径存在
-    # 配对完整性：每 baseline 有对应 missing（同 pair_id），且 removed 单位数 = 1/4
+    # 配对完整性：每 baseline 有对应 missing/replace/extra（同 pair_id），且 removed 单位数 = 1/4
     base = [x for x in reqs if x["mutation_type"] == "baseline"]
     miss = {x["request_id"] for x in reqs if x["mutation_type"] == "missing"}
     assert len(base) == 6
@@ -179,11 +180,11 @@ def test_builder_missing_keeps_canonical_consistency(tmp_path):
 
 
 def test_builder_no_sparse_halves_requests(tmp_path):
-    """--no-sparse：每窗仅 full 档 → 3 窗 × 1 × 2 = 6 行。"""
+    """--no-sparse：每窗仅 full 档 → 3 窗 × 1 × 4 mutation = 12 行。"""
     mf, audio_root, out, r = _run_builder(tmp_path, "--no-sparse")
     assert r.returncode == 0, r.stderr
     reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
-    assert len(reqs) == 6, len(reqs)
+    assert len(reqs) == 12, len(reqs)
     assert {x["phase"] for x in reqs} == {"full"}
 
 
@@ -247,3 +248,117 @@ def test_builder_refuses_without_audio(tmp_path):
                         capture_output=True, text=True, env=ENV)
     assert r2.returncode == 1
     assert "no labels with existing audio" in r2.stdout
+
+
+def test_builder_replace_keeps_replaced_canonical_ids(tmp_path):
+    """round21 T3：replace 变体语义（仿 M4 builder）——
+
+    - request_id 后缀 :replace0.25；被替换 canonical id 保留在 canonical_ids/
+      canonical_to_local/range（与 missing 截断不同）；
+    - text_units 尾部 n_rep 个单位变 donor 文本（其余保持 baseline）；
+    - mutation_parameters 记 requested/actual/actual_replaced_units/replaced_canonical_ids/
+      donor_song_id（donor 来自同库其他歌，同语言 zh）；
+    - 全部 validate；每窗 full+sparse 两档各发一个 replace 变体。
+    """
+    mf, audio_root, out, r = _run_builder(tmp_path)
+    assert r.returncode == 0, r.stderr
+    reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    rep = [x for x in reqs if x["mutation_type"] == "replace"]
+    base = [x for x in reqs if x["mutation_type"] == "baseline"]
+    assert len(rep) == len(base) == 6  # 3 窗 × 2 slot 档
+    by_base = {b["request_id"]: b for b in base}
+    for rrow in rep:
+        b = by_base[rrow["request_id"].rsplit(":", 1)[0]]
+        mp = rrow["mutation_parameters"]
+        n_rep = mp["actual_replaced_units"]
+        assert rrow["request_id"].endswith(":replace0.25")
+        assert rrow["condition"] == "replace"
+        assert mp["requested_ratio"] == 0.25 and n_rep > 0
+        # 关键：被替换 canonical id 必须保留（不学 missing 截断）
+        assert rrow["canonical_ids"] == b["canonical_ids"]
+        assert rrow["canonical_to_local"] == b["canonical_to_local"]
+        assert rrow["canonical_text_end"] == b["canonical_text_end"]
+        assert len(rrow["text_units"]) == len(b["text_units"]) == len(rrow["canonical_ids"])
+        # 尾部 n_rep 个单位 text 变为 donor 文本，其余保持
+        assert rrow["text_units"][: len(rrow["text_units"]) - n_rep] == \
+            b["text_units"][: len(b["text_units"]) - n_rep]
+        assert rrow["text_units"][-n_rep:] != b["text_units"][-n_rep:]
+        # replaced_canonical_ids = baseline 尾部 n_rep 个 canonical id
+        assert mp["replaced_canonical_ids"] == b["canonical_ids"][-n_rep:]
+        # donor 来自同库其他歌（同语言 zh）
+        assert mp["donor_song_id"] and mp["donor_song_id"] != rrow["pair_id"].rsplit(":", 1)[0]
+        # actual_ratio = mutation 内部比例（round(n*ratio)/n；donor 撞字时 diff 计数 n_rep 可略少）
+        exp_n = int(round(len(b["text_units"]) * 0.25))
+        assert mp["actual_ratio"] == round(exp_n / len(b["text_units"]), 6)
+        assert n_rep <= exp_n
+        req = _req_from_row(rrow)
+        req.validate()
+
+
+def test_builder_extra_does_not_extend_canonical_ids(tmp_path):
+    """round21 T3：extra 变体语义（仿 M4 builder）——
+
+    - request_id 后缀 :extra0.25；canonical_ids 保持 baseline（不扩展）；
+    - text_units 更长且前缀与 baseline 一致；extra 单位无 canonical id
+      （extra_start_index 标记无 canonical 的文本区间起点）；
+    - mutation_parameters 记 requested/actual/actual_added_units/donor_song_id；
+    - 全部 validate；每窗 full+sparse 两档各发一个 extra 变体。
+    """
+    mf, audio_root, out, r = _run_builder(tmp_path)
+    assert r.returncode == 0, r.stderr
+    reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    ext = [x for x in reqs if x["mutation_type"] == "extra"]
+    base = [x for x in reqs if x["mutation_type"] == "baseline"]
+    assert len(ext) == len(base) == 6
+    by_base = {b["request_id"]: b for b in base}
+    for rrow in ext:
+        b = by_base[rrow["request_id"].rsplit(":", 1)[0]]
+        mp = rrow["mutation_parameters"]
+        n_add = mp["actual_added_units"]
+        assert rrow["request_id"].endswith(":extra0.25")
+        assert rrow["condition"] == "extra"
+        assert mp["requested_ratio"] == 0.25 and n_add > 0
+        # extra 单位无 canonical id：canonical_ids 保持 baseline，text_units 更长
+        assert rrow["canonical_ids"] == b["canonical_ids"]
+        assert rrow["canonical_to_local"] == b["canonical_to_local"]
+        assert rrow["canonical_text_end"] == b["canonical_text_end"]
+        assert len(rrow["text_units"]) == len(b["text_units"]) + n_add
+        assert rrow["text_units"][: len(b["text_units"])] == b["text_units"], "extra 前缀=baseline"
+        assert mp["extra_start_index"] == len(rrow["canonical_ids"])
+        assert mp["baseline_unit_count"] == len(b["text_units"])
+        assert mp["donor_song_id"] and mp["donor_song_id"] != rrow["pair_id"].rsplit(":", 1)[0]
+        req = _req_from_row(rrow)
+        req.validate()
+
+
+def test_builder_replace_extra_donor_pool_skipped(tmp_path):
+    """round21 T3：--replace-ratios/--extra-ratios 指定但库内只有 1 首歌（无 donor 池）
+    时不得报错/产生空档——replace/extra 整档跳过，missing/baseline 行为不变；
+    FREEZE 仍记录请求的 ratios（供审计，actual 产出由请求行数体现）。"""
+    mf, audio_root, out, r = _run_builder(tmp_path, "--limit", "1")
+    assert r.returncode == 0, r.stderr
+    reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert all(x["mutation_type"] in ("baseline", "missing") for x in reqs)
+    assert any(x["mutation_type"] == "missing" for x in reqs)
+    assert not any(x["mutation_type"] in ("replace", "extra") for x in reqs)
+    assert len(reqs) == 4, len(reqs)  # 1 歌 × 1 窗 × 2 slot 档 × 2 mutation
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["replace_ratios"] == [0.25]
+    assert fr["extra_ratios"] == [0.25]
+    assert fr["songs"] == 1
+
+
+def test_builder_freeze_records_ratios_and_variant_counts(tmp_path):
+    """round21 T3：FREEZE 记录 replace_ratios/extra_ratios 与各变体行数；
+    replace/extra 与 missing 同量（每窗 full+sparse 各一档）。"""
+    mf, audio_root, out, r = _run_builder(tmp_path)
+    assert r.returncode == 0, r.stderr
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["replace_ratios"] == [0.25]
+    assert fr["extra_ratios"] == [0.25]
+    assert fr["songs"] == 2
+    reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert fr["requests"] == len(reqs)
+    from collections import Counter
+    cnt = Counter(x["mutation_type"] for x in reqs)
+    assert cnt["baseline"] == cnt["missing"] == cnt["replace"] == cnt["extra"] == 6, cnt

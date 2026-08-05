@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""round02：MIR-1K canonical timeline + request builder（跨域 assessor 前置）。
+"""round02+round21：MIR-1K canonical timeline + request builder（跨域 assessor 前置）。
+
+round21（T3）：移植 M4 builder 的 replace/extra donor 变体——--replace-ratios/
+--extra-ratios（默认均 0.25），donor 从同库其他歌取（同语言 zh，池≥2 首才产出）；
+replace 尾部 N 单位换 donor 文本（replaced_canonical_ids 保留在 canonical_ids，
+不截断）；extra 尾部追加 donor 文本（canonical_ids 不扩展，extra_start_index 标记）。
+M4 的 wrong_output_recall=0.5845（density 敏感 1.0/0.5/0.254）在 MIR 真实弱轴验证。
 
 背景：13 §10.3 跨域要求 M4 ↔ MIR-1K 分开汇报。MIR-1K 弱监督标签
 （qwen_fa_timestamp_labels_v1，mapping_status=ground_truth_character，
@@ -14,12 +20,13 @@ validation_basis=null —— **非人工 GT**）逐字符给出 [onset,offset] c
 输出（均冻结 SHA 记录到 FREEZE.json）：
   MIR_TIMELINE_MANIFEST.jsonl —— 每行 {song_id, canonical_units:[{canonical_unit_id, text,
                                   start_sec, end_sec}]}（schema 与 T1 GT 评价一致）
-  REQUESTS.jsonl              —— 每窗 baseline + tail-missing(1/4) 配对、full+sparse slot
-                                 （--no-sparse 可关）、完整 canonical lineage
-                                 （canonical_ids/canonical_to_local/canonical range/
-                                 timeline file sha/per-song row sha/adapter 版本/source window）、
-                                 dataset=mir1k、split=test、role=lyrics_aligned
-  FREEZE.json                 —— labels sha256 + timeline sha256 + REQUESTS sha256 + 源路径
+   REQUESTS.jsonl              —— 每窗 baseline + tail-missing(1/4) + replace/extra(0.25)
+                                  配对、full+sparse slot（--no-sparse 可关）、完整 canonical
+                                  lineage（canonical_ids/canonical_to_local/canonical range/
+                                  timeline file sha/per-song row sha/adapter 版本/source window）、
+                                  dataset=mir1k、split=test、role=lyrics_aligned
+   FREEZE.json                 —— labels sha256 + timeline sha256 + REQUESTS sha256 + 源路径
+                                  + replace_ratios/extra_ratios
 
 窗规则（--windows-per-song 缺省按 duration 自动）：
   ≤60s  单窗 [0, min(60, duration))
@@ -38,6 +45,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from lyricalign.research_v7.mutations import (  # noqa: E402
+    DonorSpec,
+    extra_ratio,
+    replace_ratio,
+)
 from lyricalign.research_v7.slot_planning import plan_slots  # noqa: E402
 
 WINDOW_SEC = 60.0
@@ -176,15 +188,40 @@ def window_plan(duration: float, windows_per_song: int | None) -> list[tuple[flo
 
 
 def build_requests(song: dict, units: list[dict], windows: list[tuple[float, float]],
-                   *, timeline_sha: str, row_sha: str, sparse: bool = True) -> list[dict]:
-    """从一首歌的 canonical units 生成窗请求（baseline + tail-missing(1/4) 配对）。
+                   *, timeline_sha: str, row_sha: str, sparse: bool = True,
+                   replace_ratios: tuple[float, ...] = (0.25,),
+                   extra_ratios: tuple[float, ...] = (0.25,),
+                   donor_pool: dict[str, list[str]] | None = None) -> list[dict]:
+    """从一首歌的 canonical units 生成窗请求（baseline + missing + replace/extra 配对）。
 
-    每窗产出 full + sparse 两档 slot（--no-sparse 时仅 full）；每档 baseline + missing。
-    missing 变体同步截断 canonical 字段：kept_ids、新 canonical_to_local、重算 slot
-    （缺失单位不得留在请求 canonical 字段里）。
+    每窗产出 full + sparse 两档 slot（--no-sparse 时仅 full）；每档 baseline + missing +
+    replace + extra。missing 变体同步截断 canonical 字段：kept_ids、新 canonical_to_local、
+    重算 slot（缺失单位不得留在请求 canonical 字段里）。
+
+    replace（round21，仿 M4 builder）：donor 从同库其他歌取（同语言 zh），替换尾部
+    N 个 canonical 单位的 text 为 donor 文本（双向评价 wrong-output 方向）。关键语义：
+    被替换 canonical id 仍保留在 canonical_ids/canonical_to_local/range 里（与 missing
+    的截断不同——替换单位只是 text 变 donor 文本，canonical 绑定不删除），wrong-output
+    区间由 mutation_parameters.replaced_canonical_ids 标识。
+
+    extra（round21）：尾部追加 donor 文本 N 个单位；extra 单位无 canonical id
+    （canonical_ids 保持 baseline，text_units 更长），identity-error 语义，
+    extra_start_index 标记无 canonical 的文本区间起点。
+
+    donor_pool：{song_id: [canonical unit texts]}，donor 取同库其他歌（本 builder 加载的
+    歌集合内、排序后第一个 song_id != 当前歌者）；池不足 2 首时 replace/extra 整档跳过
+    （与 M4 builder 同策略，不报错不产生空档）。
     """
     n = len(units)
     song_id = song["song_id"]
+    donor_song_id = None
+    donor_units: tuple[str, ...] = ()
+    if (replace_ratios or extra_ratios) and donor_pool:
+        for other in sorted(donor_pool):
+            if other != song_id:
+                donor_song_id = other
+                donor_units = tuple(donor_pool[other])
+                break
     reqs: list[dict] = []
     for wi, (w0, w1) in enumerate(windows):
         in_win = _canonical_units_for_window(units, w0, w1)
@@ -267,6 +304,60 @@ def build_requests(song: dict, units: list[dict], windows: list[tuple[float, flo
                                             "actual_removed_units": n_miss,
                                             "baseline_unit_count": len(texts)}
             reqs.append(miss)
+            # replace（round21，仿 M4 builder）：尾部 N 个 canonical 单位 text 换成
+            # donor 文本。关键：被替换 canonical id 保留在 canonical_ids/
+            # canonical_to_local/range（与 missing 截断不同），wrong-output 区间由
+            # replaced_canonical_ids 标识；donor 池不足 2 首时整档跳过。
+            for ratio in replace_ratios:
+                if donor_song_id is None:
+                    break
+                tag = f"replace{ratio:.2f}"
+                mut = replace_ratio(texts, ratio, donor=DonorSpec(
+                    donor_song_id=donor_song_id, donor_start_index=0,
+                    donor_units=donor_units, language="zh", unit_mode="character"),
+                    position="tail", seed=0)
+                n_rep = sum(1 for a, b in zip(texts, mut.mutated_units) if a != b)
+                rep = dict(base)
+                rep["request_id"] = f"{base['request_id']}:{tag}"
+                rep["item_id"] = f"{base['item_id']}:{tag}"
+                rep["mutation_type"] = "replace"
+                rep["condition"] = "replace"
+                rep["slot_plan_id"] = f"{base['slot_plan_id']}:{tag}"
+                rep["text_units"] = list(mut.mutated_units)
+                rep["mutation_parameters"] = {
+                    "position": "tail", "requested_ratio": ratio,
+                    "actual_ratio": round(mut.actual_ratio, 6),
+                    "actual_replaced_units": n_rep,
+                    "replaced_canonical_ids": cids[-n_rep:] if n_rep else [],
+                    "donor_song_id": donor_song_id, "donor_start_index": 0,
+                    "baseline_unit_count": len(texts)}
+                reqs.append(rep)
+            # extra（round21）：尾部追加 donor 文本 N 个单位（identity-error 语义）。
+            # extra 单位无 canonical id：canonical_ids/canonical_to_local/range 保持
+            # baseline，text_units 更长；extra_start_index 标识无 canonical 的文本起点。
+            for ratio in extra_ratios:
+                if donor_song_id is None:
+                    break
+                tag = f"extra{ratio:.2f}"
+                mut = extra_ratio(texts, ratio, source="cross_song",
+                                  extra_units=donor_units, position="tail")
+                n_add = len(mut.mutated_units) - len(texts)
+                ext = dict(base)
+                ext["request_id"] = f"{base['request_id']}:{tag}"
+                ext["item_id"] = f"{base['item_id']}:{tag}"
+                ext["mutation_type"] = "extra"
+                ext["condition"] = "extra"
+                ext["slot_plan_id"] = f"{base['slot_plan_id']}:{tag}"
+                ext["text_units"] = list(mut.mutated_units)
+                ext["text_end_index"] = len(ext["text_units"])
+                ext["mutation_parameters"] = {
+                    "position": "tail", "requested_ratio": ratio,
+                    "actual_ratio": round(mut.actual_ratio, 6),
+                    "actual_added_units": n_add,
+                    "donor_song_id": donor_song_id, "donor_start_index": 0,
+                    "baseline_unit_count": len(texts),
+                    "extra_start_index": len(cids)}
+                reqs.append(ext)
             # baseline 本体
             reqs.append(base)
     return reqs
@@ -284,8 +375,35 @@ def main(argv=None) -> int:
                    help="每歌窗数（缺省按 duration 自动：≤60s 单窗；>60s 两窗 [0,60)+tail≥30s）")
     p.add_argument("--no-sparse", action="store_true",
                    help="只产出 full slot 档（默认 full+sparse 两档）")
+    p.add_argument("--replace-ratios", type=str, default="0.25",
+                   help="replace 尾部替换核心档（逗号分隔 float，如 0.10,0.25,0.50；"
+                        "默认 0.25；donor 池不足 2 首时整档跳过）")
+    p.add_argument("--extra-ratios", type=str, default="0.25",
+                   help="extra 尾部追加核心档（逗号分隔 float，如 0.10,0.25,0.50；"
+                        "默认 0.25；donor 池不足 2 首时整档跳过）")
     p.add_argument("--limit", type=int, default=17, help="最多构造几首歌")
     args = p.parse_args(argv)
+
+    def _parse_ratios(raw: str, name: str) -> tuple[float, ...] | None:
+        try:
+            vals = [float(x) for x in raw.split(",") if x.strip() != ""]
+        except ValueError:
+            print(json.dumps({"ok": False, "reason": f"bad --{name}: {raw!r}"},
+                             ensure_ascii=False))
+            return None
+        out = tuple(dict.fromkeys(sorted(vals)))  # 去重保确定性，避免重复档 identity 冲突
+        if any(r <= 0.0 or r > 1.0 for r in out):
+            print(json.dumps({"ok": False, "reason": f"{name} must be in (0, 1]"},
+                             ensure_ascii=False))
+            return None
+        return out
+
+    replace_ratios = _parse_ratios(args.replace_ratios, "replace-ratios")
+    if replace_ratios is None:
+        return 1
+    extra_ratios = _parse_ratios(args.extra_ratios, "extra-ratios")
+    if extra_ratios is None:
+        return 1
 
     labels = Path(args.labels)
     out = Path(args.out_root); out.mkdir(parents=True, exist_ok=True)
@@ -307,6 +425,9 @@ def main(argv=None) -> int:
     # 自身 sha（与 M4 builder 的源 manifest sha 语义不同）；不改 identity——
     # 见 FREEZE.canonical_timeline_file_sha_note。
     # timeline 文件 sha 进每个请求的 canonical lineage（正式身份内容字段）
+    # 第二遍：request 生成（donor 池必须含全部歌，replace/extra 的 donor 才能
+    # 从同库其他歌取——MIR 17 歌池 ≥2 首，同语言 zh）。
+    donor_pool = {r["song_id"]: [u["text"] for u in r["canonical_units"]] for r in tl_rows}
     final_reqs = []
     for song in songs:
         units = build_canonical_units(song)
@@ -318,7 +439,9 @@ def main(argv=None) -> int:
         final_reqs.extend(build_requests(
             song, units,
             window_plan(float(song.get("duration_sec", 0) or 0), args.windows_per_song),
-            timeline_sha=timeline_sha, row_sha=row_sha, sparse=not args.no_sparse))
+            timeline_sha=timeline_sha, row_sha=row_sha, sparse=not args.no_sparse,
+            replace_ratios=replace_ratios, extra_ratios=extra_ratios,
+            donor_pool=donor_pool))
     _atomic_jsonl(out / "REQUESTS.jsonl", final_reqs)
     freeze = {
         "schema": "research_v7_mir1k_manifest_v1",
@@ -333,6 +456,8 @@ def main(argv=None) -> int:
         "built_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "windows_per_song": args.windows_per_song,
         "sparse_slots": not args.no_sparse,
+        "replace_ratios": list(replace_ratios),
+        "extra_ratios": list(extra_ratios),
         "songs": len(tl_rows),
         "windows": sum(len(window_plan(float(s.get("duration_sec", 0) or 0),
                                        args.windows_per_song)) for s in songs),
