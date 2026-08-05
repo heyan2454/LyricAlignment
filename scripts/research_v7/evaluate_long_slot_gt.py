@@ -39,6 +39,15 @@ n_units_evaluated 并列展示，不参与本域计算）。
   - gap（仅 missing）：GT gap = 被删尾部单位（omitted），pred gap = 请求文本末尾到窗尾之间无 row
     覆盖的区间；用 gap_metrics(gt_gaps, pred_gap_ids, gt_gap_omitted) 计算事件 recall 与
     omitted-unit 加权 recall；加权 pooled 时按 omitted units 跨请求求和。
+
+round13 新增评价分支（replace/extra，13 §A3/§A1）：
+  - replace：双向评价——wrong_output_recall = pred 行落在被替换 canonical 区间（mutation_parameters
+    .replaced_canonical_ids）的命中数 / GT replaced 数（region_metrics.wrong_output_metrics）；
+    replaced-GT omission 方向最小实现记为 None（输出带 replace_omission_note 注明）。
+  - extra：identity-error 语义——extra 单位无 canonical id，无 unit-level GT；只统计
+    identity_error_extra_rows = max(0, n_rows - n_text_units)（多余行 = 疑似插入错位）。
+  - pooled unit 指标只聚合 baseline/missing（replace/extra 无 unit-level GT），replace/extra
+    分别聚合 wrong_output_recall / identity_error_extra_rows。
 """
 from __future__ import annotations
 
@@ -49,7 +58,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from lyricalign.research_v7.region_metrics import gap_metrics, unit_metrics
+from lyricalign.research_v7.region_metrics import (
+    gap_metrics,
+    unit_metrics,
+    wrong_output_metrics,
+)
 
 SCHEMA = "research_v7_gt_eval_v1"
 SCHEMA_MIR1K = "research_v7_mir1k_cross_domain_eval_v1"
@@ -218,13 +231,16 @@ def evaluate_evidence(
         "song_id": song,
         "window_sec": window_sec,
         "n_rows": len(rows),
-        # 共同评分子集：本 evidence 参与评价的 text 覆盖 canonical ids（与 RUN_MANIFEST
-        # metrics.n_units 同口径，见 13 计划「只评共同 queried units」）
+        # 共同评分子集：本 evidence 参与 unit 评价的 text 覆盖 canonical ids（与 RUN_MANIFEST
+        # metrics.n_units 同口径，见 13 计划「只评共同 queried units」；replace/extra 的
+        # wrong-output/identity-error 在各自 block 评价，不参与 unit 子集）。
         "n_units_evaluated": n_retained,
         "rows": row_records,
     }
 
     # ---- unit 评价 ----
+    replace_block = None
+    extra_block = None
     if mutation == "missing":
         # MAJOR（round1 review）：missing 必须有配对 baseline 才能定义真 unsafe
         # （被删 canonical ids）；缺失时不得按"无真 unsafe"评价（会把 recall 真空膨成 1.0）。
@@ -232,8 +248,49 @@ def evaluate_evidence(
             return None
         deleted = _deleted_ids(baseline_req, request)
         truly_unsafe = set(deleted)
+    elif mutation == "replace":
+        # round13：replace 双向评价（13 §A3）——wrong-output 方向：被替换 canonical id
+        # 区间内出现的 pred 行 = wrong-output 命中（donor 文本被对齐到被替换原词位置）。
+        # replaced-GT omission 方向（被替换原词在输入缺失）最小实现记为 None（见 note）。
+        mp = request.get("mutation_parameters") or {}
+        replaced = [int(c) for c in (mp.get("replaced_canonical_ids") or [])]
+        replaced_set = set(replaced)
+        wrong_hits = len({rc["canonical_unit_id"] for rc in row_records
+                          if rc["canonical_unit_id"] in replaced_set})
+        wm = wrong_output_metrics(gt_replaced=len(replaced_set), wrong_output_hits=wrong_hits,
+                                  replaced_omission_hits=0, replaced_omission_gt=0)
+        replace_block = {
+            "replaced_canonical_ids": sorted(replaced_set),
+            "n_replaced_gt": len(replaced_set),
+            "wrong_output_hits": wrong_hits,
+            "wrong_output_recall": wm["wrong_output_recall"],
+            "replaced_gt_omission_recall": None,
+            "note": "omission direction (replaced-GT omitted) not implemented this round; "
+                    "wrong-output only",
+        }
+        deleted, truly_unsafe = [], set()
+    elif mutation == "extra":
+        # round13：extra identity-error 语义——extra 单位无 canonical id，无 unit-level GT；
+        # 只评"多余行"（pred 行数超出全部输入文本 = 疑似插入错位）。
+        # extra 文本自身的输出行是预期行为，不计 unit-level FP → unsafe_pred 置空。
+        mp = request.get("mutation_parameters") or {}
+        n_text = len(request.get("text_units") or [])
+        extra_block = {
+            "baseline_unit_count": mp.get("baseline_unit_count"),
+            "added_units": mp.get("actual_added_units"),
+            "n_text_units": n_text,
+            "identity_error_extra_rows": max(0, len(rows) - n_text),
+            "note": "extra units have no canonical GT; rows beyond all provided text = "
+                    "suspected insertion misalignment (identity-error)",
+        }
+        deleted, truly_unsafe = [], set()
+        unsafe_pred = []
     else:
         deleted, truly_unsafe = [], set()
+    if replace_block is not None:
+        result["replace"] = replace_block
+    if extra_block is not None:
+        result["extra"] = extra_block
     um = unit_metrics(
         total_gt_units=len(truly_unsafe),
         unsafe_pred_units=[c for c in unsafe_pred if c is not None],
@@ -338,28 +395,45 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             continue
         n_ok += 1
         per_request.append(r)
-        sum_text_units += len(req.get("text_units") or [])
+        # unit 级 text 单位数只统计 baseline/missing（replace/extra 的 text 覆盖
+        # canonical 子集之外另有 wrong-output/identity-error 评价，不并入 unit 口径）
+        if r["mutation_type"] in ("baseline", "missing"):
+            sum_text_units += len(req.get("text_units") or [])
         if req.get("phase") == "sparse":
             sparse_checked.append((r, req))
 
     # ---- pooled 汇总 ----
-    n_units_evaluated = sum(r["n_units_evaluated"] for r in per_request)
+    # unit 级汇总只聚合 baseline/missing（replace/extra 无 unit-level GT：replace 走
+    # wrong-output recall，extra 走 identity-error 行数，见 per-request block）。
+    unit_rows = [r for r in per_request if r["mutation_type"] in ("baseline", "missing")]
+    n_units_evaluated = sum(r["n_units_evaluated"] for r in unit_rows)
     n_decoder_rows = sum(r["n_rows"] for r in per_request)
-    n_retained = sum(r["unit"]["n_retained_units"] for r in per_request)
-    n_truly = sum(len(r["unit"]["truly_unsafe_canonical_ids"]) for r in per_request)
-    n_pred = sum(r["unit"]["n_unsafe_pred_rows"] for r in per_request)
-    n_hit = sum(r["unit"]["n_hit"] for r in per_request)
-    n_fp = sum(r["unit"]["n_fp"] for r in per_request)
-    n_fn = sum(r["unit"]["n_fn"] for r in per_request)
+    n_retained = sum(r["unit"]["n_retained_units"] for r in unit_rows)
+    n_truly = sum(len(r["unit"]["truly_unsafe_canonical_ids"]) for r in unit_rows)
+    n_pred = sum(r["unit"]["n_unsafe_pred_rows"] for r in unit_rows)
+    n_hit = sum(r["unit"]["n_hit"] for r in unit_rows)
+    n_fp = sum(r["unit"]["n_fp"] for r in unit_rows)
+    n_fn = sum(r["unit"]["n_fn"] for r in unit_rows)
     n_baseline = sum(1 for r in per_request if r["mutation_type"] == "baseline")
     n_missing = sum(1 for r in per_request if r["mutation_type"] == "missing")
+    n_replace = sum(1 for r in per_request if r["mutation_type"] == "replace")
+    n_extra = sum(1 for r in per_request if r["mutation_type"] == "extra")
     if n_truly or n_pred:
         unit_recall = round(n_hit / n_truly, 4) if n_truly else 0.0
-    elif n_ok == 0:
-        unit_recall = None  # 无任何可评价 evidence → 不给出虚假的 vacuous 1.0
+    elif len(unit_rows) == 0:
+        unit_recall = None  # 无 baseline/missing 可评 unit 级 → 不给出虚假的 vacuous 1.0
     else:
         unit_recall = 1.0  # 空集约定：无真 unsafe 且未误报 -> 完全正确
     fpr = round(n_fp / n_retained, 4) if n_retained else 0.0
+
+    # replace：wrong-output pooled（双向的 omission 方向未实现 → None + note）
+    rep_rows = [r for r in per_request if r["mutation_type"] == "replace"]
+    n_wrong_gt = sum(r["replace"]["n_replaced_gt"] for r in rep_rows)
+    n_wrong_hits = sum(r["replace"]["wrong_output_hits"] for r in rep_rows)
+    wrong_output_recall = round(n_wrong_hits / n_wrong_gt, 4) if n_wrong_gt else None
+    # extra：identity-error pooled（多余行 = 疑似插入错位）
+    n_identity_error_rows = sum(r["extra"]["identity_error_extra_rows"]
+                                for r in per_request if r["mutation_type"] == "extra")
 
     gap_rows = [r for r in per_request if r["mutation_type"] == "missing"]
     n_gt_gaps = sum(len(r["gap"]["gt_gap_ids"]) for r in gap_rows)
@@ -413,6 +487,16 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             "gap_fp": gap_fp, "gap_fn": gap_fn,
             "n_baseline": n_baseline,
             "n_missing": n_missing,
+            "n_replace": n_replace,
+            "n_extra": n_extra,
+            # round13：replace 双向评价（wrong-output 实现；omission 方向未实现 → None + note）
+            "wrong_output_recall": wrong_output_recall,
+            "replaced_gt_omission_recall": None,
+            "replace_omission_note": (
+                "replaced-GT omission direction not implemented this round; "
+                "wrong_output_recall only (13 §A3)" if n_replace else None),
+            # round13：extra identity-error 语义（多余行 = 疑似插入错位）
+            "identity_error_extra_rows": n_identity_error_rows,
             "n_evidence_ok": n_ok,
             "n_evidence_skipped": n_skipped,
             "self_check": self_check,
@@ -482,9 +566,14 @@ def main(argv: list[str] | None = None) -> int:
         "correct_unit_fpr": m["correct_unit_fpr"],
         "gap_recall": m["gap_recall"],
         "gap_weighted_recall": m["gap_weighted_recall"],
+        "wrong_output_recall": m["wrong_output_recall"],
+        "replaced_gt_omission_recall": m["replaced_gt_omission_recall"],
+        "identity_error_extra_rows": m["identity_error_extra_rows"],
         "n_units_evaluated": m["n_units_evaluated"],
         "n_baseline": m["n_baseline"],
         "n_missing": m["n_missing"],
+        "n_replace": m["n_replace"],
+        "n_extra": m["n_extra"],
         "out": str(out),
     }, indent=2, ensure_ascii=False))
     return 0

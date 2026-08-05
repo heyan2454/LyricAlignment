@@ -25,19 +25,24 @@ def _write_wav(path, rate=16000, sec=1.0):
         f.writeframes(np.clip(x.astype(np.int32), -32768, 32767).astype("<i2").tobytes())
 
 
-def _make_m4_manifest(tmp_path, n_segments=40, seg_sec=5.0):
-    """构造一首歌 40 段 × 5s = 200s 的 m4singer_meta_v1 风格 manifest。"""
+def _make_m4_manifest(tmp_path, n_segments=40, seg_sec=5.0, n_songs=1):
+    """构造 n_songs 首歌（每首 n_segments 段 × seg_sec 秒 = 200s）的 m4singer_meta_v1 风格
+    manifest。每首歌歌词文本不同（replace/extra 的跨歌 donor 文本可区分）。"""
     audio_root = tmp_path / "audio"
     rows = []
-    for i in range(n_segments):
-        rel = f"Soprano-1#测试歌/{i:04d}.wav"
-        _write_wav(audio_root / "Soprano-1#测试歌" / f"{i:04d}.wav", sec=seg_sec)
-        rows.append({
-            "item_id": f"Soprano-1#测试歌#{i:04d}", "song_id": "测试歌", "singer_id": "Soprano-1",
-            "audio_relpath": rel, "duration_sec": seg_sec, "language": "zh",
-            "lyrics_normalized": "春风吹绿江南岸" * 2, "lyrics_raw": "春风吹绿江南岸" * 2,
-            "split": "validation", "status": "ok", "mapping_status": "ok",
-        })
+    lyrics_pool = ["春风吹绿江南岸", "明月夜思故乡远", "秋雨落满庭院前", "山花开遍古道边"]
+    for s in range(n_songs):
+        lyrics = lyrics_pool[s % len(lyrics_pool)] * 2
+        song = f"测试歌{s}" if n_songs > 1 else "测试歌"
+        for i in range(n_segments):
+            rel = f"Soprano-1#{song}/{i:04d}.wav"
+            _write_wav(audio_root / f"Soprano-1#{song}" / f"{i:04d}.wav", sec=seg_sec)
+            rows.append({
+                "item_id": f"Soprano-1#{song}#{i:04d}", "song_id": song, "singer_id": "Soprano-1",
+                "audio_relpath": rel, "duration_sec": seg_sec, "language": "zh",
+                "lyrics_normalized": lyrics, "lyrics_raw": lyrics,
+                "split": "validation", "status": "ok", "mapping_status": "ok",
+            })
     mf = tmp_path / "m4_manifest.jsonl"
     mf.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n")
     return mf, audio_root
@@ -234,3 +239,128 @@ def test_builder_refuses_short_song(tmp_path):
                        capture_output=True, text=True, env=ENV)
     assert r.returncode == 1
     assert "no song >= min_duration" in r.stdout
+
+
+def _load_reqs(out):
+    return [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+
+
+def test_builder_replace_extra_variants(tmp_path):
+    """round13：replace/extra 变体全链路语义——
+
+    - replace：request_id 后缀 :replace{r}；被替换 canonical id 保留在 canonical_ids/
+      canonical_to_local/range（与 missing 截断不同）；text_units 尾部变 donor 文本；
+      mutation_parameters 记 requested/actual/actual_replaced_units/replaced_canonical_ids/
+      donor_song_id；validate 全部通过。
+    - extra：request_id 后缀 :extra{r}；canonical_ids 保持 baseline（不扩展）；text_units
+      更长且前缀与 baseline 一致；extra 单位无 canonical id（extra_start_index 标记）；
+      validate 全部通过。
+    - 每档各发 full+sparse 两个 slot 版本（与 missing 一致）；FREEZE 记录 ratios。
+    """
+    from lyricalign.research_v7.requests import AlignmentRequest
+
+    mf, audio_root = _make_m4_manifest(tmp_path, n_songs=2)  # 2 首歌 → donor 池可用
+    out = tmp_path / "fm_r13"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "180",
+                        "--windows-per-song", "1", "--limit", "2",
+                        "--missing-ratios", "0.25",
+                        "--replace-ratios", "0.10,0.50",
+                        "--extra-ratios", "0.10,0.50"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    reqs = _load_reqs(out)
+    base = [x for x in reqs if x["mutation_type"] == "baseline"]
+    miss = [x for x in reqs if x["mutation_type"] == "missing"]
+    rep = [x for x in reqs if x["mutation_type"] == "replace"]
+    ext = [x for x in reqs if x["mutation_type"] == "extra"]
+    assert len(base) == 4 and len(miss) == 4, "2 歌 × 1 窗 × 2 slot × (baseline+missing0.25)"
+    # 每档每歌各发 full+sparse 两个 slot 版本
+    assert len(rep) == 2 * 2 * 2, "2 歌 × 2 档 × 2 slot(full+sparse)"
+    assert len(ext) == 2 * 2 * 2, "2 歌 × 2 档 × 2 slot(full+sparse)"
+    by_base = {b["request_id"]: b for b in base}
+    for b in base:
+        for tag in (":replace0.10", ":replace0.50", ":extra0.10", ":extra0.50", ":missing0.25"):
+            assert f"{b['request_id']}{tag}" in {x["request_id"] for x in reqs}, b["request_id"]
+    # ---- replace 语义 ----
+    for rrow in rep:
+        b = by_base[rrow["request_id"].rsplit(":", 1)[0]]
+        mp = rrow["mutation_parameters"]
+        n_rep = mp["actual_replaced_units"]
+        assert rrow["condition"] == "replace"
+        assert mp["requested_ratio"] in (0.1, 0.5)
+        assert n_rep > 0
+        # 关键：被替换 canonical id 必须保留在 canonical_ids 里（不学 missing 截断）
+        assert rrow["canonical_ids"] == b["canonical_ids"], "replace 不截断 canonical_ids"
+        assert rrow["canonical_to_local"] == b["canonical_to_local"]
+        assert rrow["canonical_text_end"] == b["canonical_text_end"]
+        assert len(rrow["text_units"]) == len(b["text_units"]) == len(rrow["canonical_ids"])
+        # 尾部 n_rep 个单位 text 变为 donor 文本，其余保持
+        assert rrow["text_units"][: len(rrow["text_units"]) - n_rep] == \
+            b["text_units"][: len(b["text_units"]) - n_rep]
+        assert rrow["text_units"][-n_rep:] != b["text_units"][-n_rep:]
+        # replaced_canonical_ids = baseline 尾部 n_rep 个 canonical id
+        assert mp["replaced_canonical_ids"] == b["canonical_ids"][-n_rep:]
+        # donor 来自同库其他歌（同语言）
+        assert mp["donor_song_id"] and mp["donor_song_id"] != rrow["pair_id"].rsplit(":", 1)[0]
+        assert abs(mp["actual_ratio"] - n_rep / len(b["text_units"])) < 1e-6
+    # ---- extra 语义 ----
+    for rrow in ext:
+        b = by_base[rrow["request_id"].rsplit(":", 1)[0]]
+        mp = rrow["mutation_parameters"]
+        n_add = mp["actual_added_units"]
+        assert rrow["condition"] == "extra"
+        assert mp["requested_ratio"] in (0.1, 0.5)
+        assert n_add > 0
+        # extra 单位无 canonical id：canonical_ids 保持 baseline，text_units 更长
+        assert rrow["canonical_ids"] == b["canonical_ids"], "extra 不扩展 canonical_ids"
+        assert rrow["canonical_to_local"] == b["canonical_to_local"]
+        assert len(rrow["text_units"]) == len(b["text_units"]) + n_add
+        assert rrow["text_units"][: len(b["text_units"])] == b["text_units"], "extra 前缀=baseline"
+        assert mp["extra_start_index"] == len(rrow["canonical_ids"])
+        assert mp["baseline_unit_count"] == len(b["text_units"])
+        assert mp["donor_song_id"] and mp["donor_song_id"] != rrow["pair_id"].rsplit(":", 1)[0]
+    # ---- validate 全部通过（含 extra：canonical_ids < text_units 的合法形态）----
+    for rrow in reqs:
+        req = AlignmentRequest(
+            request_id=rrow["request_id"], item_id=rrow["item_id"], parent_request_id=None,
+            audio_source=rrow["audio_path"], audio_start_sec=rrow["audio_start_sec"],
+            audio_end_sec=rrow["audio_end_sec"],
+            text_source=rrow["text_source"], text_start_index=rrow["text_start_index"],
+            text_end_index=rrow["text_end_index"], text_units=tuple(rrow["text_units"]),
+            timestamp_slot_indices=tuple(rrow["timestamp_slot_indices"]),
+            workflow_mode=rrow["workflow_mode"], mutation_type=rrow["mutation_type"],
+            mutation_parameters=rrow["mutation_parameters"], model_id=rrow["model_id"],
+            checkpoint_id=rrow["checkpoint_id"], input_variant=rrow["input_variant"],
+            canonical_text_start=rrow["canonical_text_start"], canonical_text_end=rrow["canonical_text_end"],
+            canonical_to_local={int(k): int(v) for k, v in (rrow["canonical_to_local"] or {}).items()},
+            canonical_ids=list(rrow["canonical_ids"]),
+            canonical_timeline_file_sha=rrow["canonical_timeline_file_sha"],
+            canonical_timeline_row_sha=rrow["canonical_timeline_row_sha"],
+            canonical_adapter_version=rrow["canonical_adapter_version"],
+            source_window_sec=(rrow["source_window_start_sec"], rrow["source_window_end_sec"]),
+            metadata={"evaluation_role": rrow["evaluation_role"]})
+        req.validate()
+    # ---- FREEZE 记录 ratios 与 songs ----
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["replace_ratios"] == [0.1, 0.5]
+    assert fr["extra_ratios"] == [0.1, 0.5]
+    assert fr["songs"] == 2
+
+
+def test_builder_replace_extra_requires_donor_pool(tmp_path):
+    """round13：--replace-ratios/--extra-ratios 指定但库内只有 1 首歌（无 donor 池）
+    时不得报错/产生空档——replace/extra 整档跳过，missing/baseline 行为不变。"""
+    mf, audio_root = _make_m4_manifest(tmp_path, n_songs=1)
+    out = tmp_path / "fm_r13_solo"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "180",
+                        "--windows-per-song", "1", "--limit", "1",
+                        "--replace-ratios", "0.10", "--extra-ratios", "0.10"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    reqs = _load_reqs(out)
+    assert all(x["mutation_type"] in ("baseline", "missing") for x in reqs)
+    assert any(x["mutation_type"] == "missing" for x in reqs)

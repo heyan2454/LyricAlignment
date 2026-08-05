@@ -295,3 +295,116 @@ def test_gt_eval_missing_ratio_suffix_pairing(tmp_path):
     assert m._is_missing_rid("s1:w0:full:missing") == "s1:w0:full"
     assert m._is_missing_rid("s1:w0:full:missing0.25") == "s1:w0:full"
     assert m._is_missing_rid("s1:w0:full") is None
+
+
+def test_gt_eval_replace_wrong_output(tmp_path):
+    """round13：replace 双向评价——wrong-output 方向：pred 行落在被替换 canonical 区间
+    （mutation_parameters.replaced_canonical_ids）= 命中；replaced-GT omission 方向
+    最小实现记为 None（输出注明）；unit 级 pooling 不混入 replace。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_long_slot_gt as m
+    run = tmp_path / "run"; ev_dir = run / "evidence"; ev_dir.mkdir(parents=True)
+    text = [chr(97 + i) for i in range(20)]
+    base_req = {
+        "request_id": "s1:w0:full", "item_id": "s1:w0:full", "mutation_type": "baseline",
+        "song_id": "s1", "text_units": text, "text_start_index": 0, "text_end_index": 20,
+        "canonical_text_start": 0, "canonical_text_end": 20,
+        "canonical_ids": list(range(20)), "canonical_to_local": {str(i): i for i in range(20)},
+        "source_window_sec": [0.0, 20.0],
+    }
+    (ev_dir / "b.json").write_text(json.dumps({
+        "content_identity": "b", "attempt": {"status": "ok", "request": base_req,
+        "decoder_outputs": {"official": {"rows": _rows(20, text)}}}}))
+    # replace：尾部 4 个单位被 donor 文本替换，canonical_ids 保留（16..19 仍绑定）
+    replaced = [16, 17, 18, 19]
+    rep_text = text[:16] + ["X", "Y", "Z", "W"]
+    rep_req = dict(base_req)
+    rep_req["request_id"] = "s1:w0:full:replace0.25"
+    rep_req["item_id"] = "s1:w0:full:replace0.25"
+    rep_req["mutation_type"] = "replace"
+    rep_req["text_units"] = rep_text
+    rep_req["mutation_parameters"] = {
+        "position": "tail", "requested_ratio": 0.25, "actual_replaced_units": 4,
+        "replaced_canonical_ids": replaced, "donor_song_id": "s2",
+        "baseline_unit_count": 20}
+    # 解码器给替换文本全部产出行（gci 16..19 落在被替换区间 → wrong-output 命中 4/4）
+    rep_rows = _rows(20, rep_text)
+    (ev_dir / "rep.json").write_text(json.dumps({
+        "content_identity": "rep", "attempt": {"status": "ok", "request": rep_req,
+        "decoder_outputs": {"official": {"rows": rep_rows}}}}))
+    tl = tmp_path / "timeline.jsonl"
+    tl.write_text(json.dumps(TIMELINE) + "\n")
+    res = m.evaluate(run_root=run, timeline_manifest=tl)
+    per = {r["request_id"]: r for r in res["per_request"]}
+    rb = per["s1:w0:full:replace0.25"]
+    assert rb["replace"]["replaced_canonical_ids"] == replaced
+    assert rb["replace"]["n_replaced_gt"] == 4
+    assert rb["replace"]["wrong_output_hits"] == 4
+    assert rb["replace"]["wrong_output_recall"] == 1.0
+    assert rb["replace"]["replaced_gt_omission_recall"] is None  # 未实现方向记为 None
+    assert "note" in rb["replace"]
+    # replace 的 canonical 绑定保留：unit 级无真 unsafe（wrong-output 独立口径）
+    assert rb["unit"]["truly_unsafe_canonical_ids"] == []
+    met = res["metrics"]
+    assert met["n_replace"] == 1
+    assert met["wrong_output_recall"] == 1.0
+    assert met["replaced_gt_omission_recall"] is None
+    assert met["replace_omission_note"] is not None
+    # unit 级 pooling 不被 replace 污染：只有 baseline 参与（unit_recall=1.0 空集约定）
+    assert met["n_units_evaluated"] == 20
+    assert met["unit_recall"] == 1.0
+
+
+def test_gt_eval_extra_identity_error(tmp_path):
+    """round13：extra identity-error 语义——extra 单位无 canonical id：canonical_ids
+    保持 baseline；pred 行数超出全部输入文本（含 extra 文本）的差额 = 疑似插入错位；
+    unit 级 pooling 不混入 extra。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_long_slot_gt as m
+    run = tmp_path / "run"; ev_dir = run / "evidence"; ev_dir.mkdir(parents=True)
+    text = [chr(97 + i) for i in range(20)]
+    base_req = {
+        "request_id": "s1:w0:full", "item_id": "s1:w0:full", "mutation_type": "baseline",
+        "song_id": "s1", "text_units": text, "text_start_index": 0, "text_end_index": 20,
+        "canonical_text_start": 0, "canonical_text_end": 20,
+        "canonical_ids": list(range(20)), "canonical_to_local": {str(i): i for i in range(20)},
+        "source_window_sec": [0.0, 20.0],
+    }
+    (ev_dir / "b.json").write_text(json.dumps({
+        "content_identity": "b", "attempt": {"status": "ok", "request": base_req,
+        "decoder_outputs": {"official": {"rows": _rows(20, text)}}}}))
+    # extra：+2 个单位追加在尾部，canonical_ids 保持 baseline（无 canonical id）
+    ext_req = dict(base_req)
+    ext_req["request_id"] = "s1:w0:full:extra0.10"
+    ext_req["item_id"] = "s1:w0:full:extra0.10"
+    ext_req["mutation_type"] = "extra"
+    ext_req["text_units"] = text + ["X", "Y"]
+    ext_req["text_end_index"] = 22
+    ext_req["mutation_parameters"] = {
+        "position": "tail", "requested_ratio": 0.10, "actual_added_units": 2,
+        "donor_song_id": "s2", "baseline_unit_count": 20, "extra_start_index": 20}
+    # 解码器产出 23 行：20 行 retained/extra 文本 + 1 行多余（疑似插入错位）
+    ext_rows = _rows(23, text + ["X", "Y", "Z"])
+    (ev_dir / "ext.json").write_text(json.dumps({
+        "content_identity": "ext", "attempt": {"status": "ok", "request": ext_req,
+        "decoder_outputs": {"official": {"rows": ext_rows}}}}))
+    tl = tmp_path / "timeline.jsonl"
+    tl.write_text(json.dumps(TIMELINE) + "\n")
+    res = m.evaluate(run_root=run, timeline_manifest=tl)
+    per = {r["request_id"]: r for r in res["per_request"]}
+    eb = per["s1:w0:full:extra0.10"]
+    assert eb["extra"]["n_text_units"] == 22
+    assert eb["extra"]["added_units"] == 2
+    assert eb["extra"]["baseline_unit_count"] == 20
+    # 23 行 - 22 文本 = 1 多余行（identity-error）
+    assert eb["extra"]["identity_error_extra_rows"] == 1
+    # extra 文本自身的输出行是预期行为，不进入 unit-level FP
+    assert eb["unit"]["n_unsafe_pred_rows"] == 0
+    met = res["metrics"]
+    assert met["n_extra"] == 1
+    assert met["identity_error_extra_rows"] == 1
+    # unit 级 pooling 不混入 extra：只有 baseline 参与
+    assert met["n_units_evaluated"] == 20
+    assert met["unit_recall"] == 1.0

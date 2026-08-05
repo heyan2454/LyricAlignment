@@ -97,7 +97,11 @@ class AlignmentRequest:
             cids = self.canonical_ids
             if not cids:
                 raise ValueError("canonical_ids required when canonical fields present")
-            if len(cids) != len(self.text_units):
+            # round13：extra mutation 的尾部 extra 单位无 canonical id（identity-error 语义），
+            # canonical_ids 保持 baseline 覆盖（len < text_units），其余绑定约束不变；
+            # 其余 mutation（baseline/missing/replace）仍必须逐字绑定。
+            extra_tail = self.mutation_type == "extra" and len(cids) < len(self.text_units)
+            if len(cids) != len(self.text_units) and not extra_tail:
                 raise ValueError(
                     f"canonical_ids len {len(cids)} != text_units len {len(self.text_units)}")
             if any(b <= a for a, b in zip(cids, cids[1:])):

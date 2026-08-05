@@ -7,6 +7,9 @@
 
 本脚本把该步骤固化为可复现命令：
 - missing 请求：unsafe = [n_kept, baseline_unit_count)（被删尾部单位，mutation 标签）
+- replace 请求：unsafe = 被替换 canonical id 对应 local 行（wrong-output 方向，
+  gt_source=replace_wrong_output；被替换原词的 omitted-original 方向在本标签层不标）
+- extra 请求：unsafe = []（extra 单位无 canonical id，identity-error 语义，无 GT 行可标）
 - baseline 请求：unsafe = []（期望全对）
 - 标签写回 evidence json（保留原文件备份到同目录 .bak 或仅原地更新，--backup 控制）
 - 输出每 item 的标签审计行（item/request/mutation/n_units/unsafe_count/gt_source）
@@ -25,6 +28,8 @@ from pathlib import Path
 
 GT_SOURCE_MISSING = "missing_omitted_units"
 GT_SOURCE_BASELINE = "baseline_expected_correct"
+GT_SOURCE_REPLACE = "replace_wrong_output"
+GT_SOURCE_EXTRA = "extra_inserted_no_canonical_gt"
 
 
 def label_evidence(requests_path: Path, evidence_dir: Path, *, backup: bool = False) -> dict:
@@ -35,7 +40,7 @@ def label_evidence(requests_path: Path, evidence_dir: Path, *, backup: bool = Fa
             continue
         r = json.loads(line)
         reqs[r["request_id"]] = r
-    audit = {"labeled": 0, "missing": 0, "baseline": 0, "skipped": 0}
+    audit = {"labeled": 0, "missing": 0, "baseline": 0, "replace": 0, "extra": 0, "skipped": 0}
     for p in sorted(evidence_dir.glob("*.json")):
         ev = json.loads(p.read_text(encoding="utf-8"))
         att = ev.get("attempt") or {}
@@ -52,6 +57,26 @@ def label_evidence(requests_path: Path, evidence_dir: Path, *, backup: bool = Fa
                   "label_definition": "mutation label: deleted tail units (virtual gap GT); "
                                       "NOT boundary-error GT (see GT_AXIS_NOTE)"}
             audit["missing"] += 1
+        elif mtype == "replace":
+            # wrong-output 方向：被替换 canonical id 对应 local 行 = unsafe（模型不应把
+            # donor 文本对齐到被替换原词位置上当作正确输出）。omitted-original 方向
+            # （被替换原词在输入缺失）不在标签层标 unsafe（评价层独立处理）。
+            mp = mrow.get("mutation_parameters") or {}
+            replaced = [int(c) for c in (mp.get("replaced_canonical_ids") or [])]
+            c2l = mrow.get("canonical_to_local") or {}
+            unsafe = [int(c2l[str(c)]) for c in replaced if str(c) in c2l]
+            gt = {"unsafe_unit_indices": sorted(unsafe), "gt_source": GT_SOURCE_REPLACE,
+                  "label_definition": "replace wrong-output GT: replaced canonical units "
+                                      "(donor text occupies these local rows; omitted-original "
+                                      "direction not labeled at this layer)"}
+            audit["replace"] += 1
+        elif mtype == "extra":
+            # identity-error 语义：extra 单位无 canonical id → 无 GT 行可标 unsafe；
+            # unsafe=[] 由 gt_source 区分（与 baseline 的"期望全对"语义不同）。
+            gt = {"unsafe_unit_indices": [], "gt_source": GT_SOURCE_EXTRA,
+                  "label_definition": "extra inserted units have no canonical GT; "
+                                      "identity-error semantics, no unsafe rows labelable"}
+            audit["extra"] += 1
         else:
             gt = {"unsafe_unit_indices": [], "gt_source": GT_SOURCE_BASELINE,
                   "label_definition": "expected correct baseline"}

@@ -11,7 +11,11 @@ role=lyrics_aligned + text_window_aligned=true——保证 guard/collect/assesso
       --m4-manifest <m4singer_meta_v1/m4singer_manifest.jsonl> \
       --out-root <run>/formal_manifest \
       --min-duration 180 --windows-per-song 3 --window-sec 60 [--limit 5] \
-      [--missing-ratios 0.10,0.25,0.50]
+      [--missing-ratios 0.10,0.25,0.50] [--replace-ratios 0.10,0.25,0.50] \
+      [--extra-ratios 0.10,0.25,0.50]
+
+--limit 支持 ≥20（13 §3.3 formal gate 每条件 ≥12 首独立 song；默认 10 仅为快速验证，
+正式重建请传 --limit 20，FREEZE 记录 songs）。
 
 输出（均冻结 SHA 记录到 FREEZE.json）：
   LONG_TIMELINE_MANIFEST.jsonl  —— 每行：时间线拼接记录（segments/seams/canonical_units）
@@ -31,6 +35,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from lyricalign.research_v7.canonical_mapping import build_mapping  # noqa: E402
+from lyricalign.research_v7.mutations import (  # noqa: E402
+    DonorSpec,
+    extra_ratio,
+    replace_ratio,
+)
 from lyricalign.research_v7.slot_planning import plan_slots  # noqa: E402
 from lyricalign.research_v7.timeline import build_timeline  # noqa: E402
 
@@ -127,13 +136,27 @@ def _canonical_units_for_window(canonical_units, w0: float, w1: float) -> list[d
 
 def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                    row_sha: str, language: str = "Chinese",
-                   missing_ratios: tuple[float, ...] = (0.25,)) -> list[dict]:
-    """从一条时间线生成 fixed-60s 窗请求（baseline + 缺失 mutation 多档配对）。
+                   missing_ratios: tuple[float, ...] = (0.25,),
+                   replace_ratios: tuple[float, ...] = (),
+                   extra_ratios: tuple[float, ...] = (),
+                   donor_pool: dict[str, list[str]] | None = None) -> list[dict]:
+    """从一条时间线生成 fixed-60s 窗请求（baseline + missing/replace/extra mutation 多档配对）。
 
-    每个 missing_ratios 档生成一个独立 tail-missing 变体（request_id 后缀
-    :missing{r}，如 :missing0.25），避免多档 identity 冲突；mutation_parameters
-    同时记录 requested/actual ratio 与绝对 unit 数（13 §C1 百分比核心档）。
-    默认 (0.25,) 保持原单档语义（canonical 截断逻辑不变）。
+    每个 missing/replace/extra ratio 档生成一个独立变体（request_id 后缀
+    :missing{r}/:replace{r}/:extra{r}，如 :missing0.25），避免多档 identity 冲突；
+    mutation_parameters 记录 requested/actual ratio 与绝对 unit 数（13 §C1 百分比核心档）。
+    默认 (0.25,) 保持原单档语义（canonical 截断逻辑不变）；replace/extra 默认关闭。
+
+    replace（双向评价）：donor 从同库其他歌取（同语言），替换尾部 N 个 canonical 单位。
+    关键语义：被替换 canonical id 仍保留在 canonical_ids/canonical_to_local 里
+    （与 missing 的截断不同——替换单位只是 text 变成 donor 文本，canonical 绑定不删除），
+    wrong-output 方向由 replaced_canonical_ids 标识。
+
+    extra：尾部追加 donor 文本 N 个单位；extra 单位无 canonical id
+    （canonical_ids 保持 baseline，text_units 更长），identity-error 语义。
+
+    donor_pool：{song_id: [canonical unit texts]}，donor 取同库其他歌（本 builder 加载的
+    时间线集合内、排序后第一个 song_id != 当前歌者）；池不足 2 首时 replace/extra 跳过。
 
     row_sha：LONG_TIMELINE_MANIFEST.jsonl 中本歌实际行的序列化 sha256
     （调用方在 main 中对该行 dict 以 json.dumps(ensure_ascii=False, sort_keys=True)
@@ -149,6 +172,15 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
     else:
         span = max(0.0, duration - WINDOW_SEC)
         starts = [span * i / (windows_per_song - 1) for i in range(windows_per_song)]
+    # donor：同库其他歌（同语言——M4Singer 全库 zh，按排序取第一个 song_id != 当前歌）
+    donor_song_id = None
+    donor_units: tuple[str, ...] = ()
+    if (replace_ratios or extra_ratios) and donor_pool:
+        for other in sorted(donor_pool):
+            if other != tl["song_id"]:
+                donor_song_id = other
+                donor_units = tuple(donor_pool[other])
+                break
     reqs = []
     for wi, w0 in enumerate(starts):
         w1 = min(w0 + WINDOW_SEC, duration)
@@ -241,6 +273,61 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                     "actual_removed_units": n_miss, "absolute_count": n_miss,
                     "baseline_unit_count": len(texts)}
                 reqs.append(miss)
+            # replace：尾部 N 个 canonical 单位 text 换成 donor 文本（双向评价 wrong-output 方向，
+            # 13 §A3）。关键语义：被替换 canonical id 保留在 canonical_ids/canonical_to_local/
+            # range 里（与 missing 截断不同——替换单位只是 text 变 donor 文本，canonical 绑定不删），
+            # wrong-output 区间由 mutation_parameters.replaced_canonical_ids 标识。
+            # donor 从同库其他歌取（同语言，M4Singer 全 zh）；无 donor 池时整档跳过。
+            for ratio in replace_ratios:
+                if donor_song_id is None:
+                    break  # 池不足 2 首 → replace/extra 均无法产出，整档跳过
+                tag = f"replace{ratio:.2f}"
+                mut = replace_ratio(texts, ratio, donor=DonorSpec(
+                    donor_song_id=donor_song_id, donor_start_index=0,
+                    donor_units=donor_units, language="zh", unit_mode="character"),
+                    position="tail", seed=0)
+                n_rep = sum(1 for a, b in zip(texts, mut.mutated_units) if a != b)
+                rep = dict(base)
+                rep["request_id"] = f"{base['request_id']}:{tag}"
+                rep["item_id"] = f"{base['item_id']}:{tag}"
+                rep["mutation_type"] = "replace"
+                rep["condition"] = "replace"
+                rep["slot_plan_id"] = f"{base['slot_plan_id']}:{tag}"
+                rep["text_units"] = list(mut.mutated_units)
+                rep["mutation_parameters"] = {
+                    "position": "tail", "requested_ratio": ratio,
+                    "actual_ratio": round(mut.actual_ratio, 6),
+                    "actual_replaced_units": n_rep,
+                    "replaced_canonical_ids": cids[-n_rep:] if n_rep else [],
+                    "donor_song_id": donor_song_id, "donor_start_index": 0,
+                    "baseline_unit_count": len(texts)}
+                reqs.append(rep)
+            # extra：尾部追加 donor 文本 N 个单位（identity-error 语义，13 §A1/§5）。
+            # extra 单位无 canonical id：canonical_ids/canonical_to_local/range 保持 baseline，
+            # text_units 更长；extra_start_index 标识无 canonical 的文本区间起点。
+            for ratio in extra_ratios:
+                if donor_song_id is None:
+                    break
+                tag = f"extra{ratio:.2f}"
+                mut = extra_ratio(texts, ratio, source="cross_song",
+                                  extra_units=donor_units, position="tail")
+                n_add = len(mut.mutated_units) - len(texts)
+                ext = dict(base)
+                ext["request_id"] = f"{base['request_id']}:{tag}"
+                ext["item_id"] = f"{base['item_id']}:{tag}"
+                ext["mutation_type"] = "extra"
+                ext["condition"] = "extra"
+                ext["slot_plan_id"] = f"{base['slot_plan_id']}:{tag}"
+                ext["text_units"] = list(mut.mutated_units)
+                ext["text_end_index"] = len(ext["text_units"])
+                ext["mutation_parameters"] = {
+                    "position": "tail", "requested_ratio": ratio,
+                    "actual_ratio": round(mut.actual_ratio, 6),
+                    "actual_added_units": n_add,
+                    "donor_song_id": donor_song_id, "donor_start_index": 0,
+                    "baseline_unit_count": len(texts),
+                    "extra_start_index": len(cids)}
+                reqs.append(ext)
             # baseline 本体
             reqs.append(base)
     return reqs
@@ -302,9 +389,17 @@ def main(argv=None) -> int:
                    help="audio_relpath 的根目录（音频实际位置）")
     p.add_argument("--min-duration", type=float, default=180.0)
     p.add_argument("--windows-per-song", type=int, default=3)
-    p.add_argument("--limit", type=int, default=5, help="最多取几首歌曲构造时间线")
+    p.add_argument("--limit", type=int, default=10,
+                   help="最多取几首歌曲构造时间线（13 §3.3 每条件 ≥12 首 gate："
+                        "正式重建请传 20；默认 10 仅快速验证）")
     p.add_argument("--missing-ratios", type=str, default="0.25",
                    help="missing 尾部缺失核心档（逗号分隔 float，如 0.10,0.25,0.50）")
+    p.add_argument("--replace-ratios", type=str, default="",
+                   help="replace 尾部替换核心档（逗号分隔 float，如 0.10,0.25,0.50；"
+                        "默认空=不生成 replace 变体）")
+    p.add_argument("--extra-ratios", type=str, default="",
+                   help="extra 尾部追加核心档（逗号分隔 float，如 0.10,0.25,0.50；"
+                        "默认空=不生成 extra 变体）")
     args = p.parse_args(argv)
 
     try:
@@ -319,6 +414,33 @@ def main(argv=None) -> int:
                          ensure_ascii=False))
         return 1
 
+    def _parse_ratios(raw: str, name: str) -> tuple[float, ...] | None:
+        try:
+            vals = [float(x) for x in raw.split(",") if x.strip() != ""]
+        except ValueError:
+            print(json.dumps({"ok": False, "reason": f"bad --{name}: {raw!r}"},
+                             ensure_ascii=False))
+            return None
+        out = tuple(dict.fromkeys(sorted(vals)))
+        if any(r <= 0.0 or r > 1.0 for r in out):
+            print(json.dumps({"ok": False, "reason": f"{name} must be in (0, 1]"},
+                             ensure_ascii=False))
+            return None
+        return out
+
+    if args.replace_ratios.strip():
+        replace_ratios = _parse_ratios(args.replace_ratios, "replace-ratios")
+        if replace_ratios is None:
+            return 1
+    else:
+        replace_ratios = ()
+    if args.extra_ratios.strip():
+        extra_ratios = _parse_ratios(args.extra_ratios, "extra-ratios")
+        if extra_ratios is None:
+            return 1
+    else:
+        extra_ratios = ()
+
     m4 = Path(args.m4_manifest)
     out = Path(args.out_root); out.mkdir(parents=True, exist_ok=True)
     manifest_sha = _sha(m4)
@@ -329,7 +451,7 @@ def main(argv=None) -> int:
                           "m4_manifest_sha": manifest_sha}, ensure_ascii=False))
         return 1
 
-    tl_rows, win_rows, reqs = [], [], []
+    tl_rows, timelines_built, win_rows, reqs = [], [], [], []
     for tl in timelines:
         # 决策记录（round06）：canonical_timeline_file_sha 语义 = 源 m4 manifest sha
         # （非 timeline 文件自身 sha，与 MIR builder 语义不同）；不改 identity，
@@ -378,13 +500,21 @@ def main(argv=None) -> int:
             "concat_audio_path": str(concat_wav),
         }
         tl_rows.append(tl_row)
+        timelines_built.append((tl, timeline))
+    # 第二遍：request 生成（donor 池必须含全部时间线，replace/extra 的 donor 才能
+    # 从同库其他歌取；第一遍只做 timeline/音频装配）。
+    donor_pool = {r["song_id"]: [u["text"] for u in r["canonical_units"]] for r in tl_rows}
+    for tl, timeline in timelines_built:
         # row_sha：对【实际写入 LONG_TIMELINE_MANIFEST.jsonl 的序列化】求值
         # （与 _atomic_jsonl 的 json.dumps(r, ensure_ascii=False, sort_keys=True) 一致），
         # 保证可从文件逐行复验；texts-only hash 口径废弃。
+        tl_row = next(r for r in tl_rows if r["song_id"] == tl["song_id"])
         row_sha = _sha_bytes(
             json.dumps(tl_row, ensure_ascii=False, sort_keys=True).encode("utf-8"))
         song_reqs = build_requests(tl, timeline, windows_per_song=args.windows_per_song,
-                                   row_sha=row_sha, missing_ratios=missing_ratios)
+                                   row_sha=row_sha, missing_ratios=missing_ratios,
+                                   replace_ratios=replace_ratios, extra_ratios=extra_ratios,
+                                   donor_pool=donor_pool)
         reqs.extend(song_reqs)
         for r in song_reqs:
             win_rows.append({"song_id": tl["song_id"], "request_id": r["request_id"],
@@ -409,6 +539,8 @@ def main(argv=None) -> int:
         "built_at_utc": "2026-08-05T00:00:00Z",
         "min_duration_sec": args.min_duration, "windows_per_song": args.windows_per_song,
         "missing_ratios": list(missing_ratios),
+        "replace_ratios": list(replace_ratios),
+        "extra_ratios": list(extra_ratios),
         "songs": len(tl_rows), "requests": len(reqs),
         "files": {
             "LONG_TIMELINE_MANIFEST.jsonl": _sha(out / "LONG_TIMELINE_MANIFEST.jsonl"),
