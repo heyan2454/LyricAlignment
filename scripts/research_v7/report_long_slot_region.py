@@ -432,6 +432,11 @@ def main(argv=None) -> int:
         auto["data"]["n_baseline"] = gm.get("n_baseline")
         auto["data"]["n_missing"] = gm.get("n_missing")
         auto["data"]["n_evidence_skipped"] = gm.get("n_evidence_skipped")
+        # round21：replace/extra 变体指标透传（v2/v3 GT_EVAL 提供）
+        auto["data"]["wrong_output_recall"] = gm.get("wrong_output_recall")
+        auto["data"]["replaced_gt_omission_recall"] = gm.get("replaced_gt_omission_recall")
+        auto["data"]["n_replace"] = gm.get("n_replace")
+        auto["data"]["n_extra"] = gm.get("n_extra")
     else:
         # 回退源：RUN_MANIFEST（formal）或 smoke（draft）；RUN_MANIFEST 键为 fpr（兼容）
         m_src = result_kv.get("metrics") or {}
@@ -450,6 +455,10 @@ def main(argv=None) -> int:
         auto["data"]["n_baseline"] = m_src.get("n_baseline")
         auto["data"]["n_missing"] = m_src.get("n_missing")
         auto["data"]["n_evidence_skipped"] = m_src.get("n_evidence_skipped")
+        auto["data"]["wrong_output_recall"] = m_src.get("wrong_output_recall")
+        auto["data"]["replaced_gt_omission_recall"] = m_src.get("replaced_gt_omission_recall")
+        auto["data"]["n_replace"] = m_src.get("n_replace")
+        auto["data"]["n_extra"] = m_src.get("n_extra")
     (run / "report").mkdir(parents=True, exist_ok=True)
     (run / "report" / "AUTO_SUMMARY.json").write_text(json.dumps(auto, ensure_ascii=False, indent=1))
 
