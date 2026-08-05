@@ -177,25 +177,42 @@ def freeze_thresholds(
 
     constraint_violated = False
     if min_safe_accept_rate > 0.0:
+        # 双约束 trade-off（22 §Phase B）：保护优先后若 safe_accept 不足，向上放宽 T_accept
+        # 换取 safe_accept（false_accept 代价随之上升，结果中如实记录）。选点用
+        # 近似 safe_accept（safe 中 p_bad<=T 的比例，O(n log n) 前缀和），最终用精确
+        # 三态验证；light_merge 只影响边界单点，近似选点足够。
+        def _approx_safe_accept(th):
+            return sum(1 for u in safe if float(probabilities[u]) <= th) / len(safe)
+        if _approx_safe_accept(accept_threshold) < min_safe_accept_rate:
+            constraint_violated = True
+            relaxed = accept_threshold
+            for th in candidates:
+                if th <= accept_threshold:
+                    continue
+                if _approx_safe_accept(th) >= min_safe_accept_rate:
+                    relaxed = th
+                    break
+            if relaxed > accept_threshold:
+                accept_threshold = relaxed
+                reject_candidates = [t for t in candidates if t > accept_threshold]
+                if reject_candidates:
+                    reject_threshold = reject_candidates[0]
+                    for th in reject_candidates:
+                        reject_recall = sum(probabilities[u] >= th for u in unsafe) / len(unsafe)
+                        if reject_recall >= min_target:
+                            reject_threshold = th
+                        else:
+                            break
+        # 精确验证（含 light_merge）
         output_tmp = tristate_from_p_bad(
             probabilities, accept_threshold, reject_threshold,
             queried_intervals=[UnitInterval(units[0], units[-1] + 1)])
-        safe_accept = tri_state_unit_metrics(
-            output=output_tmp, unsafe_units=unsafe, safe_units=safe)["safe_accept_rate"]
-        if safe_accept < min_safe_accept_rate:
+        m_tmp = tri_state_unit_metrics(output=output_tmp, unsafe_units=unsafe, safe_units=safe)
+        if m_tmp["safe_accept_rate"] < min_safe_accept_rate \
+                or m_tmp["protected_recall"] < min_target:
             constraint_violated = True
-            for threshold in reject_candidates:
-                if threshold >= reject_threshold:
-                    continue
-                out_t = tristate_from_p_bad(
-                    probabilities, accept_threshold, threshold,
-                    queried_intervals=[UnitInterval(units[0], units[-1] + 1)])
-                m = tri_state_unit_metrics(output=out_t, unsafe_units=unsafe, safe_units=safe)
-                if m["safe_accept_rate"] >= min_safe_accept_rate \
-                        and m["protected_recall"] >= min_target:
-                    reject_threshold = threshold
-                    constraint_violated = False
-                    break
+        else:
+            constraint_violated = False
 
     output = tristate_from_p_bad(
         probabilities,

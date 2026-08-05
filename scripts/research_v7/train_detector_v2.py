@@ -285,11 +285,8 @@ def run_train(*, by_target, out_dir: Path, model_kinds: tuple[str, ...] = ("stan
     for target in list(frozen):
         best = frozen[target].get("best")
         if best:
-            frozen[target]["best_combo"] = best["best_combo"]
-            frozen[target]["model_kind"] = best["model_kind"]
-            frozen[target]["operating_points"] = best["operating_points"]
-            frozen[target]["tri_state_val"] = best["tri_state_val"]
-            frozen[target]["interval_val"] = best["interval_val"]
+            for k, v in best.items():
+                frozen[target][k] = v
             frozen[target].pop("best", None)
 
     selection["best_per_target"] = best_per_target

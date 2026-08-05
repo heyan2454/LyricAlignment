@@ -201,6 +201,10 @@ def main(argv=None) -> int:
                    help="逗号分隔的缺失 unit 数（1,2,4,8）：窗尾 N 个 canonical units 从 "
                         "canonical_ids/text_units 删除（virtual gap 评价方向），"
                         "stress cohort 无 occurrence GT（gt_ambiguity=true）")
+    p.add_argument("--extra-counts", default="",
+                   help="逗号分隔的额外 unit 数（1,2,4,8）：窗尾追加 N 个 donor 文本 units "
+                        "（identity-error 方向，canonical_ids 不变），"
+                        "stress cohort 无 occurrence GT（gt_ambiguity=true）")
     a = p.parse_args(argv)
 
     tl_path = Path(a.timeline_manifest)
@@ -219,6 +223,7 @@ def main(argv=None) -> int:
 
     replace_counts = tuple(int(x) for x in a.replace_counts.split(",") if x.strip())
     missing_counts = tuple(int(x) for x in a.missing_counts.split(",") if x.strip())
+    extra_counts = tuple(int(x) for x in a.extra_counts.split(",") if x.strip())
     # donor 池：同库其他歌的 canonical unit texts（排序后第一个 != 当前歌；池不足 2 首则跳过）
     donor_pool: dict[str, list[str]] = {
         s: [str(u.get("text") or "") for u in (tl["row"].get("canonical_units") or [])]
@@ -410,6 +415,25 @@ def main(argv=None) -> int:
                         ms["canonical_text_end"] = int(ms["canonical_ids"][-1]) + 1
                     ms["audio_path"] = str(audio)
                     reqs.append(ms)
+            # extra stress（18 §13/22 验收 12）：窗尾追加 N 个 donor 文本 units。
+            # extra 单位无 canonical id（canonical_ids 保持 baseline，text_units 更长），
+            # identity-error 语义；无 occurrence GT（gt_ambiguity）。
+            for n in extra_counts:
+                donor_txt = donor_units[:n]
+                if len(donor_txt) < n:
+                    continue
+                ex = _row(tl, song, wi=wi, text_w0=w0, text_w1=w1,
+                          audio_w0=w0, audio_w1=w1, view="full", family=f"extra_{n}",
+                          severity=str(n),
+                          detail={"note": f"tail {n} extra units appended from donor "
+                                          "(identity-error direction, no occurrence GT)"},
+                          gt_ambiguity=True, base_row=base)
+                if ex:
+                    ex["text_units"] = ex["text_units"] + list(donor_txt)
+                    ex["text_end_index"] = len(ex["text_units"])
+                    ex["timestamp_slot_indices"] = list(range(len(ex["text_units"])))
+                    ex["audio_path"] = str(audio)
+                    reqs.append(ex)
         songs_processed.append(song)
 
     req_sha = hashlib.sha256(b"\n".join(
@@ -430,6 +454,7 @@ def main(argv=None) -> int:
             "include_acoustic": a.include_acoustic,
             "replace_counts": list(replace_counts),
             "missing_counts": list(missing_counts),
+            "extra_counts": list(extra_counts),
             "donor_song_id": donor_song_id,
         },
         "gears": {
