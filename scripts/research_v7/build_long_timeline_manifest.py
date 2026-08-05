@@ -11,11 +11,16 @@ role=lyrics_aligned + text_window_aligned=true——保证 guard/collect/assesso
       --m4-manifest <m4singer_meta_v1/m4singer_manifest.jsonl> \
       --out-root <run>/formal_manifest \
       --min-duration 180 --windows-per-song 3 --window-sec 60 [--limit 5] \
+      [--seam-silence-sec 0.5] \
       [--missing-ratios 0.10,0.25,0.50] [--replace-ratios 0.10,0.25,0.50] \
       [--extra-ratios 0.10,0.25,0.50]
 
 --limit 支持 ≥20（13 §3.3 formal gate 每条件 ≥12 首独立 song；默认 10 仅为快速验证，
 正式重建请传 --limit 20，FREEZE 记录 songs）。
+
+--seam-silence-sec 控制段间 seam：默认 0.5（13 §3.4 对照版，timeline 与 concat 音频
+同用该静音，GT 随 seam 平移）；传 0.0 生成主版本（无静音直接拼接，timeline 时长 =
+段时长之和，seams 记录零时长标记）。FREEZE 记录该值。
 
 输出（均冻结 SHA 记录到 FREEZE.json）：
   LONG_TIMELINE_MANIFEST.jsonl  —— 每行：时间线拼接记录（segments/seams/canonical_units）
@@ -388,6 +393,9 @@ def main(argv=None) -> int:
     p.add_argument("--audio-root", default="/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer",
                    help="audio_relpath 的根目录（音频实际位置）")
     p.add_argument("--min-duration", type=float, default=180.0)
+    p.add_argument("--seam-silence-sec", type=float, default=0.5,
+                   help="段间 seam 静音秒数：默认 0.5（对照版，GT 随 seam 平移）；"
+                        "传 0.0 生成主版本（无静音直接拼接，13 §3.4）")
     p.add_argument("--windows-per-song", type=int, default=3)
     p.add_argument("--limit", type=int, default=10,
                    help="最多取几首歌曲构造时间线（13 §3.3 每条件 ≥12 首 gate："
@@ -401,6 +409,11 @@ def main(argv=None) -> int:
                    help="extra 尾部追加核心档（逗号分隔 float，如 0.10,0.25,0.50；"
                         "默认空=不生成 extra 变体）")
     args = p.parse_args(argv)
+
+    if args.seam_silence_sec < 0.0:
+        print(json.dumps({"ok": False, "reason": "seam_silence_sec must be >= 0.0"},
+                         ensure_ascii=False))
+        return 1
 
     try:
         raw_ratios = [float(x) for x in args.missing_ratios.split(",") if x.strip() != ""]
@@ -474,15 +487,15 @@ def main(argv=None) -> int:
             timeline = build_timeline(
                 timeline_id=f"m4:{tl['song_id']}:v1", source_song_id=tl["song_id"],
                 dataset="m4singer", language="zh", segments=segs, order_field="order",
-                artificial_silence_sec=0.5)
+                artificial_silence_sec=args.seam_silence_sec)
         except Exception as e:  # noqa
             print(json.dumps({"ok": False, "song": tl["song_id"], "error": str(e)}), ensure_ascii=False)
             return 2
-        # 拼接整歌音频（16k mono，段间 0.5s 静音与 timeline seam 一致）——
+        # 拼接整歌音频（16k mono，段间 seam_silence_sec 静音与 timeline seam 一致）——
         # 请求的 audio_start/end 是整歌坐标系，真实 executor 需要可解码的完整音频。
         concat_wav = out / "audio" / f"{tl['song_id']}.wav"
         try:
-            concat_timeline_audio(segs, concat_wav, seam_silence_sec=0.5)
+            concat_timeline_audio(segs, concat_wav, seam_silence_sec=args.seam_silence_sec)
         except Exception as e:  # noqa
             print(json.dumps({"ok": False, "song": tl["song_id"], "error": f"concat failed: {e}"},
                              ensure_ascii=False))
@@ -538,6 +551,7 @@ def main(argv=None) -> int:
         ),
         "built_at_utc": "2026-08-05T00:00:00Z",
         "min_duration_sec": args.min_duration, "windows_per_song": args.windows_per_song,
+        "seam_silence_sec": args.seam_silence_sec,
         "missing_ratios": list(missing_ratios),
         "replace_ratios": list(replace_ratios),
         "extra_ratios": list(extra_ratios),

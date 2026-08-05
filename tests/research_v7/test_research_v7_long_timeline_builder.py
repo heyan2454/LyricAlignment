@@ -349,6 +349,83 @@ def test_builder_replace_extra_variants(tmp_path):
     assert fr["songs"] == 2
 
 
+def test_builder_seam_silence_zero_main_version(tmp_path):
+    """round13 T4：--seam-silence-sec 0.0 生成主版本（无静音直接拼接，13 §3.4）——
+    timeline duration = 段时长之和（无 0.5×(n-1) 增量）、seams 全为零时长标记、
+    concat 音频时长与 timeline 一致、FREEZE 记录 seam_silence_sec=0.0；
+    默认 0.5 对照版行为不变（duration 含 0.5×(n-1) 平移，既有断言仍过）。"""
+    import wave
+
+    mf, audio_root = _make_m4_manifest(tmp_path, n_segments=40, seg_sec=5.0)
+    rows = [json.loads(l) for l in mf.read_text().splitlines() if l.strip()]
+    song = "测试歌"
+    seg_sum = sum(r["duration_sec"] for r in rows if r["song_id"] == song)
+    n_seg = sum(1 for r in rows if r["song_id"] == song)
+
+    def _build(out_name, seam_sec):
+        out = tmp_path / out_name
+        cmd = [sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+               "--m4-manifest", str(mf), "--out-root", str(out),
+               "--audio-root", str(audio_root), "--min-duration", "180",
+               "--windows-per-song", "1", "--limit", "1",
+               "--seam-silence-sec", str(seam_sec)]
+        r = subprocess.run(cmd, capture_output=True, text=True, env=ENV)
+        assert r.returncode == 0, r.stderr
+        tl = json.loads((out / "LONG_TIMELINE_MANIFEST.jsonl").read_text().splitlines()[0])
+        return out, tl
+
+    main_out, tl_main = _build("fm_seam_main", 0.0)
+    # 主版本：duration = 段时长之和，无 seam 静音增量
+    assert tl_main["duration_sec"] == pytest.approx(seg_sum), \
+        f"main duration {tl_main['duration_sec']} != seg sum {seg_sum}"
+    # seams 含零时长标记（无静音主版本不产生真实间隔，但保留 seam 记录）
+    assert len(tl_main["seams"]) == n_seg - 1
+    assert all(s["inserted_silence_sec"] == 0.0 for s in tl_main["seams"]), tl_main["seams"]
+    # concat 音频时长与 timeline 一致（无 0.5s 插入）
+    with wave.open(str(main_out / "audio" / f"{song}.wav"), "rb") as f:
+        assert f.getnframes() / f.getframerate() == pytest.approx(seg_sum, abs=0.01)
+    # FREEZE 记录 0.0
+    fr = json.loads((main_out / "FREEZE.json").read_text())
+    assert fr["seam_silence_sec"] == 0.0
+
+    # 默认/0.5 对照版行为不变：duration 含 0.5×(n-1) seam 平移
+    ctl_out, tl_ctl = _build("fm_seam_ctl", 0.5)
+    assert tl_ctl["duration_sec"] == pytest.approx(seg_sum + 0.5 * (n_seg - 1)), \
+        f"control duration {tl_ctl['duration_sec']} != seg sum + 0.5*(n-1)"
+    assert all(s["inserted_silence_sec"] == 0.5 for s in tl_ctl["seams"])
+    with wave.open(str(ctl_out / "audio" / f"{song}.wav"), "rb") as f:
+        assert f.getnframes() / f.getframerate() == pytest.approx(seg_sum + 0.5 * (n_seg - 1), abs=0.01)
+    fr_ctl = json.loads((ctl_out / "FREEZE.json").read_text())
+    assert fr_ctl["seam_silence_sec"] == 0.5
+    # 0.5 对照版与默认（不传参数）逐字节一致——既有断言（duration>=180、seams=0.5）不变
+    cmd = [sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+           "--m4-manifest", str(mf), "--out-root", str(tmp_path / "fm_seam_default"),
+           "--audio-root", str(audio_root), "--min-duration", "180",
+           "--windows-per-song", "1", "--limit", "1"]
+    r = subprocess.run(cmd, capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    # 两个 out-root 不同 → concat_audio_path（含 out-root）与 row_sha（含该路径）归一化后逐字节一致
+    def _norm_tl(txt):
+        row = json.loads(txt)
+        row["concat_audio_path"] = "AUDIO"
+        return json.dumps(row, ensure_ascii=False, sort_keys=True)
+
+    def _norm_reqs(txt):
+        out = []
+        for line in txt.splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            row["audio_path"] = "AUDIO"
+            row["canonical_timeline_row_sha"] = "SHA"
+            out.append(json.dumps(row, ensure_ascii=False, sort_keys=True))
+        return out
+    assert _norm_tl((tmp_path / "fm_seam_default" / "LONG_TIMELINE_MANIFEST.jsonl").read_text()) == \
+        _norm_tl((ctl_out / "LONG_TIMELINE_MANIFEST.jsonl").read_text())
+    assert _norm_reqs((tmp_path / "fm_seam_default" / "REQUESTS.jsonl").read_text()) == \
+        _norm_reqs((ctl_out / "REQUESTS.jsonl").read_text())
+
+
 def test_builder_replace_extra_requires_donor_pool(tmp_path):
     """round13：--replace-ratios/--extra-ratios 指定但库内只有 1 首歌（无 donor 池）
     时不得报错/产生空档——replace/extra 整档跳过，missing/baseline 行为不变。"""
