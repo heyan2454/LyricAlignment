@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""round04 T4：跨域 assessor 评价 CLI —— M4 冻结 logistic assessor 对 MIR evidence 打分。
+"""round04 T4 + round13：冻结 assessor 评价 CLI —— 任意域 v2 assessor 对 guarded collection 打分。
 
-13 §10.3 跨域评价口径：M4 训练/验证冻结后在 MIR natural-song 上做跨数据集测试；
-M4、MIR、demo 分开汇报、不合并成一个准确率。本 CLI 是 assessor 打分跨域评价：
+13 §10.3 评价口径：assessor 训练/验证冻结后跨数据集/域内测试；M4、MIR、demo 分开汇报、
+不合并成一个准确率。本 CLI 是 assessor 打分评价：
 
-- 输入 M4 冻结 assessor（T3 持久化新格式 ASSESSOR.json：model.beta/mean/std/feature_keys）；
-  旧格式（只有 operating_points、无 model 权重）→ 明确错误并非零退出。
-- MIR 输入必须走 collect_trainable_evidence 的 guarded collection（load_verified 校验）。
+- 输入任意域冻结 assessor（v2 格式 ASSESSOR.json：model.beta/mean/std/feature_keys，
+  由 assessor_train_eval.py 产出）；旧格式（只有 operating_points、无 model 权重）→
+  明确错误并非零退出。
+- collection 输入必须走 collect_trainable_evidence 的 guarded collection（load_verified 校验）。
 - 对每份 evidence 的 official rows 提取 unit_features，按 model.feature_keys 对齐
   （缺失/非数值填 0，与 assessor_train_eval.consume 同法）→ predict_proba。
 - 阈值二值化 high_recall_95/99：operating_points 从 ASSESSOR.json 读，缺的键回退
@@ -16,9 +17,17 @@ M4、MIR、demo 分开汇报、不合并成一个准确率。本 CLI 是 assesso
   （计入 n_units/n_rows/pred/分布），但排除出 recall/FPR 的标签分母，并记录 n_label_errors。
 - 特征提取审计沿用 features.BLOCKED 字段（feature_extractor_blocked），输出 leak_check。
 - 输出 ASSESSOR_CROSS_DOMAIN_EVAL.json（schema research_v7_assessor_cross_domain_eval_v1）：
-  m4_assessor / mir1k 两域分开汇报，不合并分母。
+  assessor 域（m4_assessor 键，schema 固定名）/ collection 域（mir1k 键，schema 固定名）
+  分开汇报，不合并分母；`--domain` 记录被打分 collection 的域（默认 mir1k）。
+
+round13 用法扩展：CLI 参数名泛化为 `--assessor` / `--collection`（`--m4-assessor` /
+`--mir1k-collection` 为兼容别名），支持 MIR 域内自评（MIR in-domain assessor 打分 MIR
+collection，--domain mir1k）与跨域评价同口径对比。
 
 用法：
+  PYTHONPATH=src python scripts/research_v7/evaluate_cross_domain_assessor.py \
+      --assessor <ASSESSOR.json> --collection <collection.json> --out <out_dir> [--domain mir1k]
+  兼容旧名：
   PYTHONPATH=src python scripts/research_v7/evaluate_cross_domain_assessor.py \
       --m4-assessor <ASSESSOR.json> --mir1k-collection <collection.json> --out <out_dir>
 """
@@ -167,8 +176,12 @@ def _recall(n_hit: int, n_gt: int, n_pred: int, n_units: int) -> float | None:
     return 1.0
 
 
-def evaluate(assessor_path: Path, collection_path: Path) -> dict:
-    """加载冻结 assessor + guarded MIR collection，打分并返回 eval 结果 dict。"""
+def evaluate(assessor_path: Path, collection_path: Path, *, domain: str = "mir1k") -> dict:
+    """加载冻结 assessor + guarded collection，打分并返回 eval 结果 dict。
+
+    domain：被打分 collection 的域标签（默认 "mir1k"），记录在 eval_domain 字段；
+    不影响输出 schema 的固定键 m4_assessor/mir1k（report/quality analysis 兼容）。
+    """
     assessor = load_m4_assessor(assessor_path)
     collection, collection_sha = load_verified(collection_path)
     if collection.get("schema") != "research_v7_trainable_evidence_collection_v1":
@@ -242,6 +255,7 @@ def evaluate(assessor_path: Path, collection_path: Path) -> dict:
     return {
         "schema": SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "eval_domain": domain,
         "m4_assessor": {
             "operating_points": thresholds,
             "operating_points_source": op_source,
@@ -273,27 +287,33 @@ def evaluate(assessor_path: Path, collection_path: Path) -> dict:
         "gt_axis_note": GT_AXIS_NOTE,
         "note": (
             "MIR labels are weak supervision from qwen_fa timestamps, not human GT; "
-            "M4 and MIR are reported separately and never merged into a single accuracy (13 §10.3)."
+            "M4 and MIR are reported separately and never merged into a single accuracy (13 §10.3); "
+            f"eval_domain={domain} records the scored collection domain (schema keys m4_assessor/mir1k "
+            "are fixed names)."
         ),
         "inputs": {
-            "m4_assessor": str(assessor_path.resolve()),
-            "mir1k_collection": str(collection_path.resolve()),
-            "mir1k_collection_sha256": collection_sha,
+            "assessor": str(assessor_path.resolve()),
+            "collection": str(collection_path.resolve()),
+            "collection_domain": domain,
+            "collection_sha256": collection_sha,
         },
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--m4-assessor", required=True,
-                   help="T3 冻结 op 输出 ASSESSOR.json（须含 model.beta/mean/std/feature_keys）")
-    p.add_argument("--mir1k-collection", required=True,
-                   help="MIR trainable evidence collection（research_v7_trainable_evidence_collection_v1）")
+    # round13：泛化为任意域；--m4-assessor / --mir1k-collection 为旧名兼容别名（同一 dest）。
+    p.add_argument("--assessor", "--m4-assessor", dest="assessor", required=True,
+                   help="冻结 op 输出 ASSESSOR.json（须含 model.beta/mean/std/feature_keys）")
+    p.add_argument("--collection", "--mir1k-collection", dest="collection", required=True,
+                   help="guarded trainable evidence collection（research_v7_trainable_evidence_collection_v1）")
+    p.add_argument("--domain", default="mir1k",
+                   help="被打分 collection 的域标签（记录在输出 eval_domain；默认 mir1k）")
     p.add_argument("--out", required=True, help="输出目录（写 ASSESSOR_CROSS_DOMAIN_EVAL.json）")
     a = p.parse_args(argv)
     out = Path(a.out)
     try:
-        result = evaluate(Path(a.m4_assessor), Path(a.mir1k_collection))
+        result = evaluate(Path(a.assessor), Path(a.collection), domain=a.domain)
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as e:
         # 确定性失败：原因写 stderr、退出码非 0（无 traceback）。
         # load_m4_assessor 的 (None, reason) 已转成 ValueError；

@@ -7,6 +7,8 @@
   gt_eval 含 unsafe_unit_indices（弱标签）；
 - 断言：输出 schema/两域字段、打分不崩、unsafe_rate 数值合理、缺 model 字段的旧 assessor
   → 非零退出且报错、feature 键对齐缺失填 0。
+- round13：同域自评用例 —— assessor 用 fit_and_freeze 训练于域 A 合成特征、以通用参数
+  --assessor/--collection/--domain 打分域 A collection，断言 schema/eval_domain/指标合理。
 """
 from __future__ import annotations
 
@@ -323,3 +325,94 @@ def test_load_m4_assessor_strict_shape_check_on_top_of_base(tmp_path):
     with pytest.raises(ValueError) as ei:
         ev.load_m4_assessor(bad)
     assert "shapes inconsistent" in str(ei.value)
+
+
+def _train_synth_assessor(tmp_path: Path, rows: list[dict], unsafe: set[int],
+                          name: str = "in_domain_ASSESSOR.json") -> Path:
+    """round13：用 fit_and_freeze 在合成特征上真训练一个 v2 assessor（域 A），并持久化。
+
+    与手工拼权重的 _make_assessor 不同：模型先 fit 于域 A 特征，再用其输出打分域 A，
+    模拟真实 assessor_train_eval → evaluate_cross_domain_assessor 的域内自评链路。
+    """
+    import numpy as np
+    sys.path.insert(0, str(ROOT / "src"))
+    from lyricalign.research_v7.features import unit_features
+    from lyricalign.research_v7.region_assessor import fit_and_freeze
+
+    feats = [unit_features(r) for r in rows]
+    keys = sorted({k for f in feats for k in f if isinstance(f[k], (int, float))})
+    X = np.asarray([[float(f.get(k) or 0.0) for k in keys] for f in feats], dtype=float)
+    y = np.asarray([1.0 if i in unsafe else 0.0 for i in range(len(rows))], dtype=float)
+    half = max(1, len(rows) // 2)
+    res = fit_and_freeze(X[:half], y[:half], X[half:], y[half:])
+    m = res["model"]
+    data = {
+        "operating_points": res["operating_points"],
+        "model": {
+            "beta": [float(v) for v in np.asarray(m.beta, dtype=float).ravel()],
+            "mean": [float(v) for v in np.asarray(m.mean, dtype=float).ravel()],
+            "std": [float(v) for v in np.asarray(m.std, dtype=float).ravel()],
+            "feature_keys": keys,
+        },
+    }
+    p = tmp_path / name
+    p.write_text(json.dumps(data))
+    return p
+
+
+def test_in_domain_self_eval_with_generic_args(tmp_path):
+    """round13：同域自评 —— assessor 训练于域 A 特征、打分域 A collection。
+
+    用通用参数 --assessor/--collection/--domain（新名）运行；输出 schema 不变、
+    eval_domain 记录域标签、unsafe_rate/recall/FPR 字段齐全且数值在 [0,1]。
+    """
+    ap = _train_synth_assessor(tmp_path, _rows(4, 1.0) + _rows(4, 0.2), {0, 1, 6})
+    cp = _make_collection(tmp_path)
+    out = tmp_path / "out_indomain"
+    cmd = [sys.executable, str(ROOT / "scripts/research_v7/evaluate_cross_domain_assessor.py"),
+           "--assessor", str(ap),
+           "--collection", str(cp),
+           "--domain", "mir1k",
+           "--out", str(out)]
+    r = subprocess.run(cmd, capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    g = _load_out(out)
+
+    assert g["schema"] == SCHEMA
+    assert g["eval_domain"] == "mir1k"
+    assert g["inputs"]["collection_domain"] == "mir1k"
+    assert len(g["inputs"]["collection_sha256"]) == 64
+    m = g["mir1k"]
+    assert m["n_units"] == 8 and m["n_units_labeled"] == 8 and m["n_label_errors"] == 0
+    assert m["n_gt_unsafe_units"] == 3
+    # 域内自评：训练模型来自同一特征域，score 分布/阈值均来自 ASSESSOR.json
+    assert g["m4_assessor"]["operating_points_source"] == "assessor"
+    for k in ("unsafe_rate_95", "unsafe_rate_99", "unit_recall_95", "unit_recall_99",
+              "correct_unit_fpr_95", "correct_unit_fpr_99"):
+        v = m[k]
+        assert v is not None and 0.0 <= v <= 1.0, k
+    assert m["leak_check"]["ok"] is True
+    assert set(m["score_distribution"]) == {"min", "p50", "p90", "max"}
+
+
+def test_in_domain_self_eval_old_alias_names_still_work(tmp_path):
+    """round13：旧名别名 --m4-assessor/--mir1k-collection 与 --assessor/--collection 等价。"""
+    ap = _train_synth_assessor(tmp_path, _rows(4, 1.0) + _rows(4, 0.2), {0, 1, 6},
+                               name="in_domain_ASSESSOR_alias.json")
+    cp = _make_collection(tmp_path)
+    out_new = tmp_path / "out_alias_new"
+    r_new = _run_cli(ap, cp, out_new)
+    assert r_new.returncode == 0, r_new.stderr
+    out_old = tmp_path / "out_alias_old"
+    cmd = [sys.executable, str(ROOT / "scripts/research_v7/evaluate_cross_domain_assessor.py"),
+           "--m4-assessor", str(ap),
+           "--mir1k-collection", str(cp),
+           "--domain", "mir1k",
+           "--out", str(out_old)]
+    r_old = subprocess.run(cmd, capture_output=True, text=True, env=ENV)
+    assert r_old.returncode == 0, r_old.stderr
+    g_new = _load_out(out_new)
+    g_old = _load_out(out_old)
+    assert g_old["eval_domain"] == "mir1k"
+    assert g_old["mir1k"]["unsafe_rate_95"] == g_new["mir1k"]["unsafe_rate_95"]
+    assert g_old["mir1k"]["unit_recall_95"] == g_new["mir1k"]["unit_recall_95"]
