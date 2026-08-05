@@ -60,6 +60,19 @@ def test_request_invalid_audio_raises():
         r.derive(audio_start_sec=5.0, audio_end_sec=3.0).validate()
 
 
+def test_request_validate_view_id_enum_and_hidden_schema():
+    r = _req()
+    r.validate()
+    r.derive(view_id="sparse").validate()
+    r.derive(hidden_schema="boundary_last4_v1").validate()
+    for bad in ("full2", "", "SPARSE", 3):
+        with pytest.raises(ValueError, match="view_id"):
+            r.derive(view_id=bad).validate()
+    for bad in ("", "   ", 3, b"x"):
+        with pytest.raises(ValueError, match="hidden_schema"):
+            r.derive(hidden_schema=bad).validate()
+
+
 def _creq_canonical(units=("乙", "女"), cids=None, c2l=None, cstart=0, cend=2,
                     role=None, tl_file="f", tl_row="r", adapter="c3_text_adapter_v1",
                     sw=(40.0, 42.0), auto_ids=True, auto_c2l=True, **kw):

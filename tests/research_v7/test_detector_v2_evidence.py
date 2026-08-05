@@ -46,6 +46,30 @@ def test_leak_guard_rejects_gt_and_family_fields():
         assert_no_label_leak({"label": "unsafe"})
 
 
+def test_leak_guard_rejects_real_canonical_mapping_keys():
+    """M1：黑名单键名对齐真实字段名（canonical_mapping.py / gap candidates）。"""
+    for key in ("replaced_canonical_unit_ids", "removed_canonical_unit_ids",
+                "omitted_canonical_unit_ids", "deleted_count", "positive"):
+        with pytest.raises(ValueError, match="forbidden label fields"):
+            assert_no_label_leak({"raw_duration_sec": 0.4, key: [1, 2, 3]})
+
+
+def test_leak_guard_rejects_nested_leak():
+    """MINOR：任意嵌套 dict 的键含禁用字段即拒绝（不只看顶层）。"""
+    with pytest.raises(ValueError, match=r"forbidden label fields.*nested\.gt_start_sec"):
+        assert_no_label_leak({"raw_duration_sec": 0.4, "nested": {"gt_start_sec": 1.0}})
+    with pytest.raises(ValueError, match=r"forbidden label fields.*nested\.inner\.mutation_family"):
+        assert_no_label_leak({"nested": {"inner": {"mutation_family": "replace"}}})
+    with pytest.raises(ValueError, match=r"forbidden label fields.*items\[0\]\.label"):
+        assert_no_label_leak({"items": [{"label": "unsafe"}]})
+
+
+def test_leak_guard_passes_nested_clean_features():
+    out = assert_no_label_leak({"raw": {"start_sec": 1.0}, "gap": {"time_jump_sec": 0.01},
+                                "list": [{"entropy": 0.5}]})
+    assert out["ok"] is True and out["leak"] == []
+
+
 def test_leak_guard_passes_clean_features():
     out = assert_no_label_leak({"raw_duration_sec": 0.4, "official_duration_sec": 0.3,
                                 "start_entropy": 0.5, "cross_view_diff": 0.01})

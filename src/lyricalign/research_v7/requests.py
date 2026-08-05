@@ -92,6 +92,13 @@ class AlignmentRequest:
         if self.timestamp_slot_indices is not None:
             if any(i < 0 or i >= len(self.text_units) for i in self.timestamp_slot_indices):
                 raise ValueError("timestamp_slot_indices out of text_units range")
+        # review（Phase0）：view_id 非 None 时必须是枚举内视图；hidden_schema 非 None 时必须非空字符串
+        if self.view_id is not None and self.view_id not in ("full", "sparse", "overlap", "review"):
+            raise ValueError(
+                f"invalid view_id {self.view_id!r}; must be one of full|sparse|overlap|review")
+        if self.hidden_schema is not None and (
+                not isinstance(self.hidden_schema, str) or not self.hidden_schema.strip()):
+            raise ValueError(f"hidden_schema must be a non-empty string when set, got {self.hidden_schema!r}")
         # review11-1：canonical 字段自洽性（当任一 canonical **binding** 字段出现时强制约束，
         # 避免把上游数据错误延后到 slot/feature 阶段才暴露。timeline SHA/source_window 属 lineage，
         # 不单独触发；probe 行（无 ids/mapping/range）不受约束，lyrics_aligned 另有完整字段要求）。

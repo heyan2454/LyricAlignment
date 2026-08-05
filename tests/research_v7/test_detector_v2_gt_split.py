@@ -35,11 +35,15 @@ def test_audit_counts_valid_and_time_invalid():
     bad = dict(rows[0])
     bad["timestamp_class_ids"] = [10, 10]  # end == start -> invalid
     audit = audit_labels(rows + [bad])
-    # valid_rows = 状态有效（25 行，含 1 行时间无效但状态 accepted）
-    assert audit["valid_rows"] == len(rows) + 1
+    # valid_rows = 状态有效且时间有效（24 行；时间无效行进 excluded/time_invalid_rows）
+    assert audit["valid_rows"] == len(rows)
+    assert audit["excluded_rows"] == 1
     assert audit["time_invalid_rows"] == 1
     assert audit["n_source_songs"] == 8
     assert audit["synthetic_axis_excluded"] is True
+    # MINOR：total_characters 在时间校验后计数（不含无效行）
+    assert audit["total_characters"] == len(rows) * 10
+    assert audit["mapping_status_counts"]["accepted_rule_based_pinyin_validated"] == len(rows) + 1
 
 
 def test_audit_excludes_unknown_status():
@@ -49,6 +53,30 @@ def test_audit_excludes_unknown_status():
     audit = audit_labels(rows + [bad])
     assert audit["valid_rows"] == len(rows)
     assert audit["excluded_rows"] == 1
+    assert audit["time_invalid_rows"] == 0
+
+
+def test_audit_held_vowel_documented_and_supersede_fields():
+    rows = _rows()
+    held = dict(rows[0])
+    held["mapping_status"] = "accepted_rule_validated_held_vowel"
+    audit = audit_labels(rows + [held])
+    assert audit["held_vowel_included"]["count"] == 1
+    assert "同源" in audit["held_vowel_included"]["note"]
+    assert audit["supersedes_label_file_split"] is True
+    split = build_split(rows + [held])
+    assert split["supersedes_label_file_split"] is True
+    assert "SOURCE_SONG_SPLIT" in split["supersedes_note"]
+
+
+def test_split_excludes_time_invalid_rows():
+    rows = _rows(n_songs=10, segs_per_song=3)
+    bad = dict(rows[0])
+    bad["timestamp_class_ids"] = [10, 10, 20, 20, 30, 30, 40, 40, 50, 50,
+                                  60, 60, 70, 70, 80, 80, 90, 90, 100, 100]
+    split = build_split(rows + [bad], seed=1)
+    # n_rows 不含无效行：30 条有效（song0 剩 2 条）
+    assert split["n_rows"]["train"] + split["n_rows"]["validation"] + split["n_rows"]["test"] == 30
 
 
 def test_split_songs_disjoint_and_cover_all():
@@ -89,9 +117,16 @@ def test_identity_audit_dimension_coverage(tmp_path):
     audit = audit_requests(reqs)
     # view_id/hidden_schema 缺失（旧 manifest 无此字段）→ 维度未覆盖
     assert audit["dimensions"]["view"]["present_in_requests"] == 0
+    assert audit["dimensions"]["view"]["verification"] == "missing"
     assert audit["dimensions"]["hidden_schema"]["present_in_requests"] == 0
     assert "view" in audit["missing_dimensions"]
     assert "hidden_schema" in audit["missing_dimensions"]
+    # M11/M8：context 维度 manifest 层不可验证——不误报 covered 也不误报 missing
+    for dim in ("audio_content", "audio_transform", "processor", "decoder"):
+        assert audit["dimensions"][dim]["verification"] == "unverifiable_from_manifest"
+        assert dim not in audit["missing_dimensions"]
+    assert set(audit["unverifiable_from_manifest"]) == {
+        "audio_content", "audio_transform", "processor", "decoder"}
     # 带 view_id 后覆盖
     reqs.write_text(json.dumps({"request_id": "r1", "audio_start_sec": 0.0,
                                 "audio_end_sec": 60.0, "text_units": ["a", "b"],
@@ -104,3 +139,22 @@ def test_identity_audit_dimension_coverage(tmp_path):
     audit2 = audit_requests(reqs)
     assert audit2["dimensions"]["view"]["present_in_requests"] == 1
     assert audit2["dimensions"]["hidden_schema"]["present_in_requests"] == 1
+
+
+def test_identity_audit_present_but_null_not_missing(tmp_path):
+    """M11：字段存在但值 None 计声明（covered），与键缺失（missing）区分开。"""
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts" / "research_v7"))
+    from audit_detector_v2_identity import audit_requests
+    reqs = tmp_path / "req2.jsonl"
+    reqs.write_text(json.dumps({"request_id": "r1", "audio_start_sec": 0.0,
+                                "audio_end_sec": 60.0, "text_units": ["a", "b"],
+                                "model_id": "m", "checkpoint_id": "c",
+                                "canonical_adapter_version": "v1",
+                                "view_id": None, "hidden_schema": None}) + "\n")
+    audit = audit_requests(reqs)
+    assert audit["dimensions"]["hidden_schema"]["present_in_requests"] == 1
+    assert audit["dimensions"]["hidden_schema"]["null_value_in_requests"] == 1
+    assert audit["dimensions"]["hidden_schema"]["verification"] == "covered"
+    assert "hidden_schema" not in audit["missing_dimensions"]
+    assert audit["dimensions"]["view"]["null_value_in_requests"] == 1

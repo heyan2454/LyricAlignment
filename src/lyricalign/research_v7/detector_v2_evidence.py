@@ -20,10 +20,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 
+from lyricalign.research_v7.features import BLOCKED_GAP_FIELDS
+
+# M1（review）：黑名单键名必须对齐真实字段名。canonical_mapping.py 的
+# CanonicalMapping.to_dict() 输出 removed/replaced_canonical_unit_ids，gap candidates
+# 带 omitted_canonical_unit_ids；BLOCKED_GAP_FIELDS（features.py）另挡 deleted_count/
+# positive/mutation_family。gt/label/family/error_magnitude/safe 等 GT 字段全保留。
 FORBIDDEN_FEATURE_FIELDS = {
     "gt_start_sec", "gt_end_sec", "label", "unit_label", "raw_label", "official_label",
-    "mutation_type", "mutation_family", "family", "replaced_canonical_ids",
-    "deleted_canonical_ids", "error_magnitude", "unsafe", "safe", "grey",
+    "mutation_type", "mutation_family", "family", "error_magnitude", "unsafe", "safe", "grey",
+    "replaced_canonical_unit_ids", "removed_canonical_unit_ids", "omitted_canonical_unit_ids",
+    *BLOCKED_GAP_FIELDS,
 }
 
 
@@ -92,12 +99,27 @@ class EvidenceRow:
 
 
 def assert_no_label_leak(feature_row: Mapping[str, Any]) -> dict:
-    """Fail fast if any forbidden label/GT field appears in a feature row."""
-    keys = set(feature_row)
-    leak = sorted(keys & FORBIDDEN_FEATURE_FIELDS)
-    if leak:
-        raise ValueError(f"feature row leaks forbidden label fields: {leak}")
-    return {"ok": True, "leak": [], "n_fields": len(keys)}
+    """Fail fast if any forbidden label/GT field appears in a feature row.
+
+    MINOR（review）：递归检查任意嵌套 dict/list——嵌套字典的键含禁用字段同样拒绝。
+    """
+    leaks: list[str] = []
+
+    def walk(node: Any, path: str) -> None:
+        if isinstance(node, Mapping):
+            for k, v in node.items():
+                child = f"{path}.{k}" if path else str(k)
+                if k in FORBIDDEN_FEATURE_FIELDS:
+                    leaks.append(child)
+                walk(v, child)
+        elif isinstance(node, (list, tuple)):
+            for i, v in enumerate(node):
+                walk(v, f"{path}[{i}]")
+
+    walk(feature_row, "")
+    if leaks:
+        raise ValueError(f"feature row leaks forbidden label fields: {sorted(set(leaks))}")
+    return {"ok": True, "leak": [], "n_fields": len(feature_row)}
 
 
 @dataclass(frozen=True)

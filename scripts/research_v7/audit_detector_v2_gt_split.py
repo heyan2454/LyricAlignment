@@ -34,27 +34,34 @@ def load_labels(path: Path) -> list[dict]:
     return out
 
 
+def is_time_valid(row: dict) -> bool:
+    """时间有效性：len(timestamp_class_ids)==2*character_count 且每对 (start, end) 满足 end > start。"""
+    cids = row.get("timestamp_class_ids") or []
+    n = row.get("character_count") or 0
+    if len(cids) != 2 * n:
+        return False
+    for i in range(n):
+        if cids[2 * i + 1] <= cids[2 * i]:
+            return False
+    return True
+
+
 def audit_labels(rows: list[dict]) -> dict:
     total = len(rows)
     status_counts = Counter(r.get("mapping_status") for r in rows)
-    valid = [r for r in rows if r.get("mapping_status") in VALID_STATUSES]
+    status_valid = [r for r in rows if r.get("mapping_status") in VALID_STATUSES]
+    valid = [r for r in status_valid if is_time_valid(r)]
+    time_bad_rows = len(status_valid) - len(valid)
+    held_vowel = [r for r in valid
+                  if r.get("mapping_status") == "accepted_rule_validated_held_vowel"]
     n_chars = 0
-    time_bad_rows = 0
     per_song_chars: Counter = Counter()
     per_song_duration: Counter = Counter()
     for r in valid:
-        cids = r.get("timestamp_class_ids") or []
         n = r.get("character_count") or 0
         n_chars += n
         per_song_chars[r.get("song_id")] += n
         per_song_duration[r.get("song_id")] += float(r.get("duration_sec") or 0)
-        if len(cids) != 2 * n:
-            time_bad_rows += 1
-            continue
-        for i in range(n):
-            if cids[2 * i + 1] <= cids[2 * i]:
-                time_bad_rows += 1
-                break
     songs = sorted(per_song_chars)
     char_list = sorted(per_song_chars.values())
     return {
@@ -72,11 +79,20 @@ def audit_labels(rows: list[dict]) -> dict:
         "chars_per_song": {"min": min(char_list), "max": max(char_list),
                            "median": sorted(char_list)[len(char_list) // 2] if char_list else None},
         "synthetic_axis_excluded": True,
+        "held_vowel_included": {
+            "count": len(held_vowel),
+            "note": "accepted_rule_validated_held_vowel 与主族 accepted_rule_based_pinyin_validated "
+                    "同源（rule-based weak supervision），并入训练族（18 §12）",
+        },
+        "supersedes_label_file_split": True,
+        "supersedes_note": "labels 文件内的 split 字段已被歌级 SOURCE_SONG_SPLIT.json 取代；"
+                           "下游以 SOURCE_SONG_SPLIT.json 为准",
     }
 
 
 def build_split(rows: list[dict], seed: int = 0) -> dict:
-    valid = [r for r in rows if r.get("mapping_status") in VALID_STATUSES]
+    valid = [r for r in rows
+             if r.get("mapping_status") in VALID_STATUSES and is_time_valid(r)]
     by_song: dict[str, list] = defaultdict(list)
     for r in valid:
         by_song[r.get("song_id")].append(r)
@@ -107,6 +123,8 @@ def build_split(rows: list[dict], seed: int = 0) -> dict:
                   "test": sorted(test_songs)},
         "note": "all windows/mutations/views of one source song stay in one split (18 §12); "
                 "validation used for frozen thresholds only; test untouched until formal",
+        "supersedes_label_file_split": True,
+        "supersedes_note": "labels 文件内的 split 字段已被本歌级 split 取代；下游以 SOURCE_SONG_SPLIT.json 为准",
     }
 
 
