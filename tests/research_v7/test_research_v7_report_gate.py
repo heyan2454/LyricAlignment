@@ -570,6 +570,119 @@ def test_forward_density_comparison_missing_or_bad_schema_is_none(tmp_path):
     assert s2["data"]["density_comparison"] is None
 
 
+_REAL_SONG_LOO_OP95 = [
+    0.10159042837473814, 0.10153889793107962, 0.102361589017688, 0.10170434633097908,
+    0.10190850753068535, 0.10174160111273825, 0.10169745885115473, 0.10197790720740076,
+    0.10192614761749769, 0.10212969586758405, 0.1012893576145071, 0.1021485860654057,
+    0.10277150935410588, 0.10198650772538809, 0.10183838273383945, 0.1040845405316562,
+    0.1027120978338226, 0.10175553961560063, 0.10196372846635192, 0.10175553961560063,
+]
+
+
+def _family_eval(tmp):
+    # 合成 family eval 产物（research_v7_assessor_family_eval_v1），数值对齐真实
+    # smoke_20260805_review12 formal_v2_run_c/family_eval/ASSESSOR_FAMILY_EVAL.json
+    # （op95 baseline 1.0/missing 0.212/replace 0.261/mixed 0.102、transfer recall99
+    # replace 0.177、song-LOO op95 std 0.0006），不引用真实 run 文件
+    f = tmp / "family_eval.json"
+    f.write_text(json.dumps({
+        "schema": "research_v7_assessor_family_eval_v1",
+        "family_table": {
+            "baseline": {"op95": 1.0, "op99": 1.0, "n_units": 10266},
+            "extra": {"op95": 1.0, "op99": 1.0, "n_units": 10266},
+            "missing": {"op95": 0.212, "op99": 0.176, "n_units": 7685},
+            "replace": {"op95": 0.261, "op99": 0.174, "n_units": 10266},
+            "mixed": {"op95": 0.102, "op99": 0.096, "n_units": 38483},
+        },
+        "conclusions": {
+            "family_changes_operating_point": {
+                "flag": True, "threshold": 0.05, "max_abs_delta": 0.9042,
+            },
+            "baseline_missing_to_replace_extra_transfer": {
+                "trained_on": ["baseline", "missing"],
+                "out_of_family_recall99": {"replace": 0.177},
+                "out_of_family_fpr99": {"replace": 0.8813},
+            },
+        },
+        "transfer_baseline_missing": {
+            "scored_families": {"replace": {"unit_recall_99": 0.177}},
+        },
+        "song_loo": {
+            "n_songs": len(_REAL_SONG_LOO_OP95),
+            "songs": [{"song": f"s{i}", "op95": v} for i, v in enumerate(_REAL_SONG_LOO_OP95)],
+        },
+    }))
+    return f
+
+
+def test_forward_family_eval_in_summary(tmp_path):
+    # round19：提供 --family-eval（合成 json）→ AUTO_SUMMARY.data.family_eval 含
+    # family_table（各 family op95/op99 + mixed）/family_changes_op_flag/
+    # transfer_recall99_replace/song_loo_op95_std + family_finding（动态格式化）；
+    # md 增加 Family / song LOO 段；formal 判定不受影响。
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    fe = _family_eval(tmp_path)
+    r = _call(run, man, sha, extra=["--family-eval", str(fe)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    fe_out = s["data"]["family_eval"]
+    assert fe_out["schema"] == "research_v7_assessor_family_eval_v1"
+    assert fe_out["family_table"]["baseline"]["op95"] == 1.0
+    assert fe_out["family_table"]["missing"]["op95"] == 0.212
+    assert fe_out["family_table"]["replace"]["op95"] == 0.261
+    assert fe_out["family_table"]["replace"]["op99"] == 0.174
+    assert fe_out["family_table"]["mixed"]["op95"] == 0.102
+    assert set(fe_out["family_table"]) == {"baseline", "extra", "missing", "replace", "mixed"}
+    assert fe_out["family_changes_op_flag"] is True
+    assert fe_out["transfer_recall99_replace"] == 0.177
+    assert abs(fe_out["song_loo_op95_std"] - 0.0005861261581185001) < 1e-9
+    assert s["data"]["family_finding"] == \
+        "family changes operating point (max delta 0.904); " \
+        "baseline+missing assessor does not transfer to replace (recall99 0.177); " \
+        "song-LOO op stable (std 0.0006)"
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "## Family / song LOO" in md
+    assert "family changes operating point (max delta 0.904)" in md
+    assert "song-LOO op stable (std 0.0006)" in md
+
+
+def test_forward_family_eval_absent_is_none(tmp_path):
+    # round19：不传 --family-eval → 两字段为 None，formal 判定与既有断言不变
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    assert s["data"]["family_eval"] is None
+    assert s["data"]["family_finding"] is None
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "Family / song LOO" not in md
+
+
+def test_forward_family_eval_missing_or_bad_schema_is_none(tmp_path):
+    # round19：路径缺失/schema 不匹配 → None（缺省），不阻塞 formal_approved
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    bad = tmp_path / "bad_family_eval.json"
+    bad.write_text(json.dumps({"schema": "research_v7_assessor_family_eval_v2"}))
+    r = _call(run, man, sha, extra=["--family-eval", str(bad)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True
+    assert s["data"]["family_eval"] is None
+    assert s["data"]["family_finding"] is None
+    r2 = _call(run, man, sha, extra=["--family-eval", str(tmp_path / "nope.json")])
+    s2 = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s2["formal_approved"] is True
+    assert s2["data"]["family_eval"] is None
+
+
 def test_created_at_utc_is_current_time(tmp_path):
     # round11：AUTO_SUMMARY.created_at_utc 动态取生成时 UTC，不再是硬编码旧值
     run = _run_root(tmp_path)

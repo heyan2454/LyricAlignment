@@ -11,12 +11,15 @@ AUTO_SUMMARY.data.missing_ratio_curve + missing_ratio_conclusion，不参与 for
 created_at_utc 动态取生成时 UTC（不再硬编码）。
 round17：可选 --density-comparison（research_v7_density_tier_comparison_v1）只读记录进
 AUTO_SUMMARY.data.density_comparison + density_finding，不参与 formal gate。
+round19：可选 --family-eval（research_v7_assessor_family_eval_v1）只读记录进
+AUTO_SUMMARY.data.family_eval + family_finding，不参与 formal gate。
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import statistics
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +46,8 @@ def main(argv=None) -> int:
                    help="missing 比例曲线产物（research_v7_missing_ratio_curve_v1）；可选，只记录 finding，不参与 formal gate")
     p.add_argument("--density-comparison", default="",
                    help="density 档位对比产物（research_v7_density_tier_comparison_v1）；可选，只记录 finding，不参与 formal gate")
+    p.add_argument("--family-eval", default="",
+                   help="family eval 产物（research_v7_assessor_family_eval_v1）；可选，只记录 finding，不参与 formal gate")
     args = p.parse_args(argv)
 
     run = Path(args.run_root)
@@ -268,6 +273,61 @@ def main(argv=None) -> int:
                     f"sensitive ({repl[0]:.3f}/{repl[1]:.3f}/{repl[2]:.3f}) - "
                     "common-anchor scoring required")
 
+    # round19：family eval（research_v7_assessor_family_eval_v1）——可选输入，只读记录。
+    # 不提供/文件缺失/不可读/schema 不匹配 → family_eval=None 且 family_finding=None，
+    # 不阻塞 formal_approved，行为不变。
+    family_eval = None
+    family_finding = None
+    fe_path = Path(args.family_eval) if args.family_eval else None
+    if fe_path is not None:
+        try:
+            fe = json.loads(fe_path.read_text(encoding="utf-8"))
+        except Exception:
+            fe = None
+        if not isinstance(fe, dict) or fe.get("schema") != "research_v7_assessor_family_eval_v1":
+            print(f"WARN: family eval {fe_path} unreadable or schema "
+                  f"!= research_v7_assessor_family_eval_v1; skipped", file=sys.stderr)
+            fe = None
+        if fe is not None:
+            # family_table：各 family 的 op95/op99（含 mixed 行）
+            ft = {}
+            for fam, v in (fe.get("family_table") or {}).items():
+                if isinstance(v, dict):
+                    ft[fam] = {"op95": v.get("op95"), "op99": v.get("op99")}
+            # conclusions：family_changes_operating_point.flag / max_abs_delta
+            fcop = (fe.get("conclusions") or {}).get("family_changes_operating_point") or {}
+            flag = fcop.get("flag")
+            max_delta = fcop.get("max_abs_delta")
+            # baseline+missing → replace 的 transfer recall99（conclusions 优先，
+            # 回退顶层 transfer_baseline_missing.scored_families.replace）
+            transfer99 = (((fe.get("conclusions") or {})
+                           .get("baseline_missing_to_replace_extra_transfer") or {})
+                          .get("out_of_family_recall99") or {}).get("replace")
+            if transfer99 is None:
+                transfer99 = (((fe.get("transfer_baseline_missing") or {})
+                               .get("scored_families") or {}).get("replace") or {}).get("unit_recall_99")
+            # song-LOO op95 稳定性：各 song 留出 op95 的总体标准差
+            song_ops = [s.get("op95") for s in (fe.get("song_loo") or {}).get("songs") or []
+                        if isinstance(s, dict) and s.get("op95") is not None]
+            loo_std = statistics.pstdev(song_ops) if len(song_ops) >= 2 else None
+            family_eval = {
+                "schema": fe.get("schema"),
+                "path": str(fe_path),
+                "family_table": ft,
+                "family_changes_op_flag": flag,
+                "transfer_recall99_replace": transfer99,
+                "song_loo_op95_std": loo_std,
+            }
+            parts = []
+            if flag is not None and max_delta is not None:
+                parts.append(f"family changes operating point (max delta {max_delta:.3f})")
+            if transfer99 is not None:
+                parts.append(f"baseline+missing assessor does not transfer to replace "
+                             f"(recall99 {transfer99:.3f})")
+            if loo_std is not None:
+                parts.append(f"song-LOO op stable (std {loo_std:.4f})")
+            family_finding = "; ".join(parts) if parts else None
+
     # P0-5 round2：formal_approved 需真实 formal evidence + frozen manifest sha + 实际预算/gates。
     formal_approved = False
     reasons = []
@@ -355,6 +415,8 @@ def main(argv=None) -> int:
             "missing_ratio_conclusion": missing_ratio_conclusion,
             "density_comparison": density_comparison,
             "density_finding": density_finding,
+            "family_eval": family_eval,
+            "family_finding": family_finding,
         },
     }
     if gt_eval is not None:
@@ -473,6 +535,18 @@ def main(argv=None) -> int:
 - Tiers ({len(dct_tiers)}): {", ".join(sorted(dct_tiers))}
 - missing_gap_recall per tier: {gaps}, replace_wrong_output_recall: {repl}
 - Finding: {density_finding}
+"""
+    if family_eval is not None:
+        fe_ft = family_eval["family_table"]
+        md += f"""
+## Family / song LOO
+
+- Source: {fe_path}
+- Family op95/op99: {fe_ft}
+- family changes operating point flag={family_eval['family_changes_op_flag']},
+  transfer recall99 on replace={family_eval['transfer_recall99_replace']},
+  song-LOO op95 std={family_eval['song_loo_op95_std']}
+- Finding: {family_finding}
 """
     md_name = f"AUTO_FINDINGS_{'SUMMARY' if not draft else 'DRAFT'}.md"
     (run / "report" / md_name).write_text(md)
