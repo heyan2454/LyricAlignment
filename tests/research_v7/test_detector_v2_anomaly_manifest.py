@@ -165,6 +165,63 @@ def test_anomaly_manifest_window_guards(tmp_path):
     assert by_id["s1:2:crop_late:8:full"]["audio_end_sec"] >= duration - 0.002
 
 
+def test_anomaly_manifest_replace_missing_stress(tmp_path):
+    """18 §13：--replace-counts/--missing-counts 生成 stress 变体（gt_ambiguity，无 occurrence GT）。"""
+    out, reqs, _ = _run_builder(
+        tmp_path, "--replace-counts", "1,2,4,8", "--missing-counts", "1,2,4,8",
+        "--include-acoustic")
+    by_id = {rrow["request_id"]: rrow for rrow in reqs}
+    base = by_id["s1:0:baseline_legal:legal:full"]
+    n = len(base["text_units"])
+    # replace：窗尾 N 个 units 文本换成 donor（s2 文本），canonical 绑定保留，长度不变
+    rp2 = by_id["s1:0:replace_2:2:full"]
+    assert len(rp2["text_units"]) == n
+    assert rp2["canonical_ids"] == base["canonical_ids"]
+    assert rp2["text_units"][:-2] == base["text_units"][:-2]
+    assert rp2["text_units"][-2:] != base["text_units"][-2:]
+    assert rp2["has_gt"] is False and rp2["gt_ambiguity"] is True
+    assert rp2["mutation_parameters"]["replaced_canonical_ids"] == base["canonical_ids"][-2:]
+    # replace_8 存在；replace 文本来自 donor（s2）
+    rp8 = by_id["s1:0:replace_8:8:full"]
+    assert rp8["text_units"][-8:] != base["text_units"][-8:]
+    # missing：窗尾 N 个 units 从 canonical_ids/text_units 删除（virtual gap 方向）
+    ms2 = by_id["s1:0:missing_2:2:full"]
+    assert len(ms2["text_units"]) == n - 2
+    assert ms2["canonical_ids"] == base["canonical_ids"][:-2]
+    assert ms2["canonical_to_local"] == {str(c): i for i, c in enumerate(base["canonical_ids"][:-2])}
+    assert ms2["has_gt"] is False and ms2["gt_ambiguity"] is True
+    # 全部 validate
+    for rrow in (rp2, ms2):
+        req = AlignmentRequest(
+            request_id=rrow["request_id"], item_id=rrow["item_id"], parent_request_id=None,
+            audio_source=rrow["audio_path"], audio_start_sec=rrow["audio_start_sec"],
+            audio_end_sec=rrow["audio_end_sec"],
+            text_source=rrow["text_source"], text_start_index=rrow["text_start_index"],
+            text_end_index=rrow["text_end_index"], text_units=tuple(rrow["text_units"]),
+            timestamp_slot_indices=tuple(rrow["timestamp_slot_indices"]),
+            workflow_mode=rrow["workflow_mode"], mutation_type=rrow["mutation_type"],
+            mutation_parameters=rrow["mutation_parameters"], model_id=rrow["model_id"],
+            checkpoint_id=rrow["checkpoint_id"], input_variant=rrow["input_variant"],
+            canonical_text_start=rrow["canonical_text_start"], canonical_text_end=rrow["canonical_text_end"],
+            canonical_to_local={int(k): int(v) for k, v in (rrow["canonical_to_local"] or {}).items()},
+            canonical_ids=list(rrow["canonical_ids"]),
+            canonical_timeline_file_sha=rrow["canonical_timeline_file_sha"],
+            canonical_timeline_row_sha=rrow["canonical_timeline_row_sha"],
+            canonical_adapter_version=rrow["canonical_adapter_version"],
+            source_window_sec=(rrow["source_window_start_sec"], rrow["source_window_end_sec"]),
+            view_id=rrow.get("view_id"), hidden_schema=rrow.get("hidden_schema"),
+            metadata={"evaluation_role": rrow["evaluation_role"]})
+        req.validate()
+    # acoustic marker 存在
+    ac = by_id["s1:0:acoustic_difficulty:marker:full"]
+    assert ac["family"] == "acoustic_difficulty"
+    # FREEZE 记录 stress 参数
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["cli"]["replace_counts"] == [1, 2, 4, 8]
+    assert fr["cli"]["missing_counts"] == [1, 2, 4, 8]
+    assert fr["cli"]["donor_song_id"] == "s2"
+
+
 def test_anomaly_manifest_split_file(tmp_path):
     """C5：--split-file 按歌分配 split；test 歌在 manifest 顶层标记。"""
     sf = tmp_path / "split.json"

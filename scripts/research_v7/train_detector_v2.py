@@ -52,7 +52,8 @@ def _split_of(labels: list[dict]) -> dict[tuple[str, int, str], str]:
             ("validation" if x["split"] == "validation" else x["split"]) for x in labels}
 
 
-def build_matrix(evidence_dir: Path, labels_path: Path, *, limit_requests: int | None = None):
+def build_matrix(evidence_dir: Path, labels_path: Path, *, limit_requests: int | None = None,
+                 keep_labels: tuple[str, ...] = ("safe", "unsafe")):
     from lyricalign.research_v7.detector_v2_evidence import EvidenceRow, RawView, OfficialView, HiddenView
     from lyricalign.research_v7.detector_v2_features import unit_feature_row, build_neighbors
 
@@ -85,7 +86,7 @@ def build_matrix(evidence_dir: Path, labels_path: Path, *, limit_requests: int |
             for i, ev in enumerate(evs):
                 key = (rid, ev.canonical_unit_id, target)
                 label = unit_label.get(key)
-                if label not in ("safe", "unsafe"):
+                if label not in keep_labels:
                     continue
                 split = unit_split.get(key, "train")
                 feats = unit_feature_row(ev, build_neighbors(evs, i), ev.cross_view)

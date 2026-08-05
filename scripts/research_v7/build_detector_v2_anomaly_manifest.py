@@ -193,6 +193,14 @@ def main(argv=None) -> int:
                    help="SOURCE_SONG_SPLIT.json（可选但推荐）；按歌写 train/validation/test，"
                         "无该文件时写 unassigned 并 warning")
     p.add_argument("--include-acoustic", action="store_true", help="声学 cohort 仅标记位置")
+    p.add_argument("--replace-counts", default="",
+                   help="逗号分隔的替换 unit 数（1,2,4,8）：窗尾 N 个 canonical units 的 text "
+                        "换成同库其他歌 donor 文本（canonical 绑定保留，wrong-output 方向），"
+                        "stress cohort 无 occurrence GT（gt_ambiguity=true）")
+    p.add_argument("--missing-counts", default="",
+                   help="逗号分隔的缺失 unit 数（1,2,4,8）：窗尾 N 个 canonical units 从 "
+                        "canonical_ids/text_units 删除（virtual gap 评价方向），"
+                        "stress cohort 无 occurrence GT（gt_ambiguity=true）")
     a = p.parse_args(argv)
 
     tl_path = Path(a.timeline_manifest)
@@ -209,7 +217,22 @@ def main(argv=None) -> int:
     audio_root = Path(a.audio_root)
     songs_processed: list[str] = []
 
+    replace_counts = tuple(int(x) for x in a.replace_counts.split(",") if x.strip())
+    missing_counts = tuple(int(x) for x in a.missing_counts.split(",") if x.strip())
+    # donor 池：同库其他歌的 canonical unit texts（排序后第一个 != 当前歌；池不足 2 首则跳过）
+    donor_pool: dict[str, list[str]] = {
+        s: [str(u.get("text") or "") for u in (tl["row"].get("canonical_units") or [])]
+        for s, tl in list(timelines.items())[: a.songs]}
+    donor_song_id: str | None = None
+    donor_units: list[str] = []
+
     for song, tl in list(timelines.items())[: a.songs]:
+        if donor_song_id is None:
+            for other in sorted(donor_pool):
+                if other != song:
+                    donor_song_id = other
+                    donor_units = donor_pool[other]
+                    break
         audio = audio_root / f"{song}.wav"
         if not audio.is_file():
             continue
@@ -340,6 +363,51 @@ def main(argv=None) -> int:
                 if ac:
                     ac["audio_path"] = str(audio)
                     reqs.append(ac)
+            # replace stress（18 §13）：窗尾 N 个 units 的 text 换成 donor 文本。
+            # canonical_ids/canonical_to_local 保留（wrong-output 方向），无 occurrence GT。
+            for n in replace_counts:
+                if n >= len(base["text_units"]):
+                    continue
+                donor_txt = donor_units[:n]
+                if len(donor_txt) < n:
+                    continue
+                rp = _row(tl, song, wi=wi, text_w0=w0, text_w1=w1,
+                          audio_w0=w0, audio_w1=w1, view="full", family=f"replace_{n}",
+                          severity=str(n),
+                          detail={"note": f"tail {n} canonical units text replaced by donor "
+                                          "(wrong-output direction, no occurrence GT)",
+                                  "replaced_canonical_ids": base["canonical_ids"][-n:]},
+                          gt_ambiguity=True, base_row=base)
+                if rp:
+                    rp["text_units"] = rp["text_units"][:-n] + list(donor_txt)
+                    rp["audio_path"] = str(audio)
+                    reqs.append(rp)
+            # missing stress（18 §13）：窗尾 N 个 units 从 canonical_ids/text_units 删除
+            # （virtual gap 评价方向，omitted-original），无 occurrence GT。
+            for n in missing_counts:
+                if n >= len(base["text_units"]):
+                    continue
+                ms = _row(tl, song, wi=wi, text_w0=w0, text_w1=w1,
+                          audio_w0=w0, audio_w1=w1, view="full", family=f"missing_{n}",
+                          severity=str(n),
+                          detail={"note": f"tail {n} canonical units omitted "
+                                          "(virtual gap direction, no occurrence GT)",
+                                  "missing_canonical_ids": base["canonical_ids"][-n:]},
+                          gt_ambiguity=True, base_row=base)
+                if ms:
+                    ms["text_units"] = ms["text_units"][:-n]
+                    ms["text_end_index"] = len(ms["text_units"])
+                    ms["timestamp_slot_indices"] = list(range(len(ms["text_units"])))
+                    if ms.get("canonical_to_local"):
+                        ms["canonical_to_local"] = {
+                            cid: i for cid, i in ms["canonical_to_local"].items()
+                            if int(cid) < int(base["canonical_ids"][-n])}
+                    if ms.get("canonical_ids"):
+                        ms["canonical_ids"] = [
+                            c for c in ms["canonical_ids"]
+                            if int(c) < int(base["canonical_ids"][-n])]
+                    ms["audio_path"] = str(audio)
+                    reqs.append(ms)
         songs_processed.append(song)
 
     req_sha = hashlib.sha256(b"\n".join(
@@ -358,6 +426,9 @@ def main(argv=None) -> int:
             "windows_per_song": a.windows_per_song,
             "split_file": a.split_file,
             "include_acoustic": a.include_acoustic,
+            "replace_counts": list(replace_counts),
+            "missing_counts": list(missing_counts),
+            "donor_song_id": donor_song_id,
         },
         "gears": {
             "window_sec": WINDOW_SEC,
