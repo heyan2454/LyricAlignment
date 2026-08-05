@@ -250,12 +250,14 @@ def run_train(*, by_target, out_dir: Path, model_kinds: tuple[str, ...] = ("stan
                          "note": "val frozen; test evaluation in Phase3"}
                 frozen.setdefault(target, {})[model_kind] = entry
 
-            # 选定模型（22 §4.3/§B）：达标（protected_recall_95 >= 0.95）优先，
-            # 同达标比 safe_accept_rate，都不达标比 protected。
+            # 选定模型（22 §4.3/§B）：优先（达标 protected>=0.95 且 safe_accept>0）；
+            # 其次达标但零接受；全部不达标时选 safe_accept 最高的真实工作点
+            # （避免 reject-all 伪装成成功；per-model 表保留完整 trade-off）。
             def _entry_score(e: dict) -> tuple:
                 op = e.get("operating_points") or {}
                 prot = float(op.get("protected_recall_95") or op.get("protected_recall") or 0.0)
-                return (prot >= 0.95, prot, op.get("safe_accept_rate", 0.0))
+                sa = float(op.get("safe_accept_rate") or 0.0)
+                return (prot >= 0.95 and sa > 0.0, prot >= 0.95, sa, prot)
             if model_kind in frozen.get(target, {}):
                 cur = frozen[target].get("best")
                 cand = frozen[target][model_kind]
