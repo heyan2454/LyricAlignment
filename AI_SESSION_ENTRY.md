@@ -194,3 +194,35 @@ manifest/input audit
 关键产物：/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/run1/（FROZEN_OPERATING_POINTS/
 MODEL_SELECTION/M4_SONG_HELDOUT/FAMILY_LOO/LABEL_SUMMARY/RUN_NOTES）+ manifests/（ANOMALY 740 行）。
 代码：main 分支（408+ 测试）；opencode.json 已配 steps=8；运行约定见 AGENTS.md。
+
+## 2026-08-06 Detector V2 完成快照（detector_v2_completed=true）
+
+**Detector V2 主线全部完成**：Phase0-Phase3-3b 全部收尾，11 项完成定义全过（19 §7），
+DETECTOR_V2_CONCLUSION.json 判定 detector_v2_completed=true、partial_exploratory=false。
+
+### 真实结果（全部落盘 runs/research_v7_detector_v2/）
+- M4 song-heldout：official reject_recall 0.883、protected_recall 1.000、interval@75 0.990、
+  long 区间零全接受；raw reject 0.909/protected 0.999
+- family-LOO：end_early 0.957 最强、crop_early 0.641 最弱（n_test=64）
+- M4→MIR 跨域（weak_labeled_qwen_fa，21 §1 不混合）：official reject 0.894/protected 1.000/0 误拒
+- serial closed-loop：all_commit 错误提交 0.75 vs detector 0.000（零错误正式提交；
+  run1 标签口径 unsafe 91.4% → detector 极端保守，提交率低）
+- stress（replace/missing 1/2/4/8 + repeated + acoustic）：accept_rate=0.000（零误提交）；
+  acoustic 文本未变 → 有真实 GT（reject 0.959/protected 1.000）
+- coverage matrix：final + validator ok（0 errors）；RUNTIME_BUDGET 10h 预算内
+
+### 关键代码（main 分支，427 测试）
+- detector_v2_serial.py：4 路线串行闭环（review 后：variant mtype 修复、传播仅 committed 窗、
+  series_premise 声明窗无共享 units）
+- evaluate_m4_to_mir.py：跨域打分 + scoring_subset 声明
+- evaluate_stress_detector_v2.py：动态 gt_kind（acoustic 有 GT → labels）
+- build_detector_v2_anomaly_manifest.py：--replace-counts/--missing-counts（集合过滤裁剪）
+- train_detector_v2.py build_matrix keep_labels 参数
+- label_detector_v2_run.py --gt-valid-statuses（MIR ground_truth_character）
+
+### 收尾提交
+- ba01da2（stress）+ f42d64f（review fixes）+ 之前 76ad422/dfb77dd
+
+### backlog（非阻塞）
+extra stress 未跑（矩阵 partial）；crop_early LOO n_test=64；标签为 rule-based weak
+supervision 非人工 GT；detector 保守性成本/收益未权衡；H gate 明确失败（hidden 不可提取）。
