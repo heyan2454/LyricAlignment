@@ -385,3 +385,34 @@ def test_single_array_row_yields_exactly_one_failure(tmp_path):
     assert len(mal) == 1, mal
     assert rm["item_count"]["failed"] == 1
     assert rm["row_audit"][0]["status"] == "malformed_row"
+
+
+def test_runner_passes_replace_extra_params_into_evidence(tmp_path):
+    """round13：runner 必须把 replaced_canonical_ids / extra_start_index 透传到
+    AlignmentRequest.mutation_parameters（否则 evaluate 的 replace/extra 分支读不到 GT 语义）。"""
+    import json as _j
+    manifest = tmp_path / "re.jsonl"
+    manifest.write_text("\n".join([
+        _j.dumps({"request_id": "r:replace", "item_id": "s1", "text_units": ["a", "b", "c"],
+                  "text_start_index": 0, "text_end_index": 3,
+                  "audio_path": "/tmp/nonexistent.wav", "mutation_type": "replace",
+                  "replaced_canonical_ids": [2], "actual_replaced_units": 1}),
+        _j.dumps({"request_id": "r:extra", "item_id": "s2", "text_units": ["a", "b", "c", "d"],
+                  "text_start_index": 0, "text_end_index": 4,
+                  "audio_path": "/tmp/nonexistent.wav", "mutation_type": "extra",
+                  "extra_start_index": 3, "actual_added_units": 1}),
+    ]) + "\n")
+    outroot = tmp_path / "run"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),
+                        "--manifest", str(manifest), "--out-root", str(outroot), "--smoke"],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    import glob
+    evs = [_j.load(open(f)) for f in glob.glob(str(outroot / "evidence" / "*.json"))]
+    by_id = {ev["attempt"]["request"]["request_id"]: ev for ev in evs}
+    mp = by_id["r:replace"]["attempt"]["request"]["mutation_parameters"]
+    assert mp.get("replaced_canonical_ids") == [2], mp
+    assert mp.get("actual_replaced_units") == 1, mp
+    mp2 = by_id["r:extra"]["attempt"]["request"]["mutation_parameters"]
+    assert mp2.get("extra_start_index") == 3, mp2
+    assert mp2.get("actual_added_units") == 1, mp2

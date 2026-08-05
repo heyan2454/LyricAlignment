@@ -181,7 +181,9 @@ def main(argv=None) -> int:
                     "audio_relation", "source_text_start_index", "source_text_end_index", "baseline_unit_count", "n_base",
                     "actual_added_units", "actual_removed_units", "actual_replaced_units", "donor_song_id", "donor_start_index",
                     "donor_end_index", "donor_similarity", "selection_seed", "cursor_offset_units", "provisional_policy",
-                    "provisional_tail_units", "provisional_last_sec", "c10_case", "repeat_gt_starts", "repeat_unit_count")},
+                    "provisional_tail_units", "provisional_last_sec", "c10_case", "repeat_gt_starts", "repeat_unit_count",
+                    # round13：replace/extra 变体的 canonical 语义字段（builder 写入，runner 必须透传）
+                    "replaced_canonical_ids", "extra_start_index")},
                 model_id=args.model,
                 checkpoint_id=args.checkpoint,
                 input_variant=r.get("input_variant", "text_mutation"),
