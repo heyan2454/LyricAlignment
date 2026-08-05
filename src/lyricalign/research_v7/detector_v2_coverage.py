@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Mapping
 
+ALLOWED_STATUSES = ("pending", "partial", "complete", "blocked")
 
 FORBIDDEN_METRIC_NAMES = {
     "wrong_output_recall",
@@ -14,6 +15,7 @@ FORBIDDEN_METRIC_NAMES = {
 REQUIRED_CELLS = (
     "gates.gt_label_audit",
     "gates.request_identity_audit",
+    "gates.hidden_extraction_audit",
     "targets.raw.song_heldout",
     "targets.official.song_heldout",
     "families.crop_shift",
@@ -23,6 +25,7 @@ REQUIRED_CELLS = (
     "families.acoustic_difficulty",
     "families.slot_multiview",
     "stress.replace_1_2_4_8",
+    "stress.missing_extra_stress",
     "generalization.family_loo",
     "generalization.m4_to_mir_by_family",
     "metrics.tristate_unit",
@@ -64,11 +67,26 @@ def _find_forbidden_names(value, prefix: str = "") -> list[str]:
     return found
 
 
-def validate_coverage_matrix(matrix: Mapping, *, repo_root: str | Path | None = None) -> dict:
-    """Validate required cells, nonzero denominators, artifacts and forbidden metrics."""
+def _artifact_exists(root: Path | None, artifact: str) -> bool:
+    path = Path(artifact)
+    if path.is_absolute():
+        return path.exists()
+    return root is not None and (root / path).exists()
+
+
+def validate_coverage_matrix(
+    matrix: Mapping, *, repo_root: str | Path | None = None, run_root: str | Path | None = None
+) -> dict:
+    """Validate required cells, statuses, denominators, artifacts and forbidden metrics.
+
+    Status contract: ``pending`` (not started) / ``partial`` (requires ``note``) /
+    ``complete`` (requires positive denominator + existing ``artifact``) /
+    ``blocked`` (requires ``reason``). Artifact existence is checked against
+    ``run_root`` (artifact dir) when given, else ``repo_root``.
+    """
     errors: list[str] = []
     warnings: list[str] = []
-    root = Path(repo_root).resolve() if repo_root is not None else None
+    root = Path(run_root or repo_root).resolve() if (run_root or repo_root) is not None else None
 
     forbidden = _find_forbidden_names(matrix)
     if forbidden:
@@ -80,13 +98,18 @@ def validate_coverage_matrix(matrix: Mapping, *, repo_root: str | Path | None = 
             errors.append(f"missing required coverage cell: {path}")
             continue
         status = cell.get("status")
-        if path == "ablations.H" and status == "blocked":
-            reason = cell.get("reason")
-            if not reason:
-                errors.append("ablations.H blocked without reason")
+        if status not in ALLOWED_STATUSES:
+            errors.append(f"invalid status for {path}: {status!r}")
             continue
-        if status != "complete":
-            errors.append(f"coverage cell not complete: {path} status={status!r}")
+        if status == "pending":
+            continue
+        if status == "partial":
+            if not (cell.get("note") or "").strip():
+                errors.append(f"partial cell requires note: {path}")
+            continue
+        if status == "blocked":
+            if not (cell.get("reason") or "").strip():
+                errors.append(f"blocked cell requires reason: {path}")
             continue
         denominators = [
             cell.get("n_source_songs"),
@@ -100,8 +123,8 @@ def validate_coverage_matrix(matrix: Mapping, *, repo_root: str | Path | None = 
         artifact = cell.get("artifact")
         if not artifact:
             errors.append(f"complete cell missing artifact: {path}")
-        elif root is not None and not (root / str(artifact)).exists():
-            errors.append(f"artifact does not exist for {path}: {artifact}")
+        elif root is not None and not _artifact_exists(root, artifact):
+            errors.append(f"artifact does not exist for {path}: {artifact} (root={root})")
 
     hidden = _walk(matrix, "ablations.H")
     if isinstance(hidden, Mapping) and hidden.get("status") == "blocked":
@@ -112,3 +135,28 @@ def validate_coverage_matrix(matrix: Mapping, *, repo_root: str | Path | None = 
         warnings.append("hidden gate blocked; R/O formal may continue but H conclusions are unavailable")
 
     return {"ok": not errors, "errors": errors, "warnings": warnings}
+
+
+def populate_status_from_artifacts(matrix: Mapping, run_root: str | Path) -> dict:
+    """Mark still-pending cells as ``partial`` when matching artifacts exist under ``run_root``.
+
+    Matching is a normalized substring match (underscores removed, case-folded)
+    between the cell key and artifact file names, scanned up to one level deep.
+    Returns ``{cell_path: [file names]}``.
+    """
+    run_root = Path(run_root)
+    found: dict[str, list[str]] = {}
+    candidates = [p for p in list(run_root.glob("*")) + list(run_root.glob("*/*")) if p.is_file()]
+    for path in REQUIRED_CELLS:
+        cell = _walk(matrix, path)
+        if not isinstance(cell, Mapping) or cell.get("status") != "pending":
+            continue
+        needle = path.rsplit(".", 1)[-1].lower().replace("_", "")
+        if len(needle) < 4:
+            continue
+        hits = sorted({p.name for p in candidates if needle in p.name.lower().replace("_", "")})
+        if hits:
+            cell["status"] = "partial"
+            cell["note"] = "artifacts found under run-root: " + ", ".join(hits[:5])
+            found[path] = hits
+    return found

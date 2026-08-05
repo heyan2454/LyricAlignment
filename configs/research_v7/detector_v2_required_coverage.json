@@ -1,0 +1,48 @@
+{
+  "schema_version": "detector_v2_coverage_v1",
+  "status": "template",
+  "gates": {
+    "gt_label_audit": {"status": "pending"},
+    "request_identity_audit": {"status": "pending"},
+    "hidden_extraction_audit": {"status": "pending"}
+  },
+  "targets": {
+    "raw": {"song_heldout": {"status": "pending"}},
+    "official": {"song_heldout": {"status": "pending"}}
+  },
+  "families": {
+    "crop_shift": {"status": "pending"},
+    "cursor_shift": {"status": "pending"},
+    "end_early": {"status": "pending"},
+    "repeated_section": {"status": "pending"},
+    "acoustic_difficulty": {"status": "pending"},
+    "slot_multiview": {"status": "pending"}
+  },
+  "stress": {
+    "replace_1_2_4_8": {"status": "pending"},
+    "missing_extra_stress": {"status": "pending"}
+  },
+  "generalization": {
+    "family_loo": {"status": "pending"},
+    "m4_to_mir_by_family": {"status": "pending"}
+  },
+  "metrics": {
+    "tristate_unit": {"status": "pending"},
+    "interval_75_100": {"status": "pending"}
+  },
+  "ablations": {
+    "H": {"status": "pending"},
+    "R": {"status": "pending"},
+    "O": {"status": "pending"},
+    "H_R": {"status": "pending"},
+    "H_O": {"status": "pending"},
+    "R_O": {"status": "pending"},
+    "H_R_O": {"status": "pending"},
+    "H_R_O_V": {"status": "pending"}
+  },
+  "views": {
+    "single": {"status": "pending"},
+    "multi": {"status": "pending"}
+  },
+  "serial": {"closed_loop": {"status": "pending"}}
+}
