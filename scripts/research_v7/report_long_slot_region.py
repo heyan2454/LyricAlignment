@@ -9,6 +9,8 @@ AUTO_SUMMARY.data.baseline_quality + baseline_quality_finding，不参与 formal
 round11：可选 --missing-ratio-curve（research_v7_missing_ratio_curve_v1）只读记录进
 AUTO_SUMMARY.data.missing_ratio_curve + missing_ratio_conclusion，不参与 formal gate；
 created_at_utc 动态取生成时 UTC（不再硬编码）。
+round17：可选 --density-comparison（research_v7_density_tier_comparison_v1）只读记录进
+AUTO_SUMMARY.data.density_comparison + density_finding，不参与 formal gate。
 """
 from __future__ import annotations
 
@@ -39,6 +41,8 @@ def main(argv=None) -> int:
                    help="baseline 质量分析产物（research_v7_baseline_quality_analysis_v1）；可选，只记录 finding，不参与 formal gate")
     p.add_argument("--missing-ratio-curve", default="",
                    help="missing 比例曲线产物（research_v7_missing_ratio_curve_v1）；可选，只记录 finding，不参与 formal gate")
+    p.add_argument("--density-comparison", default="",
+                   help="density 档位对比产物（research_v7_density_tier_comparison_v1）；可选，只记录 finding，不参与 formal gate")
     args = p.parse_args(argv)
 
     run = Path(args.run_root)
@@ -224,6 +228,46 @@ def main(argv=None) -> int:
                 missing_ratio_conclusion = (
                     "all missing ratios detected via virtual gap; unit_recall=0 structural")
 
+    # round17：density 档位对比（research_v7_density_tier_comparison_v1）——可选输入，只读记录。
+    # 不提供/文件缺失/不可读/schema 不匹配 → density_comparison=None 且
+    # density_finding=None，不阻塞 formal_approved，行为不变。
+    density_comparison = None
+    density_finding = None
+    dct_path = Path(args.density_comparison) if args.density_comparison else None
+    if dct_path is not None:
+        try:
+            dct = json.loads(dct_path.read_text(encoding="utf-8"))
+        except Exception:
+            dct = None
+        if not isinstance(dct, dict) or dct.get("schema") != "research_v7_density_tier_comparison_v1":
+            print(f"WARN: density comparison {dct_path} unreadable or schema "
+                  f"!= research_v7_density_tier_comparison_v1; skipped", file=sys.stderr)
+            dct = None
+        if dct is not None:
+            tiers = {}
+            for tier, v in (dct.get("density_tiers") or {}).items():
+                if not isinstance(v, dict):
+                    continue
+                tiers[tier] = {
+                    "missing_gap_recall": v.get("missing_gap_recall"),
+                    "replace_wrong_output_recall": v.get("replace_wrong_output_recall"),
+                }
+            density_comparison = {
+                "schema": dct.get("schema"),
+                "path": str(dct_path),
+                "source_gt_eval": dct.get("source_gt_eval"),
+                "tiers": tiers,
+            }
+            gaps = [tiers[t]["missing_gap_recall"] for t in ("full", "s2", "s4") if t in tiers]
+            repl = [tiers[t]["replace_wrong_output_recall"]
+                    for t in ("full", "s2", "s4") if t in tiers]
+            if (len(gaps) == 3 and len(repl) == 3
+                    and all(v is not None for v in gaps + repl)):
+                density_finding = (
+                    "missing-gap robust across densities; replace wrong-output linearly "
+                    f"sensitive ({repl[0]:.3f}/{repl[1]:.3f}/{repl[2]:.3f}) - "
+                    "common-anchor scoring required")
+
     # P0-5 round2：formal_approved 需真实 formal evidence + frozen manifest sha + 实际预算/gates。
     formal_approved = False
     reasons = []
@@ -309,6 +353,8 @@ def main(argv=None) -> int:
             "baseline_quality_finding": baseline_quality_finding,
             "missing_ratio_curve": missing_ratio_curve,
             "missing_ratio_conclusion": missing_ratio_conclusion,
+            "density_comparison": density_comparison,
+            "density_finding": density_finding,
         },
     }
     if gt_eval is not None:
@@ -414,6 +460,19 @@ def main(argv=None) -> int:
   gap_weighted_recall={[p['gap_weighted_recall'] for p in pts]},
   unit_recall={[p['unit_recall'] for p in pts]}
 - Finding: {missing_ratio_conclusion}
+"""
+    if density_comparison is not None:
+        dct_tiers = density_comparison["tiers"]
+        gaps = [dct_tiers[t]["missing_gap_recall"] for t in ("full", "s2", "s4") if t in dct_tiers]
+        repl = [dct_tiers[t]["replace_wrong_output_recall"]
+                for t in ("full", "s2", "s4") if t in dct_tiers]
+        md += f"""
+## Density tier comparison
+
+- Source: {dct_path}
+- Tiers ({len(dct_tiers)}): {", ".join(sorted(dct_tiers))}
+- missing_gap_recall per tier: {gaps}, replace_wrong_output_recall: {repl}
+- Finding: {density_finding}
 """
     md_name = f"AUTO_FINDINGS_{'SUMMARY' if not draft else 'DRAFT'}.md"
     (run / "report" / md_name).write_text(md)

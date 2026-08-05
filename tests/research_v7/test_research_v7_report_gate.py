@@ -491,6 +491,85 @@ def test_forward_missing_ratio_curve_missing_or_bad_schema_is_none(tmp_path):
     assert s2["data"]["missing_ratio_curve"] is None
 
 
+def _density_comparison(tmp):
+    # 合成 density 档位对比产物（research_v7_density_tier_comparison_v1），数值对齐真实
+    # smoke_20260805_review12 formal_v2_run_c DENSITY_TIER_COMPARISON.json，不引用真实 run 文件
+    f = tmp / "density_tier_comparison.json"
+    f.write_text(json.dumps({
+        "schema": "research_v7_density_tier_comparison_v1",
+        "source_gt_eval": "run/GT_EVAL.json",
+        "density_tiers": {
+            "full": {"missing_gap_recall": 1.0, "missing_weighted_recall": 1.0,
+                     "replace_wrong_output_recall": 1.0, "n_missing": 60, "n_replace": 60},
+            "s2": {"missing_gap_recall": 1.0, "missing_weighted_recall": 1.0,
+                   "replace_wrong_output_recall": 0.5, "n_missing": 60, "n_replace": 60},
+            "s4": {"missing_gap_recall": 1.0, "missing_weighted_recall": 1.0,
+                   "replace_wrong_output_recall": 0.254, "n_missing": 60, "n_replace": 60},
+        },
+        "finding": "Slot density is robust for missing-gap detection but sensitive for replace.",
+    }))
+    return f
+
+
+def test_forward_density_comparison_in_summary(tmp_path):
+    # round17：提供 --density-comparison（合成 json）→ AUTO_SUMMARY.data.density_comparison
+    # 含三档 missing_gap_recall/replace_wrong_output_recall + density_finding；
+    # md 增加 Density tier comparison 段；formal 判定不受影响。
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    dct = _density_comparison(tmp_path)
+    r = _call(run, man, sha, extra=["--density-comparison", str(dct)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    dc_out = s["data"]["density_comparison"]
+    assert dc_out["schema"] == "research_v7_density_tier_comparison_v1"
+    assert [dc_out["tiers"][t]["missing_gap_recall"] for t in ("full", "s2", "s4")] == [1.0, 1.0, 1.0]
+    assert [dc_out["tiers"][t]["replace_wrong_output_recall"] for t in ("full", "s2", "s4")] == \
+        [1.0, 0.5, 0.254]
+    assert s["data"]["density_finding"] == \
+        "missing-gap robust across densities; replace wrong-output linearly " \
+        "sensitive (1.000/0.500/0.254) - common-anchor scoring required"
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "## Density tier comparison" in md
+    assert "common-anchor scoring required" in md
+
+
+def test_forward_density_comparison_absent_is_none(tmp_path):
+    # round17：不传 --density-comparison → 两字段为 None，formal 判定与既有断言不变
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    r = _call(run, man, sha)
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True and s["draft"] is False
+    assert s["data"]["density_comparison"] is None
+    assert s["data"]["density_finding"] is None
+    md = (run / "report" / "AUTO_FINDINGS_SUMMARY.md").read_text()
+    assert "Density tier comparison" not in md
+
+
+def test_forward_density_comparison_missing_or_bad_schema_is_none(tmp_path):
+    # round17：路径缺失/schema 不匹配 → None（缺省），不阻塞 formal_approved
+    run = _run_root(tmp_path)
+    man, sha = _manifest(tmp_path)
+    _formal_fixture(run, man, sha)
+    bad = tmp_path / "bad_density_comparison.json"
+    bad.write_text(json.dumps({"schema": "research_v7_density_tier_comparison_v2"}))
+    r = _call(run, man, sha, extra=["--density-comparison", str(bad)])
+    assert r.returncode == 0, r.stderr
+    s = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s["formal_approved"] is True
+    assert s["data"]["density_comparison"] is None
+    assert s["data"]["density_finding"] is None
+    r2 = _call(run, man, sha, extra=["--density-comparison", str(tmp_path / "nope.json")])
+    s2 = json.loads((run / "report" / "AUTO_SUMMARY.json").read_text())
+    assert s2["formal_approved"] is True
+    assert s2["data"]["density_comparison"] is None
+
+
 def test_created_at_utc_is_current_time(tmp_path):
     # round11：AUTO_SUMMARY.created_at_utc 动态取生成时 UTC，不再是硬编码旧值
     run = _run_root(tmp_path)
