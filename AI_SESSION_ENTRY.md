@@ -226,3 +226,40 @@ DETECTOR_V2_CONCLUSION.json 判定 detector_v2_completed=true、partial_explorat
 ### backlog（非阻塞）
 extra stress 未跑（矩阵 partial）；crop_early LOO n_test=64；标签为 rule-based weak
 supervision 非人工 GT；detector 保守性成本/收益未权衡；H gate 明确失败（hidden 不可提取）。
+
+## 2026-08-06 Detector V2 返工完成快照（partial_exploratory=true）
+
+**22 文档 Phase A-D 返工全部执行完毕**，判定 DETECTOR_V2_CONCLUSION.json：
+detector_v2_completed=false, partial_exploratory=true（22 §11 清单 12/13，serial
+propagation=0 未满足）。
+
+### 关键成果（全部落盘 runs/research_v7_detector_v2/）
+- Phase A 坐标修复：M4 unsafe 91.4%→7.2%（全局 GT + sparse 分母）；signal atlas
+  AUC 0.462→0.954（因果证据）
+- Phase B：20/5/5 song-grouped + 4 模型阶梯 + 双约束冻结（constraint_violated 如实）；
+  official small_mlp prot 0.999/safe 0.047（val）；trade-off 表公开（GBDT 0.901/0.857）
+- Phase C：M4 heldout prot 0.998/safe 0.081；M4→MIR prot 0.996/safe 0.135；
+  STRESS（含 extra 1/2/4/8）GT prot 0.93-1.0、replace/missing/extra accept 0.87-0.93
+  （弱检测负结果）；matched views agree 0.92-0.99
+- Phase D：serial unit 级闭环（3 歌×5 重叠窗）：detector 86/1774 正确提交、
+  multi-view 30 真实额外请求 → 9 增量提交；propagation=0（提交集小，验收 10 未满足）
+- F1 校准：isotonic ECE 0.26→0.013、Brier 0.12→0.048（PBAD_CALIBRATION.json）
+- F3 cross-view：数据缺失（posterior 未采集）→ 负结果记 backlog
+
+### 代码状态
+main 分支 442 测试全绿；提交链 42522c3→0b3576a（含 review 修复 0ceb1fc、
+extra 修复 945f883）。关键脚本：train_detector_v2（model_kinds/min_safe_accept_rate/
+labels-path）、evaluate_detector_v2（frozen model_kind 回填）、detector_v2_serial
+（unit 级/serial-mode/train-root）、build_detector_v2_serial_manifest、
+evaluate_stress_detector_v2、analyze_pbad_calibration、cleanup_run_cache。
+
+### 存储
+40G 预算内（当前 ~17G 含新增）；清理脚本 dry-run 可回收 14.5G
+（cleanup_run_cache.py --apply）；STORAGE_CLEANUP.md 已写。
+
+### 下一步（backlog）
+1. serial 传播观测：降低保护点（GBDT 端点）或增大提交预算重跑
+2. safe_accept 提升：isotonic 校准后重冻结阈值（F1 已验证校准有效）
+3. stress 弱检测：窗口级文本扰动的特征工程（repeat 已稍强）
+4. F3 需 multiview posterior 数据采集（forward 保存）
+5. explore 方向报告 → docs/23_FUTURE_DIRECTIONS.md（repair 闭环 > 校准 > CNN1D）
