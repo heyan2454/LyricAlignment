@@ -55,6 +55,18 @@ round13 T5（slot density 档位）：
     识别口径 bug（此前依赖恒 False 的 req.get("phase")=="sparse"）；
   - metrics 增加 density_strata：按档位分层的 n_requests / n_units_evaluated
     （13 §S2：full/stride 档分别汇报，档间汇总只评共同 queried 单位）。
+
+round18（review12 补全，13 §A3）：
+  - replace 补全 omission 方向：GT omitted = mutation_parameters.replaced_canonical_ids
+    与窗的交集；pred omission gap 复用 missing 的窗尾启发式（窗尾 - 最后一行 end，无 row
+    覆盖区间）；per-request 用 region_metrics.wrong_output_metrics(replaced_omission_hits,
+    replaced_omission_gt) 计算 replaced_gt_omission_recall；replace block 增加 omitted 相关
+    字段 + 结构性 note（wrong-output 行占据替换区时 gap 检出多为负 → recall 结构性偏低，
+    不能当模型失败读）。
+  - extra 漂移配对：request_id 去 ":extra[:ratio]" 后缀 = 同窗同档 baseline id；对 extra 与
+    baseline 的共同 canonical ids 比较行几何（pred_start/end 绝对差），per-request
+    extra.baseline_drift 输出 n_shared_units / median_abs_delta / p90_abs_delta /
+    drift_gt_250ms_frac；extra 自身无行是预期（extra 单位无 canonical slot），非错位。
 """
 from __future__ import annotations
 
@@ -177,6 +189,87 @@ def _is_missing_rid(request_id: str) -> str | None:
     return None
 
 
+def _is_extra_rid(request_id: str | None) -> str | None:
+    """识别 extra 请求的 id 并返回其 baseline id；非 extra 返回 None。
+
+    round18：与 missing 后缀格式对齐——旧单档 ":extra" 与多档 ":extra0.10/0.25/0.50"。
+    配对基线 = 同窗同档 baseline（request_id 去 extra 后缀，档位/窗完全一致）。
+    """
+    if request_id is None:
+        return None
+    if request_id.endswith(":extra"):
+        return request_id[: -len(":extra")]
+    import re as _re
+    m = _re.search(r":extra\d+(?:\.\d+)?$", request_id)
+    if m:
+        return request_id[: m.start()]
+    return None
+
+
+def _percentile(sorted_vals: list[float], p: float) -> float | None:
+    """线性插值分位数（numpy.percentile 默认风格）；空列表返回 None。"""
+    if not sorted_vals:
+        return None
+    if len(sorted_vals) == 1:
+        return float(sorted_vals[0])
+    k = (len(sorted_vals) - 1) * p
+    lo = int(k)
+    hi = min(lo + 1, len(sorted_vals) - 1)
+    frac = k - lo
+    return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * frac
+
+
+def _evidence_request(ev: dict | None) -> dict:
+    return ((ev or {}).get("attempt") or {}).get("request") or {}
+
+
+def _evidence_rows(ev: dict | None) -> list[dict]:
+    if not ev:
+        return []
+    return ((((ev.get("attempt") or {}).get("decoder_outputs") or {}).get("official") or {})
+            .get("rows") or [])
+
+
+def _row_geometry_by_cid(request: dict, rows: list[dict]) -> dict[int, tuple[float, float]]:
+    """rows -> {canonical_unit_id: (pred_start_sec, pred_end_sec)}（仅几何可解析的行）。"""
+    out = {}
+    for r in rows:
+        gci = int(r.get("global_character_index", -1))
+        cid = _row_canonical_id(request, gci)
+        geom = _row_geometry(r)
+        if cid is not None and geom is not None:
+            out[cid] = geom
+    return out
+
+
+def _drift_stats(extra_geom: dict[int, tuple[float, float]],
+                 base_geom: dict[int, tuple[float, float]],
+                 baseline_request_id: str | None) -> tuple[dict, list[float]]:
+    """extra vs baseline 共同 canonical ids 的行几何漂移统计。
+
+    对每个共同单位比较 pred_start / pred_end 的绝对差（每单位 2 个样本），
+    输出 median/p90/>250ms 比例；同时返回原始 deltas 供 pooled 汇总复用。
+    无共同单位或无 baseline 时 stats 为 None（结构性：extra 无行是预期，非错位）。
+    """
+    shared = sorted(set(extra_geom) & set(base_geom))
+    deltas = []
+    for cid in shared:
+        bs, be = base_geom[cid]
+        es, ee = extra_geom[cid]
+        deltas.append(abs(es - bs))
+        deltas.append(abs(ee - be))
+    sd = sorted(deltas)
+    n = len(deltas)
+    block = {
+        "baseline_request_id": baseline_request_id,
+        "n_shared_units": len(shared),
+        "median_abs_delta": round(_percentile(sd, 0.5), 4) if n else None,
+        "p90_abs_delta": round(_percentile(sd, 0.9), 4) if n else None,
+        "drift_gt_250ms_frac": round(sum(1 for d in deltas if d > 0.25) / n, 4) if n else None,
+    }
+    return block, deltas
+
+
 def _density_tier(request_id: str | None) -> str | None:
     """从 request_id 后缀解析 slot 密度档位（:full/:s2/:s4/:sparse）；无法解析返回 None。
 
@@ -210,10 +303,13 @@ def _gap_omitted_ids(units: dict[int, dict], deleted: list[int],
 
 def evaluate_evidence(
     evidence: dict,
-    baseline_req: dict | None,
+    baseline_ev: dict | None,
     timeline: dict[int, dict],
 ) -> dict | None:
-    """单份 evidence 的 GT 逐字符评价；无法评价（缺 rows/几何/GT 轴）时返回 None。"""
+    """单份 evidence 的 GT 逐字符评价；无法评价（缺 rows/几何/GT 轴）时返回 None。
+
+    baseline_ev：配对 baseline evidence（missing/extra 需要；baseline 请求传 None）。
+    """
     attempt = evidence.get("attempt") or {}
     if attempt.get("status") != "ok":
         return None
@@ -221,6 +317,7 @@ def evaluate_evidence(
     rows = ((attempt.get("decoder_outputs") or {}).get("official") or {}).get("rows") or []
     if not rows:
         return None
+    baseline_req = _evidence_request(baseline_ev)
     song = _song_id(request)
     units = timeline.get(song) if song else None
     if units is None:
@@ -269,44 +366,71 @@ def evaluate_evidence(
     if mutation == "missing":
         # MAJOR（round1 review）：missing 必须有配对 baseline 才能定义真 unsafe
         # （被删 canonical ids）；缺失时不得按"无真 unsafe"评价（会把 recall 真空膨成 1.0）。
-        if baseline_req is None:
+        if baseline_ev is None:
             return None
         deleted = _deleted_ids(baseline_req, request)
         truly_unsafe = set(deleted)
     elif mutation == "replace":
-        # round13：replace 双向评价（13 §A3）——wrong-output 方向：被替换 canonical id
-        # 区间内出现的 pred 行 = wrong-output 命中（donor 文本被对齐到被替换原词位置）。
-        # replaced-GT omission 方向（被替换原词在输入缺失）最小实现记为 None（见 note）。
+        # round13/round18：replace 双向评价（13 §A3）。
+        # - wrong-output 方向：被替换 canonical id 区间内出现的 pred 行 = wrong-output 命中
+        #   （donor 文本被对齐到被替换原词位置）。
+        # - replaced-GT omission 方向：GT omitted = replaced_canonical_ids 与窗的交集；
+        #   pred omission gap 复用 missing 的窗尾启发式（窗尾 - 最后一行 end）。wrong-output
+        #   行占据替换区时 gap 检出多为负 → recall 结构性偏低，不能当模型失败读（见 note）。
         mp = request.get("mutation_parameters") or {}
         replaced = [int(c) for c in (mp.get("replaced_canonical_ids") or [])]
         replaced_set = set(replaced)
         wrong_hits = len({rc["canonical_unit_id"] for rc in row_records
                           if rc["canonical_unit_id"] in replaced_set})
+        omitted = _gap_omitted_ids(units, replaced, window_sec)
+        ends = [rc["pred_end_sec"] for rc in row_records if rc["pred_end_sec"] is not None]
+        last_end = max(ends) if ends else None
+        gap_size = (window_sec[1] - last_end) if last_end is not None else None
+        gap_detected = gap_size is not None and gap_size > 1e-3
+        om_gt = len(omitted)
+        om_hits = len(omitted) if gap_detected else 0
         wm = wrong_output_metrics(gt_replaced=len(replaced_set), wrong_output_hits=wrong_hits,
-                                  replaced_omission_hits=0, replaced_omission_gt=0)
+                                  replaced_omission_hits=om_hits, replaced_omission_gt=om_gt)
         replace_block = {
             "replaced_canonical_ids": sorted(replaced_set),
             "n_replaced_gt": len(replaced_set),
             "wrong_output_hits": wrong_hits,
             "wrong_output_recall": wm["wrong_output_recall"],
-            "replaced_gt_omission_recall": None,
-            "note": "omission direction (replaced-GT omitted) not implemented this round; "
-                    "wrong-output only",
+            "omitted_replaced_canonical_ids": sorted(omitted),
+            "replaced_omission_gt": om_gt,
+            "replaced_omission_hits": om_hits,
+            "replaced_gt_omission_recall": wm["replaced_gt_omission_recall"],
+            "replaced_omission_gap_size_sec": round(gap_size, 4) if gap_size is not None else None,
+            "replaced_omission_last_row_end_sec": round(last_end, 4) if last_end is not None else None,
+            "note": "omission direction: tail-gap heuristic (window end - last row end) with GT "
+                    "= replaced ids in window; wrong-output rows occupying the replaced region "
+                    "suppress gap detection -> recall structurally low, not model failure",
         }
         deleted, truly_unsafe = [], set()
     elif mutation == "extra":
-        # round13：extra identity-error 语义——extra 单位无 canonical id，无 unit-level GT；
-        # 只评"多余行"（pred 行数超出全部输入文本 = 疑似插入错位）。
+        # round13/round18：extra identity-error 语义——extra 单位无 canonical id，无
+        # unit-level GT；只评"多余行"（pred 行数超出全部输入文本 = 疑似插入错位）。
         # extra 文本自身的输出行是预期行为，不计 unit-level FP → unsafe_pred 置空。
+        # round18：与同窗同档 baseline 配对，对共同 canonical ids 计算行几何漂移
+        # （extra 自身无行是预期——extra 单位无 canonical slot，非错位）。
         mp = request.get("mutation_parameters") or {}
         n_text = len(request.get("text_units") or [])
+        extra_geom = {rc["canonical_unit_id"]: (rc["pred_start_sec"], rc["pred_end_sec"])
+                      for rc in row_records if rc["canonical_unit_id"] is not None
+                      and rc["pred_start_sec"] is not None and rc["pred_end_sec"] is not None}
+        base_geom = _row_geometry_by_cid(baseline_req, _evidence_rows(baseline_ev))
+        drift, _ = _drift_stats(extra_geom, base_geom, baseline_req.get("request_id"))
         extra_block = {
             "baseline_unit_count": mp.get("baseline_unit_count"),
             "added_units": mp.get("actual_added_units"),
             "n_text_units": n_text,
             "identity_error_extra_rows": max(0, len(rows) - n_text),
+            "baseline_drift": drift,
             "note": "extra units have no canonical GT; rows beyond all provided text = "
-                    "suspected insertion misalignment (identity-error)",
+                    "suspected insertion misalignment (identity-error); extra units having "
+                    "no rows is expected (no canonical slot), not misalignment; "
+                    "baseline_drift = row geometry drift vs same-window same-tier baseline "
+                    "over shared canonical ids",
         }
         deleted, truly_unsafe = [], set()
         unsafe_pred = []
@@ -397,21 +521,25 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             by_request_id[rid] = ev
     baseline_reqs = {}
     for rid, ev in by_request_id.items():
-        req = (ev.get("attempt") or {}).get("request") or {}
+        req = _evidence_request(ev)
         # round08 review CRITICAL：missing id 有两种后缀（旧 ":missing" 与多档 ":missing0.10"），
         # 统一用 rsplit 识别，不能只匹配 ":missing" 精确后缀。
         if req.get("mutation_type") != "missing" and _is_missing_rid(rid) is None:
-            baseline_reqs[rid] = req
+            baseline_reqs[rid] = ev
 
     per_request = []
     n_ok = n_skipped = 0
     sum_text_units = 0
     sparse_checked = []  # (per_request 条目, 请求) 配对，供 sparse 子集自检
+    drift_deltas: list[float] = []
     for rid, ev in sorted(by_request_id.items(), key=lambda kv: kv[0]):
-        req = (ev.get("attempt") or {}).get("request") or {}
+        req = _evidence_request(ev)
         base_of = _is_missing_rid(rid)
         if req.get("mutation_type") == "missing" or base_of is not None:
             baseline = baseline_reqs.get(base_of)
+        elif req.get("mutation_type") == "extra":
+            # round18：extra 与同窗同档 baseline 配对（request_id 去 :extra[:ratio] 后缀）
+            baseline = baseline_reqs.get(_is_extra_rid(rid))
         else:
             baseline = None
         r = evaluate_evidence(ev, baseline, timeline)
@@ -420,6 +548,14 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             continue
         n_ok += 1
         per_request.append(r)
+        if r["mutation_type"] == "extra" and baseline is not None:
+            # pooled 漂移样本：与 per-request block 同一 helper、同一输入，数值一致
+            extra_geom = _row_geometry_by_cid(req, _evidence_rows(ev))
+            base_geom = _row_geometry_by_cid(_evidence_request(baseline),
+                                             _evidence_rows(baseline))
+            _, deltas = _drift_stats(extra_geom, base_geom,
+                                     _evidence_request(baseline).get("request_id"))
+            drift_deltas.extend(deltas)
         # unit 级 text 单位数只统计 baseline/missing（replace/extra 的 text 覆盖
         # canonical 子集之外另有 wrong-output/identity-error 评价，不并入 unit 口径）
         if r["mutation_type"] in ("baseline", "missing"):
@@ -453,14 +589,33 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
         unit_recall = 1.0  # 空集约定：无真 unsafe 且未误报 -> 完全正确
     fpr = round(n_fp / n_retained, 4) if n_retained else 0.0
 
-    # replace：wrong-output pooled（双向的 omission 方向未实现 → None + note）
+    # replace：wrong-output pooled + round18 omission 方向（窗尾 gap 启发式，GT omitted =
+    # replaced ids 与窗交集；wrong-output 行占据替换区时 gap 检出多为负 → recall 结构性
+    # 偏低，见 replace_omission_note，不能当模型失败读）
     rep_rows = [r for r in per_request if r["mutation_type"] == "replace"]
     n_wrong_gt = sum(r["replace"]["n_replaced_gt"] for r in rep_rows)
     n_wrong_hits = sum(r["replace"]["wrong_output_hits"] for r in rep_rows)
     wrong_output_recall = round(n_wrong_hits / n_wrong_gt, 4) if n_wrong_gt else None
-    # extra：identity-error pooled（多余行 = 疑似插入错位）
-    n_identity_error_rows = sum(r["extra"]["identity_error_extra_rows"]
-                                for r in per_request if r["mutation_type"] == "extra")
+    n_om_gt = sum(r["replace"]["replaced_omission_gt"] for r in rep_rows)
+    n_om_hits = sum(r["replace"]["replaced_omission_hits"] for r in rep_rows)
+    replaced_gt_omission_recall = round(n_om_hits / n_om_gt, 4) if n_om_gt else None
+    # extra：identity-error pooled（多余行 = 疑似插入错位）+ baseline 漂移 pooled
+    ext_rows = [r for r in per_request if r["mutation_type"] == "extra"]
+    n_identity_error_rows = sum(r["extra"]["identity_error_extra_rows"] for r in ext_rows)
+    paired_ext = [r for r in ext_rows if r["extra"]["baseline_drift"]["baseline_request_id"]]
+    n_shared_units = sum(r["extra"]["baseline_drift"]["n_shared_units"] for r in paired_ext)
+    sd_deltas = sorted(drift_deltas)
+    n_delta = len(sd_deltas)
+    extra_baseline_drift = {
+        "n_extra": len(ext_rows),
+        "n_extra_paired": len(paired_ext),
+        "n_shared_units": n_shared_units,
+        "n_delta_samples": n_delta,
+        "median_abs_delta": round(_percentile(sd_deltas, 0.5), 4) if n_delta else None,
+        "p90_abs_delta": round(_percentile(sd_deltas, 0.9), 4) if n_delta else None,
+        "drift_gt_250ms_frac": (round(sum(1 for d in drift_deltas if d > 0.25) / n_delta, 4)
+                                if n_delta else None),
+    }
 
     gap_rows = [r for r in per_request if r["mutation_type"] == "missing"]
     n_gt_gaps = sum(len(r["gap"]["gt_gap_ids"]) for r in gap_rows)
@@ -532,14 +687,23 @@ def evaluate(run_root: Path, timeline_manifest: Path, domain: str = "m4",
             # round13 T5：按 density 档位分层（n_requests 与 n_units_evaluated），
             # 档位从 request_id 后缀解析（:full/:s2/:s4，旧数据含 :sparse）
             "density_strata": density_strata,
-            # round13：replace 双向评价（wrong-output 实现；omission 方向未实现 → None + note）
+            # round13：replace 双向评价（wrong-output + round18 omission 方向）
             "wrong_output_recall": wrong_output_recall,
-            "replaced_gt_omission_recall": None,
+            "n_replaced_omission_gt": n_om_gt,
+            "n_replaced_omission_hits": n_om_hits,
+            "replaced_gt_omission_recall": replaced_gt_omission_recall,
             "replace_omission_note": (
-                "replaced-GT omission direction not implemented this round; "
-                "wrong_output_recall only (13 §A3)" if n_replace else None),
+                "replaced-GT omission direction: tail-gap heuristic (window end - last row "
+                "end) with GT omitted = replaced_canonical_ids intersecting the window; when "
+                "wrong-output rows occupy the replaced tail region the gap is mostly not "
+                "detected -> recall structurally low and must not be read as model failure; "
+                "conversely rows ending before the window end trivially detect a gap "
+                "(13 §A3)" if n_replace else None),
             # round13：extra identity-error 语义（多余行 = 疑似插入错位）
             "identity_error_extra_rows": n_identity_error_rows,
+            # round18：extra 与同窗同档 baseline 配对的行几何漂移（结构性：extra 自身
+            # 无行是预期，非错位；漂移衡量 extra 文本对共同 canonical 单位对齐的扰动）
+            "extra_baseline_drift": extra_baseline_drift,
             "n_evidence_ok": n_ok,
             "n_evidence_skipped": n_skipped,
             "self_check": self_check,
@@ -611,7 +775,10 @@ def main(argv: list[str] | None = None) -> int:
         "gap_weighted_recall": m["gap_weighted_recall"],
         "wrong_output_recall": m["wrong_output_recall"],
         "replaced_gt_omission_recall": m["replaced_gt_omission_recall"],
+        "n_replaced_omission_gt": m["n_replaced_omission_gt"],
+        "n_replaced_omission_hits": m["n_replaced_omission_hits"],
         "identity_error_extra_rows": m["identity_error_extra_rows"],
+        "extra_baseline_drift": m["extra_baseline_drift"],
         "n_units_evaluated": m["n_units_evaluated"],
         "n_baseline": m["n_baseline"],
         "n_missing": m["n_missing"],

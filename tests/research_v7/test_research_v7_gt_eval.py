@@ -299,8 +299,9 @@ def test_gt_eval_missing_ratio_suffix_pairing(tmp_path):
 
 def test_gt_eval_replace_wrong_output(tmp_path):
     """round13：replace 双向评价——wrong-output 方向：pred 行落在被替换 canonical 区间
-    （mutation_parameters.replaced_canonical_ids）= 命中；replaced-GT omission 方向
-    最小实现记为 None（输出注明）；unit 级 pooling 不混入 replace。"""
+    （mutation_parameters.replaced_canonical_ids）= 命中；round18：omission 方向数值化——
+    wrong-output 行铺满尾部（最后一行 end=窗尾）→ gap 不检出 → omission recall=0.0
+    （结构性偏低，见 note，非模型失败）；unit 级 pooling 不混入 replace。"""
     import sys as _sys
     _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
     import evaluate_long_slot_gt as m
@@ -328,7 +329,8 @@ def test_gt_eval_replace_wrong_output(tmp_path):
         "position": "tail", "requested_ratio": 0.25, "actual_replaced_units": 4,
         "replaced_canonical_ids": replaced, "donor_song_id": "s2",
         "baseline_unit_count": 20}
-    # 解码器给替换文本全部产出行（gci 16..19 落在被替换区间 → wrong-output 命中 4/4）
+    # 解码器给替换文本全部产出行（gci 16..19 落在被替换区间 → wrong-output 命中 4/4；
+    # 最后一行 end=窗尾 → 无 omission gap → omission 方向 0/4）
     rep_rows = _rows(20, rep_text)
     (ev_dir / "rep.json").write_text(json.dumps({
         "content_identity": "rep", "attempt": {"status": "ok", "request": rep_req,
@@ -342,23 +344,81 @@ def test_gt_eval_replace_wrong_output(tmp_path):
     assert rb["replace"]["n_replaced_gt"] == 4
     assert rb["replace"]["wrong_output_hits"] == 4
     assert rb["replace"]["wrong_output_recall"] == 1.0
-    assert rb["replace"]["replaced_gt_omission_recall"] is None  # 未实现方向记为 None
+    # omission 方向：GT omitted = replaced ids ∩ 窗 = [16..19]；行铺满窗尾 → gap=0 不检出
+    assert rb["replace"]["omitted_replaced_canonical_ids"] == replaced
+    assert rb["replace"]["replaced_omission_gt"] == 4
+    assert rb["replace"]["replaced_omission_hits"] == 0
+    assert rb["replace"]["replaced_gt_omission_recall"] == 0.0
+    assert rb["replace"]["replaced_omission_gap_size_sec"] == 0.0
     assert "note" in rb["replace"]
     # replace 的 canonical 绑定保留：unit 级无真 unsafe（wrong-output 独立口径）
     assert rb["unit"]["truly_unsafe_canonical_ids"] == []
     met = res["metrics"]
     assert met["n_replace"] == 1
     assert met["wrong_output_recall"] == 1.0
-    assert met["replaced_gt_omission_recall"] is None
+    assert met["n_replaced_omission_gt"] == 4 and met["n_replaced_omission_hits"] == 0
+    assert met["replaced_gt_omission_recall"] == 0.0
     assert met["replace_omission_note"] is not None
     # unit 级 pooling 不被 replace 污染：只有 baseline 参与（unit_recall=1.0 空集约定）
     assert met["n_units_evaluated"] == 20
     assert met["unit_recall"] == 1.0
 
 
+def test_gt_eval_replace_omission_numeric(tmp_path):
+    """round18：replace omission 方向数值化——被替换尾部单位在窗内且窗尾无行覆盖
+    （最后一行 end 早于窗尾 → gap 检出）→ replaced_gt_omission_recall 非 None 且 =1.0。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_long_slot_gt as m
+    run = tmp_path / "run"; ev_dir = run / "evidence"; ev_dir.mkdir(parents=True)
+    text = [chr(97 + i) for i in range(20)]
+    base_req = {
+        "request_id": "s1:w0:full", "item_id": "s1:w0:full", "mutation_type": "baseline",
+        "song_id": "s1", "text_units": text, "text_start_index": 0, "text_end_index": 20,
+        "canonical_text_start": 0, "canonical_text_end": 20,
+        "canonical_ids": list(range(20)), "canonical_to_local": {str(i): i for i in range(20)},
+        "source_window_sec": [0.0, 20.0],
+    }
+    (ev_dir / "b.json").write_text(json.dumps({
+        "content_identity": "b", "attempt": {"status": "ok", "request": base_req,
+        "decoder_outputs": {"official": {"rows": _rows(20, text)}}}}))
+    replaced = [16, 17, 18, 19]
+    rep_req = dict(base_req)
+    rep_req["request_id"] = "s1:w0:full:replace0.25"
+    rep_req["item_id"] = "s1:w0:full:replace0.25"
+    rep_req["mutation_type"] = "replace"
+    rep_req["text_units"] = text[:16] + ["X", "Y", "Z", "W"]
+    rep_req["mutation_parameters"] = {
+        "position": "tail", "requested_ratio": 0.25, "actual_replaced_units": 4,
+        "replaced_canonical_ids": replaced, "donor_song_id": "s2",
+        "baseline_unit_count": 20}
+    # 解码器未对 donor 文本产出行：行只覆盖 gci 0..15 → 窗尾 16..20 无行覆盖
+    # （omission gap=4s 检出）→ 4/4 命中
+    rep_rows = _rows(16, text[:16])
+    (ev_dir / "rep.json").write_text(json.dumps({
+        "content_identity": "rep", "attempt": {"status": "ok", "request": rep_req,
+        "decoder_outputs": {"official": {"rows": rep_rows}}}}))
+    tl = tmp_path / "timeline.jsonl"
+    tl.write_text(json.dumps(TIMELINE) + "\n")
+    res = m.evaluate(run_root=run, timeline_manifest=tl)
+    per = {r["request_id"]: r for r in res["per_request"]}
+    rb = per["s1:w0:full:replace0.25"]
+    assert rb["replace"]["omitted_replaced_canonical_ids"] == replaced
+    assert rb["replace"]["replaced_omission_gt"] == 4
+    assert rb["replace"]["replaced_omission_hits"] == 4
+    assert rb["replace"]["replaced_gt_omission_recall"] == 1.0
+    assert rb["replace"]["replaced_omission_gap_size_sec"] == pytest.approx(4.0)
+    assert rb["replace"]["replaced_omission_last_row_end_sec"] == pytest.approx(16.0)
+    met = res["metrics"]
+    assert met["replaced_gt_omission_recall"] == 1.0
+    assert met["n_replaced_omission_gt"] == 4 and met["n_replaced_omission_hits"] == 4
+    assert met["replace_omission_note"] is not None
+
+
 def test_gt_eval_extra_identity_error(tmp_path):
-    """round13：extra identity-error 语义——extra 单位无 canonical id：canonical_ids
+    """round13/18：extra identity-error 语义——extra 单位无 canonical id：canonical_ids
     保持 baseline；pred 行数超出全部输入文本（含 extra 文本）的差额 = 疑似插入错位；
+    round18：与同窗同档 baseline 配对，行几何无漂移 → baseline_drift 全 0；
     unit 级 pooling 不混入 extra。"""
     import sys as _sys
     _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
@@ -400,14 +460,91 @@ def test_gt_eval_extra_identity_error(tmp_path):
     assert eb["extra"]["baseline_unit_count"] == 20
     # 23 行 - 22 文本 = 1 多余行（identity-error）
     assert eb["extra"]["identity_error_extra_rows"] == 1
+    # round18 配对：与 baseline 行几何一致 → 漂移全 0
+    bd = eb["extra"]["baseline_drift"]
+    assert bd["baseline_request_id"] == "s1:w0:full"
+    assert bd["n_shared_units"] == 20
+    assert bd["median_abs_delta"] == 0.0
+    assert bd["p90_abs_delta"] == 0.0
+    assert bd["drift_gt_250ms_frac"] == 0.0
     # extra 文本自身的输出行是预期行为，不进入 unit-level FP
     assert eb["unit"]["n_unsafe_pred_rows"] == 0
     met = res["metrics"]
     assert met["n_extra"] == 1
     assert met["identity_error_extra_rows"] == 1
+    assert met["extra_baseline_drift"]["n_extra_paired"] == 1
+    assert met["extra_baseline_drift"]["n_shared_units"] == 20
+    assert met["extra_baseline_drift"]["median_abs_delta"] == 0.0
     # unit 级 pooling 不混入 extra：只有 baseline 参与
     assert met["n_units_evaluated"] == 20
     assert met["unit_recall"] == 1.0
+
+
+def test_gt_eval_extra_drift_pairing(tmp_path):
+    """round18：extra 与同窗同档 baseline 配对——对共同 canonical ids 比较行几何
+    （pred_start/end 绝对差）：median/p90/>250ms 比例输出在 extra.baseline_drift，
+    pooled metrics.extra_baseline_drift 汇总全部样本。"""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "scripts" / "research_v7"))
+    import evaluate_long_slot_gt as m
+    run = tmp_path / "run"; ev_dir = run / "evidence"; ev_dir.mkdir(parents=True)
+    text = [chr(97 + i) for i in range(20)]
+    base_req = {
+        "request_id": "s1:w0:full", "item_id": "s1:w0:full", "mutation_type": "baseline",
+        "song_id": "s1", "text_units": text, "text_start_index": 0, "text_end_index": 20,
+        "canonical_text_start": 0, "canonical_text_end": 20,
+        "canonical_ids": list(range(20)), "canonical_to_local": {str(i): i for i in range(20)},
+        "source_window_sec": [0.0, 20.0],
+    }
+    (ev_dir / "b.json").write_text(json.dumps({
+        "content_identity": "b", "attempt": {"status": "ok", "request": base_req,
+        "decoder_outputs": {"official": {"rows": _rows(20, text)}}}}))
+    ext_req = dict(base_req)
+    ext_req["request_id"] = "s1:w0:full:extra0.25"
+    ext_req["item_id"] = "s1:w0:full:extra0.25"
+    ext_req["mutation_type"] = "extra"
+    ext_req["text_units"] = text + ["X"] * 5
+    ext_req["mutation_parameters"] = {
+        "position": "tail", "requested_ratio": 0.25, "actual_added_units": 5,
+        "donor_song_id": "s2", "baseline_unit_count": 20, "extra_start_index": 20}
+    # extra 请求内 20 行几何漂移：gci 0..4 平移 +0.2s，gci 5..19 平移 +0.4s
+    # （donor extra 单位无行是预期）
+    ext_rows = _rows(20, text)
+    for r in ext_rows:
+        gci = r["global_character_index"]
+        shift = 0.2 if gci < 5 else 0.4
+        for k in ("raw_global_start_sec", "raw_global_end_sec",
+                  "official_fixed_global_start_sec", "official_fixed_global_end_sec",
+                  "fixed_global_start_sec", "fixed_global_end_sec"):
+            r[k] += shift
+    (ev_dir / "ext.json").write_text(json.dumps({
+        "content_identity": "ext", "attempt": {"status": "ok", "request": ext_req,
+        "decoder_outputs": {"official": {"rows": ext_rows}}}}))
+    tl = tmp_path / "timeline.jsonl"
+    tl.write_text(json.dumps(TIMELINE) + "\n")
+    res = m.evaluate(run_root=run, timeline_manifest=tl)
+    per = {r["request_id"]: r for r in res["per_request"]}
+    eb = per["s1:w0:full:extra0.25"]
+    # 40 个 delta 样本：10 个 0.2 + 30 个 0.4 → median=0.4、p90=0.4、>250ms=30/40=0.75
+    bd = eb["extra"]["baseline_drift"]
+    assert bd["baseline_request_id"] == "s1:w0:full"
+    assert bd["n_shared_units"] == 20
+    assert bd["median_abs_delta"] == 0.4
+    assert bd["p90_abs_delta"] == 0.4
+    assert bd["drift_gt_250ms_frac"] == 0.75
+    met = res["metrics"]
+    ebd = met["extra_baseline_drift"]
+    assert ebd["n_extra"] == 1 and ebd["n_extra_paired"] == 1
+    assert ebd["n_shared_units"] == 20
+    assert ebd["n_delta_samples"] == 40
+    assert ebd["median_abs_delta"] == 0.4
+    assert ebd["p90_abs_delta"] == 0.4
+    assert ebd["drift_gt_250ms_frac"] == 0.75
+    # 配对辅助函数直接验证（含无 ratio 的旧后缀）
+    assert m._is_extra_rid("s1:w0:full:extra0.25") == "s1:w0:full"
+    assert m._is_extra_rid("s1:w0:full:extra") == "s1:w0:full"
+    assert m._is_extra_rid("s1:w0:full") is None
+    assert m._is_extra_rid(None) is None
 
 
 def test_gt_eval_density_tier_parsing_and_strata(tmp_path):
