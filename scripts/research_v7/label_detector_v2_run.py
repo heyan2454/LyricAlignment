@@ -233,7 +233,8 @@ def build_summary(out_rows, labeled_units, stats, gt_audit, split_used) -> dict:
     }
 
 
-def label_run(run_root, timeline_manifest, gt_labels, out_root) -> dict:
+def label_run(run_root, timeline_manifest, gt_labels, out_root,
+              valid_statuses: set[str] | None = None) -> dict:
     run_root = Path(run_root)
     out_root = Path(out_root)
     evidence_dir = run_root / "evidence"
@@ -254,7 +255,8 @@ def label_run(run_root, timeline_manifest, gt_labels, out_root) -> dict:
         r = json.loads(line)
         if r.get("song_id"):
             gt_by_song[str(r["song_id"])].append(r)
-    song_gt = {song: build_song_gt(rows) for song, rows in gt_by_song.items()}
+    song_gt = {song: build_song_gt(rows, valid_statuses or GTLABEL_VALID_STATUSES)
+               for song, rows in gt_by_song.items()}
 
     gt_audit = read_json_optional(run_root / "preflight" / "GT_LABEL_AUDIT.json",
                                   run_root / "manifests" / "GT_LABEL_AUDIT.json")
@@ -311,9 +313,15 @@ def main(argv=None) -> int:
     p.add_argument("--timeline-manifest", required=True)
     p.add_argument("--gt-labels", required=True)
     p.add_argument("--out-root", default=None, help="缺省 = --run-root（只写 LABELS.jsonl/LABEL_SUMMARY.json）")
+    p.add_argument("--gt-valid-statuses", default=None, help="逗号分隔的 GT mapping_status 白名单（缺省 M4 集合）")
     args = p.parse_args(argv)
     out_root = Path(args.out_root or args.run_root)
-    summary = label_run(args.run_root, args.timeline_manifest, args.gt_labels, out_root)
+    if args.gt_valid_statuses:
+        valid_statuses = {s.strip() for s in args.gt_valid_statuses.split(",") if s.strip()}
+    else:
+        valid_statuses = None
+    summary = label_run(args.run_root, args.timeline_manifest, args.gt_labels, out_root,
+                        valid_statuses=valid_statuses)
     pooled = summary["pooled"]
     print(json.dumps({
         "ok": True,
