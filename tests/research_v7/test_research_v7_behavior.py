@@ -396,11 +396,11 @@ def test_runner_passes_replace_extra_params_into_evidence(tmp_path):
         _j.dumps({"request_id": "r:replace", "item_id": "s1", "text_units": ["a", "b", "c"],
                   "text_start_index": 0, "text_end_index": 3,
                   "audio_path": "/tmp/nonexistent.wav", "mutation_type": "replace",
-                  "replaced_canonical_ids": [2], "actual_replaced_units": 1}),
+                  "mutation_parameters": {"replaced_canonical_ids": [2], "actual_replaced_units": 1}}),
         _j.dumps({"request_id": "r:extra", "item_id": "s2", "text_units": ["a", "b", "c", "d"],
                   "text_start_index": 0, "text_end_index": 4,
                   "audio_path": "/tmp/nonexistent.wav", "mutation_type": "extra",
-                  "extra_start_index": 3, "actual_added_units": 1}),
+                  "mutation_parameters": {"extra_start_index": 3, "actual_added_units": 1}}),
     ]) + "\n")
     outroot = tmp_path / "run"
     r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/run_behavior_suite.py"),

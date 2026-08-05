@@ -176,14 +176,20 @@ def main(argv=None) -> int:
                 timestamp_slot_indices=slot,
                 workflow_mode=r.get("workflow_mode", "behavior_suite") or "behavior_suite",
                 mutation_type=mutation or "baseline",
-                mutation_parameters={key: r.get(key) for key in (
-                    "ratio", "requested_ratio", "actual_ratio", "position", "mutation_position", "source", "text_relation",
-                    "audio_relation", "source_text_start_index", "source_text_end_index", "baseline_unit_count", "n_base",
-                    "actual_added_units", "actual_removed_units", "actual_replaced_units", "donor_song_id", "donor_start_index",
-                    "donor_end_index", "donor_similarity", "selection_seed", "cursor_offset_units", "provisional_policy",
-                    "provisional_tail_units", "provisional_last_sec", "c10_case", "repeat_gt_starts", "repeat_unit_count",
-                    # round13：replace/extra 变体的 canonical 语义字段（builder 写入，runner 必须透传）
-                    "replaced_canonical_ids", "extra_start_index")},
+                mutation_parameters={
+                    # 顶层兼容字段（旧 manifest 写法）
+                    **{key: r.get(key) for key in (
+                        "ratio", "requested_ratio", "actual_ratio", "position", "mutation_position", "source", "text_relation",
+                        "audio_relation", "source_text_start_index", "source_text_end_index", "baseline_unit_count", "n_base",
+                        "actual_added_units", "actual_removed_units", "actual_replaced_units", "donor_song_id", "donor_start_index",
+                        "donor_end_index", "donor_similarity", "selection_seed", "cursor_offset_units", "provisional_policy",
+                        "provisional_tail_units", "provisional_last_sec", "c10_case", "repeat_gt_starts", "repeat_unit_count")},
+                    # round13：builder 把 replaced_canonical_ids/extra_start_index 写在
+                    # REQUESTS 行 mutation_parameters 嵌套 dict 里，runner 必须并入
+                    # （否则 evaluate 的 replace/extra 分支读不到 canonical GT 语义）
+                    **{k: v for k, v in (r.get("mutation_parameters") or {}).items()
+                       if v is not None},
+                },
                 model_id=args.model,
                 checkpoint_id=args.checkpoint,
                 input_variant=r.get("input_variant", "text_mutation"),
