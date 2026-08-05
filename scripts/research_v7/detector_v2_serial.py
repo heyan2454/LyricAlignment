@@ -79,15 +79,20 @@ def _atomic_write(path: Path, payload) -> None:
 def simulate_route(*, route: str, windows: list[dict], scorer, t_accept: float,
                    t_reject: float, budget_requests: int,
                    t_accept_alt: float, t_reject_alt: float) -> dict:
-    """串行闭环单路线仿真。windows: 每窗 {"wi","rows":[feature dict+canonical_unit_id],
-    "unsafe_flags":[bool]}；scorer(win, view)->list[p_bad]（按 rows 序）。
-    windows 可带 "song" 键：歌曲变化时重置未提交集合（串行闭环按歌独立，避免伪传播）。"""
+    """串行闭环单路线仿真（unit/区间级提交，22 §5.3）。
+
+    windows: 每窗 {"wi","rows":[feature dict+canonical_unit_id],"unsafe_flags":[bool]}。
+    每窗按 unit 三态：accept 区间提交（cursor 推进）、reject 不提交、uncertain 用预算
+    发验证请求（同窗另一 target 再判），预算耗尽 unresolved。
+    错误提交按 unit 计（committed unsafe units）；传播 = 提交集携带历史未提交 unsafe。
+    """
     commits: list[int] = []
+    committed_units_total = 0
+    error_committed_units = 0
     decisions: dict[int, str] = {}
     unresolved: list[int] = []
     delayed: list[int] = []
     extra_requests = 0
-    error_commits = 0
     first_error_commit = None
     uncommitted_unsafe: set = set()
     propagated_windows: list[int] = []
@@ -107,60 +112,73 @@ def simulate_route(*, route: str, windows: list[dict], scorer, t_accept: float,
         prev_song = song
         unsafe_ids = {row.get("canonical_unit_id") for row, f in
                       zip(win["rows"], win["unsafe_flags"]) if f}
+
         if route == "all_commit":
-            decision, verifies = "accept", 0
+            states = {i: "accept" for i in range(len(win["rows"]))}
+            verifies = 0
         elif route == "gt_oracle":
-            decision, verifies = ("reject" if unsafe_ids else "accept"), 0
+            states = {i: ("reject" if win["rows"][i]["canonical_unit_id"] in unsafe_ids
+                          else "accept") for i in range(len(win["rows"]))}
+            verifies = 0
         else:
             p = scorer.score(win, "official")
             scoring_calls += 1
-            decision, _ = window_decision(p, t_accept, t_reject)
+            _decision, states = window_decision(p, t_accept, t_reject)
             verifies = 0
-            if decision == "uncertain" and route == "multi_view":
+            if route == "multi_view":
                 budget_left = budget_requests
-                while decision == "uncertain" and budget_left > 0:
+                # 逐 unit：uncertain 消耗预算做 raw 视图验证
+                for i in list(states):
+                    if states[i] != "uncertain" or budget_left <= 0:
+                        continue
                     budget_left -= 1
                     extra_requests += 1
                     verifies += 1
                     pv = scorer.score(win, "raw")
                     scoring_calls += 1
-                    decision, _ = window_decision(pv, t_accept_alt, t_reject_alt)
-                if decision == "uncertain":
-                    decision = "unresolved"
-            elif decision == "uncertain":
-                decision = "unresolved"
+                    _vd, vs = window_decision(pv, t_accept_alt, t_reject_alt)
+                    if vs.get(i) == "accept":
+                        states[i] = "accept"
+                    elif vs.get(i) == "reject":
+                        states[i] = "reject"
 
-        decisions[wi] = decision
-        committed = decision == "accept"
-        match = uncommitted_unsafe & unsafe_ids
-        if committed and match:
-            # 传播口径：仅已提交窗携带未提交 unsafe units 时计数（"重复拒绝"不算传播）
+        committed_ids = {win["rows"][i]["canonical_unit_id"]
+                         for i, s in states.items() if s == "accept"}
+        committed = bool(committed_ids)
+        window_error = committed_ids & unsafe_ids
+        committed_units_total += len(committed_ids)
+        error_committed_units += len(window_error)
+        decisions[wi] = "accept" if committed else (
+            "unresolved" if any(s == "uncertain" for s in states.values()) else "reject")
+
+        # 传播：提交集携带历史未提交 unsafe units
+        match = committed_ids & uncommitted_unsafe
+        if match:
             propagated_windows.append(wi)
             propagated_units |= match
         if committed:
             commits.append(wi)
             if verifies:
                 delayed.append(wi)
-            if unsafe_ids:
-                error_commits += 1
-                if first_error_commit is None:
-                    first_error_commit = wi
-            uncommitted_unsafe -= unsafe_ids
+            if window_error and first_error_commit is None:
+                first_error_commit = wi
+            uncommitted_unsafe -= committed_ids
             if not prev_committed:
                 re_entries.append(wi)
         else:
-            if decision == "unresolved":
+            if any(s == "uncertain" for s in states.values()):
                 unresolved.append(wi)
             uncommitted_unsafe |= unsafe_ids
         prev_committed = committed
 
     wall_sec = time.perf_counter() - t0
-    total = len(commits)
     return {
         "route": route,
-        "error_commit_rate": (error_commits / total) if total else 0.0,
-        "error_commits": error_commits,
-        "total_commits": total,
+        "error_commit_rate": (error_committed_units / committed_units_total)
+        if committed_units_total else 0.0,
+        "error_commits": error_committed_units,
+        "total_commits": committed_units_total,
+        "n_committed_windows": len(commits),
         "first_error_commit_wi": first_error_commit,
         "propagated_windows": sorted(propagated_windows),
         "n_propagated_windows": len(propagated_windows),
@@ -204,7 +222,8 @@ class _FrozenScorer:
             X = np.asarray([[float(r["features"].get(k) or 0.0) for k in fk]
                             for r in tr], dtype=float)
             y = np.asarray([1.0 if r["label"] == "unsafe" else 0.0 for r in tr])
-            self.trainer[target] = _make_trainer("standardized_logistic", seed=0)
+            model_kind = op.get("model_kind") or "standardized_logistic"
+            self.trainer[target] = _make_trainer(model_kind, seed=0)
             self.xtr[target] = X[:, idx] if idx else np.zeros((len(X), 1))
             self.ytr[target] = y
             self.feat_keys[target] = fk
@@ -233,8 +252,9 @@ def _load_labels(run_root: Path) -> tuple[dict, dict]:
     return label_map, song_map
 
 
-def _load_frozen_op(run_root: Path) -> dict:
-    raw = json.loads((run_root / "FROZEN_OPERATING_POINTS.json").read_text(encoding="utf-8"))
+def _load_frozen_op(path: Path) -> dict:
+    p = path / "FROZEN_OPERATING_POINTS.json" if path.is_dir() else path
+    raw = json.loads(p.read_text(encoding="utf-8"))
     if isinstance(raw, dict) and {"raw", "official"} <= set(raw):
         return raw
     return {"raw": raw, "official": raw}
@@ -392,13 +412,17 @@ def main(argv: list[str] | None = None) -> int:
                    help="冻结 op json（缺省 <run-root>/FROZEN_OPERATING_POINTS.json）")
     p.add_argument("--serial-mode", action="store_true",
                    help="serial manifest 轨迹（stride=30s 重叠窗，22 §5.2）")
+    p.add_argument("--train-root", default=None,
+                   help="冻结模型训练数据根（evidence_v2+LABELS；缺省 <run-root>；"
+                        "serial 用 run2 的冻结训练集拟合，窗 evidence 仍读 <run-root>）")
     a = p.parse_args(argv)
 
     run_root = Path(a.run_root)
     frozen = _load_frozen_op(Path(a.frozen_op)) if a.frozen_op else _load_frozen_op(run_root)
     from train_detector_v2 import build_matrix
 
-    by_target = build_matrix(run_root / "evidence_v2", run_root / "LABELS.jsonl")
+    train_root = Path(a.train_root) if a.train_root else run_root
+    by_target = build_matrix(train_root / "evidence_v2", train_root / "LABELS.jsonl")
     scorer = _FrozenScorer(by_target, frozen)
     series = _build_series(run_root, n_songs=a.n_songs, max_windows=a.max_windows,
                            serial_mode=a.serial_mode)

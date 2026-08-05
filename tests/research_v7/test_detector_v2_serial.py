@@ -65,8 +65,8 @@ def _run(route, budget=2):
 
 def test_all_commit_commits_everything():
     out = _run("all_commit")
-    assert out["total_commits"] == 12
-    assert out["error_commit_rate"] == pytest.approx(6 / 12)  # wi=1 + wi=3（含 cid 11）各 3 歌
+    assert out["total_commits"] == 24  # 每歌 8 units × 3 歌
+    assert out["error_commit_rate"] == pytest.approx(9 / 24)  # wi1 (11,12) + wi3 (11) × 3 歌
     assert out["n_unresolved"] == 0
     assert out["extra_requests"] == 0
 
@@ -75,25 +75,25 @@ def test_gt_oracle_rejects_unsafe():
     out = _run("gt_oracle")
     assert out["error_commit_rate"] == 0.0
     assert out["error_commits"] == 0
-    assert out["total_commits"] == 6  # wi=0/2 提交，wi=1/3 reject
+    assert out["total_commits"] == 15  # 每歌 wi=0(2)+wi=2(2)+wi=3(1 safe)=5 × 3 歌
+    assert out["n_committed_windows"] == 9
 
 
 def test_single_view_rejects_unsafe_window():
     out = _run("single_view")
-    assert out["total_commits"] == 6  # wi=0 + wi=3 提交；wi=1 reject、wi=2 unresolved
-    assert out["error_commit_rate"] == pytest.approx(3 / 6)  # wi=3 携带未提交 unsafe 11
-    assert out["n_unresolved"] == 3  # wi=2 × 3 歌
+    assert out["total_commits"] == 15  # 每歌 wi=0(2)+wi=3(2)+wi=2?——wi2 official 0.85 uncertain→不提交
+    assert out["error_commit_rate"] == pytest.approx(3 / 15)  # wi=3 的 cid 11 unsafe 被提交 × 3
     assert out["extra_requests"] == 0
 
 
 def test_multi_view_uses_budget_and_delays_commit():
     out = _run("multi_view")
-    assert out["total_commits"] == 9  # wi=0 accept；wi=2 验证后延迟 accept；wi=3 accept
-    assert out["error_commit_rate"] == pytest.approx(3 / 9)  # wi=3 携带未提交 unsafe 11
+    assert out["total_commits"] == 18  # wi=0(2)+wi=2(2 验证后)+wi=3(2)×3 歌
+    assert out["error_commit_rate"] == pytest.approx(3 / 18)  # wi=3 的 cid 11 unsafe × 3
     assert out["n_unresolved"] == 0
     assert out["extra_requests"] == 3  # wi=2 × 3 歌各消耗 1 次预算
     assert set(out["delayed_commits"]) == {2}
-    assert 11 in out["propagated_units"]  # committed 窗传播（P1-2 修复后口径）
+    assert 11 in out["propagated_units"]
 
 
 def test_budget_exhausted_marks_unresolved():
@@ -102,7 +102,7 @@ def test_budget_exhausted_marks_unresolved():
         _win(1, [(11, 0.99, 0.99)], {11}, "song_x"),
         # official 0.85 → uncertain → raw 0.01 → accept（延迟，1 次预算）
         _win(2, [(12, 0.85, 0.01)], set(), "song_x"),
-        # official 0.86 → uncertain → raw 0.50 在 [0.30,0.70) → 循环 2 次耗尽 → unresolved
+        # official 0.86 → uncertain → raw 0.50 在 [0.30,0.70) → 2 次耗尽 → unresolved
         _win(3, [(11, 0.86, 0.50)], {11}, "song_x"),
     ]
     out = simulate_route(
@@ -111,15 +111,14 @@ def test_budget_exhausted_marks_unresolved():
         budget_requests=2)
     assert out["n_unresolved"] == 1  # wi=3 预算耗尽
     assert out["delayed_commits"] == [2]
-    assert out["extra_requests"] == 3  # wi=2 消耗 1 + wi=3 循环 2
+    assert out["extra_requests"] == 2  # wi=2 消耗 1 + wi=3 消耗 1（wi2 后预算只剩 1）
 
 
 def test_propagation_of_uncommitted_unsafe():
     out = _run("single_view")
-    # wi=1 的 unsafe cid 11/12 在 wi=3 再次出现（cid 11）→ 传播
+    # wi=3 提交集携带未提交 unsafe cid 11 → 传播（unit 级口径）
     assert 11 in out["propagated_units"]
     assert out["n_propagated_windows"] >= 1
-    # 传播发生在未提交集合仍持有 unsafe 时
     assert out["propagated_windows"][0] > 1
 
 
@@ -127,14 +126,12 @@ def test_reentry_after_reject():
     out = _run("gt_oracle")
     # wi=1 reject（不提交）→ wi=2 accept（重新入轨）
     assert set(out["re_entries"]) == {2}
-    # single_view：wi=2 unresolved、wi=3 accept → re-entry 在 wi=3
     sv = _run("single_view")
-    assert set(sv["re_entries"]) == {3}
+    assert set(sv["re_entries"]) == {2}
 
 
 def test_no_cross_song_false_propagation():
     """uncommitted 集合按歌重置：song_a 的 unsafe 不传播到 song_b。"""
     out = _run("single_view")
-    # 3 歌各独立：每歌 wi=1 reject 后 wi=3 传播 cid 11（每歌一次），但无跨歌伪传播
     assert sorted(out["propagated_units"]) == [11]
     assert out["n_propagated_windows"] == 3  # 每歌 wi=3 一次

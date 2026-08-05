@@ -80,6 +80,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", required=True)
     p.add_argument("--frozen-op", default=None,
                    help="M4 冻结 op json；缺省 <m4-run-root>/FROZEN_OPERATING_POINTS.json")
+    p.add_argument("--mir-labels-path", default=None,
+                   help="MIR LABELS.jsonl 覆盖（缺省 <mir-run-root>/LABELS.jsonl；"
+                        "Phase C 用 mir_run evidence + mir_run_v2 修正标签）")
     a = p.parse_args(argv)
 
     m4_root, mir_root = Path(a.m4_run_root), Path(a.mir_run_root)
@@ -93,7 +96,9 @@ def main(argv: list[str] | None = None) -> int:
                     "unknown")
     m4_train = {t: m4_bt[t].get("train", []) for t in ("raw", "official")}
 
-    mir_bt = build_matrix(mir_root / "evidence_v2", mir_root / "LABELS.jsonl")
+    mir_bt = build_matrix(mir_root / "evidence_v2",
+                          Path(a.mir_labels_path) if a.mir_labels_path
+                          else mir_root / "LABELS.jsonl")
     mir_fam = _family_map(mir_root / "LABELS.jsonl")
     mir_rows: list[dict] = []
     for target in ("raw", "official"):
