@@ -13,15 +13,16 @@
   含 transformers 5.15.0.dev0、torch、nagisa、soundfile、numpy、pytest 等全部相关依赖）。
   项目包尚未 `pip install -e .`，当前以 `PYTHONPATH=src` 运行即可（`src/` 为 setuptools package root）。
 - 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 stage override 指向
-  `docs/research_v7_align_behavior/` 的 `README` / `13` 冻结计划 / `14` 执行合同 / `17` 实现复审。
+  `docs/research_v7_align_behavior/` 的 `README` / `18` Detector V2 冻结计划 / `19` 执行合同 /
+  `20` 实现蓝图 / `21` 旧结果纠偏；`17` 及更早文档仅作上一轮实现追溯。
 
 ## Commands
 ```bash
 source /root/miniconda3/etc/profile.d/conda.sh
 conda activate lyricalign-qwen
 # 若需安装项目包：pip install -e .（在 src/ 内）
-PYTHONPATH=src python -m pytest -q              # 全量测试（tests/，409 项）
-PYTHONPATH=src python -m pytest -q tests/research_v7   # 当前主线（121 项）
+PYTHONPATH=src python -m pytest -q              # 全量测试（tests/）
+PYTHONPATH=src python -m pytest -q tests/research_v7   # 当前主线
 python -m compileall -q src scripts             # 语法编译检查
 python scripts/environment/capture_environment.py --out <run>/environment_full.json  # 记录运行环境
 
@@ -38,14 +39,32 @@ RENDER_MODE=skip bash scripts/demo/run_inline_realign_formal.sh
 bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
 ```
 
-## 当前主线：research_v7 long-slot / region assessor（从 `docs/research_v7_align_behavior/` 进入）
+## Agent 运行约定（多子 agent 并发 / review / 步数限制）
 
-实现主体在 `src/lyricalign/research_v7/`（timeline / slot_planning / sparse_slots / canonical_mapping /
-c3_text_adapter / mutations / features / region_metrics / region_assessor / requests / attempt /
-real_executor / evaluation_guard），入口在 `scripts/research_v7/`。当前主线已跑通**真实 formal**
-（review12：M4 120 real forward + MIR 120 real forward + GT 评价 + 跨域 assessor + baseline 质量分析，
-见 `17_IMPLEMENTATION_REVIEW_20260805.md` 复审更新 12）。结论解读须注意结构性声明（unit_recall=0 为
-virtual-gap 结构、M4 synthetic 轴 66.6% 误差率为轴构造产物、MIR 弱标签非人工 GT）。相关命令：
+- **多用子 agent 并尽量并行**：主 agent 需要等待所有子 agent 结束后才能继续，因此派发任务时
+  一次启动尽可能多的独立子 agent（每任务一个 git worktree 隔离，避免文件冲突）；不同 phase
+  或相互独立的模块可并发开发。子 agent 完成任务后返回结构化报告（改动/测试/产物/下一步），
+  由主 agent 合并与验收。
+- **每阶段/每批完成后启用 review 子 agent**（通常 2 个并行：一个查代码正确性与契约、一个查
+  数据一致性与跨模块接线/文档对照）。**review 只关注 P0/P1（CRITICAL/MAJOR）问题**：bug、
+  口径不一致、契约违反、会污染结论的数据问题；不纠结信任/防伪类问题（manifest、登记、SHA
+  可被有写权限者篡改等），保持"可追溯"即可。MINOR 记 backlog 不阻塞。
+- **子 agent 限制步数**：opencode 配置层已设 `agent.general/explore.steps=8`（见 `opencode.json`），
+  达到 8 次工具调用后强制转 text-only。派发 prompt 中同时写明 `STEP BUDGET=8`，并要求到步数
+  后整理输出：已完成/未完成与原因/关键产物路径/上下文摘要/下一步建议，不得无限循环重试。
+- **测试分层**（避免每次都跑全量）：
+  - L1 快速层 `tests/research_v7/test_detector_v2_*.py`：每个子 agent 必跑（秒级）；
+  - L2 模块层 `tests/research_v7`：跨模块改动时跑（约 1 分钟）；
+  - L3 全量 `tests/`：仅 merge agent 与阶段收尾跑。
+  子 agent 验收默认 L1 + `compileall -q src scripts` + `git diff --check`。
+
+## Current mainline: research_v7 Detector V2 (enter via `docs/research_v7_align_behavior/`)
+
+实现主体在 `src/lyricalign/research_v7/`。Detector V2 当前已冻结三态区间合同、产品指标和 coverage
+gate 骨架，后续实现与实验必须从 `18_DETECTOR_V2_EXPERIMENT_PLAN.md`、
+`19_DETECTOR_V2_AGENT_CONTRACT.md`、`20_DETECTOR_V2_IMPLEMENTATION_BLUEPRINT.md` 进入。上一轮
+long-slot / region assessor 已跑通真实 formal，但其旧指标边界须按
+`21_PREVIOUS_DETECTOR_RESULT_CORRECTIONS.md` 解读。现有 research_v7 命令包括：
 
 ```bash
 # preflight（只读核对，产出 PRECHECK.json；纯 CPU）
