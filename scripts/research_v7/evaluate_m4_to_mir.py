@@ -109,6 +109,12 @@ def main(argv: list[str] | None = None) -> int:
     result = evaluate_m4_to_mir(m4_train=m4_train, mir_rows=mir_rows, frozen_op=frozen)
     result["validation_basis"] = "weak_labeled_qwen_fa"
     result["note"] = "not human GT; MIR-1K 弱标签不与 M4 精确 GT 混合（21 §1）"
+    result["scoring_subset"] = {
+        "note": "n_score 仅统计 label∈{safe,unsafe} 的 units；ambiguous/grey/gt_unavailable "
+                "不计入打分分母（LABEL_SUMMARY pooled 含全部 labeled units，二者口径不同）",
+        "labels_included": ["safe", "unsafe"],
+        "labels_excluded": ["ambiguous", "grey", "gt_unavailable"],
+    }
 
     out_dir = Path(a.out)
     out_dir.mkdir(parents=True, exist_ok=True)

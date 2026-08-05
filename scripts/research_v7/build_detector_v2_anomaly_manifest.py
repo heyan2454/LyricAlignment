@@ -395,17 +395,19 @@ def main(argv=None) -> int:
                                   "missing_canonical_ids": base["canonical_ids"][-n:]},
                           gt_ambiguity=True, base_row=base)
                 if ms:
+                    removed = {int(c) for c in base["canonical_ids"][-n:]}
                     ms["text_units"] = ms["text_units"][:-n]
                     ms["text_end_index"] = len(ms["text_units"])
                     ms["timestamp_slot_indices"] = list(range(len(ms["text_units"])))
                     if ms.get("canonical_to_local"):
                         ms["canonical_to_local"] = {
                             cid: i for cid, i in ms["canonical_to_local"].items()
-                            if int(cid) < int(base["canonical_ids"][-n])}
+                            if int(cid) not in removed}
                     if ms.get("canonical_ids"):
                         ms["canonical_ids"] = [
-                            c for c in ms["canonical_ids"]
-                            if int(c) < int(base["canonical_ids"][-n])]
+                            c for c in ms["canonical_ids"] if int(c) not in removed]
+                    if ms.get("canonical_text_end"):
+                        ms["canonical_text_end"] = int(ms["canonical_ids"][-1]) + 1
                     ms["audio_path"] = str(audio)
                     reqs.append(ms)
         songs_processed.append(song)

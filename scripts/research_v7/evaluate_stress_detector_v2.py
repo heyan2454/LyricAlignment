@@ -74,14 +74,16 @@ def _score_stress(by_target: dict, frozen_op: dict) -> dict:
             st = {"accept": 0, "reject": 0, "uncertain": 0}
             for i in idx:
                 st[states[i]] = st.get(states[i], 0) + 1
-            if fam in GT_FAMILIES:
-                fam_rows = [score_rows[i] for i in idx]
+            fam_rows = [score_rows[i] for i in idx]
+            has_gt = any(r["label"] in ("safe", "unsafe") for r in fam_rows)
+            if has_gt:
                 tri, iv = _score_rows(train_rows, fam_rows, combo=combo,
                                       model_kind="standardized_logistic",
                                       t_accept=float(op_pts["T_accept"]),
                                       t_reject=float(op_pts["T_reject"]))
                 by_family[fam] = {
                     "n_units": n, "gt_kind": "labels",
+                    "n_labeled_units": sum(r["label"] in ("safe", "unsafe") for r in fam_rows),
                     "state_distribution": st,
                     "tri_unit_metrics": tri, "interval_metrics": iv}
             else:

@@ -133,7 +133,8 @@ def simulate_route(*, route: str, windows: list[dict], scorer, t_accept: float,
         decisions[wi] = decision
         committed = decision == "accept"
         match = uncommitted_unsafe & unsafe_ids
-        if match:
+        if committed and match:
+            # 传播口径：仅已提交窗携带未提交 unsafe units 时计数（"重复拒绝"不算传播）
             propagated_windows.append(wi)
             propagated_units |= match
         if committed:
@@ -310,7 +311,7 @@ def _build_series(run_root: Path, *, n_songs: int, max_windows: int) -> list[dic
         if family == "baseline_legal":
             s["base"].setdefault(wi_s, {"rid": shas[0]})
         else:
-            s["variants"].setdefault(wi_s, {})[family] = {"rid": shas[0]}
+            s["variants"].setdefault(wi_s, {})[family] = {"rid": shas[0], "mtype": family}
 
     ranked = sorted(songs.items(), key=lambda kv: len(kv[1]["base"]), reverse=True)
     series_out: list[dict] = []
@@ -387,6 +388,12 @@ def main(argv: list[str] | None = None) -> int:
                                        "injected": w["injected"], "n_units": len(w["rows"]),
                                        "n_unsafe": sum(w["unsafe_flags"])} for w in s["windows"]]}
                          for s in series],
+               "series_premise": {
+                   "note": "windows come from builder 0/50%/100% non-overlapping 60s slices; "
+                           "cross-window shared canonical units are structurally ~0, so "
+                           "propagated units are expected to be empty (18 §14 measured on "
+                           "overlapping serial runs would need shared units)",
+                   "n_songs": len(series)},
                "routes": routes}
     out_path = Path(a.out) / "SERIAL_CLOSED_LOOP.json"
     _atomic_write(out_path, payload)

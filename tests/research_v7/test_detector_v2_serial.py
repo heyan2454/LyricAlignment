@@ -46,8 +46,9 @@ def _series():
             _win(0, [(10, 0.01, 0.01), (11, 0.01, 0.01)], set(), song),
             _win(1, [(11, 0.99, 0.99), (12, 0.95, 0.95)], {11, 12}, song),
             _win(2, [(12, 0.85, 0.01), (13, 0.01, 0.01)], set(), song),
-            # official 0.86 uncertain → raw 0.50 uncertain（alt 阈值 0.30/0.70 间）→ 循环耗尽 unresolved
-            _win(3, [(11, 0.86, 0.50), (14, 0.01, 0.01)], {11}, song),
+            # official 0.50 → accept（committed，携带未提交 unsafe 11 → 传播）；
+            # raw 0.50 在 alt [0.30,0.70) → multi_view 循环耗尽 unresolved
+            _win(3, [(11, 0.50, 0.50), (14, 0.01, 0.01)], {11}, song),
         ]
         series.append({"song": song, "windows": windows})
     return series
@@ -79,29 +80,36 @@ def test_gt_oracle_rejects_unsafe():
 
 def test_single_view_rejects_unsafe_window():
     out = _run("single_view")
-    assert out["total_commits"] == 3  # 仅 wi=0 提交；wi=1 reject、wi=2/3 unresolved
-    assert out["error_commit_rate"] == 0.0
-    assert out["n_unresolved"] == 6  # wi=2/3 × 3 歌
+    assert out["total_commits"] == 6  # wi=0 + wi=3 提交；wi=1 reject、wi=2 unresolved
+    assert out["error_commit_rate"] == pytest.approx(3 / 6)  # wi=3 携带未提交 unsafe 11
+    assert out["n_unresolved"] == 3  # wi=2 × 3 歌
     assert out["extra_requests"] == 0
 
 
 def test_multi_view_uses_budget_and_delays_commit():
     out = _run("multi_view")
-    assert out["total_commits"] == 6  # wi=0 accept；wi=2 验证后延迟 accept；wi=3 耗尽 unresolved
-    assert out["error_commit_rate"] == 0.0
-    assert out["n_unresolved"] == 3  # wi=3 × 3 歌（raw 0.50 循环 2 次仍 uncertain）
-    assert out["extra_requests"] == 3 * (1 + 2)  # wi=2 消耗 1 + wi=3 消耗 2（预算 2）
+    assert out["total_commits"] == 9  # wi=0 accept；wi=2 验证后延迟 accept；wi=3 accept
+    assert out["error_commit_rate"] == pytest.approx(3 / 9)  # wi=3 携带未提交 unsafe 11
+    assert out["n_unresolved"] == 0
+    assert out["extra_requests"] == 3  # wi=2 × 3 歌各消耗 1 次预算
     assert set(out["delayed_commits"]) == {2}
-    assert set(out["unresolved_windows"]) == {3}
+    assert 11 in out["propagated_units"]  # committed 窗传播（P1-2 修复后口径）
 
 
 def test_budget_exhausted_marks_unresolved():
+    windows = [
+        _win(0, [(10, 0.01, 0.01)], set(), "song_x"),
+        _win(1, [(11, 0.99, 0.99)], {11}, "song_x"),
+        # official 0.85 → uncertain → raw 0.01 → accept（延迟，1 次预算）
+        _win(2, [(12, 0.85, 0.01)], set(), "song_x"),
+        # official 0.86 → uncertain → raw 0.50 在 [0.30,0.70) → 循环 2 次耗尽 → unresolved
+        _win(3, [(11, 0.86, 0.50)], {11}, "song_x"),
+    ]
     out = simulate_route(
-        route="multi_view", windows=_series()[0]["windows"], scorer=_FakeScorer(),
+        route="multi_view", windows=windows, scorer=_FakeScorer(),
         t_accept=0.80, t_reject=0.90, t_accept_alt=0.30, t_reject_alt=0.70,
         budget_requests=2)
-    # wi=2 raw 0.01 → accept（延迟）；wi=3 raw 0.50 在 [0.30,0.70) → 循环 2 次耗尽 → unresolved
-    assert out["n_unresolved"] == 1
+    assert out["n_unresolved"] == 1  # wi=3 预算耗尽
     assert out["delayed_commits"] == [2]
     assert out["extra_requests"] == 3  # wi=2 消耗 1 + wi=3 循环 2
 
@@ -119,9 +127,9 @@ def test_reentry_after_reject():
     out = _run("gt_oracle")
     # wi=1 reject（不提交）→ wi=2 accept（重新入轨）
     assert set(out["re_entries"]) == {2}
-    # single_view 下 wi=2/3 均 unresolved（无 accept 转换）→ 无 re-entry
+    # single_view：wi=2 unresolved、wi=3 accept → re-entry 在 wi=3
     sv = _run("single_view")
-    assert sv["re_entries"] == []
+    assert set(sv["re_entries"]) == {3}
 
 
 def test_no_cross_song_false_propagation():
