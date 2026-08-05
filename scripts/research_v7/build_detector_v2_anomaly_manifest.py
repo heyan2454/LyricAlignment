@@ -91,6 +91,8 @@ def _mutation_type(family: str) -> str:
         return "baseline"
     if family in ("crop_late", "crop_early"):
         return "crop"
+    if family.startswith("extra_"):
+        return "extra"  # round13：extra 尾部单位无 canonical id（requests.py 契约）
     return family
 
 

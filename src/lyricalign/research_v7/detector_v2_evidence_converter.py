@@ -231,6 +231,11 @@ def convert_evidence(
             raise ValueError("official row missing global_character_index")
         gci = int(gci)
         if gci not in inv:
+            # extra mutation（round13）：尾部 extra 单位无 canonical id（identity-error
+            # 语义）→ 跳过该行，不进 EvidenceRow（canonical 绑定缺失即非 canonical 单位）；
+            # 其余 mutation 的越界行仍是错误。
+            if str(request_row.get("mutation_type") or "").startswith("extra"):
+                continue
             raise ValueError(
                 f"global_character_index {gci} not covered by canonical_to_local "
                 "(rows must lie in request-local text space)")
