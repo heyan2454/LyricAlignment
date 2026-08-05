@@ -98,6 +98,9 @@ def _row(tl, song, *, wi, text_w0, text_w1, audio_w0, audio_w1, view, family,
          severity, detail, base_row, text_start=None, text_end=None,
          gt_ambiguity=False):
     """构造一行请求；text 窗决定 canonical units，audio 窗决定取音区间（C1 分离）。"""
+    cap = float(tl["row"]["duration_sec"])
+    if audio_w1 >= cap:
+        audio_w1 = cap - 0.001
     units = tl["row"]["canonical_units"]
     cids: list[int] = []
     texts: list[str] = []
