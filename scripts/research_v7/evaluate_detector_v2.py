@@ -126,8 +126,9 @@ def evaluate_m4_song_heldout(*, by_target: dict, frozen_op: dict,
                                       "n_train": len(train_rows), "n_test": len(test_rows)}
             continue
         op_pts = op["operating_points"]
+        mk = op.get("model_kind") or model_kind
         tri, iv = _score_rows(train_rows, test_rows, combo=op["best_combo"],
-                              model_kind=model_kind,
+                              model_kind=mk,
                               t_accept=float(op_pts["T_accept"]),
                               t_reject=float(op_pts["T_reject"]))
         by_family: dict[str, dict] = {}
@@ -135,15 +136,15 @@ def evaluate_m4_song_heldout(*, by_target: dict, frozen_op: dict,
             idx = [i for i, r in enumerate(test_rows) if r.get("family") == fam]
             fam_rows = [test_rows[i] for i in idx]
             tri_f, iv_f = _score_rows(train_rows, fam_rows, combo=op["best_combo"],
-                                      model_kind=model_kind,
+                                      model_kind=mk,
                                       t_accept=float(op_pts["T_accept"]),
                                       t_reject=float(op_pts["T_reject"]))
             by_family[fam] = {"n_units": len(fam_rows), "tri_unit_metrics": tri_f,
                               "interval_metrics": iv_f}
         out["targets"][target] = {
             "n_train": len(train_rows), "n_test": len(test_rows),
-            "combo": op["best_combo"], "T_accept": op_pts["T_accept"],
-            "T_reject": op_pts["T_reject"],
+            "combo": op["best_combo"], "model_kind": mk,
+            "T_accept": op_pts["T_accept"], "T_reject": op_pts["T_reject"],
             "tri_unit_metrics": tri, "interval_metrics": iv, "by_family": by_family}
     return out
 
@@ -161,6 +162,7 @@ def evaluate_family_loo(*, by_target: dict, frozen_op: dict,
                                       "n_train": len(train_rows), "n_test": len(test_rows)}
             continue
         op_pts = op["operating_points"]
+        mk = op.get("model_kind") or model_kind
         by_family: dict[str, dict] = {}
         for fam in sorted({r.get("family") for r in train_rows}):
             loo_train = [r for r in train_rows if r.get("family") != fam]
@@ -169,7 +171,7 @@ def evaluate_family_loo(*, by_target: dict, frozen_op: dict,
                 by_family[fam] = {"n_train": len(loo_train), "n_test": 0}
                 continue
             tri, iv = _score_rows(loo_train, fam_test, combo=op["best_combo"],
-                                  model_kind=model_kind,
+                                  model_kind=mk,
                                   t_accept=float(op_pts["T_accept"]),
                                   t_reject=float(op_pts["T_reject"]))
             by_family[fam] = {
@@ -181,7 +183,8 @@ def evaluate_family_loo(*, by_target: dict, frozen_op: dict,
                 "unsafe_false_accept_rate": tri["unsafe_false_accept_rate"],
                 "tri_unit_metrics": tri, "interval_metrics": iv}
         out["targets"][target] = {"n_train": len(train_rows), "n_test": len(test_rows),
-                                  "combo": op["best_combo"], "by_family": by_family}
+                                  "combo": op["best_combo"], "model_kind": mk,
+                                  "by_family": by_family}
     return out
 
 

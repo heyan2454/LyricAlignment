@@ -176,6 +176,8 @@ def freeze_thresholds(
             break
 
     constraint_violated = False
+    accept_threshold_saved = accept_threshold
+    reject_threshold_saved = reject_threshold
     if min_safe_accept_rate > 0.0:
         # 双约束 trade-off（22 §Phase B）：保护优先后若 safe_accept 不足，向上放宽 T_accept
         # 换取 safe_accept（false_accept 代价随之上升，结果中如实记录）。选点用
@@ -213,7 +215,10 @@ def freeze_thresholds(
         m_tmp = tri_state_unit_metrics(output=output_tmp, unsafe_units=unsafe, safe_units=safe)
         if m_tmp["safe_accept_rate"] < min_safe_accept_rate \
                 or m_tmp["protected_recall"] < min_target:
+            # 契约（docstring）：约束不可满足时回退保护优先点 + constraint_violated
             constraint_violated = True
+            accept_threshold = accept_threshold_saved
+            reject_threshold = reject_threshold_saved
         else:
             constraint_violated = False
 

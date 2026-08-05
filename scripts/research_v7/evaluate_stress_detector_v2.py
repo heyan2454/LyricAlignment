@@ -49,6 +49,7 @@ def _score_stress(by_target: dict, frozen_op: dict) -> dict:
             continue
         op_pts = op["operating_points"]
         combo = op["best_combo"]
+        model_kind = op.get("model_kind") or "standardized_logistic"
         # 全量打分一次 → 三态分布（ambiguous family 用）
         feat_keys = sorted({k for r in train_rows for k in r["features"]})
         idxs = _signal_indices(feat_keys, combo)
@@ -78,7 +79,7 @@ def _score_stress(by_target: dict, frozen_op: dict) -> dict:
             has_gt = any(r["label"] in ("safe", "unsafe") for r in fam_rows)
             if has_gt:
                 tri, iv = _score_rows(train_rows, fam_rows, combo=combo,
-                                      model_kind="standardized_logistic",
+                                      model_kind=model_kind,
                                       t_accept=float(op_pts["T_accept"]),
                                       t_reject=float(op_pts["T_reject"]))
                 by_family[fam] = {
@@ -94,7 +95,8 @@ def _score_stress(by_target: dict, frozen_op: dict) -> dict:
                     "uncertain_rate": st["uncertain"] / n}
         out["targets"][target] = {
             "n_train": len(train_rows), "n_score": len(score_rows),
-            "combo": combo, "T_accept": op_pts["T_accept"], "T_reject": op_pts["T_reject"],
+            "combo": combo, "model_kind": model_kind,
+            "T_accept": op_pts["T_accept"], "T_reject": op_pts["T_reject"],
             "by_family": by_family}
     return out
 

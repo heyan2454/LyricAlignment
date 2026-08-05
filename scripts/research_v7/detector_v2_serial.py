@@ -313,9 +313,11 @@ def _build_series(run_root: Path, *, n_songs: int, max_windows: int,
     items_root = run_root / "items"
 
     if serial_mode:
+        mpath = run_root / "manifests" / "SERIAL_MANIFEST.jsonl"
+        if not mpath.exists():
+            mpath = run_root / "manifests" / "ANOMALY_MANIFEST.jsonl"
         manifest = [json.loads(l) for l in
-                    (run_root / "manifests" / "ANOMALY_MANIFEST.jsonl").read_text(
-                        encoding="utf-8").splitlines() if l.strip()]
+                    mpath.read_text(encoding="utf-8").splitlines() if l.strip()]
         series_out: list[dict] = []
         songs: dict[str, list] = {}
         for m in manifest:

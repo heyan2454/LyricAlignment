@@ -52,23 +52,24 @@ def evaluate_m4_to_mir(*, m4_train: dict, mir_rows: list[dict],
                                       "n_train": len(train_rows), "n_score": len(rows)}
             continue
         op_pts = op["operating_points"]
+        mk = op.get("model_kind") or "standardized_logistic"
         tri, iv = _score_rows(train_rows, rows, combo=op["best_combo"],
-                              model_kind="standardized_logistic",
+                              model_kind=mk,
                               t_accept=float(op_pts["T_accept"]),
                               t_reject=float(op_pts["T_reject"]))
         by_family: dict[str, dict] = {}
         for fam in sorted({r.get("family") for r in rows}):
             fam_rows = [r for r in rows if r.get("family") == fam]
             tri_f, iv_f = _score_rows(train_rows, fam_rows, combo=op["best_combo"],
-                                      model_kind="standardized_logistic",
+                                      model_kind=mk,
                                       t_accept=float(op_pts["T_accept"]),
                                       t_reject=float(op_pts["T_reject"]))
             by_family[fam] = {"n_units": len(fam_rows), "tri_unit_metrics": tri_f,
                               "interval_metrics": iv_f}
         out["targets"][target] = {
             "n_train": len(train_rows), "n_score": len(rows),
-            "combo": op["best_combo"], "T_accept": op_pts["T_accept"],
-            "T_reject": op_pts["T_reject"],
+            "combo": op["best_combo"], "model_kind": mk,
+            "T_accept": op_pts["T_accept"], "T_reject": op_pts["T_reject"],
             "tri_unit_metrics": tri, "interval_metrics": iv, "by_family": by_family}
     return out
 
