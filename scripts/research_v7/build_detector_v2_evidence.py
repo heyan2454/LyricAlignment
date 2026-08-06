@@ -10,6 +10,10 @@ EvidenceRow dict）+ FEATURE_SCHEMA.json（schema 引用，供 feature extractor
 防泄漏：每 row 输出前递归 assert_no_label_leak；任何 GT/mutation/family 字段进入 row →
 该请求整体失败并记入 evidence_v2/failures.jsonl，批次继续。纯 CPU。
 
+--keep-posterior（backlog #4 接线）：透传 converter 的 keep_posterior，在 cross_view 落盘
+posterior_vectors（体积大，默认关闭）。group_posteriors（跨视图全量后验距离）需真实
+forward 采集完整 posterior 后由调用方提供，本 CLI 尚未接线（启用步骤见 22 文档登记）。
+
 用法：
   PYTHONPATH=src python scripts/research_v7/build_detector_v2_evidence.py --run-root <run>
   PYTHONPATH=src python scripts/research_v7/build_detector_v2_evidence.py \
@@ -54,6 +58,8 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--run-root", required=True, help="run 根（含 evidence/ 与 manifests/）")
     p.add_argument("--out", default=None, help="输出目录（默认 <run-root>/evidence_v2）")
+    p.add_argument("--keep-posterior", action="store_true",
+                   help="cross_view 落盘 posterior_vectors（backlog #4，默认关闭）")
     a = p.parse_args(argv)
 
     run = Path(a.run_root)
@@ -92,7 +98,8 @@ def main(argv=None) -> int:
             request_row = req_by_id.get(req_id) if req_id else None
             if request_row is None:
                 raise ValueError(f"no ANOMALY_MANIFEST row for request_id={req_id!r}")
-            rows = convert_evidence(evidence, request_row, multiview_groups=mv_groups)
+            rows = convert_evidence(evidence, request_row, multiview_groups=mv_groups,
+                                    keep_posterior=a.keep_posterior)
             line = json.dumps([r.to_dict() for r in rows], ensure_ascii=False)
             _atomic_write_text(out / f"{f.stem}.jsonl", line + "\n")
             converted += 1

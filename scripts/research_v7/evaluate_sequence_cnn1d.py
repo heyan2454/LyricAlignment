@@ -162,23 +162,54 @@ def operating_point(p_bad: np.ndarray, y: np.ndarray, *, min_safe_accept: float,
             "sweep_top": sorted(sweep, key=lambda s: -s["safe_accept"])[:n_sweep]}
 
 
+def _auc(p: np.ndarray, y: np.ndarray):
+    """Mann-Whitney U 的 AUC（mergesort 稳定秩；并列分数不取平均秩，探索口径足够）。
+    单类返回 None。"""
+    p = np.asarray(p, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+    yb = y == 1.0
+    n_pos = int(yb.sum())
+    n_neg = int((~yb).sum())
+    if n_pos == 0 or n_neg == 0:
+        return None
+    order = np.argsort(p, kind="mergesort")
+    rank = np.empty_like(order)
+    rank[order] = np.arange(1, len(p) + 1)
+    u = float(rank[yb].sum() - n_pos * (n_pos + 1) / 2)
+    return float(u / (n_pos * n_neg))
+
+
 def sequence_compare(seq_train: dict, seq_val: dict, *, epochs: int, kernels: int,
-                     kernel_size: int, lr: float, seed: int) -> tuple[dict, np.ndarray]:
+                     kernel_size: int, lr: float, seed: int,
+                     min_safe_accept: float = 0.05) -> tuple[dict, np.ndarray]:
     """训练 CNN1D（supervision：序列级 any-unsafe 标签，frozen 契约 y=(n,)）。
 
-    val 序列级 p_bad 广播到各窗口（np.repeat → mask 展平），保证窗口级公平对比。
+    val 上做**序列级评价**：p_seq = predict_fn(seq_val["X"]) 直接输出 (n_seq,)，
+    与 seq_val["y"] 序列标签同口径评估 operating_point + Brier + AUC（输出 seq_op，
+    监督语义 = 序列整体 unsafe 与否，不广播）；同时保留窗口级 broadcast
+    p_bad（np.repeat → mask 展平）用于窗口级公平对比。
     """
     from lyricalign.research_v7.detector_v2_models import sequence_model
     model = sequence_model(seq_train["X"], seq_train["y"], kind="cnn1d",
                            kernels=kernels, kernel_size=kernel_size,
                            epochs=epochs, lr=lr, seed=seed)
-    p_seq = model["predict_fn"](seq_val["X"])  # (n_seq,)
-    p_full = np.repeat(np.asarray(p_seq)[:, None], seq_val["T"], axis=1)  # (n_seq, T)
+    p_seq = np.asarray(model["predict_fn"](seq_val["X"]), dtype=float)  # (n_seq,)
+    seq_op = operating_point(p_seq, seq_val["y"], min_safe_accept=min_safe_accept)
+    seq_op["supervision"] = "sequence_any_bad（y=每序列一标签，不广播，直接评估）"
+    seq_op["brier"] = float(np.mean((p_seq - seq_val["y"]) ** 2))
+    seq_op["auc"] = _auc(p_seq, seq_val["y"])
+    seq_op["n_unique_p_seq"] = int(len(np.unique(np.round(p_seq, 6))))
+    seq_op["n_seq"] = int(len(p_seq))
+    seq_op["n_seq_unsafe"] = int(seq_val["y"].sum())
+    seq_op["note"] = ("序列级评价（协议同口径：safe_accept>=min_safe_accept 下最高"
+                      "unsafe 拒绝率），与窗口级 op 并列但监督对象不同，不可互换")
+    p_full = np.repeat(p_seq[:, None], seq_val["T"], axis=1)  # (n_seq, T)
     p_bad = p_full[seq_val["mask"]]
     n_unique = int(len(np.unique(np.round(p_bad, 6))))
     return {"kind": "sequence_cnn1d", "kernels": kernels, "kernel_size": kernel_size,
             "epochs": epochs, "lr": lr, "seed": seed,
             "supervision": "sequence_any_bad + broadcast",
+            "seq_op": seq_op,
             "degenerate": n_unique < 3,
             "n_unique_p_bad": n_unique,
             "note": ("degenerate=True 表示窗口级 p_bad 近似常量（序列级监督广播后"
@@ -200,7 +231,8 @@ def compare_models(*, train_rows: list[dict], val_rows: list[dict], T: int, keys
 
     cn_out, p_cnn = sequence_compare(seq_train, seq_val, epochs=epochs,
                                      kernels=kernels, kernel_size=kernel_size,
-                                     lr=lr, seed=seed)
+                                     lr=lr, seed=seed,
+                                     min_safe_accept=min_safe_accept)
 
     val_aligned = [val_rows[i] for i in seq_val["window_indices"]]
     Xt, yt = window_matrix(train_rows, keys)
@@ -215,11 +247,19 @@ def compare_models(*, train_rows: list[dict], val_rows: list[dict], T: int, keys
         models[kind] = {"kind": kind, "combo": "R+O",
                         "op": operating_point(p_val, yv_flat,
                                               min_safe_accept=min_safe_accept)}
-        if len(p_val) == len(p_cnn):
+        if len(p_val) == len(p_cnn) and np.std(p_cnn) > 1e-9 and np.std(p_val) > 1e-9:
             models[kind]["p_bad_corr_cnn"] = float(np.corrcoef(p_val, p_cnn)[0, 1])
+        else:
+            models[kind]["p_bad_corr_cnn"] = None  # 常量输出时相关性无定义
     models["sequence_cnn1d"]["op"] = operating_point(
         p_cnn, yv_flat, min_safe_accept=min_safe_accept)
-    return {"models": models, "n_train_windows": len(train_rows),
+    seq_op = models["sequence_cnn1d"]["seq_op"]
+    if seq_op.get("feasible") and seq_op.get("protocol", 0.0) > 0.3:
+        decision = "sequence_level_viable"
+    else:
+        decision = "degrade_documented"
+    return {"models": models, "decision": decision,
+            "n_train_windows": len(train_rows),
             "n_val_windows": len(val_rows),
             "n_val_songs": len({r["song_id"] for r in val_rows}),
             "n_train_songs": len({r["song_id"] for r in train_rows})}
@@ -287,6 +327,11 @@ def main() -> int:
             "T": T, "t_quantile": args.t_quantile,
             "padding": "zero_pad_no_mask",
             "n_seq_train": seq_train["n_seq"], "n_seq_val": seq_val["n_seq"],
+            "n_seq_train_unsafe": int(seq_train["y"].sum()),
+            "n_seq_val_unsafe": int(seq_val["y"].sum()),
+            "n_seq_val_safe": int((seq_val["y"] == 0).sum()),
+            "n_seq_val_positive_rate": float(seq_val["y"].mean()),
+            "decision": result["decision"],
             "n_padded_rows_train": seq_train["n_padded_rows"],
             "n_padded_rows_val": seq_val["n_padded_rows"],
             "seq_per_song_train": seq_train["seq_per_song"],
@@ -299,7 +344,11 @@ def main() -> int:
             "train_seconds": round(time.time() - t0, 1),
             "note": ("protocol = unsafe 拒绝率（val 阈值 safe_accept>=min_safe_accept）；"
                      "与冻结三态语义（T_accept/T_reject+uncertain）不同：此处为单阈值"
-                     "二元探索口径，结果不作 Detector V2 frozen 工作点"),
+                     "二元探索口径，结果不作 Detector V2 frozen 工作点；"
+                     "sequence_cnn1d.seq_op 为序列级（y=每序列一标签）同口径评估，"
+                     "decision 由 seq_op.protocol>0.3 决定（backlog #2 三选一决策）；"
+                     "序列级为探索性结论：n_seq_val 极小（见 data.n_seq_val），"
+                     "AUC=1.0 仅指示性"),
         },
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)

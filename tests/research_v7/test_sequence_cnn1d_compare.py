@@ -174,3 +174,39 @@ def test_compare_models_schema():
     assert cnn["loss_first"] >= 0 and cnn["loss_history"]
     assert len(cnn["loss_history"]) == 20
     assert "p_bad_corr_cnn" in res["models"]["small_mlp"]
+    seq_op = cnn["seq_op"]
+    for key in ("supervision", "brier", "auc", "n_unique_p_seq", "n_seq",
+                "n_seq_unsafe", "feasible", "n_safe", "n_unsafe"):
+        assert key in seq_op, f"seq_op missing {key}"
+    assert 0.0 <= seq_op["brier"] <= 1.0
+    assert seq_op["auc"] is None or 0.0 <= seq_op["auc"] <= 1.0
+    assert seq_op["n_unique_p_seq"] >= 1
+    assert seq_op["n_seq"] >= 1
+    assert seq_op["n_seq_unsafe"] == int(seq_op["n_unsafe"])
+    assert seq_op["n_seq"] == seq_op["n_unsafe"] + seq_op["n_safe"]
+    assert res["decision"] in ("sequence_level_viable", "degrade_documented")
+    expected = ("sequence_level_viable" if (seq_op.get("feasible")
+                and seq_op.get("protocol", 0.0) > 0.3) else "degrade_documented")
+    assert res["decision"] == expected
+
+
+def test_compare_models_decision_multisong_val():
+    """decision 字段存在且与 seq_op 一致（多歌 val，seq_op 单类时 degrade）。"""
+    rows = _synthetic_rows()
+    for start, cid in [(2.5, 500), (0.0, 501), (1.2, 502)]:
+        rows.append(_row("val_song_d", start, cid,
+                         "unsafe" if cid == 500 else "safe", rid="req-d"))
+    for r in rows:
+        if r["song_id"] == "val_song_d":
+            r["split"] = "validation"
+    train = [r for r in rows if r["split"] == "train"]
+    val = [r for r in rows if r["split"] == "validation"]
+    res = MOD.compare_models(train_rows=train, val_rows=val, T=4,
+                             keys=MOD.combo_keys(FEAT_KEYS), epochs=15,
+                             kernels=2, kernel_size=3, lr=0.1, seed=0,
+                             min_safe_accept=0.05)
+    seq_op = res["models"]["sequence_cnn1d"]["seq_op"]
+    expected = ("sequence_level_viable" if (seq_op.get("feasible")
+                and seq_op.get("protocol", 0.0) > 0.3) else "degrade_documented")
+    assert res["decision"] == expected
+    assert not seq_op["feasible"] or len(seq_op.get("sweep_top", [])) > 0

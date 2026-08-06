@@ -396,10 +396,22 @@ def _cross_view_features(cross_view: Mapping | None) -> dict[str, float | None]:
     if posterior_distance is None:
         vectors = cross_view.get("posterior_vectors")
         if isinstance(vectors, (list, tuple)) and len(vectors) >= 2:
-            try:
-                cleaned = [[float(x) for x in v] for v in vectors]
-            except (TypeError, ValueError):
-                cleaned = []
+            def _extract_vec(v):
+                """dict 条目（backlog #4 格式）取双侧均值，flat list（历史格式）按原样。"""
+                if isinstance(v, Mapping):
+                    st = v.get("start")
+                    en = v.get("end")
+                    def _fl(x):
+                        return [float(xx) for xx in x] if x else None
+                    s, e = _fl(st), _fl(en)
+                    if s is not None and e is not None and len(s) == len(e):
+                        return [(a + b) / 2.0 for a, b in zip(s, e)]
+                    return s or e
+                if isinstance(v, (list, tuple)):
+                    return [float(x) for x in v]
+                return None
+            cleaned = [vec for vec in (_extract_vec(v) for v in vectors)
+                       if vec is not None]
             if all(len(v) > 0 and len(v) == len(cleaned[0]) for v in cleaned):
                 distances = [
                     math.sqrt(sum((a - b) ** 2 for a, b in zip(v1, v2)))

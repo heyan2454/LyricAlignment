@@ -23,6 +23,7 @@ run_behavior_suite --real / real_executor 的 attempt.decoder_outputs 旧 schema
 """
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping, Sequence
 
 from .detector_v2_evidence import (
@@ -34,6 +35,10 @@ from .detector_v2_evidence import (
 )
 
 SCHEMA_VERSION = "research_v7_detector_v2_evidence_v1"
+
+POSTERIOR_REASON_INSUFFICIENT_VIEWS = "insufficient_posterior_views"
+POSTERIOR_REASON_TOPK_ONLY = "topk_only_full_posterior_unavailable"
+POSTERIOR_REASON_CLASS_SPACE = "class_space_mismatch"
 
 
 def _to_float(v: Any) -> float | None:
@@ -160,6 +165,74 @@ def _cross_view_for(groups: Sequence[dict], canonical_unit_id: int) -> dict:
     }
 
 
+def _to_float_list(v: Any) -> list[float] | None:
+    if v is None:
+        return None
+    try:
+        return [float(x) for x in v]
+    except (TypeError, ValueError):
+        return None
+
+
+def _pairwise_l2_mean(vectors: Sequence[list[float]]) -> float | None:
+    """≥2 个等长向量的 mean pairwise L2（跨视图 posterior 距离，backlog #4）。"""
+    n = len(vectors)
+    if n < 2:
+        return None
+    total = 0.0
+    pairs = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            total += math.sqrt(sum((a - b) ** 2 for a, b in zip(vectors[i], vectors[j])))
+            pairs += 1
+    return total / pairs if pairs else None
+
+
+def _cross_view_posterior(base: dict, covered_view_ids: Sequence[str],
+                          group_posteriors: Mapping[str, Mapping[int, Mapping[str, Any]]],
+                          canonical_unit_id: int, keep_posterior: bool) -> dict:
+    """增强 cross_view：同 unit 多视图全量 posterior → distance/vectors（backlog #4）。
+
+    group_posteriors: dict[request_id, dict[canonical_unit_id, {"start": [...], "end": [...]}]]，
+    键与 MULTIVIEW 组的 views/unit_covered_by 一致（调用方按各请求的 canonical_to_local
+    预解析）。默认（keep_posterior=False）只写 posterior_distance；不满足条件 →
+    distance=None + posterior_reason。非组内 unit 保持现状。
+    """
+    if not group_posteriors:
+        return base
+    if len(covered_view_ids) < 2:
+        return {**base, "posterior_distance": None,
+                "posterior_reason": POSTERIOR_REASON_INSUFFICIENT_VIEWS}
+    vectors: list[dict] = []
+    for vid in covered_view_ids:
+        unit_p = (group_posteriors.get(vid) or {}).get(canonical_unit_id)
+        if not unit_p:
+            continue
+        st = _to_float_list(unit_p.get("start"))
+        en = _to_float_list(unit_p.get("end"))
+        if st is not None and en is not None:
+            vectors.append({"view_id": vid, "start": st, "end": en})
+    if len(vectors) < 2:
+        out = {**base, "posterior_distance": None,
+               "posterior_reason": POSTERIOR_REASON_TOPK_ONLY}
+    elif not all(len(v["start"]) == len(vectors[0]["start"])
+                 and len(v["end"]) == len(vectors[0]["end"]) for v in vectors):
+        out = {**base, "posterior_distance": None,
+               "posterior_reason": POSTERIOR_REASON_CLASS_SPACE}
+    else:
+        sd = _pairwise_l2_mean([v["start"] for v in vectors])
+        ed = _pairwise_l2_mean([v["end"] for v in vectors])
+        if sd is None or ed is None:
+            out = {**base, "posterior_distance": None,
+                   "posterior_reason": POSTERIOR_REASON_TOPK_ONLY}
+        else:
+            out = {**base, "posterior_distance": round((sd + ed) / 2.0, 6),
+                   "posterior_reason": None}
+    if keep_posterior:
+        out = {**out, "posterior_vectors": vectors}
+    return out
+
+
 def _recursive_leak_check(value: Any) -> None:
     """递归 assert_no_label_leak（顶层 + 任意嵌套 dict；hidden/cross_view 是透传风险点）。"""
     if isinstance(value, Mapping):
@@ -176,12 +249,18 @@ def convert_evidence(
     request_row: Mapping[str, Any],
     *,
     multiview_groups: Sequence[Mapping[str, Any]] | None = None,
+    keep_posterior: bool = False,
+    group_posteriors: Mapping[str, Mapping[int, Mapping[str, Any]]] | None = None,
 ) -> list[EvidenceRow]:
     """旧 schema evidence json + REQUESTS 行 → EvidenceRow v2 列表。
 
     request_row 必须含 canonical_to_local、view_id、hidden_schema（canonical_to_local 缺失 raise）。
     multiview_groups：MULTIVIEW_MANIFEST 组（pair_id/views/canonical_ids），
     含本请求的组用于填充 cross_view。
+    keep_posterior/group_posteriors（backlog #4）：group_posteriors 为
+    {view_id: {canonical_unit_id: {"start": [...], "end": [...]}}} 的全量后验（调用方
+    预解析）；组内同 unit 多视图时写 cross_view.posterior_distance（mean pairwise L2），
+    keep_posterior=True 额外写 posterior_vectors（体积大，默认不落盘）。
     """
     attempt = evidence_json.get("attempt")
     if not isinstance(attempt, Mapping):
@@ -239,6 +318,7 @@ def convert_evidence(
             raise ValueError(
                 f"global_character_index {gci} not covered by canonical_to_local "
                 "(rows must lie in request-local text space)")
+        cv_base = _cross_view_for(groups, inv[gci])
         er = EvidenceRow(
             request_identity=request_identity,
             view_id=view_id,
@@ -246,7 +326,9 @@ def convert_evidence(
             raw=_raw_view(row, gci, raw_by_index, post_by_index),
             official=_official_view(row, repair_by_index.get(gci), trace_available),
             hidden=hidden,
-            cross_view=_cross_view_for(groups, inv[gci]),
+            cross_view=_cross_view_posterior(
+                cv_base, list(cv_base.get("unit_covered_by") or []),
+                group_posteriors or {}, inv[gci], keep_posterior),
         )
         _recursive_leak_check(er.to_dict())
         out.append(er)
