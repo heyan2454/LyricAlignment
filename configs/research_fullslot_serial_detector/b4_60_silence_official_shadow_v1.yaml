@@ -1,0 +1,61 @@
+# Declarative frozen profile. Not executable until an implementation agent wires it
+# into the pipeline and exports a resolved profile with the required shadow assertions.
+profile_id: b4-60-silence-official-shadow-v1
+schema_version: fullslot_serial_detector_profile_v1
+status: declarative_not_yet_wired
+
+baseline:
+  variant: B4_60_silence_official
+  core_sec: 60.0
+  left_context_sec: 10.0
+  right_context_sec: 10.0
+
+  decoder_kind: official
+  serial_control_decoder_kind: same
+
+  silence_aware_window_plan: true
+  strict_silence_boundary_plan: false
+  compress_silence_audio: false
+  skip_silent_windows: true
+
+  silence_boundary_min_sec: 0.8
+  strong_silence_anchor_sec: 1.5
+  silence_boundary_search_sec: 6.0
+  leading_silence_min_sec: 2.0
+  tail_min_core_sec: 18.0
+  minimum_core_sec: 12.0
+
+  silent_active_ratio_max: 0.01
+  silent_peak_margin_db: 3.0
+  silent_min_sustained_sec: 0.40
+
+  startup_vocal_preroll_sec: 2.0
+  startup_minimum_forward_characters: 24
+  minimum_forward_characters: 64
+  future_character_ratio: 1.35
+  future_line_padding: 1
+  max_candidate_expansions: 4
+  timestamp_segment_sec: 0.08
+  next_input_backtrack_units: 0
+
+shadow_realign:
+  enabled: true
+  mode: shadow_only
+  actual_writeback_enabled: false
+
+required_assertions:
+  actual_writeback_count_equals: 0
+  baseline_alignment_hash_unchanged: true
+  baseline_trajectory_hash_unchanged: true
+  baseline_committed_prefix_hash_unchanged: true
+  baseline_cursor_trace_hash_unchanged: true
+
+runtime_accounting:
+  separate_baseline_and_shadow: true
+  required_fields:
+    - baseline_forward_count
+    - baseline_wall_time
+    - shadow_forward_count
+    - shadow_wall_time
+    - total_forward_count
+    - total_wall_time

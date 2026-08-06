@@ -4,19 +4,18 @@
 
 ## 当前阅读顺序
 
-1. `18_DETECTOR_V2_EXPERIMENT_PLAN.md`：Detector V2 冻结实验设计；
-2. `19_DETECTOR_V2_AGENT_CONTRACT.md`：当前 agent 执行合同与完成定义；
-3. `20_DETECTOR_V2_IMPLEMENTATION_BLUEPRINT.md`：文件级实现蓝图、schema、测试与 gate；
-4. `21_PREVIOUS_DETECTOR_RESULT_CORRECTIONS.md`：旧 detector 指标和结论的纠偏边界；
-5. `22_DETECTOR_V2_EXPERIMENT_RESULT_REVIEW_20260806.md`：**当前实验结果复审、P0/P1 整改与重新验收清单**；
-6. `17_IMPLEMENTATION_REVIEW_20260805.md`：上一轮 long-slot/region assessor 实现审查，仅作历史实现追溯；
-7. `13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md`、`14_AGENT_EXECUTION_CONTRACT_12H.md`、`15_LONG_SLOT_REGION_ASSESSOR_IMPLEMENTATION_BLUEPRINT.md`：上一轮设计与合同；
-8. `../sessions/20260804_align_behavior_slot_region_assessor_archive.md`：用户评论、结果解释与设计演化；
-9. `11_STAGE_B_FORMAL_REPORT.md`、`12_COMPLETION_AUDIT.md`：Stage B 历史结果与完成审计；
-10. `01_USER_DECISIONS_AND_RATIONALE.md`、`02_PROJECT_RESEARCH_LEDGER.md`：此前决策与研究台账；
-11. `03_QWEN_TECHNICAL_REPORT_IMPLICATIONS.md`、`04_ARCHITECTURE_OPTIONS_AND_CURRENT_DIRECTION.md`：技术背景与架构路线；
-12. `05_MUTATION_AND_NO_MATCH_SPEC.md`、`06_HISTORICAL_REPAIR_SCOPE.md`、`07_DEMO_AND_COLLABORATOR_SHARE_PREPARATION.md`：专题规范；
-13. `08_AGENT_HANDOFF.md`：更早阶段 handoff，仅供历史对照。
+1. `13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md`：**当前冻结的下一阶段实验计划**；
+2. `14_AGENT_EXECUTION_CONTRACT_12H.md`：当前 agent 执行合同；
+3. `15_LONG_SLOT_REGION_ASSESSOR_IMPLEMENTATION_BLUEPRINT.md`：交给实现 agent 的文件级实现蓝图、JSON 契约、测试与 gate；
+4. `17_IMPLEMENTATION_REVIEW_20260805.md`：**当前实现审查、P0 整改清单与 formal gate 结论**；
+5. `../sessions/20260804_align_behavior_slot_region_assessor_archive.md`：用户评论、结果解释与设计演化；
+6. `11_STAGE_B_FORMAL_REPORT.md`：当前 Stage B 自动实验结果真值；
+7. `12_COMPLETION_AUDIT.md`：当前完成状态、不可验证项与人工结果导入缺口；
+8. `01_USER_DECISIONS_AND_RATIONALE.md`：此前用户意见与取舍；
+9. `02_PROJECT_RESEARCH_LEDGER.md`：项目主要实验、猜想、结果和去留；
+10. `03_QWEN_TECHNICAL_REPORT_IMPLICATIONS.md`、`04_ARCHITECTURE_OPTIONS_AND_CURRENT_DIRECTION.md`：技术背景与架构路线；
+11. `05_MUTATION_AND_NO_MATCH_SPEC.md`、`06_HISTORICAL_REPAIR_SCOPE.md`、`07_DEMO_AND_COLLABORATOR_SHARE_PREPARATION.md`：专题规范；
+12. `08_AGENT_HANDOFF.md`：上一阶段 handoff，仅供历史实现对照。
 
 ## 文档状态
 
@@ -31,12 +30,7 @@
 | `13_LONG_SLOT_REGION_ASSESSOR_EXPERIMENT_PLAN.md` | 当前冻结实验计划 |
 | `14_AGENT_EXECUTION_CONTRACT_12H.md` | 当前 agent 执行入口 |
 | `15_LONG_SLOT_REGION_ASSESSOR_IMPLEMENTATION_BLUEPRINT.md` | 当前实现 agent 的工程交接入口；不包含 formal 结论 |
-| `17_IMPLEMENTATION_REVIEW_20260805.md` | 上一轮 long-slot/region assessor 独立复审；仅作历史实现追溯 |
-| `18_DETECTOR_V2_EXPERIMENT_PLAN.md` | Detector V2 当前冻结实验设计 |
-| `19_DETECTOR_V2_AGENT_CONTRACT.md` | Detector V2 当前执行合同与完成定义 |
-| `20_DETECTOR_V2_IMPLEMENTATION_BLUEPRINT.md` | Detector V2 当前工程实现蓝图 |
-| `21_PREVIOUS_DETECTOR_RESULT_CORRECTIONS.md` | 上一轮 detector 结果纠偏与可声明边界 |
-| `22_DETECTOR_V2_EXPERIMENT_RESULT_REVIEW_20260806.md` | 当前实验结果复审；标签、工作点、切分、模型阶梯与 serial 的整改入口 |
+| `17_IMPLEMENTATION_REVIEW_20260805.md` | 当前实现的独立复审；P0 未关闭前不允许 real smoke/pilot/formal |
 
 ## 当前冻结判断
 

@@ -1,0 +1,189 @@
+{
+  "schema_version": "detector_v2_coverage_v1",
+  "status": "final",
+  "gates": {
+    "gt_label_audit": {
+      "status": "complete",
+      "n_source_songs": 419,
+      "artifact": "preflight/GT_LABEL_AUDIT.json",
+      "note": "20298 rows, source-song split 251/83/85"
+    },
+    "request_identity_audit": {
+      "status": "complete",
+      "n_requests": 1776,
+      "artifact": "run1/RUN_MANIFEST.json",
+      "note": "740 (M4) + 974 (MIR) + 62 (stress) requests, all 0 failed"
+    },
+    "hidden_extraction_audit": {
+      "status": "blocked",
+      "reason": "hidden.available=False in all evidence; hidden schema never populated (19 §7 explicit H gate failure)",
+      "note": "H conclusions unavailable"
+    }
+  },
+  "targets": {
+    "raw": {
+      "song_heldout": {
+        "status": "complete",
+        "n_unsafe_units": 4900,
+        "artifact": "run1/M4_SONG_HELDOUT.json",
+        "note": "M4 heldout raw: n_test=5300, reject_recall 0.909, protected 0.999, interval@75 0.948"
+      }
+    },
+    "official": {
+      "song_heldout": {
+        "status": "complete",
+        "n_unsafe_units": 4904,
+        "artifact": "run1/M4_SONG_HELDOUT.json",
+        "note": "M4 heldout official: n_test=5300 (unsafe 4904/safe 396), reject_recall 0.883, protected 1.000, interval@75 0.990"
+      }
+    }
+  },
+  "families": {
+    "crop_shift": {
+      "status": "complete",
+      "n_requests": 230,
+      "artifact": "run1/M4_SONG_HELDOUT.json",
+      "note": "crop_early LOO 0.641 (weakest) + crop_late; protected≈1.0; MIR cross 0.881"
+    },
+    "cursor_shift": {
+      "status": "complete",
+      "n_requests": 120,
+      "artifact": "run1/M4_SONG_HELDOUT.json",
+      "note": "MIR cross 0.821"
+    },
+    "end_early": {
+      "status": "complete",
+      "n_requests": 150,
+      "artifact": "run1/FAMILY_LOO.json",
+      "note": "LOO 0.957 strongest; MIR cross 0.926"
+    },
+    "repeated_section": {
+      "status": "complete",
+      "n_requests": 30,
+      "artifact": "stress_run/STRESS_EVAL.json",
+      "note": "real injected cohort; zero-accept"
+    },
+    "acoustic_difficulty": {
+      "status": "complete",
+      "n_unsafe_units": 436,
+      "artifact": "stress_run/STRESS_EVAL.json",
+      "note": "location marker (text unchanged -> real GT labels): reject 0.954/0.959, protected 1.000, safe_acc 0"
+    },
+    "slot_multiview": {
+      "status": "complete",
+      "n_requests": 81,
+      "artifact": "mir_run/RUN_MANIFEST.json",
+      "note": "30 M4 + 51 MIR multiview groups (n_requests=81), full/sparse/overlap in identity"
+    }
+  },
+  "stress": {
+    "replace_1_2_4_8": {
+      "status": "complete",
+      "n_requests": 16,
+      "artifact": "stress_run/STRESS_EVAL.json",
+      "note": "replace 1/2/4/8 + missing 1/2/4/8: accept_rate=0.000, reject 0.92-0.95"
+    },
+    "missing_extra_stress": {
+      "status": "partial",
+      "note": "missing 1/2/4/8 done (zero-accept); extra cohort not run in detector line (backlog)"
+    }
+  },
+  "generalization": {
+    "family_loo": {
+      "status": "complete",
+      "n_unsafe_units": 4904,
+      "artifact": "run1/FAMILY_LOO.json",
+      "note": "official test unsafe 4904; all families protected≈1.0; end_early 0.957 best, crop_early 0.641 weakest (n_test=64)"
+    },
+    "m4_to_mir_by_family": {
+      "status": "complete",
+      "n_unsafe_units": 14988,
+      "artifact": "mir_run/M4_TO_MIR_BY_FAMILY.json",
+      "note": "official reject 0.894, protected 1.000, 0 false-accept; weak_labeled_qwen_fa, not human GT"
+    }
+  },
+  "metrics": {
+    "tristate_unit": {
+      "status": "complete",
+      "n_unsafe_units": 4904,
+      "artifact": "run1/M4_SONG_HELDOUT.json",
+      "note": "tri_state_unit_metrics everywhere"
+    },
+    "interval_75_100": {
+      "status": "complete",
+      "n_error_intervals": 355,
+      "artifact": "mir_run/M4_TO_MIR_BY_FAMILY.json",
+      "note": "interval@75 0.948/0.990; long fully-accepted 0.0"
+    }
+  },
+  "ablations": {
+    "H": {
+      "status": "blocked",
+      "reason": "hidden extraction gate failed (no hidden signals); R/O formal continues (19 §7)",
+      "note": "5 H-combos auto-blocked in run_ablation"
+    },
+    "R": {
+      "status": "complete",
+      "n_unsafe_units": 49132,
+      "artifact": "run1/MODEL_SELECTION.json",
+      "note": "R combo run: best O (T_accept 0.835/0.845, T_reject 0.865/0.870)"
+    },
+    "O": {
+      "status": "complete",
+      "n_unsafe_units": 49132,
+      "artifact": "run1/MODEL_SELECTION.json",
+      "note": "O combo run: best O (T_accept 0.835/0.845, T_reject 0.865/0.870)"
+    },
+    "H_R": {
+      "status": "blocked",
+      "reason": "contains H while hidden gate blocked (H_R)"
+    },
+    "H_O": {
+      "status": "blocked",
+      "reason": "contains H while hidden gate blocked (H_O)"
+    },
+    "R_O": {
+      "status": "complete",
+      "n_unsafe_units": 49132,
+      "artifact": "run1/MODEL_SELECTION.json",
+      "note": "R_O combo run: best O (T_accept 0.835/0.845, T_reject 0.865/0.870)"
+    },
+    "H_R_O": {
+      "status": "blocked",
+      "reason": "contains H while hidden gate blocked (H_R_O)"
+    },
+    "H_R_O_V": {
+      "status": "blocked",
+      "reason": "contains H while hidden gate blocked (H_R_O_V)"
+    }
+  },
+  "views": {
+    "single": {
+      "status": "complete",
+      "n_requests": 740,
+      "artifact": "run1/SERIAL_CLOSED_LOOP.json",
+      "note": "official-only route in serial + heldout"
+    },
+    "multi": {
+      "status": "complete",
+      "n_requests": 51,
+      "artifact": "mir_run/RUN_MANIFEST.json",
+      "note": "multiview groups + serial multi_view budget verification"
+    }
+  },
+  "serial": {
+    "closed_loop": {
+      "status": "complete",
+      "n_requests": 740,
+      "artifact": "run1/SERIAL_CLOSED_LOOP.json",
+      "note": "all_commit 0.75 error vs detector 0.0; zero false commit"
+    }
+  },
+  "_validation": {
+    "ok": true,
+    "errors": [],
+    "warnings": [
+      "hidden gate blocked; R/O formal may continue but H conclusions are unavailable"
+    ]
+  }
+}
