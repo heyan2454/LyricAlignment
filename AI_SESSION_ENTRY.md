@@ -325,3 +325,19 @@ evaluate_stress_detector_v2、analyze_pbad_calibration、cleanup_run_cache。
   （audit 全为 official target）已修（label_target 声明 + 优先 official）；P2 修复：
   max-songs 空集、T_accept 缺失防御、song_id 缺省禁止降级、ECE bin0 边界、死代码、
   degenerate 标注、created_at。23 文档已回填结论。L2 463 passed。
+
+## 2026-08-06 总体 review（2×并行，对照 18/19/20/21/22/23）
+- P0：无。主线路唯一硬性未达标 = serial propagation=0（22 item 10，已登记
+  detector_v2_completed=false / partial_exploratory=true，coverage 如实 partial）。
+- 已处理：① CONCLUSION key_results.family_loo 数字 0.832/0.485 与产物不符
+  （FAMILY_LOO.json 真实值 crop_late 1.0/safe 0.0817、end_late 1.0/safe 0.0952）
+  → 已修正 CONCLUSION（旧数字仅存于旧 run1/mir_run manifest，21 纠偏已弃用）；
+  ② exploration 三产物未入证据包 → 已生成 EVIDENCE_PACK_20260806_EXPLORATION.tar
+  （6.3MB：3 JSON + 3 脚本 + 修正后 CONCLUSION）；③ audit 补 created_at。
+- 确认无 P1：旧路径残留仅 build_detector_v2_anomaly_manifest.py docstring 引用
+  formal_manifest_v3（该目录保留中，引用合法）。
+- 待办 backlog：重冻结阈值（isotonic 后，safe_accept 优化）、序列模型三选一决策
+  （detector_v2_models.py:423 未实现，需实现或显式降级）、F3 posterior 管线采集、
+  stress 特征工程、19 §6 三交付物缺失登记（PRECHECK_DETECTOR_V2/HIDDEN_
+  EXTRACTION_AUDIT/REQUEST_IDENTITY_AUDIT，22 复审以等价证据通过未登记）、
+  serial 传播可观测 → 移交 research_fullslot_serial_detector 新阶段。
