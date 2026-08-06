@@ -14,13 +14,32 @@ split 上运行。
    在 accept 区间内推进 cursor 而非窗级二元。
 2. **p_bad 校准 + uncertain 成本模型**：性价比最高（纯 CPU）。基元已有：
    v6 weighted_isotonic（decoders.py L208）、hidden_linear_probe 的 sigmoid 校准
-   （detector_v2_models.py L376）。脚本 analyze_pbad_calibration.py 已写（Brier/ECE/
-   reliability diagram）。风险：val 仅 5 歌，校准曲线需 song-grouped 交叉验证。
+   （detector_v2_models.py L376）。**已探索（2026-08-06）**：`analyze_pbad_calibration_sgcv.py`
+   实现 song-grouped 5 折 CV（折内 train 拟合 isotonic/temperature）→ 20 歌 CV：
+   raw ECE 0.257±0.012 → isotonic **0.0197±0.0040**（official 0.0205±0.0043），
+   temperature 差（0.14 量级）——isotonic 跨歌稳健，单次 5 歌 val（0.013）有轻度
+   乐观偏置但量级不变。cost model（C1=10/C2=5/C3=1）：uncertain 带无存在价值，
+   最优审查阈值 = T_reject（总代价 raw 23285→9375）；只有 C3 相对 C1 上升时才值得
+   保留审查层。产物：`runs/research_v7_detector_v2/exploration/sgcv_calibration.json`。
 3. **CNN1D 序列模型**（light_merge 替代）：sequence_model 已完整实现（numpy 1D CNN）
-   未接入公平比较；边界一致性由卷积窗口隐式建模。需 song-grouped 序列数据集
-   （canonical 序、定长 T）。
+   **已接入公平比较（2026-08-06）**：`evaluate_sequence_cnn1d.py` 构造 song-grouped
+   序列数据集（歌内 canonical 序 = official.start_sec 升序，T=90% 分位截断 4465、
+   尾填 0 + mask，序列标签 = 序列内 any-unsafe，frozen 契约 y=(n,)）；真实 run2 上
+   CNN1D 收敛（loss 1.60→0.10）但窗口级 broadcast 评价 **degenerate（protocol=0，
+   small_mlp 0.798 / GBDT 0.0）**——序列级 any-unsafe 监督广播到窗口级无区分度，
+   需序列级评价（整体窗口段预测）或逐窗口监督（改 sequence_model 契约）才有意义；
+   且边界一致性未被此设计捕获。产物：
+   `runs/research_v7_detector_v2/exploration/sequence_cnn1d_compare.json`（review
+   后行序对齐：window_indices/y_window 保证与基线同序评价）。
 4. 自监督 cross-view 一致性（cv_posterior_distance vs label spearman）——免费信号，
-   服务标签审计。
+   服务标签审计。**已审计（2026-08-06）：结构性缺失**——`audit_cross_view_signal.py`
+   全量核对 run2（134538 行）：cross_view 仅成员元数据（非空 14441 行，无
+   posterior_distance/posterior_vectors 字段），evidence 不存完整 posterior（仅
+   raw.topk 截断），每 request 单 view（full/overlap 无法同单位共地）→ F3 的 None
+   根因确认，**离线不可重算**；复活需请求管线在 MULTIVIEW 组内显式计算
+   mean pairwise posterior L2 距离并落盘。产物：
+   `runs/research_v7_detector_v2/exploration/cross_view_audit.json`（label 口径
+   = official target，join 键 (request_identity, view_id, canonical_unit_id)）。
 5. 多语言（数据缺口最大，需新数据立项）；streaming（回放式 harness 与 serial
    共享基建，VAD 接入点在 window_planning 静音 region）。
 

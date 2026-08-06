@@ -1,5 +1,44 @@
 # AI Session Entry
 
+## 2026-08-06 Full-slot Serial Detector Independent Stage Override
+
+The active next-phase planning entry is independent from the research-v7 numbering chain:
+
+```text
+docs/research_fullslot_serial_detector/README.md
+docs/research_fullslot_serial_detector/01_EXPERIMENT_PLAN.md
+docs/research_fullslot_serial_detector/02_B4_60_SILENCE_OFFICIAL_SHADOW_V1.md
+docs/research_fullslot_serial_detector/03_AGENT_IMPLEMENTATION_PLAN.md
+docs/sessions/20260806_fullslot_serial_detector_discussion_record.md
+```
+
+Upstream Detector V2 evidence and corrections remain under `docs/research_v7_align_behavior/` and the
+2026-08-06 Detector V2 evidence pack. They are referenced, not extended with more v7 document numbers.
+
+Current stage:
+
+```text
+close v7 reporting/evaluator/serial audit defects
+-> freeze full-slot 10s-left + 60s-core + 10s-right silence-snap Base
+-> run hard serial and stable-window clean baselines
+-> create sufficient carried-prefix / provisional / repeated-occurrence cumulative errors
+-> compare consistent whole-window rollback W and local-gap realign L
+-> run mandatory SA60-primary and R95-primary; add joint point only when feasible
+-> evaluate raw/hidden unit and sequence-derived evidence
+-> run M4 formal, fixed M4->MIR transfer and all-discovered Test Demo objective regression
+-> keep B4-60-silence-official-shadow-v1 as zero-writeback historical control
+```
+
+Hard requirements:
+
+- old detector experiments do not continue;
+- audio and lyrics remain correctly corresponding in the primary repeated-section experiments;
+- a mutation attempt is not enough: pre-registered effective cumulative-error quotas must be met or bounded-budget insufficiency must be reported with the full attempt denominator;
+- `window_decision`, route planning and simulation must have one consistent execution semantics;
+- Test Demo statistics feed automated regression gates and case mining, not merely later manual viewing;
+- decoder ablations remain separate from route/threshold/family matrices;
+- SA60 and R95 experiments both run even if one joint double-threshold operating point does not exist.
+
 ## 2026-08-05 Detector V2 Current Stage Override
 
 The active planning entry is now:
@@ -270,3 +309,19 @@ evaluate_stress_detector_v2、analyze_pbad_calibration、cleanup_run_cache。
 - 包结构：00_MASTER_CONCLUSION（最终结论，主线+自由探索）/ 01_mainline（核心产物+展开表）/
   02_exploration（F1 校准+F3 负结果+方向摘要）/ 03_reproduction（复现+环境+代码清单）/
   04_docs（22/23 文档+session entry）/ 05_samples（LABELS 260/组抽样、evidence 行、GT+timeline 抽样）
+
+## 2026-08-06 探索批次（23 方向 2/3/4，子 agent 并行 + 2×review）
+- 方向 2 SGCV 校准+成本模型（analyze_pbad_calibration_sgcv.py）：20 歌 5 折 CV raw ECE
+  0.257±0.012 → isotonic 0.0197±0.0040（official 0.0205±0.0043）；temperature 差；
+  单次 5 歌 val 有轻度乐观偏置（0.013）；cost model：C3<<C1 时 uncertain 带无价值，
+  最优审查阈值 = T_reject。产物 exploration/sgcv_calibration.json。
+- 方向 3 CNN1D 公平比较（evaluate_sequence_cnn1d.py）：T=4465 序列数据集 + 三方对比；
+  CNN1D 收敛但窗口级广播评价 degenerate（protocol=0，small_mlp 0.798 领先）→ 探索性
+  负结论（序列级 any-unsafe 监督广播无区分度，需序列级评价或逐窗口监督）。
+- 方向 4 cross-view 审计（audit_cross_view_signal.py）：**结构性缺失**（134538 行 0 行
+  posterior；request 单 view；离线不可重算）→ F3 None 根因确认，复活需请求管线落盘。
+- review 结果：2×并行（代码/契约 + 数据/接线）→ P0 无；P1-1 行序错位（CNN1D 窗口
+  指标口径）已修（window_indices/y_window 对齐 + 2 个回归测试）；P1-1 label 口径
+  （audit 全为 official target）已修（label_target 声明 + 优先 official）；P2 修复：
+  max-songs 空集、T_accept 缺失防御、song_id 缺省禁止降级、ECE bin0 边界、死代码、
+  degenerate 标注、created_at。23 文档已回填结论。L2 463 passed。
