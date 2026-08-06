@@ -263,3 +263,10 @@ evaluate_stress_detector_v2、analyze_pbad_calibration、cleanup_run_cache。
 3. stress 弱检测：窗口级文本扰动的特征工程（repeat 已稍强）
 4. F3 需 multiview posterior 数据采集（forward 保存）
 5. explore 方向报告 → docs/23_FUTURE_DIRECTIONS.md（repair 闭环 > 校准 > CNN1D）
+
+## 证据包（2026-08-06 打包完成）
+- 未压缩 3.4MB：`/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/EVIDENCE_PACK_20260806.tar`
+- 压缩 345KB：`/tmp/opencode/detector_v2_evidence_pack_20260806.tar.gz`
+- 包结构：00_MASTER_CONCLUSION（最终结论，主线+自由探索）/ 01_mainline（核心产物+展开表）/
+  02_exploration（F1 校准+F3 负结果+方向摘要）/ 03_reproduction（复现+环境+代码清单）/
+  04_docs（22/23 文档+session entry）/ 05_samples（LABELS 260/组抽样、evidence 行、GT+timeline 抽样）
