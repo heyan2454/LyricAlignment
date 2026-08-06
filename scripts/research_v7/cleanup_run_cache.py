@@ -27,12 +27,16 @@ CACHE_DIRS = ("items", "evidence", "cached")
 def plan(runs: list[Path]) -> list[tuple[Path, int]]:
     plan_items: list[tuple[Path, int]] = []
     for run in runs:
+        run = Path(run).expanduser().resolve()
+        if run == run.anchor:
+            print(f"refuse root path: {run}", file=sys.stderr)
+            continue
         if not run.is_dir():
             print(f"skip (not dir): {run}", file=sys.stderr)
             continue
         for name in CACHE_DIRS:
             p = run / name
-            if not p.is_dir():
+            if not p.is_dir() or p.is_symlink():
                 continue
             size = sum(f.stat().st_size for f in p.rglob("*") if f.is_file())
             plan_items.append((p, size))
@@ -55,9 +59,18 @@ def main(argv: list[str] | None = None) -> int:
                                 for p, s in items],
                       "total_MB": round(total / 1e6, 1)}))
     if a.apply:
+        removed, failed = [], []
         for p, s in items:
-            shutil.rmtree(p)
-            print(f"removed {p} ({round(s / 1e6, 1)} MB)")
+            try:
+                shutil.rmtree(p)
+                removed.append((str(p), s))
+                print(f"removed {p} ({round(s / 1e6, 1)} MB)")
+            except OSError as e:  # 权限/IO 失败不中断其余清理
+                failed.append((str(p), str(e)))
+                print(f"FAILED {p}: {e}", file=sys.stderr)
+        print(json_dumps({"ok": not failed, "dry_run": False,
+                          "removed": [{"path": p, "MB": round(s / 1e6, 1)} for p, s in removed],
+                          "failed": failed}))
     return 0
 
 
