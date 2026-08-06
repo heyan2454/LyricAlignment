@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 _SCHEMA = "cross_view_audit_v1"
@@ -111,6 +112,7 @@ def audit_evidence(evidence_dir: Path, labels_path: Path | None, max_rows: int |
 
     return {
         "schema": _SCHEMA,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "status": "structural_missing",
         "evidence": stats,
         "reason": _REASON,
