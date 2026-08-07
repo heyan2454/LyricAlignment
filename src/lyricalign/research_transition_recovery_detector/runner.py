@@ -354,6 +354,15 @@ class TransitionRunner:
                             if mapping is not None
                             else float(r["fixed_global_end_sec"])
                         ),
+                        "raw_start_entropy": r.get("raw_start_entropy"),
+                        "raw_end_entropy": r.get("raw_end_entropy"),
+                        "raw_start_margin": r.get("raw_start_margin"),
+                        "raw_end_margin": r.get("raw_end_margin"),
+                        "raw_start_top1_probability": r.get("raw_start_top1_probability"),
+                        "raw_end_top1_probability": r.get("raw_end_top1_probability"),
+                        "raw_start_topk_probabilities": list(r["raw_start_topk_probabilities"])
+                        if r.get("raw_start_topk_probabilities") is not None else None,
+                        "official_fixed_global_start_sec": r.get("official_fixed_global_start_sec"),
                     }
                     for r in rows
                 ],
@@ -398,21 +407,24 @@ class TransitionRunner:
 
     @staticmethod
     def _normalize_rows(rows: list[dict]) -> list[dict]:
-        """把 infer_slice 的 rows 规范化为 transition 合同字段（start_sec/end_sec/source）。"""
+        """把 infer_slice 的 rows 规范化为 transition 合同字段（start_sec/end_sec/source）。
+
+        保留原始行全部字段（熵/边际/topk/official 等，供 detector 特征提取），
+        只补充/覆盖合同字段。
+        """
         normalized: list[dict] = []
         for row in rows:
+            out = dict(row)
             start = float(row.get("fixed_global_start_sec", row.get("raw_global_start_sec", row.get("start_sec"))))
             end = float(row.get("fixed_global_end_sec", row.get("raw_global_end_sec", row.get("end_sec"))))
-            normalized.append({
-                "global_character_index": int(row["global_character_index"]),
-                "character": row.get("character", ""),
-                "start_sec": start,
-                "end_sec": end,
-                "fixed_global_start_sec": start,
-                "fixed_global_end_sec": end,
-                "occurrence": row.get("occurrence", ""),
-                "source": "raw",
-            })
+            out["global_character_index"] = int(row["global_character_index"])
+            out["start_sec"] = start
+            out["end_sec"] = end
+            out["fixed_global_start_sec"] = start
+            out["fixed_global_end_sec"] = end
+            out.setdefault("occurrence", "")
+            out["source"] = "raw"
+            normalized.append(out)
         return normalized
 
     @staticmethod
