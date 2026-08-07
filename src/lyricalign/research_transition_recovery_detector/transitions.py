@@ -4,6 +4,17 @@
 §3.2 的 T1/T2/T3 精确定义。本模块是纯函数：不加载模型、不读音频、不做任何 forward。
 时间字段约定：rows 的 start_sec/end_sec 与 window_request.model_bounds 均为
 model/compressed clock；original clock 映射由上层写盘时另存。
+
+T3_stable_boundary_serial：在 T2 可提交 prefix 内，仅永久提交满足冻结 stability
+predicate 的连续前缀；其余保留 provisional，下一窗重新观察。stability 至少绑定
+两次真实观察或一个预注册等价证据，不能只凭同一 forward 的 raw/official 一致。
+冷启动（可执行化修正，07 §3.2“首轮最多保留一窗 provisional”需要晋升路径）：
+- 首窗无跨窗证据；且**已唱过的行（end 已过 input_start）无法在后续窗重新观察**，
+  全 provisional 会导致提交边界永远卡在 0（提交必须从 committed_end 连续）。
+  因此首窗提交 T2 可提交的 core 内连续 prefix 作为 baseline（第一次真实观察，
+  source 记录为 first-window baseline）。
+- 第二窗起：只晋升与上一窗观察 stable 一致的连续前缀；unstable 行保留 provisional
+  并在后续窗继续观察；未观察到（时间已过）的行形成 unresolved gap，不提交 gap 右侧。
 """
 
 from __future__ import annotations
@@ -128,9 +139,17 @@ def _apply_t3(
     core_end_sec: float,
     previous_observation: dict[int, dict] | None,
 ) -> TransitionState:
-    """在 T2 可提交 prefix 内仅永久提交 stable 连续前缀，其余保留 provisional。"""
+    """在 T2 可提交 prefix 内仅永久提交 stable 连续前缀，其余保留 provisional。
+
+    冷启动语义（07 §3.2 可执行化修正，见模块 docstring）：首窗无跨窗证据且
+    时间已过的行无法在后续窗重新观察，故首窗提交 core 内连续 prefix 作为
+    baseline（第一次真实观察）；第二窗起只晋升与上一窗观察 stable 一致的
+    连续前缀，其余保留 provisional。
+    """
     t2_prefix = _collect_prefix_rows(ordered, state, bound_sec=core_end_sec)
     previous_observation = previous_observation or {}
+    if not previous_observation:
+        return _build_state(state, committed_rows=t2_prefix, provisional_ids=())
     stable: list[dict] = []
     deferred: list[dict] = []
     for row in t2_prefix:

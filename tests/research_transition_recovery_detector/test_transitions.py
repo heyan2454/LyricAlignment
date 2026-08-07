@@ -65,6 +65,7 @@ def initial_state(transition):
 
 
 def test_t1_t2_t3_distinguishable_commit_behavior():
+    # 窗 1：T1 提交 lookahead、T2/T3 只提交 core 内 prefix（T3 首窗 baseline 提交同 T2）
     starts = [i * 4.0 for i in range(18)]  # 0..68, all inside input [0,70)
     rows = make_rows(starts)
     t1 = apply_transition_policy(
@@ -81,10 +82,31 @@ def test_t1_t2_t3_distinguishable_commit_behavior():
     )
     assert t1.committed_end_exclusive == 18   # commits right lookahead (starts 60..68)
     assert t2.committed_end_exclusive == 15   # stops at core_end=60 (start 60 -> lookahead)
-    assert t3.committed_end_exclusive == 0    # no previous observation -> nothing stable
-    assert t3.provisional_ids == tuple(range(15))
-    assert first_divergence(t1, t2, t3) == 1
-    for st in (t1, t2, t3):
+    assert t3.committed_end_exclusive == 15   # first-window baseline commit == T2 prefix
+    assert t3.provisional_ids == ()
+    # 窗 2：T2 无条件提交新 core prefix；T3 只晋升跨窗 stable 前缀。
+    # 构造窗 2 rows（id 15..29 起）并给窗 1 观察（无 drift），id 15..22 稳定、id 23 起漂移 0.4s。
+    prev_obs = {
+        i: {"global_character_index": i, "start_sec": i * 4.0, "end_sec": i * 4.0 + 2.5, "source": "official"}
+        for i in range(18)  # 窗 1 观察覆盖 0..17
+    }
+    rows2 = make_rows(
+        [i * 4.0 if i != 23 else i * 4.0 + 0.4 for i in range(15, 30)], index_offset=15,
+    )
+    t2b = apply_transition_policy(
+        TRANSITION_T2_CORE, t2, rows2,
+        window_request=make_request(TRANSITION_T2_CORE, bounds=(50.0, 60.0, 110.0, 120.0)),
+    )
+    t3b = apply_transition_policy(
+        TRANSITION_T3_STABLE, t3, rows2,
+        window_request=make_request(TRANSITION_T3_STABLE, bounds=(50.0, 60.0, 110.0, 120.0)),
+        previous_observation=prev_obs,
+    )
+    assert t2b.committed_end_exclusive == 15 + 13          # 无条件提交 15..27
+    assert t3b.committed_end_exclusive == 18               # 只晋升有跨窗观察且 stable 的 15..17
+    assert t3b.provisional_ids == tuple(range(18, 28))     # 18.. 无窗1观察 -> 保留 provisional
+    assert first_divergence(t1, t2b, t3b) == 1
+    for st in (t1, t2b, t3b):
         st.validate()
         assert st.committed_ids == tuple(range(st.committed_end_exclusive))
         assert st.next_input_cursor == st.committed_end_exclusive
@@ -131,8 +153,8 @@ def test_t3_promotes_provisional_on_second_observation():
         TRANSITION_T3_STABLE, initial_state(TRANSITION_T3_STABLE), rows1,
         window_request=make_request(TRANSITION_T3_STABLE),
     )
-    assert t3_1.committed_end_exclusive == 0
-    assert t3_1.provisional_ids == tuple(range(15))
+    assert t3_1.committed_end_exclusive == 15  # first-window baseline
+    assert t3_1.provisional_ids == ()
 
     previous_observation = {
         i: {"global_character_index": i, "start_sec": i * 4.0, "end_sec": i * 4.0 + 2.5, "source": "official"}
@@ -144,8 +166,9 @@ def test_t3_promotes_provisional_on_second_observation():
         window_request=make_request(TRANSITION_T3_STABLE, bounds=(0.0, 60.0, 110.0, 120.0)),
         previous_observation=previous_observation,
     )
-    assert t3_2.committed_ids == tuple(range(15))       # promoted
-    assert t3_2.provisional_ids == tuple(range(15, 28))  # newly observed unstable rows
+    # 前 15 行 diff=0.1 <= 0.32 stable -> 已提交；id 15.. 无观察但本窗新观察 -> provisional
+    assert t3_2.committed_ids == tuple(range(15))
+    assert t3_2.provisional_ids == tuple(range(15, 28))
     t3_2.validate()
 
 
@@ -155,22 +178,23 @@ def test_t3_does_not_jump_over_unstable_prefix():
         TRANSITION_T3_STABLE, initial_state(TRANSITION_T3_STABLE), rows1,
         window_request=make_request(TRANSITION_T3_STABLE),
     )
+    # t3_1 首窗 baseline 已提交 0..14；窗 2 首行 id 15 与窗 1 观察差 1.0s -> unstable
     previous_observation = {
         i: {"global_character_index": i, "start_sec": i * 4.0, "end_sec": i * 4.0 + 2.5, "source": "official"}
-        for i in range(14)
+        for i in range(18)
     }
     previous_observation[15] = {
-        "global_character_index": 15, "start_sec": 60.0, "end_sec": 62.5, "source": "official",
+        "global_character_index": 15, "start_sec": 60.0 + 1.0, "end_sec": 63.5, "source": "official",
     }
-    rows2 = make_rows([i * 4.0 + 0.05 if i < 14 else (60.0 if i == 15 else i * 4.0) for i in range(30)])
+    rows2 = make_rows([i * 4.0 for i in range(30)])
     t3_2 = apply_transition_policy(
         TRANSITION_T3_STABLE, t3_1, rows2,
         window_request=make_request(TRANSITION_T3_STABLE, bounds=(0.0, 60.0, 110.0, 120.0)),
         previous_observation=previous_observation,
     )
-    assert t3_2.committed_end_exclusive == 14           # stops at unstable id 14
-    assert 15 not in t3_2.committed_ids                 # stable row 15 not jumped over
-    assert t3_2.provisional_ids == tuple(range(14, 28))
+    assert t3_2.committed_end_exclusive == 15           # no promotion: first candidate unstable
+    assert 15 not in t3_2.committed_ids                 # unstable prefix not jumped over
+    assert t3_2.provisional_ids == tuple(range(15, 28))
     t3_2.validate()
 
 
