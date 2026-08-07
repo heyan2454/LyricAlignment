@@ -8,6 +8,7 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-08-07 | `20260807_transition_recovery_detector_discussion_record.md` | hot | Reframed next stage into Align/query, Window/Audio, four Transition policies, propagation and Recovery mainline, legacy evidence gap completion, SA60/SA80/R95 Detector research, and a new resumable session contract that must continue through negative or infeasible branches. |
 | 2026-08-06 | `20260806_fullslot_serial_detector_discussion_record.md` | hot | Full review-to-design record: full-slot serial, stable 10+60+10 silence-snap Base, W/L consistent routes, real prefix-carried errors, raw/hidden sequence signals, mandatory SA60/R95, automated Test Demo statistics and B4 shadow control. |
 | 2026-08-04 | `20260804_align_behavior_slot_region_assessor_archive.md` | hot | Reviewed research-v7 evidence and corrections; ≥180s timelines with fixed 60s requests; absolute+percentage mutations; missing/replace evaluation; slot-density fairness; H/R/O cross-domain assessor; human-label audit; 10h target/12h hard limit. |
 | 2026-07-31 | `20260731_alignment_research_v6_formal_decoder_route_completion.md` | hot | Frozen decoder is applied before formal serial commit/cursor updates; pilot test leakage, under-selection, and E8 failed-propagation effect contamination are fixed. |

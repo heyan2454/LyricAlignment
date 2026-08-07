@@ -1,0 +1,95 @@
+schema_version: transition_recovery_detector_session_v1
+status: declarative_not_yet_wired
+session_name: research_transition_recovery_detector_20260807
+
+runtime:
+  target_gpu_hours: 10
+  hard_gpu_hours: 12
+  require_new_session_root: true
+  default_session_root_pattern: runs/research_transition_recovery_detector_20260807/session_<UTCSTAMP>
+  resume: true
+  overwrite_existing_session: false
+
+model:
+  retrain: false
+  decoder_research_main: raw
+  decoder_secondary: official
+  save_raw_evidence: true
+  save_official_when_available_without_new_forward: true
+
+window:
+  left_context_sec: 10
+  core_sec: 60
+  right_context_sec: 10
+  planner_main: silence_snap
+  planner_control: fixed
+  skip_silent_windows: true
+  leading_silence_handling: true
+  short_tail_policy: redistribute_or_merge
+
+audio_preprocessing:
+  main: compress_long_silence
+  control: original
+  retained_silence_sec_pilot: [3, 5]
+  formal_retained_silence_sec: null  # freeze after pilot, before formal
+  require_original_time_mapping: true
+
+align:
+  main_query_mode: full_slot
+  control_query_mode: non_slot
+  non_slot_scope: selected_transitions_only
+
+transition:
+  candidates:
+    - independent_nonserial
+    - direct_serial
+    - core_boundary_serial
+    - stable_boundary_serial
+  require_existing_implementation_map: true
+  detector_disabled_during_primary_comparison: true
+
+recovery:
+  controls:
+    - none
+    - shadow
+    - local_L
+    - whole_window_W
+  primary_closed_loop:
+    - L_SA60
+    - L_SA80
+    - L_R95
+    - W_R95
+  require_unique_route_plan: true
+
+detector:
+  required_operating_points:
+    - SA60
+    - SA80
+    - R95
+  r95_definition: unsafe_reject_recall
+  uncertain_counts_as_reject: false
+  joint_sa60_r95_attempt: true
+  continue_if_joint_infeasible: true
+  signal_priority:
+    - cross_window_consistency
+    - posterior_competing_path
+    - per_unit_sequence
+    - hidden_sequence_after_gate
+    - propagation_risk
+
+propagation:
+  source_priority:
+    - natural
+    - model_native_forced_commit
+    - canonical_state_corruption
+    - simple_sanity_only
+  target_effective_episodes_per_major_family: 64
+  min_followup_windows: 2
+  max_followup_windows: 5
+  count_rejected_before_commit_as_propagated: false
+
+data:
+  primary_gt: M4
+  fixed_transfer: MIR1K
+  test_demo_auto_discovery: true
+  test_demo_has_gt: false

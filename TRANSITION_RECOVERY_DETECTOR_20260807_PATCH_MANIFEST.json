@@ -1,0 +1,73 @@
+{
+  "schema_version": "transition_recovery_detector_patch_manifest_v1",
+  "created_date": "2026-08-07",
+  "base_package": "LyricAlignment_202608061251_alignandslot3.zip",
+  "purpose": "Planning/documentation patch for a new Transition-Recovery-Detector session; no new experiment results claimed.",
+  "files": [
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/README.md",
+      "size": 3295,
+      "sha256": "a1473e807547e4beb3c518dce1658e99f4bdb7f6757c77413681626ca2941c42"
+    },
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md",
+      "size": 8086,
+      "sha256": "92820cdcbc1a0e8897accabdfe1ca3b720b47266f0594f1b73f0bff499f2b859"
+    },
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md",
+      "size": 8888,
+      "sha256": "1bfde11ea71d065e1200545afc98defbbe0e09c514d86a8d00e306c0e43e3eb8"
+    },
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md",
+      "size": 8315,
+      "sha256": "9f4da16de5d34dbc147aec5d66889dcbd7e0f37cf3fbdf26f3e7fed1c1392440"
+    },
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md",
+      "size": 4844,
+      "sha256": "68e99ba3fc502b587f1f824c317513111f341c271b2dfa02aa62a8038b09030a"
+    },
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md",
+      "size": 5317,
+      "sha256": "8e08f2c8dc9a828463d4cf1f551736e04cf3f674be75f2bc7f236931b97f1400"
+    },
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md",
+      "size": 4427,
+      "sha256": "3f11adfdf8deb940b27072c2bec51e69c8bea7e0002737b3ef877e34349a9840"
+    },
+    {
+      "path": "docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md",
+      "size": 7027,
+      "sha256": "2f60d1c8bb3355ce5de7dfa7edc0434a9f3865d63bf904a6f6c497a6f95e6890"
+    },
+    {
+      "path": "docs/sessions/20260807_transition_recovery_detector_discussion_record.md",
+      "size": 15452,
+      "sha256": "4d6810f2e9836dc2367bef554a3f24e4843f6956a0a5102e97b2263fe2a388ab"
+    },
+    {
+      "path": "docs/sessions/SESSION_INDEX.md",
+      "size": 7123,
+      "sha256": "04edb3a45e4a9312ebb6ad6cc96c0a97c3c813febd590f3905b4a332be39e1f6"
+    },
+    {
+      "path": "configs/research_transition_recovery_detector_20260807/session_defaults.yaml",
+      "size": 2310,
+      "sha256": "27dd7d52cba81780aab4cf5a3ee20c22ef774c41eb844722523c075065e02a65"
+    },
+    {
+      "path": "PATCH_README_20260807_TRANSITION_RECOVERY_DETECTOR.md",
+      "size": 2645,
+      "sha256": "66f446293fb5e888df7e770bad913cbec358b9477ffb02bb80494cda72151d4c"
+    },
+    {
+      "path": "APPLY_TRANSITION_RECOVERY_DETECTOR_20260807.sh",
+      "size": 1850,
+      "sha256": "6c9f4a2b0d851a0992a0a1bf41f13852be4dd31e751a71346c44ec1285620ce1"
+    }
+  ]
+}

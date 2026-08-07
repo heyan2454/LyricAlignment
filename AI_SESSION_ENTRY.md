@@ -1,5 +1,49 @@
 # AI Session Entry
 
+## 2026-08-07 Transition–Recovery–Detector Reviewed Stage Override
+
+The active planning entry is now the reviewed Transition–Recovery–Detector stage:
+
+```text
+docs/research_transition_recovery_detector_20260807/README.md
+docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md
+docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md
+docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md
+docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md
+docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md
+docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md
+docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md
+docs/research_transition_recovery_detector_20260807/07_REVIEWED_IMPLEMENTATION_PLAN.md
+docs/sessions/20260807_transition_recovery_detector_discussion_record.md
+```
+
+`07_REVIEWED_IMPLEMENTATION_PLAN.md` is the implementation handoff and errata layer.  Where it
+conflicts with the imported 00–06 planning documents or declarative YAML, 07 takes precedence.
+The imported overlay and its SHA-256 manifest remain unchanged for provenance.
+
+Current stage:
+
+```text
+inventory and freeze exact T0/T1/T2/T3 behavior
+-> implement shared request/state/trajectory contracts and state-aware cache identities
+-> qualify 3–5 s retained-silence preprocessing and original-clock mapping
+-> run paired Transition pilot/formal and select product/mechanism candidates
+-> collect natural/model-native/controlled propagation episodes
+-> establish oracle L/W recovery bounds
+-> freeze SA60/SA80/R95 detector points and selected new signals
+-> execute real (not evidence-only simulated) L/W closed loop
+-> run M4 formal, fixed M4-to-MIR transfer, and all-discovered no-GT Demo analysis
+```
+
+Hard corrections from review:
+
+- exact per-window query text cannot be held equal after Transition states diverge; freeze the query-construction algorithm and share a model forward only while the full request identity is equal;
+- the existing silence compressor retains only edge padding and does not implement the planned 3–5 second retained-silence rule;
+- the existing strict serial demo maps most closely to T2 core-boundary serial; T1 and T3 still need explicit, tested state machines;
+- the existing Detector V2 serial script is an offline evidence simulation, not a real retry/writeback closed loop;
+- feature/model selection, threshold selection, and M4 formal must use four source-song-disjoint roles;
+- the formal GPU target is 10 hours with a separate 12-hour hard ceiling and explicit reserve.
+
 ## 2026-08-06 Full-slot Serial Detector Independent Stage Override
 
 The active next-phase planning entry is independent from the research-v7 numbering chain:

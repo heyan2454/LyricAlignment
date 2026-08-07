@@ -13,8 +13,9 @@
   含 transformers 5.15.0.dev0、torch、nagisa、soundfile、numpy、pytest 等全部相关依赖）。
   项目包尚未 `pip install -e .`，当前以 `PYTHONPATH=src` 运行即可（`src/` 为 setuptools package root）。
 - 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 stage override 指向
-  `docs/research_v7_align_behavior/` 的 `README` / `18` Detector V2 冻结计划 / `19` 执行合同 / `22` 2026-08-06 结果复审（completed=false, partial_exploratory=true，Phase A-D 返工）/
-  `20` 实现蓝图 / `21` 旧结果纠偏；`17` 及更早文档仅作上一轮实现追溯。
+  `docs/research_transition_recovery_detector_20260807/`。实现前依次阅读 `00`–`06`，再以
+  `07_REVIEWED_IMPLEMENTATION_PLAN.md` 作为勘误与执行入口；有冲突时 `07` 优先。上游
+  `research_fullslot_serial_detector` 与 `research_v7_align_behavior` 只作实现和证据追溯。
 
 ## Commands
 ```bash
@@ -58,7 +59,16 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
   - L3 全量 `tests/`：仅 merge agent 与阶段收尾跑。
   子 agent 验收默认 L1 + `compileall -q src scripts` + `git diff --check`。
 
-## Current mainline: research_v7 Detector V2 (enter via `docs/research_v7_align_behavior/`)
+## Current mainline: Transition–Recovery–Detector（实现前阶段）
+
+当前规划入口为 `docs/research_transition_recovery_detector_20260807/07_REVIEWED_IMPLEMENTATION_PLAN.md`。
+overlay 当前只包含设计、合同与声明式配置，尚未接线，也没有新的实验结果。后续代码应放在独立的
+`src/lyricalign/research_transition_recovery_detector/`、`scripts/research_transition_recovery_detector/`
+与 `tests/research_transition_recovery_detector/`，复用 `research_v7` 和 demo 的纯函数/模型封装，避免继续
+向旧阶段堆叠新状态语义。正式 GPU 运行前必须完成 implementation map、四角色 source-song split、
+resolved config、CPU/small-GPU smoke 和预算投影。
+
+## Upstream implemented baseline: research_v7 Detector V2
 
 实现主体在 `src/lyricalign/research_v7/`。Detector V2 当前已冻结三态区间合同、产品指标和 coverage
 gate 骨架，后续实现与实验必须从 `18_DETECTOR_V2_EXPERIMENT_PLAN.md`、
