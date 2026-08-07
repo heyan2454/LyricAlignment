@@ -195,5 +195,5 @@ class RoutePlan:
             if cid in seen:
                 raise ValueError(f"duplicate commit id {cid}")
             seen.add(cid)
-        if not self.commit_ids == tuple(range(self.commit_ids[0], self.commit_ids[0] + len(self.commit_ids))) if self.commit_ids else True:
+        if self.commit_ids and not self.commit_ids == tuple(range(self.commit_ids[0], self.commit_ids[0] + len(self.commit_ids))):
             raise ValueError("commit_ids must be a contiguous increasing range")
