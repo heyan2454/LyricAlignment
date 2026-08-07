@@ -237,7 +237,7 @@ class TransitionRunner:
         )
         if query_ids is None:
             return None
-        audio_identity = f"{song_id}@{self.config.get('audio_sha', '')}"
+        audio_identity = getattr(self, "_audio_identity", f"{song_id}@{self.config.get('audio_sha', '')}")
         request_id = f"{song_id}__{transition}__w{window_index:03d}"
         return WindowRequest(
             request_id=request_id,
@@ -279,6 +279,7 @@ class TransitionRunner:
         gt_timeline: dict[int, dict] | None = None,
         compress: bool = False,
         retained_total_sec: float | None = None,
+        starting_state: TransitionState | None = None,
     ) -> list[dict]:
         mapping: dict | None = None
         if compress:
@@ -292,11 +293,16 @@ class TransitionRunner:
                 min_original_silence_sec=min_sil,
                 retained_total_sec=float(retained_total_sec or 3.0),
             )
+        # 音频内容身份（与歌名标签解耦，保证同音频跨 episode 共享 forward cache）。
+        import hashlib as _hashlib
+
+        audio_bytes = audio.tobytes() if hasattr(audio, "tobytes") else bytes(audio)
+        self._audio_identity = f"audio-{_hashlib.sha256(audio_bytes).hexdigest()[:24]}"
         # 动态单位密度：歌词总行数 / 实际（模型时钟）音频时长；无歌词时回退 config 值。
         n_units = max(1, len(getattr(document, "characters", ()) or ()))
         duration_model = float(len(audio) / int(self.config.get("sample_rate", 16000)))
         self._effective_density = float(n_units) / max(duration_model, 1e-6)
-        state = TransitionState(
+        state = starting_state or TransitionState(
             song_id=song_id,
             transition=transition,
             window_index=0,
