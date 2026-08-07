@@ -101,8 +101,8 @@ def test_config_change_invalidates_forward_cache(tmp_path):
         transition=TRANSITION_T1_DIRECT,
     )
     changed = dict(config)
-    changed["unit_density_sec"] = 0.9
-    backend2 = FakeAlignerBackend(unit_density_sec=0.9)
+    changed["lookback_units"] = 40  # 改变 query 范围 → request 变化 → key 不同
+    backend2 = FakeAlignerBackend(unit_density_sec=1.2)
     runner2 = TransitionRunner(changed, session_root=tmp_path, backend=backend2)
     runner2.run_song(
         song_id="song-a", audio=audio, document=document, window_plan=plan,

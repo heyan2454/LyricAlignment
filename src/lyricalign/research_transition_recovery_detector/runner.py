@@ -209,6 +209,7 @@ class TransitionRunner:
         self.env_identity = config.get("env_identity", "dev")
         self.config_hash = config.get("config_hash", "dev")
         self.unit_density_sec = float(config.get("unit_density_sec", DEFAULT_UNIT_DENSITY_SEC))
+        self._effective_density = self.unit_density_sec
         self.lookback_units = int(config.get("lookback_units", 8))
         self.transition_dir = self.session_root / "02_transition"
         self.transition_dir.mkdir(parents=True, exist_ok=True)
@@ -229,7 +230,7 @@ class TransitionRunner:
             transition=transition,
             state=state,
             model_bounds=model_bounds,
-            unit_density_sec=self.unit_density_sec,
+            unit_density_sec=self._effective_density,
             gt_timeline=gt_timeline,
             lookback_units=self.lookback_units,
             observations=self._observations,
@@ -291,6 +292,10 @@ class TransitionRunner:
                 min_original_silence_sec=min_sil,
                 retained_total_sec=float(retained_total_sec or 3.0),
             )
+        # 动态单位密度：歌词总行数 / 实际（模型时钟）音频时长；无歌词时回退 config 值。
+        n_units = max(1, len(getattr(document, "characters", ()) or ()))
+        duration_model = float(len(audio) / int(self.config.get("sample_rate", 16000)))
+        self._effective_density = float(n_units) / max(duration_model, 1e-6)
         state = TransitionState(
             song_id=song_id,
             transition=transition,
@@ -333,6 +338,16 @@ class TransitionRunner:
                         "global_character_index": int(r["global_character_index"]),
                         "fixed_global_start_sec": float(r["fixed_global_start_sec"]),
                         "fixed_global_end_sec": float(r["fixed_global_end_sec"]),
+                        "original_global_start_sec": (
+                            float(self._map_to_original(mapping, r["fixed_global_start_sec"]))
+                            if mapping is not None
+                            else float(r["fixed_global_start_sec"])
+                        ),
+                        "original_global_end_sec": (
+                            float(self._map_to_original(mapping, r["fixed_global_end_sec"]))
+                            if mapping is not None
+                            else float(r["fixed_global_end_sec"])
+                        ),
                     }
                     for r in rows
                 ],
@@ -393,6 +408,12 @@ class TransitionRunner:
                 "source": "raw",
             })
         return normalized
+
+    @staticmethod
+    def _map_to_original(mapping: dict, t_model: float) -> float:
+        from .audio_preprocessing import map_compressed_to_original
+
+        return map_compressed_to_original(mapping, t_model)
 
     def _append_record(self, song_id: str, transition: str, record: dict) -> None:
         path = self.transition_dir / f"{song_id}__{transition}.jsonl"
