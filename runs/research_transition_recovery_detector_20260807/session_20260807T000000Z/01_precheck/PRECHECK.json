@@ -1,0 +1,96 @@
+{
+  "schema_version": "transition_precheck_v1",
+  "ok": true,
+  "checks": [
+    {
+      "name": "session_state_exists",
+      "ok": true,
+      "detail": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z/SESSION_STATE.json"
+    },
+    {
+      "name": "session_root_unique",
+      "ok": true,
+      "detail": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z"
+    },
+    {
+      "name": "import_contracts",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "import_identity",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "import_session_state",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "import_transitions",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "import_audio_preprocessing",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "import_runner",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "dataset_split_exists",
+      "ok": true,
+      "detail": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z/00_meta/DATASET_SPLIT.json"
+    },
+    {
+      "name": "dataset_split_four_roles",
+      "ok": true,
+      "detail": "roles=4"
+    },
+    {
+      "name": "dataset_split_songs_disjoint",
+      "ok": true,
+      "detail": "source songs must not cross roles"
+    },
+    {
+      "name": "resolved_config_exists",
+      "ok": true,
+      "detail": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z/00_meta/RESOLVED_CONFIG.yaml"
+    },
+    {
+      "name": "resolved_config_no_null_formal",
+      "ok": true,
+      "detail": "formal 参数不得为 null"
+    },
+    {
+      "name": "model_snapshot_exists",
+      "ok": true,
+      "detail": "/home/hyan/Data/lyricalign/models/hf_cache/models--Qwen--Qwen3-ForcedAligner-0.6B-hf/snapshots"
+    },
+    {
+      "name": "r2_checkpoint_exists",
+      "ok": true,
+      "detail": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
+    },
+    {
+      "name": "m4_audio_root_exists",
+      "ok": true,
+      "detail": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer"
+    },
+    {
+      "name": "implementation_map_exists",
+      "ok": true,
+      "detail": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z/01_precheck/TRANSITION_IMPLEMENTATION_MAP.json"
+    },
+    {
+      "name": "implementation_map_has_status",
+      "ok": true,
+      "detail": "every transition must carry status"
+    }
+  ]
+}

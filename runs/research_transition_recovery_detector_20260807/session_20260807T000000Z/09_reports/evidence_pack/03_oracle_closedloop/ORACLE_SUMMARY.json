@@ -1,0 +1,841 @@
+{
+  "schema_version": "oracle_recovery_v1",
+  "scope": "development_selection",
+  "songs": 9,
+  "segments": 85,
+  "segment_rows_total": 1402,
+  "oracle_L_fixed_rows": 261,
+  "oracle_L_recovery_rate": 0.1862,
+  "oracle_W_fixed_rows": 300,
+  "oracle_W_recovery_rate": 0.214,
+  "per_song": [
+    {
+      "song_id": "newboy",
+      "n_segments": 10,
+      "full_song_correct": 0.5237020316027088,
+      "segments": [
+        {
+          "start_sec": 30.5,
+          "end_sec": 36.3,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 59.3,
+          "end_sec": 66.0,
+          "n_rows": 12,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 93.9,
+          "end_sec": 101.1,
+          "n_rows": 14,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 128.9,
+          "end_sec": 134.9,
+          "n_rows": 10,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 148.0,
+          "end_sec": 155.8,
+          "n_rows": 10,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 2,
+          "L_recovery_rate": 0.1,
+          "W_recovery_rate": 0.2
+        },
+        {
+          "start_sec": 157.6,
+          "end_sec": 162.8,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.111
+        },
+        {
+          "start_sec": 168.3,
+          "end_sec": 171.5,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 177.6,
+          "end_sec": 184.6,
+          "n_rows": 15,
+          "oracle_L_fixed": 8,
+          "oracle_W_fixed": 11,
+          "L_recovery_rate": 0.533,
+          "W_recovery_rate": 0.733
+        },
+        {
+          "start_sec": 190.2,
+          "end_sec": 208.3,
+          "n_rows": 31,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 5,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.161
+        },
+        {
+          "start_sec": 209.8,
+          "end_sec": 218.6,
+          "n_rows": 10,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.1
+        }
+      ]
+    },
+    {
+      "song_id": "你给我听好",
+      "n_segments": 5,
+      "full_song_correct": 0.35714285714285715,
+      "segments": [
+        {
+          "start_sec": 47.9,
+          "end_sec": 52.9,
+          "n_rows": 13,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.077,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 108.0,
+          "end_sec": 116.3,
+          "n_rows": 15,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 137.1,
+          "end_sec": 160.0,
+          "n_rows": 43,
+          "oracle_L_fixed": 21,
+          "oracle_W_fixed": 22,
+          "L_recovery_rate": 0.488,
+          "W_recovery_rate": 0.512
+        },
+        {
+          "start_sec": 171.8,
+          "end_sec": 207.2,
+          "n_rows": 54,
+          "oracle_L_fixed": 23,
+          "oracle_W_fixed": 24,
+          "L_recovery_rate": 0.426,
+          "W_recovery_rate": 0.444
+        },
+        {
+          "start_sec": 209.0,
+          "end_sec": 239.2,
+          "n_rows": 52,
+          "oracle_L_fixed": 15,
+          "oracle_W_fixed": 22,
+          "L_recovery_rate": 0.288,
+          "W_recovery_rate": 0.423
+        }
+      ]
+    },
+    {
+      "song_id": "内疚",
+      "n_segments": 9,
+      "full_song_correct": 0.35986159169550175,
+      "segments": [
+        {
+          "start_sec": 18.4,
+          "end_sec": 27.5,
+          "n_rows": 11,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.091,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 42.8,
+          "end_sec": 48.0,
+          "n_rows": 9,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.111,
+          "W_recovery_rate": 0.111
+        },
+        {
+          "start_sec": 64.2,
+          "end_sec": 69.8,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 89.0,
+          "end_sec": 94.6,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 114.6,
+          "end_sec": 120.5,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 125.0,
+          "end_sec": 136.5,
+          "n_rows": 13,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 144.1,
+          "end_sec": 150.0,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.111
+        },
+        {
+          "start_sec": 157.5,
+          "end_sec": 163.7,
+          "n_rows": 11,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 4,
+          "L_recovery_rate": 0.091,
+          "W_recovery_rate": 0.364
+        },
+        {
+          "start_sec": 168.2,
+          "end_sec": 209.1,
+          "n_rows": 47,
+          "oracle_L_fixed": 7,
+          "oracle_W_fixed": 8,
+          "L_recovery_rate": 0.149,
+          "W_recovery_rate": 0.17
+        }
+      ]
+    },
+    {
+      "song_id": "圣诞结",
+      "n_segments": 14,
+      "full_song_correct": 0.30885529157667385,
+      "segments": [
+        {
+          "start_sec": 13.9,
+          "end_sec": 21.6,
+          "n_rows": 13,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 29.3,
+          "end_sec": 33.3,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 35.7,
+          "end_sec": 39.9,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.111
+        },
+        {
+          "start_sec": 42.4,
+          "end_sec": 48.9,
+          "n_rows": 10,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 66.5,
+          "end_sec": 70.8,
+          "n_rows": 12,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 91.6,
+          "end_sec": 102.8,
+          "n_rows": 17,
+          "oracle_L_fixed": 2,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.118,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 107.5,
+          "end_sec": 116.6,
+          "n_rows": 23,
+          "oracle_L_fixed": 10,
+          "oracle_W_fixed": 13,
+          "L_recovery_rate": 0.435,
+          "W_recovery_rate": 0.565
+        },
+        {
+          "start_sec": 118.5,
+          "end_sec": 129.4,
+          "n_rows": 23,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 5,
+          "L_recovery_rate": 0.043,
+          "W_recovery_rate": 0.217
+        },
+        {
+          "start_sec": 151.7,
+          "end_sec": 159.7,
+          "n_rows": 16,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 169.5,
+          "end_sec": 174.3,
+          "n_rows": 13,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 175.9,
+          "end_sec": 188.4,
+          "n_rows": 25,
+          "oracle_L_fixed": 2,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.08,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 189.5,
+          "end_sec": 196.4,
+          "n_rows": 19,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.053,
+          "W_recovery_rate": 0.053
+        },
+        {
+          "start_sec": 198.1,
+          "end_sec": 209.3,
+          "n_rows": 31,
+          "oracle_L_fixed": 20,
+          "oracle_W_fixed": 22,
+          "L_recovery_rate": 0.645,
+          "W_recovery_rate": 0.71
+        },
+        {
+          "start_sec": 211.1,
+          "end_sec": 224.4,
+          "n_rows": 16,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.062,
+          "W_recovery_rate": 0.062
+        }
+      ]
+    },
+    {
+      "song_id": "宿敌",
+      "n_segments": 10,
+      "full_song_correct": 0.3177570093457944,
+      "segments": [
+        {
+          "start_sec": 6.4,
+          "end_sec": 15.4,
+          "n_rows": 12,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 23.3,
+          "end_sec": 37.2,
+          "n_rows": 17,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.059,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 39.3,
+          "end_sec": 45.2,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 73.9,
+          "end_sec": 78.1,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 93.8,
+          "end_sec": 106.7,
+          "n_rows": 16,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 109.9,
+          "end_sec": 118.5,
+          "n_rows": 11,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 135.8,
+          "end_sec": 157.2,
+          "n_rows": 37,
+          "oracle_L_fixed": 10,
+          "oracle_W_fixed": 13,
+          "L_recovery_rate": 0.27,
+          "W_recovery_rate": 0.351
+        },
+        {
+          "start_sec": 159.1,
+          "end_sec": 164.9,
+          "n_rows": 11,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.091
+        },
+        {
+          "start_sec": 184.3,
+          "end_sec": 193.6,
+          "n_rows": 13,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 200.0,
+          "end_sec": 213.4,
+          "n_rows": 19,
+          "oracle_L_fixed": 10,
+          "oracle_W_fixed": 8,
+          "L_recovery_rate": 0.526,
+          "W_recovery_rate": 0.421
+        }
+      ]
+    },
+    {
+      "song_id": "左边",
+      "n_segments": 6,
+      "full_song_correct": 0.4916864608076009,
+      "segments": [
+        {
+          "start_sec": 36.1,
+          "end_sec": 41.8,
+          "n_rows": 10,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.1,
+          "W_recovery_rate": 0.1
+        },
+        {
+          "start_sec": 71.0,
+          "end_sec": 78.5,
+          "n_rows": 13,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.077
+        },
+        {
+          "start_sec": 117.3,
+          "end_sec": 124.4,
+          "n_rows": 13,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.077
+        },
+        {
+          "start_sec": 163.2,
+          "end_sec": 172.1,
+          "n_rows": 11,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.091,
+          "W_recovery_rate": 0.091
+        },
+        {
+          "start_sec": 178.6,
+          "end_sec": 192.6,
+          "n_rows": 18,
+          "oracle_L_fixed": 3,
+          "oracle_W_fixed": 4,
+          "L_recovery_rate": 0.167,
+          "W_recovery_rate": 0.222
+        },
+        {
+          "start_sec": 196.3,
+          "end_sec": 224.1,
+          "n_rows": 56,
+          "oracle_L_fixed": 31,
+          "oracle_W_fixed": 31,
+          "L_recovery_rate": 0.554,
+          "W_recovery_rate": 0.554
+        }
+      ]
+    },
+    {
+      "song_id": "我们都太倔强",
+      "n_segments": 7,
+      "full_song_correct": 0.3593314763231198,
+      "segments": [
+        {
+          "start_sec": 0.0,
+          "end_sec": 7.2,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 39.9,
+          "end_sec": 50.7,
+          "n_rows": 12,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 85.9,
+          "end_sec": 95.2,
+          "n_rows": 12,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.083
+        },
+        {
+          "start_sec": 131.7,
+          "end_sec": 141.5,
+          "n_rows": 11,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 2,
+          "L_recovery_rate": 0.091,
+          "W_recovery_rate": 0.182
+        },
+        {
+          "start_sec": 145.1,
+          "end_sec": 162.5,
+          "n_rows": 25,
+          "oracle_L_fixed": 15,
+          "oracle_W_fixed": 15,
+          "L_recovery_rate": 0.6,
+          "W_recovery_rate": 0.6
+        },
+        {
+          "start_sec": 164.6,
+          "end_sec": 194.6,
+          "n_rows": 43,
+          "oracle_L_fixed": 13,
+          "oracle_W_fixed": 18,
+          "L_recovery_rate": 0.302,
+          "W_recovery_rate": 0.419
+        },
+        {
+          "start_sec": 223.8,
+          "end_sec": 255.6,
+          "n_rows": 46,
+          "oracle_L_fixed": 28,
+          "oracle_W_fixed": 27,
+          "L_recovery_rate": 0.609,
+          "W_recovery_rate": 0.587
+        }
+      ]
+    },
+    {
+      "song_id": "最后一页",
+      "n_segments": 10,
+      "full_song_correct": 0.46540880503144655,
+      "segments": [
+        {
+          "start_sec": 9.8,
+          "end_sec": 14.3,
+          "n_rows": 8,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.125,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 25.0,
+          "end_sec": 30.6,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 67.1,
+          "end_sec": 72.1,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 96.5,
+          "end_sec": 101.4,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 111.4,
+          "end_sec": 116.9,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 122.1,
+          "end_sec": 131.0,
+          "n_rows": 11,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.091
+        },
+        {
+          "start_sec": 152.1,
+          "end_sec": 165.7,
+          "n_rows": 20,
+          "oracle_L_fixed": 4,
+          "oracle_W_fixed": 5,
+          "L_recovery_rate": 0.2,
+          "W_recovery_rate": 0.25
+        },
+        {
+          "start_sec": 168.5,
+          "end_sec": 173.3,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 176.0,
+          "end_sec": 181.5,
+          "n_rows": 9,
+          "oracle_L_fixed": 3,
+          "oracle_W_fixed": 4,
+          "L_recovery_rate": 0.333,
+          "W_recovery_rate": 0.444
+        },
+        {
+          "start_sec": 183.7,
+          "end_sec": 203.4,
+          "n_rows": 30,
+          "oracle_L_fixed": 13,
+          "oracle_W_fixed": 12,
+          "L_recovery_rate": 0.433,
+          "W_recovery_rate": 0.4
+        }
+      ]
+    },
+    {
+      "song_id": "歌颂者",
+      "n_segments": 14,
+      "full_song_correct": 0.27607361963190186,
+      "segments": [
+        {
+          "start_sec": 7.4,
+          "end_sec": 16.1,
+          "n_rows": 14,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 23.4,
+          "end_sec": 28.1,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 37.1,
+          "end_sec": 44.0,
+          "n_rows": 10,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 45.9,
+          "end_sec": 50.9,
+          "n_rows": 8,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 53.2,
+          "end_sec": 58.5,
+          "n_rows": 10,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 83.6,
+          "end_sec": 98.2,
+          "n_rows": 17,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.059,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 102.8,
+          "end_sec": 109.8,
+          "n_rows": 12,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 119.7,
+          "end_sec": 132.5,
+          "n_rows": 19,
+          "oracle_L_fixed": 2,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.105,
+          "W_recovery_rate": 0.053
+        },
+        {
+          "start_sec": 142.7,
+          "end_sec": 170.1,
+          "n_rows": 31,
+          "oracle_L_fixed": 2,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.065,
+          "W_recovery_rate": 0.032
+        },
+        {
+          "start_sec": 172.7,
+          "end_sec": 178.0,
+          "n_rows": 8,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.125,
+          "W_recovery_rate": 0.125
+        },
+        {
+          "start_sec": 185.6,
+          "end_sec": 192.3,
+          "n_rows": 9,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 2,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.222
+        },
+        {
+          "start_sec": 195.0,
+          "end_sec": 207.4,
+          "n_rows": 17,
+          "oracle_L_fixed": 3,
+          "oracle_W_fixed": 3,
+          "L_recovery_rate": 0.176,
+          "W_recovery_rate": 0.176
+        },
+        {
+          "start_sec": 212.0,
+          "end_sec": 223.1,
+          "n_rows": 12,
+          "oracle_L_fixed": 0,
+          "oracle_W_fixed": 0,
+          "L_recovery_rate": 0.0,
+          "W_recovery_rate": 0.0
+        },
+        {
+          "start_sec": 226.1,
+          "end_sec": 237.0,
+          "n_rows": 9,
+          "oracle_L_fixed": 1,
+          "oracle_W_fixed": 1,
+          "L_recovery_rate": 0.111,
+          "W_recovery_rate": 0.111
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+[
+  {
+    "song_id": "不要说话",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 350,
+    "evaluated": 350,
+    "accuracy": {
+      "correct": 149,
+      "wrong": 201,
+      "total": 350,
+      "correct_rate": 0.4257142857142857
+    },
+    "max_diff_sec": 138.1122,
+    "median_diff_sec": 0.408299999999997
+  },
+  {
+    "song_id": "交换余生",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 296,
+    "evaluated": 296,
+    "accuracy": {
+      "correct": 102,
+      "wrong": 194,
+      "total": 296,
+      "correct_rate": 0.34459459459459457
+    },
+    "max_diff_sec": 47.67750000000001,
+    "median_diff_sec": 0.5449999999999875
+  },
+  {
+    "song_id": "倒带",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 393,
+    "evaluated": 393,
+    "accuracy": {
+      "correct": 250,
+      "wrong": 143,
+      "total": 393,
+      "correct_rate": 0.6361323155216285
+    },
+    "max_diff_sec": 136.15,
+    "median_diff_sec": 0.18099999999999739
+  },
+  {
+    "song_id": "全世界失眠",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 273,
+    "evaluated": 273,
+    "accuracy": {
+      "correct": 93,
+      "wrong": 180,
+      "total": 273,
+      "correct_rate": 0.34065934065934067
+    },
+    "max_diff_sec": 128.7071,
+    "median_diff_sec": 0.48699999999999477
+  },
+  {
+    "song_id": "凄美的",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 386,
+    "evaluated": 386,
+    "accuracy": {
+      "correct": 184,
+      "wrong": 202,
+      "total": 386,
+      "correct_rate": 0.47668393782383417
+    },
+    "max_diff_sec": 113.9408,
+    "median_diff_sec": 0.3420000000000023
+  },
+  {
+    "song_id": "半句再见",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 312,
+    "evaluated": 312,
+    "accuracy": {
+      "correct": 129,
+      "wrong": 183,
+      "total": 312,
+      "correct_rate": 0.41346153846153844
+    },
+    "max_diff_sec": 95.3655,
+    "median_diff_sec": 0.43670000000000186
+  },
+  {
+    "song_id": "外面的世界",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 293,
+    "evaluated": 293,
+    "accuracy": {
+      "correct": 84,
+      "wrong": 209,
+      "total": 293,
+      "correct_rate": 0.28668941979522183
+    },
+    "max_diff_sec": 117.04,
+    "median_diff_sec": 0.5700000000000003
+  },
+  {
+    "song_id": "孤勇者",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 438,
+    "evaluated": 438,
+    "accuracy": {
+      "correct": 186,
+      "wrong": 252,
+      "total": 438,
+      "correct_rate": 0.4246575342465753
+    },
+    "max_diff_sec": 68.9145,
+    "median_diff_sec": 0.37359999999999616
+  },
+  {
+    "song_id": "对嘴",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 290,
+    "evaluated": 290,
+    "accuracy": {
+      "correct": 82,
+      "wrong": 208,
+      "total": 290,
+      "correct_rate": 0.2827586206896552
+    },
+    "max_diff_sec": 109.4015,
+    "median_diff_sec": 0.5800000000000125
+  },
+  {
+    "song_id": "已是两条路上的人",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 648,
+    "evaluated": 648,
+    "accuracy": {
+      "correct": 222,
+      "wrong": 426,
+      "total": 648,
+      "correct_rate": 0.3425925925925926
+    },
+    "max_diff_sec": 181.85500000000002,
+    "median_diff_sec": 0.5164000000000044
+  },
+  {
+    "song_id": "我不难过",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 481,
+    "evaluated": 481,
+    "accuracy": {
+      "correct": 191,
+      "wrong": 290,
+      "total": 481,
+      "correct_rate": 0.3970893970893971
+    },
+    "max_diff_sec": 138.94410000000002,
+    "median_diff_sec": 0.43240000000000123
+  },
+  {
+    "song_id": "我还年轻",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 479,
+    "evaluated": 479,
+    "accuracy": {
+      "correct": 196,
+      "wrong": 283,
+      "total": 479,
+      "correct_rate": 0.4091858037578288
+    },
+    "max_diff_sec": 136.1058,
+    "median_diff_sec": 0.5312999999999981
+  },
+  {
+    "song_id": "暗香",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 224,
+    "evaluated": 224,
+    "accuracy": {
+      "correct": 34,
+      "wrong": 190,
+      "total": 224,
+      "correct_rate": 0.15178571428571427
+    },
+    "max_diff_sec": 115.58129999999998,
+    "median_diff_sec": 0.7749999999999773
+  },
+  {
+    "song_id": "望月",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 244,
+    "evaluated": 244,
+    "accuracy": {
+      "correct": 49,
+      "wrong": 195,
+      "total": 244,
+      "correct_rate": 0.20081967213114754
+    },
+    "max_diff_sec": 137.2058,
+    "median_diff_sec": 1.881999999999998
+  },
+  {
+    "song_id": "水手",
+    "scope": "development_selection",
+    "mode": "full_song_align",
+    "rows": 563,
+    "evaluated": 563,
+    "accuracy": {
+      "correct": 262,
+      "wrong": 301,
+      "total": 563,
+      "correct_rate": 0.46536412078152756
+    },
+    "max_diff_sec": 118.8637,
+    "median_diff_sec": 0.3432999999999993
+  }
+]

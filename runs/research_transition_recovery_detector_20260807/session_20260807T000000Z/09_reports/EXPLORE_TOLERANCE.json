@@ -1,0 +1,40 @@
+{
+ "tolerance_curve_full_song_raw": {
+  "0.1": 0.12270302311796087,
+  "0.2": 0.2557794902193242,
+  "0.32": 0.3882631890930646,
+  "0.5": 0.5340841730883225,
+  "0.75": 0.6505631298162419,
+  "1.0": 0.7045050385299348
+ },
+ "tolerance_curve_full_song_pooled_corrected": {
+  "0.1": 0.12270302311796087,
+  "0.2": 0.23740367516301125,
+  "0.32": 0.35921754593953764,
+  "0.5": 0.51778304682869,
+  "0.75": 0.6550088915234143,
+  "1.0": 0.7273266152934202
+ },
+ "tolerance_curve_t2_committed": {
+  "0.1": 0.14719626168224298,
+  "0.2": 0.29750778816199375,
+  "0.32": 0.4680685358255452,
+  "0.5": 0.6596573208722741,
+  "0.75": 0.8107476635514018,
+  "1.0": 0.882398753894081
+ },
+ "t2_n": 1284,
+ "t2_data_source": {
+  "newboy": "cache_fallback_by_committed_ids",
+  "你给我听好": "cache_fallback_by_committed_ids",
+  "内疚": "cache_fallback_by_committed_ids",
+  "圣诞结": "cache_fallback_by_committed_ids",
+  "宿敌": "cache_fallback_by_committed_ids",
+  "左边": "cache_fallback_by_committed_ids",
+  "我们都太倔强": "cache_fallback_by_committed_ids",
+  "最后一页": "cache_fallback_by_committed_ids",
+  "歌颂者": "cache_fallback_by_committed_ids"
+ },
+ "full_song_n": 3374,
+ "verdict": "SENSITIVE_AT_TAIL"
+}

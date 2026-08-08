@@ -1,0 +1,58 @@
+{
+  "schema_version": "legacy_gap_status_v1",
+  "items": [
+    {
+      "id": "stress_evaluator_model_consistency",
+      "verdict": "complete",
+      "evidence": "stress evaluator 已与 GT family 统一：evaluate_stress_detector_v2.py 复用 evaluate_detector_v2._score_rows，model_kind 取 FROZEN_OPERATING_POINTS.json（frozen small_mlp），同一特征列/冻结阈值/同一训练器+scaler；GT/no-GT 仅差 label 可用性。旧固定 Logistic 路径不存在。旧 accept-rate 数字不作 frozen small-MLP 正式结果。",
+      "code_locations": [
+        "scripts/research_v7/evaluate_stress_detector_v2.py:33-44",
+        "scripts/research_v7/evaluate_detector_v2.py:86-106"
+      ]
+    },
+    {
+      "id": "hidden_extraction_gate",
+      "verdict": "blocked",
+      "evidence": "转换器/审计代码存在（_hidden_view 对齐、hidden_ok/blocked G1 审计），但 real_executor 不产 row['hidden']，HIDDEN_FEATURES_ENABLED=False，真实 availability=0。缺 hook layer 接入 real inference。",
+      "code_locations": [
+        "src/lyricalign/research_v7/detector_v2_evidence_converter.py",
+        "src/lyricalign/research_v7/real_executor.py:223-224"
+      ]
+    },
+    {
+      "id": "cross_view_full_posterior",
+      "verdict": "not_executed_dependency",
+      "evidence": "converter 支持 keep_posterior，但真实 runner 只落 topk；audit 实测 rows_with_posterior_distance=0；posterior_distance=0 不可解释为一致。需对重点 corpus 重新 forward（Phase 8 预算）。",
+      "code_locations": [
+        "src/lyricalign/research_v7/detector_v2_evidence_converter.py:40,193-231"
+      ]
+    },
+    {
+      "id": "cnn1d_protocol_correction",
+      "verdict": "complete",
+      "correction_note": "旧 CNN1D sequence AUC=1 不得引用为'会检测窗口错误'：train 全 positive(~22)、validation 仅 6 条(5 unsafe+1 safe)，AUC=1 只表示 1 条 safe 排在 5 条 unsafe 后，无统计判别力；sequence score 广播到 window/unit 协议已退化。后续只允许 per-unit supervision+output，与 simple MLP 公平比较；无增益记 negative result。",
+      "evidence": "03§7 确认；evaluate_sequence_cnn1d.py 为 sequence-level exploratory，未升格窗口级结论。",
+      "code_locations": [
+        "scripts/research_v7/evaluate_sequence_cnn1d.py"
+      ]
+    },
+    {
+      "id": "isotonic_calibration",
+      "verdict": "complete",
+      "evidence": "isotonic 改善 ECE 但不能改善高保护工作点 safe acceptance；不花主预算细调。commit ed3e0db 为 refreeze negative result。",
+      "code_locations": [
+        "scripts/research_v7/refreeze_thresholds_isotonic.py"
+      ]
+    },
+    {
+      "id": "old_working_points_sa60_sa80_r95",
+      "verdict": "not_executed_dependency",
+      "evidence": "BACKLOG25 无 SA60/SA80/R95 正式结果；protected_recall_95 不是新 R95。由 Phase 6 Detector 线完成。"
+    },
+    {
+      "id": "serial_propagation_gap",
+      "verdict": "complete",
+      "evidence": "由新阶段 Phase 3 propagation benchmark 替代（natural 9 + corruption 161 episodes，注：T2 系统性错位机制）"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": "transition_implementation_map_v1",
+  "session": "session_20260807T000000Z",
+  "phase": "phase0_inventory",
+  "source_refs": [
+    "docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md",
+    "docs/research_transition_recovery_detector_20260807/07_REVIEWED_IMPLEMENTATION_PLAN.md"
+  ],
+  "method": "read_only_inspection_no_semantic_changes",
+  "transitions": [
+    {
+      "transition": "T0_oracle_independent",
+      "status": "missing",
+      "code_locations": [],
+      "real_behavior": "No per-window query-start construction bound to frozen canonical timeline/GT exists. full_alignment (scripts/demo/align_qwen_fa_serial_demo.py:645) is a single-pass whole-song non-serial baseline (character_start=0..end in one forward), not an independent per-window trajectory and not a deployable planner. research_state_injections / planned_input_character_start in windowed_alignment (line ~733+) can fabricate independent query starts but are research hooks, not a frozen T0 policy.",
+      "decoder": "n/a",
+      "has_tests": false,
+      "semantics_match": false,
+      "gap_to_07_spec": "T0_oracle_independent must construct each window query span from frozen canonical timeline/GT binding without reading parent predicted state; must be explicitly named oracle-independent and cannot be substituted by full_alignment or injection hooks (00 section 7, 07 section 3.2)."
+    },
+    {
+      "transition": "T1_direct_serial",
+      "status": "missing",
+      "code_locations": [],
+      "real_behavior": "No independent frozen commit policy. The only commit path commits only rows whose start < core_end (split_core_commit_prefix in src/lyricalign/demo/karaoke.py:435), i.e. core-boundary semantics; right lookahead (start >= core_end_sec) is never committed except final_core, opposite to T1 which may commit decoded rows up to input_end ownership including lookahead.",
+      "decoder": "n/a",
+      "has_tests": false,
+      "semantics_match": false,
+      "gap_to_07_spec": "T1 requires committing all uncommitted legal contiguous decoded rows to input_end ownership boundary; must be a new pure state policy, must not be obtained by renaming T2 (07 section 3.2, section 2.2)."
+    },
+    {
+      "transition": "T2_core_boundary_serial",
+      "status": "mapped",
+      "code_locations": [
+        "scripts/demo/align_qwen_fa_serial_demo.py:733 windowed_alignment",
+        "scripts/demo/align_qwen_fa_serial_demo.py:221 infer_slice",
+        "src/lyricalign/demo/karaoke.py:435 split_core_commit_prefix",
+        "src/lyricalign/demo/karaoke.py:529 append_strict_core_commits",
+        "src/lyricalign/demo/karaoke.py:492 next_window_transcript_start",
+        "src/lyricalign/demo/karaoke.py:371 build_serial_windows",
+        "src/lyricalign/research_v7/real_executor.py:45 RealAligner",
+        "src/lyricalign/research_v7/real_executor.py:195 make_real_executor"
+      ],
+      "real_behavior": "Strict serial cores: ownership by character start in [core_start, core_end); rows with index < committed cursor are context-only (frozen, never recommitted); lookahead (start >= core_end) not permanently written back; commits must be contiguous prefix from 0 (non-contiguous raises); forward-only overlap compression start=max(predicted_start, previous_end); next window input cursor = first character starting at/after next input boundary, straddler excluded; final_core commits all remaining; skip_silent_windows skips silent cores except final; startup leading-silence trim; windowed_alignment wraps itself for silence-compressed mode and remaps all timestamps to original clock.",
+      "decoder": "official (decode_forced_alignment) by default; serial_control_decoder_kind may project raw argmax; raw geometry + top-k posterior + entropy/margin from the same single forward in infer_slice",
+      "has_tests": true,
+      "semantics_match": true,
+      "gap_to_07_spec": "Coupled in the demo runner; no TransitionState/WindowRequest immutable contract (07 3.1), no model-clock + original-clock dual clock state (only output-level remap), no shared_prefix_request_count/divergence_window tracking, no T2 equivalence fixture vs 07 3.2 (required before formal claim; 07 2.2)."
+    },
+    {
+      "transition": "T3_stable_boundary_serial",
+      "status": "partial",
+      "code_locations": [
+        "scripts/demo/align_qwen_fa_serial_demo.py:733 windowed_alignment (stable_segment_min_units, stable_segment_confidence_quantile, stable_raw_official_tolerance_sec, stable_context_tolerance_sec, stable_prefix_reproduction_tolerance_sec, stable_prefix_minimum_observed_units/ratio, research_initial_stable_suffix)"
+      ],
+      "real_behavior": "Computes stable-segment diagnostics including same-forward raw-vs-official consistency and cross-window prefix reproduction tolerances; no delayed/stable commit state machine found: commits still follow T2 core-boundary rules; no provisional-then-promote-on-next-observation mechanism.",
+      "decoder": "official (same as T2)",
+      "has_tests": false,
+      "semantics_match": false,
+      "gap_to_07_spec": "T3 requires permanently committing only the contiguous prefix satisfying a frozen stability predicate bound to >=2 real observations or pre-registered equivalent evidence; raw/official agreement within a single forward is explicitly NOT sufficient (07 3.2). Current stable_* parameters are diagnostics only."
+    }
+  ],
+  "components": [
+    {
+      "transition": "component_full_slot_query_interface",
+      "status": "mapped",
+      "code_locations": [
+        "src/lyricalign/research_v7/requests.py:24 AlignmentRequest (timestamp_slot_indices, canonical_ids, canonical_timeline_file_sha, canonical_timeline_row_sha, canonical_to_local, view_id, hidden_schema, source_window_sec, input_variant)",
+        "scripts/demo/align_qwen_fa_serial_demo.py:221 infer_slice (retain_timestamp_slots via research_v7.sparse_slots)",
+        "src/lyricalign/research_v7/real_executor.py:149 align_request (input_variant strict_serial_committed_prefix_all_slots)"
+      ],
+      "real_behavior": "timestamp_slot_indices=None means all queried units get timestamp slots (full-slot); explicit indices select sparse slots; request-local indices mapped to document space; content-addressed request identity (canonical lineage SHAs + view/hidden schema) exists.",
+      "decoder": "n/a",
+      "has_tests": true,
+      "semantics_match": true,
+      "gap_to_07_spec": "Request/state identity must be extended to TransitionState/WindowRequest and trajectory cache keys (07 4.2); current identity is request-level, not trajectory-level."
+    },
+    {
+      "transition": "component_raw_official_same_forward",
+      "status": "mapped",
+      "code_locations": [
+        "scripts/demo/align_qwen_fa_serial_demo.py:221 infer_slice (raw_classes=argmax(slot_logits), decoded=decode_forced_alignment, topk/entropy/margin from same forward)",
+        "src/lyricalign/research_v7/real_executor.py:195 make_real_executor (decoder_outputs raw availability 'derived_from_official_decoder_raw_geometry', weighted_isotonic 'posthoc_from_raw_geometry', top_k per-boundary)",
+        "src/lyricalign/research_v7/detector_v2_evidence_converter.py (POSTERIOR_REASON_TOPK_ONLY='topk_only_full_posterior_unavailable')"
+      ],
+      "real_behavior": "Single forward yields raw argmax, official, and top-k posterior simultaneously; matches 00 section 6 shared-forward preference. Full posterior is NOT saved; exact JS/L1/L2 unavailable (topk_only).",
+      "decoder": "official + raw_argmax + weighted_isotonic (posthoc)",
+      "has_tests": true,
+      "semantics_match": true,
+      "gap_to_07_spec": "Full-posterior availability gate must be added for exact cross-window distances (07 4.3); targeted full-posterior saving only for transition candidates."
+    },
+    {
+      "transition": "component_silence_snap_skip_leading_tail",
+      "status": "mapped",
+      "code_locations": [
+        "src/lyricalign/demo/window_planning.py:129 build_silence_aware_window_plan (boundary_search_sec=6.0, min_silence_sec=0.8, strong_silence_sec=1.5, minimum_core_sec=12, tail_min_core_sec=18, leading_silence_min_sec=2.0)",
+        "src/lyricalign/demo/window_planning.py:267 build_strict_silence_boundary_window_plan (hard region split; strict cases only per 07 2.1)",
+        "scripts/demo/align_qwen_fa_serial_demo.py:733 windowed_alignment (skip_silent_windows, startup_vocal_preroll_sec, silent core skip never on final)"
+      ],
+      "real_behavior": "Silence snap near nominal 60s core boundary without crossing activity, short-core guard, leading/trailing silence handling, short-tail redistribution/merge, skip-silent-windows with never-skip-final rule, startup trim with preroll.",
+      "decoder": "n/a",
+      "has_tests": true,
+      "semantics_match": true,
+      "gap_to_07_spec": "None for the frozen mainline behavior; strict-silence planner remains out of the first formal matrix."
+    },
+    {
+      "transition": "component_long_silence_compression_A1",
+      "status": "partial",
+      "code_locations": [
+        "src/lyricalign/demo/window_planning.py:366 compress_silence_audio (keep_edge_padding_sec=0.20, remove_silence_sec defaults to strong_silence_sec=1.5)",
+        "src/lyricalign/demo/window_planning.py:451 map_original_time_to_compressed",
+        "src/lyricalign/demo/window_planning.py:583 map_compressed_time_to_original",
+        "src/lyricalign/demo/window_planning.py:507 project_silence_aware_plan_to_compressed_timeline",
+        "scripts/demo/align_qwen_fa_serial_demo.py:674 _remap_compressed_alignment",
+        "scripts/demo/align_qwen_fa_serial_demo.py:751 windowed_alignment compression wrapper"
+      ],
+      "real_behavior": "Removes interiors of silences >= threshold keeping only 0.20s edge padding per side; reversible monotonic original<->compressed mapping with left/right boundary semantics; window plan projected to compressed clock; all output timestamps remapped to original clock. NOT retained_total 3-5s semantics.",
+      "decoder": "n/a",
+      "has_tests": true,
+      "semantics_match": false,
+      "gap_to_07_spec": "07 3.4 requires retained_total_sec in {3.0, 5.0} per compressed silence (not per-side padding), leading/trailing single-side guard, splice continuity and round-trip tests; current code keeps only 0.20s per side (07 section 1 P1 item 4). Mapping/test framework reusable, retain semantics must be rewritten."
+    }
+  ]
+}

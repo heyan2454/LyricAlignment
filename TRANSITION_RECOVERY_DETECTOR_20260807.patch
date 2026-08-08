@@ -1,0 +1,2341 @@
+diff --git a/docs/research_transition_recovery_detector_20260807/README.md b/docs/research_transition_recovery_detector_20260807/README.md
+new file mode 100644
+index 0000000..92e4357
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/README.md
+@@ -0,0 +1,72 @@
++# 2026-08-07 Transition–Recovery–Detector 新阶段
++
++本目录是独立于 `research_v7_align_behavior` 和 `research_fullslot_serial_detector` 的新 session 设计目录。它吸收 2026-08-07 最新讨论后重新分层：**先比较 Align / Transition 本身，再研究传播与 Recovery；旧实验缺陷单独补齐；Detector 作为并行研究线，最终只在少数代表 Transition 上闭环。**
++
++旧 `docs/research_fullslot_serial_detector/` 保留为历史设计，不直接覆盖；其中仍有效的 B4、Detector V2 证据、W/L route 想法可以引用，但若与本目录冲突，以本目录为准。
++
++## 阅读顺序
++
++1. `00_FACTOR_MODEL_AND_FREEZE.md`：系统分层、冻结 baseline、哪些是主轴/次轴；
++2. `01_MASTER_EXPERIMENT_PLAN.md`：三条研究线及总执行顺序；
++3. `02_TRANSITION_RECOVERY_MAINLINE.md`：主线 A，Transition → propagation → Recovery；
++4. `03_LEGACY_GAP_COMPLETION.md`：基础线 B，补齐先前实验缺陷；
++5. `04_DETECTOR_RESEARCH_PLAN.md`：研究线 C，SA60/SA80/R95 与新信号；
++6. `05_DATA_METRICS_BUDGET.md`：数据角色、指标、缓存、公平性与 12h 预算；
++7. `06_AGENT_EXECUTION_CONTRACT.md`：Agent 强制执行合同、新 session 目录、不中途停止、resume/失败处理；
++8. `../sessions/20260807_transition_recovery_detector_discussion_record.md`：本轮讨论过程、用户观点、疑问、修正与所有提出想法。
++
++## 当前最高层研究结构
++
++```text
++Audio preprocessing
++    original
++    long-silence compressed (main; retain 3–5 s)
++          ↓
++Window planning / handling
++    silence snap (main)
++    fixed window (small control)
++    skip silent windows
++    leading-silence handling
++    short-tail redistribution / merge
++          ↓
++Window input
++    left 10 s + core 60 s + right 10 s
++          ↓
++Align query
++    full-slot (main)
++    non-slot (small control)
++          ↓
++Decoder
++    raw (research main)
++    official (secondary / reference / needed output)
++          ↓
++Transition
++    T0 independent / non-serial
++    T1 direct serial
++    T2 core+boundary serial
++    T3 stable-boundary serial
++          ↓
++Detector operating point
++    SA60 / SA80 / R95
++          ↓
++Recovery / control
++    none
++    shadow
++    L local recovery
++    W whole-window recovery
++```
++
++这不是 `2 × 4 × 2 × 4` 的笛卡尔积。正式执行必须按阶段筛选：先用统一 full-slot baseline 比较四种 Transition；之后只选一个 product candidate 和一个 mechanism candidate 进入传播、Detector 与 Recovery 主实验。
++
++## 新 session 运行要求
++
++Agent 不得继续写入旧 research-v7、旧 detector 或旧 fullslot session 的 OUT_ROOT。所有新结果必须创建在新的 session root 下，格式见 `06_AGENT_EXECUTION_CONTRACT.md`。旧 evidence 只读复用。
++
++## 重要非目标
++
++- 不继续穷举更多普通 Logistic/MLP/GBDT；
++- 不继续细调 isotonic calibration 以试图解决 safe-accept；
++- 不做 slot density / sparse-slot 大矩阵；full-slot 为主；
++- 不做 decoder × transition × threshold × recovery × mutation 全排列；
++- 不把简单“尾部加几个零时长”当作主要传播异常；
++- 不预设串行一定是最终产品路线；非串行若明显更稳且成本可接受，允许成为最终候选。
+diff --git a/docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md b/docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md
+new file mode 100644
+index 0000000..3db8260
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md
+@@ -0,0 +1,231 @@
++# 系统分层与冻结设置
++
++- 日期：2026-08-07
++- 状态：设计冻结；实现 agent 必须先做 existing-implementation mapping，再 formal
++
++## 1. 为什么重新分层
++
++本轮讨论确认：此前把 slot、serial、stable-window、detector 和 recovery 混成“串行系统”会导致实验解释不清。
++
++正确分层为：
++
++1. **Audio preprocessing**：原曲是否压缩超长静音；
++2. **Window planner/handling**：窗口在哪里、静音如何吸附、纯静音/前导静音/短尾窗怎么处理；
++3. **Window input construction**：实际送入模型的左右上下文与 core；
++4. **Align query**：模型查询时间戳的方式，slot 与 non-slot；
++5. **Decoder**：raw / official 等如何把模型输出转为对齐行；
++6. **Transition**：当前窗结果怎样形成下一窗状态，包括是否串行、提交边界和推进规则；
++7. **Detector**：无 GT 风险判断；
++8. **Recovery/control**：检测到危险后是否仅 shadow、局部重做或整窗回退。
++
++Slot 是 **Align query**，不是串行方式；Commit policy 与“下一窗从哪里继续”高度耦合，因此并入 Transition/串行策略，不再单列为主实验轴。
++
++---
++
++## 2. Audio preprocessing
++
++### A0 Original
++
++不修改原始时间轴。用于少量对照，尤其检查长静音压缩是否与 silence snap 发生不良交互。
++
++### A1 Long-silence compression — 主线
++
++用户当前倾向：压去过长静音，但不压成 0，保留约 3–5 秒作为结构和重新入声的上下文。
++
++首版规则：
++
++- 仅压缩超过阈值的长静音；阈值不得在 formal 后看结果临时调整；
++- 被压缩的静音保留长度先 pilot `3 s` 与 `5 s`，若无实质差异冻结一个中值/更稳值；
++- 必须输出 original time ↔ compressed time 的单调映射；
++- 所有最终对外 timestamp 必须能恢复到 original timeline；
++- 不能因压缩导致歌词活动区被切除；
++- 对长前导静音同样适用，但仍需保留足够的静音 anchor。
++
++A0/A1 只在少量代表 Transition 上做对照，不进入全矩阵。
++
++---
++
++## 3. Window planner / handling
++
++### 主 planner：silence snap
++
++- nominal core = 60 s；
++- 在 nominal boundary 附近有限搜索静音/低活动区；
++- 吸附不能跨过明显歌词活动区；
++- 不能为了吸附制造过短 core；
++- 保存 nominal boundary 与 actual boundary。
++
++### 小对照：fixed window
++
++仅用于分离 silence-aware planning 的收益，不作为大矩阵。
++
++### 必须统一处理
++
++- `skip_silent_windows`：纯静音窗不做无意义 align；
++- `leading_silence`：长前导静音不强迫首个有效 core 从 0 开始；
++- `tail_window`：尾窗过短时重分配/合并，避免极短尾窗；
++- 英文不得把单词切断；日文不得切断 processor 的最小对齐 unit。
++
++Strict / forced silence boundary 只做少量困难 case，不作为主 planner。
++
++---
++
++## 4. Window input construction
++
++正式主线固定：
++
++```text
++left acoustic context = 10 s
++core                  = 60 s
++right lookahead       = 10 s
++```
++
++即典型最多约 80 秒音频观察区。
++
++语义：
++
++- left 10 s 是声学前文，不代表可再次覆盖已永久提交歌词；
++- core 是当前主要 ownership 区；
++- right 10 s 是 lookahead / 边缘判断信息，不应自动永久写回；
++- 每个 request 必须保存实际 left/core/right 边界。
++
++除专门 context sensitivity 研究外，不再变化此结构。
++
++---
++
++## 5. Align query
++
++### Q0 Full-slot — 主线
++
++正式绝大多数实验使用 full-slot。含义必须以当前实现的 canonical slot mapping 为准，并在 P0 mapping 中写清：给定 query text/context 后，当前目标 region 的所有目标 units 均有 timestamp slots。
++
++必须保存：
++
++- canonical unit id；
++- slot id；
++- occurrence id（若可定义）；
++- query text span；
++- timestamp output row 映射。
++
++### Q1 Non-slot — 少量对照
++
++只在以下位置使用：
++
++- transition product candidate；
++- 必要时再加 mechanism candidate。
++
++目的只回答：full-slot 的优势来自单窗 Align 本身，还是对 state transition 的稳定性也有帮助。
++
++不得把 non-slot 再与所有 Audio/Transition/Recovery 组合。
++
++---
++
++## 6. Decoder
++
++### Raw — 研究主输出
++
++- 保留原始 posterior / timestamp distribution；
++- 作为 detector 新信号、sequence、cross-window、competing-path 的主要证据；
++- 关键 formal 默认必须保存 raw。
++
++### Official — 次选 / 需要时输出
++
++- 用于与现有产品型结果、历史结果对照；
++- 当 transition 当前实现依赖 official 时允许作为执行 decoder；
++- 作为次选输出，不作为主要 detector 特征家族继续扩展；
++- 若一次 forward 可以低成本同时得到 raw/official，应共享 forward，不重复推理。
++
++本阶段不把 decoder 当主实验轴。新 decoder 只有在独立 qualification 后才可加入。
++
++---
++
++## 7. Transition：四种正式行为类别
++
++### T0 Independent / non-serial
++
++核心定义：当前 window 的执行不继承上一 window 的预测 alignment state。
++
++**重要**：Agent 必须先映射当前代码中已经实现的 non-serial 行为。若现有实现需要 GT/canonical oracle 才能决定每窗 query start，则必须明确命名 `oracle-independent`，只作为诊断上界，不能伪装成可部署 non-serial 产品方案。不得为了凑 T0 自行发明未验证的 query-start 规则。
++
++### T1 Direct serial
++
++前窗实际输出/提交状态直接用于下一窗推进。作为最直接传播机制基线。
++
++必须明确记录：
++
++- lyric cursor 来源；
++- audio/time cursor 来源；
++- boundary ownership；
++- 什么结果算永久 commit；
++- 当前实现是否使用 raw 或 official 结果控制推进。
++
++### T2 Core + boundary serial
++
++以 core ownership / boundary 规则推进；right lookahead 不直接成为永久结果。Agent 必须绑定到已有实现的真实行为，并写清“boundary 从哪里取、跨界 unit 属于谁、下一窗文本从哪里开始”。
++
++### T3 Stable-boundary serial
++
++只推进到当前实现定义的 stable boundary；stable boundary 后区域下一窗重新求解。
++
++本阶段**不要求**实现复杂独立的 provisional-tail state。若当前代码只是“stable boundary 后不永久提交，下一窗重新看”，就按此真实语义实验，不得把它包装成更复杂机制。
++
++### Existing implementation mapping gate
++
++Formal 前必须生成：
++
++```text
++TRANSITION_IMPLEMENTATION_MAP.md
++TRANSITION_IMPLEMENTATION_MAP.json
++```
++
++逐个列出 T0–T3：
++
++- 对应已有脚本/函数/配置；
++- 实际 cursor/commit/boundary 行为；
++- 使用的 decoder；
++- 是否已有测试；
++- 与上述语义是否完全一致。
++
++若不一致，先报告并做最小修复；不得静默改名或混用多个旧实现。
++
++---
++
++## 8. Recovery / control：四种行为
++
++### C0 None
++
++不依据 detector/recovery 改变执行。所有 Transition 首先在 C0 下比较。
++
++### C1 Shadow
++
++计算 detector/recovery 建议，但 `actual_writeback = 0`。Shadow 不得改变：
++
++- committed rows；
++- cursor；
++- window trajectory；
++- 下一 request；
++- baseline cache identity。
++
++### C2 L — Local recovery
++
++保留从当前 cursor 开始的连续可信部分，只重做 unresolved / unsafe gap；gap 后方结果不能越过 gap 推进主 cursor。
++
++### C3 W — Whole-window recovery
++
++危险窗口整体不提交，从已冻结的稳定 anchor / retry point 重跑。REJECT 触发的 W 必须满足 `committed_count == 0`（针对该 retry decision 所控制的当前待提交区域）。
++
++Recovery 的正式 closed-loop 只在 Transition 主实验选出的少数候选上跑。
++
++---
++
++## 9. 当前不冻结为主轴的设计
++
++以下保留为后续机制实验，不进入首轮正式矩阵：
++
++- strict silence boundary；
++- sparse / non-contiguous slot；
++- 更多 decoder；
++- context 0/5/20 s 大量组合；
++- boundary unit ownership 多版本；
++- 独立复杂 provisional-tail state；
++- 更多 recovery variant（context reset / silence re-anchor）——只有 L/W 后发现必要才增加。
+diff --git a/docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md b/docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md
+new file mode 100644
+index 0000000..ad9f76f
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md
+@@ -0,0 +1,282 @@
++# 下一阶段总实验计划：Transition–Recovery 主线 + 旧缺陷补齐 + Detector 研究
++
++- 日期：2026-08-07
++- 目标预算：约 10 h GPU，硬上限 12 h（不含纯 CPU 文档/审计时间）；若已有缓存可显著降低实际成本
++- 原则：阶段筛选、共享 forward、先机制后闭环、禁止大笛卡尔积
++
++## 1. 三条研究线
++
++### 主线 A：Transition → Propagation → Recovery
++
++先回答“Aligner 在不同推进方式下本身如何工作”，再研究错误如何传播，最后研究 recovery。**不预设必须串行，也不预设某一种串行是‘真实系统’。**
++
++### 基础线 B：旧实验缺陷补齐
++
++只补会影响现有结论可信度或新实验复用的数据缺口：stress evaluator、旧 serial propagation、hidden extraction、cross-view posterior、repeated occurrence、CNN1D 旧协议纠正等。已经闭合的 identity/audit 不重复跑。
++
++### 研究线 C：Detector
++
++正式完成 SA60、SA80、R95；研究 cross-window、posterior competing path、per-unit sequence、hidden sequence 和 propagation-risk。Detector closed-loop 只在 A 线选出的少数 Transition 上做。
++
++---
++
++## 2. 总执行顺序
++
++```text
++Phase 0  New-session precheck + existing implementation mapping
++Phase 1  Unified baseline/cache + T0/T1/T2/T3 Transition formal
++Phase 2  Select product candidate + mechanism candidate
++Phase 3  Natural/model-native/controlled propagation benchmark
++Phase 4  Transition stability basin + recoverability + oracle recovery
++Phase 5  Old experiment gap completion (parallel where possible)
++Phase 6  Detector SA60/SA80/R95 + signal research
++Phase 7  Closed-loop L/W on selected transitions
++Phase 8  M4 formal summary + MIR fixed transfer + Test Demo auto mining
++Phase 9  Final report / negative results / implementation handoff
++```
++
++任何单一阶段得到负结果都不能自动结束整个 session；见 `06_AGENT_EXECUTION_CONTRACT.md`。
++
++---
++
++## 3. Phase 0：实现映射与基础审计
++
++### 目标
++
++避免 Agent 重新发明已经实现过的串行方式，或把不同旧脚本的语义混在一起。
++
++### 必须完成
++
++1. 映射 T0–T3 当前代码实现；
++2. 映射 full-slot/non-slot 当前 query 接口；
++3. 确认 raw/official 从同一 forward 复用的可行性；
++4. 确认 silence snap、skip silent、leading silence、tail redistribution/merge 当前实现；
++5. 确认 long-silence compression 是否已有；若无，仅实现最小可逆 preprocessing + timeline map；
++6. 生成 resolved config，formal 后不得按结果调参；
++7. 建立新 SESSION_ROOT，旧 OUT_ROOT 全部只读。
++
++### 通过条件
++
++- 每个 transition 的实际状态机有行为测试；
++- 相同 request/cache identity 可复现；
++- output timeline 能映回原曲；
++- session root 不覆盖任何旧 evidence。
++
++---
++
++## 4. Phase 1：Transition 主实验
++
++固定主 baseline：
++
++```text
++Audio        = long-silence compressed（保留值 pilot 后冻结；主倾向 3–5 s）
++Planner      = silence snap
++Window       = left 10 + core 60 + right 10
++Silent       = skip
++Leading      = handle/skip to first useful region
++Tail         = redistribute / merge short tail
++Align        = full-slot
++Decoder data = raw mandatory, official secondary/reference
++Recovery     = none
++```
++
++比较：
++
++- T0 independent / non-serial；
++- T1 direct serial；
++- T2 core+boundary serial；
++- T3 stable-boundary serial。
++
++若 T0 当前只能用 oracle start，应在结果中标为 diagnostic upper bound，同时保留任何已有的真正 non-serial implementation；不得将两者混成一项。
++
++### 主问题
++
++- 哪种方式单窗准确？
++- 哪种方式最少累计漂移？
++- 哪种方式会自然恢复？
++- 哪种方式最易 occurrence jump？
++- 串行相较 non-serial 的收益是否值得传播风险与成本？
++
++### 输出决策
++
++选择：
++
++- **Product candidate**：综合准确率、稳定性、成本最有希望；
++- **Mechanism candidate**：最适合暴露传播机制，不必是最终产品。
++
++若 non-serial 胜出，允许它成为 Product candidate；不得为了继续 serial 故事而排除。
++
++---
++
++## 5. Phase 1b：少量 Align / Audio / Planner 消融
++
++只在 Product candidate（必要时 Mechanism candidate）上运行。
++
++### Align
++
++- full-slot；
++- non-slot。
++
++### Audio / Planner
++
++最少三项：
++
++1. original audio + silence snap；
++2. compressed audio + silence snap；
++3. compressed audio + fixed window。
++
++3s vs 5s 仅 pilot；若差异小立即冻结，不进入 formal 大矩阵。
++
++---
++
++## 6. Phase 3：Propagation Benchmark
++
++三类来源按真实性排序：
++
++### P-N Natural propagation
++
++无 detector 或宽松条件下自动找到第一个真实错误 commit；不纠正，继续 2–5 个窗口。
++
++### P-M Model-native forced commit
++
++从模型自己产生的错误候选中选择：
++
++- raw/official disagreement；
++- top-2 / alternate posterior path；
++- alternate occurrence；
++- 被旧极保守 detector 阻止、但实际模型产生的候选。
++
++只强制“让模型自己的错误通过一次 commit”，之后完全按正常 route forward。
++
++### P-C Controlled state corruption
++
++用于机制扫描，直接修改 canonical transition state，而不是伪造夸张输出：
++
++- lyric cursor ahead/behind；
++- time cursor ahead/behind；
++- cursor+time 协同错但自洽；
++- wrong occurrence；
++- partial boundary/tail corruption。
++
++“尾部塞若干零时长”只做 sanity，不作为主 propagation 数据。
++
++### 有效样本要求
++
++主要 family 目标 `>=64` 个真正影响下一 state 的 episodes；不足时扩大候选池/歌曲/强度，不能因为 no-effect 多就结束。达到资源上限仍不足则写 `bounded_insufficient`，但继续其他 family 和后续独立实验。
++
++---
++
++## 7. Phase 4：Propagation 机制与 Recovery 上界
++
++### Stability basin / phase transition
++
++研究初始误差大小与传播概率，而不是只报 yes/no。
++
++建议首轮：
++
++- lyric cursor：小/中/大，实际数值根据 unit density pilot 固定；同时报告绝对 units 与相对比例；
++- time cursor：±1 / ±3 / ±6 / ±12 s；
++- occurrence wrong：单独 family，不与数值误差混算。
++
++### Recoverability 分类
++
++- self_recover：≤1 窗；
++- slow_recover：2–3 窗；
++- persistent；
++- amplifying；
++- occurrence_jump。
++
++### Oracle recovery
++
++GT 只用于决定真实错误/anchor，运行：
++
++- Oracle-L；
++- Oracle-W；
++- 必要时 oracle cursor reset / occurrence reset。
++
++目的：估计 recovery 上限，拆分 detector limitation、recovery limitation、aligner intrinsic limitation。
++
++---
++
++## 8. Phase 5：旧实验缺陷补齐
++
++详细见 `03_LEGACY_GAP_COMPLETION.md`。本阶段不是重新跑全部 Detector V2，而是补最小必要证据，并复用 Phase 1–4 新 corpus。
++
++---
++
++## 9. Phase 6：Detector
++
++必须完成：
++
++- SA60-primary；
++- SA80-primary；
++- R95-primary（REJECT recall，UNCERTAIN 不算）；
++- SA60+R95 joint feasibility；联合不可行时仍继续两套独立实验。
++
++新信号优先级：
++
++1. cross-window consistency；
++2. posterior competing coherent path / occurrence ambiguity；
++3. per-unit sequence detector；
++4. hidden sequence（hidden extraction gate 通过后）；
++5. propagation-risk target。
++
++不再把 calibration 细调或更多普通 classifier 作为主方向。
++
++---
++
++## 10. Phase 7：Closed-loop Recovery
++
++只在 Product candidate + Mechanism candidate 的少数工作点运行，禁止全组合。
++
++主组合：
++
++- None baseline；
++- Shadow；
++- L-SA60；
++- L-SA80；
++- L-R95；
++- W-R95。
++
++若预算紧，优先保留：L-SA80、L-R95、W-R95 和对应 None。
++
++Recovery 必须使用唯一 route plan；decision/simulation/execution 不得三套解释。
++
++---
++
++## 11. Phase 8：泛化与 Demo
++
++### M4
++
++主 GT formal。训练/threshold validation/test source-song 分离。
++
++### MIR
++
++M4 冻结模型/scaler/threshold 后直接迁移；不得在 MIR 重调后称 fixed transfer。
++
++### Test demo
++
++无 GT 全量自动利用：
++
++- 扫描新增文件，不固定歌曲数；
++- 计算 raw/official disagreement、cross-window jump、posterior multimodality、occurrence ambiguity、compression、route disagreement、intervention/cost；
++- 每首自动输出 suspicious episode ranking；
++- 人工只抽 top 异常、显著改善/恶化和少量随机对照。
++
++不得对无 GT demo 声称 MAE/真实 accuracy。
++
++---
++
++## 12. 最终允许的结论
++
++本阶段允许得到任何一种结果：
++
++- non-serial 最合适；
++- 某种 serial 最合适；
++- full-slot 的主要收益只在 Align，或同时提高 transition stability；
++- long-silence compression 有/无收益；
++- L 比 W 更有效，或反之；
++- detector/recovery 的收益不足以抵消复杂度；
++- propagation-risk signal 有明显价值，或无法泛化。
++
++不允许先假定“必须串行”“必须 detector”“必须 local recovery”，再只保留支持该故事的结果。
+diff --git a/docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md b/docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md
+new file mode 100644
+index 0000000..2e2dd60
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md
+@@ -0,0 +1,300 @@
++# 主线 A：Transition → Propagation → Recovery 详细执行计划
++
++## 1. 主线核心假设
++
++当前最基础的不确定性不是 detector，而是 **transition policy 本身**：已有多种串行推进方式，且 non-serial 也可能成立。只有先比较这些策略，才知道传播 benchmark 和 recovery 应绑定在哪些系统上。
++
++本主线的研究顺序：
++
++```text
++统一 Align/Window/Audio
++→ 比较 Transition
++→ 选 candidate
++→ 构造/收集真实 carried-state error
++→ 测 stability/recoverability
++→ 测 oracle recovery 上限
++→ 接入 detector 工作点
++→ L/W closed-loop
++```
++
++---
++
++## 2. Transition formal：控制变量
++
++四种 T0–T3 必须尽可能共享：
++
++- 同一 source songs；
++- 同一 audio preprocessing；
++- 同一 actual window plan；
++- 同一 10+60+10 input；
++- 同一 full-slot query content；
++- 同一 model forward config；
++- 同一 raw evidence；
++- official 若用于执行，必须记录并在各 transition 保持一致。
++
++唯一允许不同的是 **状态推进/提交规则**。
++
++如果某个历史 transition 强制绑定不同 planner/decoder，必须额外报告这一事实；不能把“planner+decoder+transition 同时变化”的差异解释为 transition 因果收益。
++
++---
++
++## 3. T0–T3 最小行为合同
++
++### T0 Independent / non-serial
++
++- 不读取上一窗预测的 cursor/occurrence/timestamp 作为本窗必要状态；
++- 不把前窗错误写入本窗状态；
++- 若当前实现依赖 oracle text start，明确标为 oracle diagnostic；
++- 其主要用途是隔离“模型单窗能力/上下文敏感性”与“状态反馈传播”。
++
++### T1 Direct serial
++
++- 使用上一窗实际最终 state 推进；
++- 不做 detector/recovery；
++- 只要当前 transition 定义允许 commit，就成为下一窗事实；
++- 作为自然 propagation harvesting 的首选机制 candidate 之一。
++
++### T2 Core+boundary serial
++
++- core ownership 决定可永久推进范围；
++- lookahead 只用于辅助，不自动永久拥有；
++- boundary unit ownership 必须固定，不允许相邻窗重复/漏失 canonical id；
++- next cursor 必须由提交边界唯一计算。
++
++### T3 Stable-boundary serial
++
++- 只提交从当前 cursor 开始的连续 stable region；
++- stable boundary 后不永久写回；
++- 下一窗重新观察该区域；
++- 不需要额外存储复杂 provisional-tail，除非当前实现本来就有且行为已测试；
++- 不允许越过 unresolved/unstable 区域推进 canonical cursor。
++
++---
++
++## 4. Transition 指标
++
++### Accuracy / correctness
++
++同时区分：
++
++- frame/timestamp-level；
++- unit-level；
++- event/interval-level（若适用）；
++- raw 与 official 输出。
++
++不得把不同 metric schema 混在一个“accuracy”。
++
++### Serial / state metrics
++
++- first_error_window / first_error_unit；
++- cursor error（units 与比例）；
++- time drift；
++- missing/duplicate committed canonical ids；
++- occurrence jump rate；
++- propagation probability；
++- propagation depth；
++- amplification slope；
++- corrupted committed units；
++- self-recovery rate；
++- recovery latency。
++
++### Cost
++
++- model forward count；
++- processed audio seconds；
++- decoder-only wall time；
++- end-to-end wall time；
++- cache hit/miss；
++- retry/extra forward（Recovery 阶段）。
++
++---
++
++## 5. Natural propagation harvesting
++
++### 方法
++
++对 T1/T2/T3（以及若可定义的产品 non-serial 不适用传播）运行无 detector baseline，利用 GT **事后**定位第一个真正错误 commit。
++
++一旦发现：
++
++1. 保存 error-before state；
++2. 不进行 GT reset；
++3. 继续 2–5 个后续窗口；
++4. 保存每窗 state、raw/official、posterior summary、commit、cursor；
++5. 自动分类是否恢复/维持/扩大/occurrence jump。
++
++### 禁止
++
++- 发现错误后用 GT 修正再称“自然恢复”；
++- 只记录当前窗误差而不保存后续 carried state；
++- 把 detector 拒绝掉、从未进入 commit 的 unsafe 记作 propagated error。
++
++---
++
++## 6. Model-native forced commit
++
++当自然传播不足时，优先从同一真实 forward 的候选中选错误状态。
++
++候选来源：
++
++- raw 与 official 对同一 unit/区间出现显著差异；
++- posterior top-2 时间峰中次峰形成合理连续路径；
++- 重复歌词存在 alternate occurrence；
++- 旧 detector 判高风险但模型输出本身合法、单调、非明显 artifact。
++
++强制点只在“一次 commit decision”；之后 route 恢复正常。
++
++必须记录：
++
++- 候选是否模型原生；
++- 强制的 state diff；
++- GT 仅用于事后判定该候选确实错误；
++- 下一窗是否真正受到影响。
++
++---
++
++## 7. Controlled canonical state corruption
++
++为跨 Transition 做公平比较，定义 transition-agnostic corruption，再由各 transition adapter 转为自身 next-state 输入。
++
++### Families
++
++1. lyric cursor ahead/behind；
++2. time cursor ahead/behind；
++3. lyric+time coupled/self-consistent wrong state；
++4. wrong occurrence；
++5. partial boundary/tail corruption。
++
++### 强度
++
++不要一开始做巨大网格。首轮仅少/中/大三级，外加 time 的 ±1/±3/±6/±12 s 机制曲线。根据 pilot 的 unit density 将 cursor 级别冻结，同时同时报告绝对 units 和百分比。
++
++### 目的
++
++固定完全相同的初始错误 `Δstate`，比较不同 Transition：
++
++`P(recover | Δstate, transition)`。
++
++这比“某个 transition 上随机异常”的比较更能说明 state policy 天生抗错能力。
++
++---
++
++## 8. Repeated occurrence benchmark
++
++优先真实重复歌词/副歌；必要时机械构造。
++
++### Natural
++
++自动寻找同歌重复 n-gram / chorus，保存每个 occurrence 的 canonical identity 和真实时间。
++
++### Mechanical
++
++若真实样本不足，使用类似：
++
++`ABCD → ABCABD`
++
++但必须同步复制：
++
++- audio；
++- lyrics；
++- canonical GT；
++- occurrence identity。
++
++必须做 seam control，排除模型只检测拼接噪声。
++
++### 指标
++
++- correct occurrence rate；
++- alternate occurrence rate；
++- top-2 是否对应另一真实 occurrence；
++- cross-window occurrence consistency；
++- occurrence jump 后传播深度。
++
++---
++
++## 9. Stability basin / recoverability
++
++对于每个 candidate Transition 输出：
++
++- 初始 cursor/time error → propagation probability 曲线；
++- 初始 error → recovery latency；
++- 初始 error → catastrophic occurrence jump。
++
++将 episode 分类：
++
++- self_recover；
++- slow_recover；
++- persistent；
++- amplifying；
++- occurrence_jump。
++
++重点比较：同等当前误差大小下，后续风险是否完全不同。若成立，说明 detector 不应只预测当前 correctness。
++
++---
++
++## 10. Oracle Recovery
++
++### Oracle-W
++
++GT 指出当前待提交区域含真实危险错误 → 整个待提交窗口/区域不写回，从冻结的稳定 retry point 重做。
++
++### Oracle-L
++
++GT 指出真实错误子区间 → 保留错误前连续正确 prefix，只重做 gap，禁止越过 gap commit。
++
++### Oracle reset（可选）
++
++仅当 L/W 仍无法恢复时，用于区分：
++
++- cursor state 错；
++- occurrence state 错；
++- aligner 在正确 state 下本身仍失败。
++
++Oracle 只用于上限，不能进入实际 detector 训练输入。
++
++---
++
++## 11. Detector-driven Recovery 闭环
++
++只有 Detector 线冻结工作点后运行。
++
++### L route
++
++1. 从当前 cursor 开始扫描三态；
++2. 连续 ACCEPT prefix 可以提交，但仍需满足 transition 自身合法性；
++3. 第一个 REJECT/UNCERTAIN 开始 unresolved gap；
++4. gap 后 ACCEPT 不能直接推进 cursor；
++5. local retry 仅处理 gap 及有限上下文；
++6. retry 后仍只提交从 cursor 开始的连续合法 region；
++7. 每个 nominal window/gap 的 retry 数量必须冻结并有限。
++
++### W route
++
++1. 当前待提交区域有明确 REJECT → 该 decision 下零提交；
++2. 回到冻结的稳定 retry point；
++3. 重跑一次；
++4. 仍失败则标 unresolved，不允许同一窗无限重试。
++
++### Shadow
++
++L/W 都可以先 shadow，但 shadow 不能改变真实 trajectory。
++
++---
++
++## 12. Closed-loop 最小组合
++
++在 Product candidate：
++
++- None；
++- Shadow；
++- L-SA60；
++- L-SA80；
++- L-R95；
++- W-R95。
++
++在 Mechanism candidate：
++
++- None；
++- 只选一个高提交点（优先 SA80）和一个高保护点（R95）做 L/W 机制验证。
++
++禁止四 Transition 全部乘上全部 Detector/Recovery。
+diff --git a/docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md b/docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md
+new file mode 100644
+index 0000000..db30df1
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md
+@@ -0,0 +1,156 @@
++# 基础线 B：先前实验缺陷补齐计划
++
++本线目标是让旧结论可被新阶段正确复用，不是重新跑完整 Detector V2。
++
++## 1. 已闭合，不重复跑
++
++根据最新 BACKLOG25 evidence：
++
++- request identity 已闭合为 1440/1440 matched；
++- duplicate identity 审计已闭合；
++- Family-LOO master conclusion 的错串数字已有修正版；
++- PRECHECK/HIDDEN/REQUEST identity audit 文件已存在；
++- deliverable audit 已补齐。
++
++Agent 只更新状态引用，不再次花 GPU/大量 CPU 重做这些项。
++
++---
++
++## 2. Stress evaluator 模型不一致 — 必修
++
++旧 no-GT stress 路径存在固定 Logistic，而 GT family/正式 detector 使用 frozen small-MLP 等模型，导致 accept/reject state distribution 不能严格比较。
++
++### 修复
++
++- 同一 frozen model；
++- 同一 scaler；
++- 同一 feature combo；
++- 同一 threshold/operating point；
++- 同一 per-request postprocessing；
++- GT/no-GT 只差是否可计算 correctness metric。
++
++### 保留结论
++
++旧 18-family 对 53 features 的直接 rank-AUC/KS 分析不依赖该 evaluator bug，可以保留“现有单点 feature 对多数 stress 弱”的探索结论。
++
++### 不再正式引用
++
++旧 no-GT stress 的具体 accept-rate 不能继续当作 frozen small-MLP 的正式结果。
++
++---
++
++## 3. Serial propagation 缺口 — 用新 benchmark 替代旧重复
++
++旧 serial 中 detector 太严格，1774 units 只提交约 86，真正错误几乎没有进入 carried state；旧 evaluator 对部分提交窗口的未提交 unsafe 跟踪也有缺陷，因此 `propagation=0` 不能解释为成功阻断传播。
++
++### 修复方式
++
++不简单重复旧 run，而是使用主线 A 的：
++
++- natural propagation；
++- model-native forced commit；
++- canonical state corruption；
++- SA80 高提交工作点。
++
++正式报告必须区分：
++
++- unsafe observed；
++- unsafe rejected before commit；
++- wrong committed；
++- wrong state carried；
++- propagated to later window。
++
++---
++
++## 4. Hidden extraction — 尚未真正实验
++
++旧 evidence 中 hidden availability = 0；这不是 hidden 无用，而是 extraction/mapping 未发生。
++
++### Gate
++
++1. 明确 hook layer；
++2. generated token → output row → canonical unit 映射；
++3. hook on/off logits/posterior/raw/official decoded rows 等价；
++4. 保存 schema/version；
++5. sample audit 能人工追踪一个 request 的 token/slot/unit。
++
++Gate 未通过时，所有 hidden 结果必须标 `not_executed`，不能写“无增益”。
++
++---
++
++## 5. Cross-view posterior — 尚未真正实验
++
++旧 cross-view metadata 有一部分，但 full posterior vectors 未保存，`posterior_distance=0` 不能解释为一致。
++
++### 补法
++
++只对重点 corpus 重新 forward：
++
++- Transition candidate 的重叠 window units；
++- repeated occurrence；
++- propagation-prone episodes；
++- 少量 safe controls。
++
++保存足够 posterior 或压缩后仍能精确计算的分布信息，用于：
++
++- L1/L2；
++- JS divergence；
++- top-k time displacement；
++- mode switching。
++
++无需全量重跑所有旧请求。
++
++---
++
++## 6. Repeated-section stress — 产品语义不足
++
++旧 repeated-section 更接近“只改文本、音频不变”的 synthetic mismatch，不充分模拟正确歌曲+正确歌词情况下的 occurrence ambiguity。
++
++### 新替代
++
++- natural repeated chorus；
++- mechanical audio+lyrics+GT 同步复制；
++- seam control；
++- 前窗 state 误选另一 occurrence 后真实继续 forward。
++
++旧 repeated stress 保留为输入鲁棒性 sanity，不作为产品核心异常。
++
++---
++
++## 7. CNN1D 旧协议 — 必须纠正结论
++
++旧 CNN1D：
++
++- sequence-level any-unsafe 标签；
++- train sequences 约 22，且 train 全 positive；
++- validation 仅约 6 条，5 unsafe + 1 safe；
++- sequence AUC=1 只能表示那 1 条 safe 恰好排在 5 条 unsafe 后；
++- 把 sequence score 广播到 window/unit 后 protocol 退化。
++
++### 后续动作
++
++- 旧 `AUC=1` 不得写成“会检测窗口错误”；
++- 新实验只允许 per-unit supervision + per-unit output 的 CNN/TCN；
++- 与 simple MLP baseline 公平比较；
++- 若 per-unit sequence 无增益，记录 negative result 并停止扩模型。
++
++---
++
++## 8. Isotonic calibration — 已回答的问题
++
++旧结果已经显示 isotonic 显著改善 ECE，但不能改善高保护工作点下的 safe acceptance。
++
++### 结论
++
++- calibration 不是当前 safe/unsafe 分不开的主要原因；
++- 后续仅在需要把 `p_bad` 解释为概率时复用 isotonic；
++- 不再花主预算做 temperature/isotonic 细调；
++- 不把校准后的概率改善误写成 discrimination 改善。
++
++---
++
++## 9. 旧工作点缺失
++
++后续文档已计划 SA60/SA80/R95，但 BACKLOG25 中并没有这些正式结果；旧 `protected_recall_95` 不是新 R95。
++
++必须由 Detector 线重新正式完成，见 `04_DETECTOR_RESEARCH_PLAN.md`。
+diff --git a/docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md b/docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md
+new file mode 100644
+index 0000000..88b8251
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md
+@@ -0,0 +1,204 @@
++# 研究线 C：Detector 工作点与新信号
++
++## 1. Detector 的角色重新定义
++
++旧 detector 主要回答“当前 unit 是否 correctness-unsafe”。下一阶段保留该任务，但增加第二个更贴近产品的问题：
++
++> 如果当前错误被 commit，它是否会导致后续 Transition 明显恶化？
++
++因此区分：
++
++1. **correctness detector**；
++2. **propagation-risk detector**。
++
++只有主线 A 有真实 propagation corpus 后，第二种标签才可定义。
++
++---
++
++## 2. 正式工作点
++
++### SA60-primary
++
++约束：
++
++`safe_accept_rate >= 0.60`
++
++在此条件下尽量提高 unsafe reject / 降低 unsafe commit。
++
++### SA80-primary
++
++约束：
++
++`safe_accept_rate >= 0.80`
++
++高吞吐工作点。它不保证“更安全”，但非常适合暴露会真正进入 carried state 的错误，也是 serial propagation 研究的关键点。
++
++### R95-primary
++
++严格定义：
++
++`unsafe_reject_recall >= 0.95`
++
++**UNCERTAIN 不计入 REJECT。** 旧 `protected = REJECT + UNCERTAIN` 不得替代 R95。
++
++### Joint feasibility
++
++尝试同时满足：
++
++- safe_accept >= 60%；
++- unsafe_reject_recall >= 95%。
++
++若不存在合法双阈值：
++
++- 报告不可行和 Pareto gap；
++- **不得停止**；
++- 必须继续分别完成 SA60-primary 和 R95-primary；
++- SA80 同样独立完成。
++
++---
++
++## 3. 静态指标
++
++至少报告：
++
++- AUROC / AUPRC（辅助，不作为唯一验收）；
++- safe_accept；
++- safe_reject；
++- unsafe_accept / false accept；
++- unsafe_reject；
++- uncertain rate；
++- interval@75 / interval@100；
++- unit-level 与 interval-level 分开；
++- raw-target 与 official-target 若同时报告必须明确标签口径。
++
++不同数据集、不同 metric schema 不得混成一个总分。
++
++---
++
++## 4. 新信号优先级
++
++### D1 Cross-window consistency — 最高优先级
++
++同一 canonical/provisional unit 在相邻重叠窗口中的：
++
++- timestamp displacement；
++- posterior JS/L2；
++- top-k candidate displacement；
++- raw/official change；
++- occurrence identity stability。
++
++重点找：单窗低 entropy / 高 confidence，但换上下文后整段跳位置的 stable-but-wrong。
++
++### D2 Posterior competing coherent path
++
++不只看单点 entropy，而寻找两条连续合理路径：
++
++```text
++path A: 60, 61, 62, 63 ...
++path B: 102,103,104,105 ...
++```
++
++特征：
++
++- best vs second coherent path score gap；
++- 两 path 时间距离；
++- second path 连续性；
++- 是否对应另一个真实 occurrence。
++
++优先服务 repeated chorus / occurrence ambiguity。
++
++### D3 Sequence trajectory
++
++连续 unit 的：
++
++- entropy trend；
++- margin trend；
++- timing velocity / acceleration；
++- zero-duration/compression run；
++- repair cluster；
++- posterior mode switch；
++- raw→official correction pattern。
++
++### D4 Per-unit CNN/TCN
++
++输入序列特征，输出每 unit 风险/三态；禁止使用旧 any-bad sequence label 广播协议。
++
++只保留一个轻量 sequence model + simple MLP baseline。若无增益，不扩 Transformer/更多模型。
++
++### D5 Hidden sequence
++
++仅在 hidden extraction gate 通过后：
++
++- adjacent hidden cosine；
++- change point；
++- multi-layer trajectory；
++- raw-safe / hidden-risk / GT-wrong case mining。
++
++无增益即停止。
++
++---
++
++## 5. Propagation-risk target
++
++从主线 A episode 定义结果标签：
++
++- low risk：当前有误差但 ≤1 窗自恢复，且没有额外错误 commit；
++- medium：2–3 窗恢复或有有限 corrupted commits；
++- high：persistent / amplifying / occurrence jump / catastrophic corruption。
++
++训练/评估时不能把后续 GT 结果泄漏到输入 feature，只能作为 label。
++
++比较：
++
++- correctness detector 对 high-risk propagation 的 recall；
++- propagation-risk detector 的 high-risk recall；
++- 在相同 safe acceptance 下，哪一个减少 closed-loop corrupted committed units 更多。
++
++若 propagation-risk detector 能允许“无害小错”通过而仍阻断高危传播，才算对产品有实质价值。
++
++---
++
++## 6. Failure-family generalization
++
++只在 propagation families 上做 leave-one-family-out：
++
++- cursor shift；
++- time shift；
++- partial tail/boundary；
++- occurrence；
++- model-native alternate path。
++
++目的：判断 detector 学的是通用 instability 还是记住异常类型。
++
++不再为普通 replace/missing/extra 做大量 classifier 网格。
++
++---
++
++## 7. Closed-loop 使用规则
++
++静态工作点冻结后，才进入主线 A 的 selected Transition。
++
++建议：
++
++- Product candidate：SA60 / SA80 / R95；
++- Mechanism candidate：优先 SA80 + R95；
++- Recovery：L 与 W 按 `02_TRANSITION_RECOVERY_MAINLINE.md`。
++
++同一 threshold 在不同 Transition 上若分布明显漂移：
++
++- 首先报告 fixed-threshold transfer；
++- 不得偷偷为每个 Transition 重新调阈值后称公平比较；
++- 若需要 transition-specific calibration/threshold，作为第二层明确实验。
++
++---
++
++## 8. 何时停止某个 detector 分支
++
++以下情况可停止该**分支**，但不能停止整个 session：
++
++- hidden extraction 成功但 heldout/transfer 无增益；
++- per-unit sequence 不优于 simple MLP；
++- competing-path 只能识别 seam artifact；
++- propagation-risk target 样本量不足达到预注册门槛。
++
++必须保存 negative result、分母、配置和停止原因，然后继续其他独立分支与最终闭环。
+diff --git a/docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md b/docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md
+new file mode 100644
+index 0000000..6ee7256
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md
+@@ -0,0 +1,193 @@
++# 数据、指标、公平性、缓存与预算
++
++## 1. 数据角色
++
++### M4
++
++主 GT formal。要求 source-song split 严格分离：
++
++- development/train；
++- threshold/calibration validation；
++- test。
++
++不得在 test 结果出来后回调 threshold。
++
++### MIR-1K
++
++固定 M4 detector/scaler/threshold 后迁移。若标签 schema 与 M4 不同，必须分别报告，不得把数值直接拼总表。
++
++### Synthetic / constructed
++
++仅用于机制：
++
++- repeated occurrence；
++- canonical state corruption；
++- model-native forced commit；
++- seam control。
++
++构造来源必须继承 source split，避免同歌不同构造跨 train/test。
++
++### Test demo
++
++无 GT；自动扫描现有与新增 demo，不固定数量。用于：
++
++- trajectory；
++- cross-window consistency；
++- repeated occurrence mining；
++- detector/recovery intervention statistics；
++- runtime；
++- suspicious-case ranking。
++
++不得声称 GT MAE/accuracy。
++
++---
++
++## 2. 自动利用 Test demo
++
++每首自动输出：
++
++- language / duration / silence structure；
++- number of windows；
++- skipped silent windows；
++- raw/official disagreement；
++- cross-window timestamp jump；
++- posterior multimodality；
++- occurrence ambiguity candidates；
++- abnormal compression / zero-duration run；
++- Transition route disagreement；
++- detector intervention；
++- L/W retry cost；
++- top suspicious episodes。
++
++人工只检查：
++
++- top-ranked 异常；
++- route 显著改善/恶化；
++- 少量随机 controls。
++
++---
++
++## 3. 指标层级不得混淆
++
++### Frame/timestamp-level
++
++如 MAE/onset/offset/timestamp deviation，仅在 GT 可用时。
++
++### Unit-level
++
++每 canonical unit correctness、accept/reject、cursor/occurrence identity。
++
++### Interval/event-level
++
++错误区间是否完整/≥75% 命中，必须明确容忍度和 interval merge 规则。
++
++### Serial/episode-level
++
++- propagation probability；
++- propagation depth；
++- cursor/time amplification；
++- corrupted committed units；
++- recovery latency；
++- occurrence jump；
++- final trajectory success。
++
++### Demo listening/visual
++
++仅辅助 qualitative，不可替代主指标。
++
++---
++
++## 4. 公平性要求
++
++比较两方案时至少核对：
++
++- source split；
++- audio identity / preprocessing；
++- actual window plan；
++- left/core/right context；
++- text/query span；
++- slot mapping；
++- decoder；
++- postprocessing；
++- threshold；
++- GT tolerance；
++- duration crop；
++- model forward count；
++- wall time。
++
++如果多个变量同时变化，结论必须降级为“system-level comparison”，不能声称单因素因果。
++
++---
++
++## 5. 缓存
++
++优先共享：
++
++- 同一 audio/request 的 encoder/model forward；
++- raw/official 从同一 forward 派生；
++- 相同 query/slot/window 的 evidence；
++- detector feature conversion。
++
++Cache key 至少包含：
++
++- audio content identity + preprocessing version；
++- exact actual window boundaries；
++- query text/span；
++- slot topology/full-slot identity；
++- model/checkpoint；
++- generation config；
++- hidden hook config（若启用）。
++
++不得仅按文件名或 OUT_ROOT 复用。
++
++Mutation 改变 query/state 并需要真实重新 forward 时，不能错误复用 baseline evidence。
++
++---
++
++## 6. 12h 预算建议
++
++GPU 预算目标约 10h，硬上限 12h。建议：
++
++| 阶段 | 目标预算 |
++|---|---:|
++| baseline/cache + transition formal | 3.0 h |
++| propagation harvesting + controlled episodes | 2.5 h |
++| oracle recovery + transition stability | 1.0 h |
++| legacy gap targeted re-forward | 1.0 h |
++| detector SA60/SA80/R95 + main signals | 2.0 h |
++| selected closed-loop + MIR/demo | 2.0 h |
++| 合计目标 | 11.5 h |
++
++CPU 审计、报告和从已有 evidence 重算不计 GPU 预算，但 Agent 仍应优化 wall time。
++
++### 超预算处理
++
++接近预算时按优先级砍：
++
++1. 更多 hidden layers；
++2. 更多 context/strict-silence 变体；
++3. 更多 non-slot 组合；
++4. 更多 classifier；
++5. 更多 decoder。
++
++不得砍：
++
++- T0–T3 主 comparison；
++- propagation corpus；
++- SA60/SA80/R95；
++- oracle recovery；
++- selected L/W closed-loop；
++- authoritative final report。
++
++---
++
++## 7. 失败恢复与写盘
++
++所有阶段：
++
++- append-only event log；
++- per-item atomic write；
++- manifest/state 定期 flush；
++- resume 跳过已完成且 cache identity 一致的 item；
++- failed item 单独记录，不删除已有结果；
++- summary 从 authoritative JSON/JSONL 生成，不手工抄关键数字。
+diff --git a/docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md b/docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md
+new file mode 100644
+index 0000000..ae2315a
+--- /dev/null
++++ b/docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md
+@@ -0,0 +1,269 @@
++# Agent 执行合同：新 Session、不中途停止、可恢复执行
++
++本文件是强制合同。实现/运行 Agent 不能只读实验概述后自行简化。
++
++## 1. 必须创建全新 SESSION_ROOT
++
++不得继续使用或覆盖旧：
++
++- `runs/research_v7_align_behavior/...`；
++- 旧 Detector V2 OUT_ROOT；
++- 旧 `research_fullslot_serial_detector` 运行目录；
++- 任意已有 formal evidence 目录。
++
++默认创建：
++
++```bash
++SESSION_ROOT="runs/research_transition_recovery_detector_20260807/session_$(date -u +%Y%m%dT%H%M%SZ)"
++```
++
++若用户/环境指定更大磁盘 OUT_ROOT，可改父目录，但 session basename 和内部结构保持独立；必须把实际绝对路径写进 `SESSION_META.json`。
++
++建议目录：
++
++```text
++SESSION_ROOT/
++  00_meta/
++  01_precheck/
++  02_transition/
++  03_propagation/
++  04_oracle_recovery/
++  05_legacy_gaps/
++  06_detector/
++  07_closed_loop/
++  08_transfer_demo/
++  09_reports/
++  cache/
++  logs/
++  SESSION_STATE.json
++```
++
++旧 evidence 只读引用；任何修复后重新生成的数据写进本 session。
++
++---
++
++## 2. Agent 不得“中途停止”的具体含义
++
++以下均**不是停止整个 session 的理由**：
++
++- 某个 experiment result 很差；
++- 某个 detector 无增益；
++- SA60+R95 joint 不可行；
++- 某个 mutation family 诱发率低；
++- 某个 family 达不到 64 个有效 propagated episodes；
++- hidden 没增益；
++- CNN/TCN 没增益；
++- MIR 跨域明显下降；
++- 某个 demo 失败；
++- 单个脚本/item 异常。
++
++处理方式：
++
++1. 写入 authoritative failure/negative-result artifact；
++2. 标状态 `negative_result`、`bounded_insufficient` 或 `item_failed`；
++3. 保存真实分母与失败原因；
++4. 继续执行不依赖该成功结果的后续阶段；
++5. 对依赖该分支的阶段使用预注册 fallback（例如 sequence 无增益则使用 simple MLP；joint 不可行则分别用 SA60/R95）。
++
++### 只有全局阻塞才允许停止
++
++例如：
++
++- 模型 checkpoint 不存在/损坏且所有 GPU 阶段都无法运行；
++- 必需数据整体不可读；
++- CUDA/环境损坏导致所有 forward 无法执行；
++- 磁盘不可写且无法切换到用户允许的 OUT_ROOT；
++- 发现会污染全部结果的严重 identity/split 错误。
++
++即使全局停止，也必须先写：
++
++- `GLOBAL_BLOCKER.json`；
++- 已完成阶段清单；
++- 最后成功 artifact；
++- 失败命令/log；
++- **可直接复制执行的 resume 命令**。
++
++不得只留一句“实验失败/时间不够”。
++
++---
++
++## 3. 状态机与继续规则
++
++`SESSION_STATE.json` 至少包含：
++
++```json
++{
++  "session_root": "...",
++  "current_phase": "phase_x",
++  "phases": {
++    "phase_0": {"status": "complete|partial|blocked|pending"}
++  },
++  "gpu_seconds_used": 0,
++  "hard_budget_seconds": 43200,
++  "resume_command": "..."
++}
++```
++
++每完成一个 phase 原子更新。
++
++Phase 的 `partial/bounded_insufficient` 不等于 session failure。
++
++---
++
++## 4. Phase 0 不得省略
++
++Agent 首先阅读：
++
++1. 本目录全部文档；
++2. `docs/sessions/20260807_transition_recovery_detector_discussion_record.md`；
++3. 上游 `docs/research_fullslot_serial_detector/`；
++4. Detector V2 最新 result review / BACKLOG25 summary；
++5. `AGENTS.md`。
++
++随后必须：
++
++- 搜索已有 T0–T3 代码；
++- 输出 implementation map；
++- 跑 CPU/small smoke；
++- 冻结 resolved config；
++- 再启动 formal。
++
++禁止一上来重新写一套全新的 serial pipeline，除非证明现有实现无法映射。
++
++---
++
++## 5. Formal 后禁止临场调参
++
++进入 formal 前冻结：
++
++- long-silence retain seconds；
++- silence snap search/threshold；
++- tail merge/redistribution；
++- window boundaries semantics；
++- full-slot mapping；
++- transition state semantics；
++- detector scaler/model/threshold；
++- L/W retry count/context；
++- metric tolerances。
++
++Formal 中只能：
++
++- 修复明确代码 bug；
++- 修复会导致结果无效的 schema/identity bug；
++- 继续 resume。
++
++修 bug 后若影响已完成结果，必须自动 invalidation 并只重跑受影响 identity。
++
++---
++
++## 6. 传播异常不得“造得太简单”
++
++主数据优先级：
++
++1. natural model error；
++2. model-native alternate candidate forced commit；
++3. canonical state corruption；
++4. simple zero-duration / naive text corruption 仅 sanity。
++
++禁止为了满足 propagated episode 数量而：
++
++- 把当前窗局部异常当 propagated；
++- 把从未 commit 的 rejected unsafe 当 propagated；
++- 直接写一串明显零时长假输出充数量；
++- 使用 GT 构造下一窗输入后再声称自然传播。
++
++---
++
++## 7. W/L route 必须唯一解释
++
++必须采用：
++
++```text
++DetectorOutput
++→ build_route_plan(...)
++→ RoutePlan
++→ execute_route_plan(...)
++```
++
++`execute_route_plan` 不得重新读取风险分数改变决策。
++
++测试必须覆盖：
++
++- W REJECT 时零提交；
++- L 不越过 unresolved gap；
++- cursor 始终等于第一个未永久提交 canonical unit；
++- committed canonical ids 连续、无重复/漏失；
++- shadow 不改变真实 trajectory。
++
++---
++
++## 8. SA60 / SA80 / R95 不得误解
++
++- SA60：safe accept ≥60%；
++- SA80：safe accept ≥80%；
++- R95：unsafe **REJECT** recall ≥95%；UNCERTAIN 不算 reject；
++- 旧 protected recall 不可替代 R95。
++
++Joint 不可行不是停止理由。必须分别完成三者。
++
++---
++
++## 9. 不允许自动膨胀矩阵
++
++未经明确证据触发，不得新增：
++
++- decoder × transition 全组合；
++- non-slot × 所有 transition/recovery；
++- retain silence 多个细粒度值；
++- 更多 classifier；
++- 更多 hidden layer；
++- strict silence 多参数扫描。
++
++新增实验必须在 `EXPERIMENT_DEVIATIONS.md` 写：
++
++- 为什么现有计划不足；
++- 新实验回答什么；
++- 预计额外 GPU 成本；
++- 哪个低优先级实验被替换/缩减。
++
++---
++
++## 10. 结果报告必须自动生成
++
++最终至少产出：
++
++```text
++09_reports/
++  TRANSITION_REPORT.md/json
++  PROPAGATION_REPORT.md/json
++  ORACLE_RECOVERY_REPORT.md/json
++  LEGACY_GAP_REPORT.md/json
++  DETECTOR_REPORT.md/json
++  CLOSED_LOOP_REPORT.md/json
++  MIR_TRANSFER_REPORT.md/json
++  TEST_DEMO_REPORT.md/json
++  FINAL_SESSION_REPORT.md/json
++  NEGATIVE_RESULTS.md
++  EXECUTION_AUDIT.json
++```
++
++Markdown 关键数字必须来自 JSON；不得手工复制后失配。
++
++---
++
++## 11. 最终完成定义
++
++Session 只有在以下全部有明确状态后才结束：
++
++- T0–T3 完成或有明确 bounded/block reason；
++- Product + Mechanism candidate 已选或说明无法选择；
++- propagation benchmark 有真实分母；
++- oracle L/W 已评；
++- old gap 每项明确 complete/not-executed-with-blocker；
++- SA60/SA80/R95 均有正式结果或不可行证据；
++- selected L/W closed-loop 已完成；
++- MIR fixed transfer 和 test demo 自动分析已执行到可用范围；
++- negative results 已记录；
++- final report 明确“已验证 / 探索性 / 未完成”。
++
++不能因为某一分支失败而把整个 session 提前标 `complete=false` 后直接退出；应继续完成其余独立任务，再在最终报告中如实标部分缺口。
+diff --git a/docs/sessions/20260807_transition_recovery_detector_discussion_record.md b/docs/sessions/20260807_transition_recovery_detector_discussion_record.md
+new file mode 100644
+index 0000000..a9a3280
+--- /dev/null
++++ b/docs/sessions/20260807_transition_recovery_detector_discussion_record.md
+@@ -0,0 +1,294 @@
++# 2026-08-07 Transition–Recovery–Detector 讨论记录
++
++## 1. 会话任务与输入
++
++本轮从“review 当前工作目录和实验记录、陈述实验结果”开始，随后围绕 Detector V2、stress、CNN1D、serial propagation、异常构造、Transition/Align/Audio/Recovery 分层逐步收敛为下一阶段实验计划。
++
++输入：
++
++- `LyricAlignment_202608061251_alignandslot3.zip`；
++- `EVIDENCE_PACK_20260806_BACKLOG25.tar`。
++
++用户最终要求：形成 patch，**使用全新的 session 目录执行**；patch 中保留完整讨论过程，尤其用户的观点、疑问、纠正和所有提出过的想法；实验计划可拆多份，但必须把具体设置和行为写清楚，避免 Agent 误解，并要求 Agent 不得因局部失败或负结果中途停止。
++
++---
++
++## 2. 初始 review：当前结果状态
++
++对工作目录和 BACKLOG25 evidence 的复审确认：
++
++1. Detector V2 的最终状态应是 `completed=false, partial_exploratory=true`，不能引用中间旧快照中的 `completed=true`；
++2. 早期 M4 unsafe rate 约 91.4% 主要受标签错误污染；修复 segment-local→global time 与 sparse-view missing 误标后，unsafe rate 降到约 7.2%；
++3. 修复后 `raw_end_entropy` 成为强单信号，AUROC 约 0.954，说明模型 raw posterior 中确实存在与 alignment correctness 相关的无-GT 信号；
++4. 高保护 frozen detector 能得到约 99%+ unsafe protection，但 safe accept 很低（official heldout 约 8%，raw 约 12%），更像高置信 safe-commit whitelist；
++5. GBDT 等 Pareto 端点显示 safe accept 可以高很多，但这并不等于 SA80 已正式完成；
++6. isotonic calibration 显著改善 ECE，但高保护点 safe accept 没改善，说明主要瓶颈是 discrimination / Pareto，不是概率刻度；
++7. stress 18 family × 53 feature 的直接分布分析中，多数最佳 AUC 仅约 0.58–0.60，repeated_section 约 0.664，说明现有静态单点 feature 对大量异常信号弱；
++8. sequence CNN1D 的旧实验是 sequence-level any-unsafe 标签，验证只有 6 条 sequence（5 unsafe + 1 safe），AUC=1 不能解释为已具备窗口级错误检测能力；把 sequence score 广播到 unit/window 后评价退化；
++9. hidden 实际 availability=0，不能结论“hidden 无增益”；
++10. cross-view full posterior 未保存，`posterior_distance=0` 不是一致性结果；
++11. serial 中只提交约 86/1774 units，且绝大多数提交是正确的，`propagation=0` 主要意味着错误没有真正进入 carried state，不能当作 detector 成功阻断传播；
++12. 最新 request identity audit 已闭合 1440/1440，Family-LOO 错串数字也已修正，这些不应在新阶段重复做。
++
++---
++
++## 3. 用户第一轮追问：W95/SA60/SA80、calibration、stress、CNN1D、未做实验、Serial
++
++用户提出六个问题：
++
++1. “detector 不是还补了 w95、sa60、sa80 吗？怎么没有看到结果？”
++2. “isotonic calibration 是什么？”
++3. “Stress / 文本扰动当前设置足够模拟产品异常吗？当前信号不够强，还有什么新信号和方法？”
++4. “CNN1D 是什么？AUC=1 意味着已经能验证窗口级错误吗？它能预测怎样的危险？”
++5. “这些当前没做的实验又在做什么？”
++6. “Serial 就是没有产生足够跨窗异常？”
++
++讨论后的澄清：
++
++- SA60、SA80、R95/W-R95 已经进入后续实验计划，但 BACKLOG25 中没有正式结果；旧 `protected_recall_95` 与新 R95 不同，后者要求 **REJECT 本身**覆盖 ≥95% unsafe，UNCERTAIN 不能算；
++- isotonic calibration 是对风险分数做单调非参数概率校准，解决“0.8 是否真代表约 80% 风险”的问题，不解决 safe/unsafe 本身重叠；旧结果证明 calibration 有效，但不能救 safe accept；
++- 现有 stress 足够做第一轮单窗压力测试，但不充分模拟“正确歌曲+正确歌词，前窗 state 错后把下一窗 cursor/occurrence 带错”的产品型串行异常；
++- 当前 replace/missing/extra 大量属于窗尾人工文本修改，repeated_section 也更像 text/audio mismatch，不是真正 occurrence ambiguity；
++- 新信号优先考虑 cross-window consistency、posterior 多峰/竞争路径、sequence trajectory、hidden sequence、轻量 counterfactual stability probe；
++- 旧 CNN1D 不能说明窗口级定位，只能说在极小 sequence validation 上出现“整段是否含任何 unsafe”的探索性排序现象；后续应该改为 per-unit sequence supervision/output；
++- 当前没做的 full-slot serial/recovery、SA60/R95、hidden/cross-view 等实验主要想回答真实 carried-state 传播、route 一致性、hidden 增量、工作点和 test-demo 自动化；
++- Serial 的核心缺口确实是“没有足够错误进入 committed/carried state”。
++
++---
++
++## 4. 用户关于高提交工作点与前窗异常构造的观点
++
++用户指出：当前 Serial 没产生足够传播，看起来是 detector 太严格、提交太少；如果换后续 W95/SA80 是否会好一些？同时用户质疑简单异常构造：
++
++> 如果只是简单地在前窗尾部多提交若干个零时长，感觉太简单，反而会带偏。
++
++讨论后形成：
++
++- SA80 会显著增加 commit，因此更容易暴露真正 propagation episode；这不等于 detector 更安全，而是实验更有信息量；
++- R95/W-R95 仍偏保护，主要用来验证高保护闭环能否截断传播，不一定增加传播样本；
++- 主要异常不应直接伪造“明显坏输出”，而应尽量构造**模型会相信的错误 state**。
++
++提出并保留的异常来源：
++
++1. **Natural propagation**：关 detector/放宽工作点，自动找到第一个真实错误 commit 后继续 2–5 窗，不 GT reset；
++2. **Model-native forced commit**：从 raw/official disagreement、posterior 第二候选、alternate occurrence 等模型原生候选中选一个 GT 事后确认错误的候选，只人为让它通过一次 commit；
++3. **Canonical state corruption**：直接在统一 state 上做 lyric cursor、time cursor、二者协同、wrong occurrence、partial boundary/tail 错误，再让各 transition 自己转换成下一窗输入；
++4. 简单零时长/随机文本改动只保留 sanity，不作为主要训练/评价数据。
++
++用户的核心担忧被记录为：异常构造必须尽量贴近“模型自然可能犯的错”，不能让 detector 最后只学到 synthetic artifact。
++
++---
++
++## 5. 提出的后续传播/恢复研究想法
++
++讨论中提出并保留以下想法：
++
++- **错误可恢复性**：区分 self_recover、slow_recover、persistent、amplifying、occurrence_jump；
++- **拦截时机**：同一错误在 t-1、t、t+1 才恢复，比较损失和成本；
++- **commit/recovery granularity**：whole-window、局部 gap、连续 safe prefix 等；
++- **Oracle recovery upper bound**：GT 只做 trigger/anchor，上界拆分 detector limitation、recovery limitation、aligner intrinsic limitation；
++- **Propagation phase transition / stability basin**：研究 cursor/time 初始误差多大开始从可自恢复进入持续传播；
++- **错误类型 × 传播能力**：不再只看 stress AUC，而看哪类错误真正有“传染性”；
++- **Occurrence ambiguity benchmark**：真实重复副歌 + mechanical audio/lyrics/GT 同步复制；
++- **Context sensitivity / wrong-context vs no-context**：错误 context 是否本身是传播媒介；
++- **silence 作为 recovery anchor**：长静音是否天然提供重置点；
++- **raw-only / official-only / disagreement-only 小型消融**；
++- **propagation-family leave-one-out**：验证 detector 学通用 instability 还是记异常类型；
++- **同一个错误 state 换 decoder/route**：公平比较自恢复；
++- **test demo 自动 failure mining**：无 GT 下自动排名可疑片段，而不是只生成结果等待人工看；
++- **precursor signal**：在实际错误发生前 5–20 units 是否已有 entropy、posterior、hidden、cross-window 前兆；
++- **propagation-risk detector**：预测“如果 commit 会不会让后续变差”，而不只是当前是否错。
++
++用户要求后续计划最终收敛，不做这些想法的全组合；可按优先级执行，并保存未执行/负结果。
++
++---
++
++## 6. 用户关键纠正：“真实串行系统”本身并不稳定
++
++用户指出：
++
++> 问题在于“真实串行系统”也是不稳定的。且不说是否要使用串行，如果使用串行，也有很多种且已经实现了几种串行的方案。
++
++这是本轮计划结构上的关键转折。
++
++讨论后不再把某一个 stable-window serial 预设为真实产品系统，而是先研究 execution regime / state transition policy。本阶段先回答：
++
++- 是否需要串行；
++- 不同串行推进方式的稳定性；
++- slot 与 serial 的层次关系；
++- 哪种 transition 天生更抗 state error。
++
++随后才在少数 candidate transition 上研究 detector/recovery。
++
++---
++
++## 7. 用户重新定义系统层次：slot 属于 Align，分窗推进属于 Transition
++
++用户进一步明确：
++
++> slot 应该和 non-slot 并列，是模型对齐的查询方式，归于 Align；而分窗推进更像 Transition 中的行为。
++
++用户列出当前已有设计：
++
++### Align
++
++- slot；
++- non-slot。
++
++### Transition / 推进
++
++- 直接串行；
++- 核心+边界串行；
++- 提交到 stable 边界串行。
++
++### Window planner
++
++- 直接/fixed 分窗；
++- 静音吸附；
++- 强制静音边界。
++
++### Audio preprocessing
++
++- 不处理；
++- 去除/压缩一定长度以外的静音区。
++
++讨论补充了此前容易漏掉的维度：
++
++- non-serial/independent 也应是 Transition 正式成员；
++- skip silent windows；
++- leading silence handling；
++- short tail redistribution / merge；
++- left context + core + right lookahead 的 Window input 层；
++- raw/official Decoder 单列；
++- boundary ownership、text/query span 等作为实现细节/次级轴；
++- Commit 与 Transition 高度耦合，可并入串行策略；
++- complex provisional-tail 并非必须，如果 stable-boundary 当前实际语义只是“stable 后不提交、下一窗重算”，就按真实实现描述。
++
++---
++
++## 8. 用户进一步收敛主实验轴
++
++用户明确当前偏好和优先级：
++
++1. **Align**：slot 可以直接用 full；full-slot 看起来更有优势，non-slot 只少量尝试；
++2. **Decoder**：先 raw 和 official；raw 主要研究，official 需要时作为输出和次选；
++3. **Window input**：固定左右上下文，即 left 10s + core 60s + right 10s；
++4. **Commit policy**：更像针对串行的策略，可以归入 Transition；
++5. **Planner**：主要 silence snap，只少量 fixed；并保留 skip silent、leading silence、tail-window；
++6. **Audio preprocessing**：个人倾向压去过长静音，但要保留约 3–5s，且注意与 silence snap 相关；
++7. **Transition**：行为本身已经计划要实验，是接下来主线。
++
++由此正式收敛为四个核心维度：
++
++- Align 2 种（full-slot 主，non-slot 小对照）；
++- Transition 4 种（independent、direct serial、core+boundary、stable-boundary）；
++- Audio preprocessing 2 种（original、compress long silence）；
++- Recovery/control 4 种（none、shadow、L、W）。
++
++但明确**不能做 2×4×2×4 全排列**。
++
++---
++
++## 9. Provisional tail 的讨论与最终处理
++
++用户问 provisional tail 是怎么做的。
++
++讨论解释了概念：stable prefix 永久 commit，尾部暂存 provisional、下一窗重新观察并可覆盖。
++
++随后进一步收敛：如果当前“提交到 stable 边界串行”的真实实现只是：
++
++- stable boundary 前永久提交；
++- stable boundary 后不提交；
++- 下一窗重新求解；
++
++则不需要为了术语额外实现一个复杂 provisional-tail state。正式实验必须以当前真实实现为准，避免因为名字引入额外状态和实验维度。
++
++---
++
++## 10. 最终三条实验线
++
++用户总结：下一步存在三件事：
++
++1. **先 Transition–Recovery 的主线**；
++2. **先前实验缺陷的补充**；
++3. **Detector 的研究**。
++
++随后要求整理并形成 patch。
++
++最终计划结构：
++
++### 主线 A — Transition → Propagation → Recovery
++
++- 统一 full-slot + 10/60/10 + silence-aware baseline；
++- 先比较 T0–T3，不接 detector；
++- 选 product candidate 和 mechanism candidate；
++- 构建 natural/model-native/canonical-state propagation benchmark；
++- 研究 stability basin、recoverability；
++- 先做 Oracle-L/W 上界；
++- Detector 工作点冻结后再做 L/W closed-loop。
++
++### 基础线 B — 旧缺陷补齐
++
++- stress evaluator 同 frozen model；
++- 旧 serial propagation 结论用新 benchmark 补齐；
++- hidden extraction 真正执行；
++- cross-view full posterior targeted re-forward；
++- repeated-section 改成 occurrence benchmark；
++- CNN1D 旧 AUC=1 结论纠正；
++- isotonic calibration 不再作为主优化方向；
++- 已闭合 1440/1440 identity 等不重复。
++
++### 研究线 C — Detector
++
++- 正式完成 SA60、SA80、R95；
++- joint SA60+R95 不可行也不能停止；
++- cross-window consistency；
++- posterior competing path；
++- per-unit CNN/TCN；
++- hidden sequence；
++- propagation-risk detector；
++- 最终只在 selected Transition 上做 L/W closed-loop。
++
++---
++
++## 11. 用户关于 Agent 执行方式的最终要求
++
++用户最后明确：
++
++> 形成 patch，要求 agent 以新的 session 目录执行。patch 中要包括讨论记录与实验计划。讨论记录总是记录讨论过程，尤其是我的观点与疑问。提出的想法也都要纪录留存。实验计划可以分多份，要求 agent 不能中途停止，写清具体设置与行为以免 agent 误解。
++
++因此本 patch 将：
++
++- 新建独立 `docs/research_transition_recovery_detector_20260807/`；
++- 新建本完整讨论记录；
++- 不覆盖旧 v7/fullslot 计划，而是标为上游历史；
++- 规定新 SESSION_ROOT；
++- 规定 formal 前 existing implementation mapping；
++- 明确 negative result / bounded insufficient / joint infeasible 都不能让整个 session 提前结束；
++- 只有会污染全部结果的全局基础设施阻塞可以停止，且必须留下 resume 命令和完整证据；
++- 明确 12h 预算与优先级裁剪，不允许为了“跑完”扩大成笛卡尔积。
++
++---
++
++## 12. 当前结论强度与待验证内容
++
++### 已有较强证据
++
++- raw posterior 存在 correctness signal，尤其 raw end entropy；
++- isotonic calibration 能改善概率校准但不能解决 safe/unsafe 分离；
++- 旧极保守 detector safe accept 太低，导致 serial propagation 难以观测；
++- 旧 stress 单点 feature 对多数 family 辨别力弱；
++- hidden/cross-view 旧实验并未真正完成；
++- CNN1D 旧 AUC=1 不足以支持窗口级检测能力。
++
++### 当前研究假设，尚未验证
++
++- SA80 会更容易产生有信息量的真实传播 episode；
++- stable-boundary 或 full-slot transition 天生拥有更大的自恢复 basin；
++- occurrence/cursor 协同错比明显零时长错误更危险且更难检测；
++- cross-window consistency / competing posterior path 能发现低 entropy stable-but-wrong；
++- propagation-risk detector 比 correctness detector 更适合产品；
++- long-silence compression 保留 3–5s 比完全不处理更稳，同时不破坏 silence snap；
++- L 可以在接近 W 保护能力下减少重跑和正确内容阻塞。
++
++这些都必须由新 session 实验验证，不能在实现前写成结论。
+diff --git a/configs/research_transition_recovery_detector_20260807/session_defaults.yaml b/configs/research_transition_recovery_detector_20260807/session_defaults.yaml
+new file mode 100644
+index 0000000..3e8c628
+--- /dev/null
++++ b/configs/research_transition_recovery_detector_20260807/session_defaults.yaml
+@@ -0,0 +1,95 @@
++schema_version: transition_recovery_detector_session_v1
++status: declarative_not_yet_wired
++session_name: research_transition_recovery_detector_20260807
++
++runtime:
++  target_gpu_hours: 10
++  hard_gpu_hours: 12
++  require_new_session_root: true
++  default_session_root_pattern: runs/research_transition_recovery_detector_20260807/session_<UTCSTAMP>
++  resume: true
++  overwrite_existing_session: false
++
++model:
++  retrain: false
++  decoder_research_main: raw
++  decoder_secondary: official
++  save_raw_evidence: true
++  save_official_when_available_without_new_forward: true
++
++window:
++  left_context_sec: 10
++  core_sec: 60
++  right_context_sec: 10
++  planner_main: silence_snap
++  planner_control: fixed
++  skip_silent_windows: true
++  leading_silence_handling: true
++  short_tail_policy: redistribute_or_merge
++
++audio_preprocessing:
++  main: compress_long_silence
++  control: original
++  retained_silence_sec_pilot: [3, 5]
++  formal_retained_silence_sec: null  # freeze after pilot, before formal
++  require_original_time_mapping: true
++
++align:
++  main_query_mode: full_slot
++  control_query_mode: non_slot
++  non_slot_scope: selected_transitions_only
++
++transition:
++  candidates:
++    - independent_nonserial
++    - direct_serial
++    - core_boundary_serial
++    - stable_boundary_serial
++  require_existing_implementation_map: true
++  detector_disabled_during_primary_comparison: true
++
++recovery:
++  controls:
++    - none
++    - shadow
++    - local_L
++    - whole_window_W
++  primary_closed_loop:
++    - L_SA60
++    - L_SA80
++    - L_R95
++    - W_R95
++  require_unique_route_plan: true
++
++detector:
++  required_operating_points:
++    - SA60
++    - SA80
++    - R95
++  r95_definition: unsafe_reject_recall
++  uncertain_counts_as_reject: false
++  joint_sa60_r95_attempt: true
++  continue_if_joint_infeasible: true
++  signal_priority:
++    - cross_window_consistency
++    - posterior_competing_path
++    - per_unit_sequence
++    - hidden_sequence_after_gate
++    - propagation_risk
++
++propagation:
++  source_priority:
++    - natural
++    - model_native_forced_commit
++    - canonical_state_corruption
++    - simple_sanity_only
++  target_effective_episodes_per_major_family: 64
++  min_followup_windows: 2
++  max_followup_windows: 5
++  count_rejected_before_commit_as_propagated: false
++
++data:
++  primary_gt: M4
++  fixed_transfer: MIR1K
++  test_demo_auto_discovery: true
++  test_demo_has_gt: false
+diff --git a/PATCH_README_20260807_TRANSITION_RECOVERY_DETECTOR.md b/PATCH_README_20260807_TRANSITION_RECOVERY_DETECTOR.md
+new file mode 100644
+index 0000000..6f7183a
+--- /dev/null
++++ b/PATCH_README_20260807_TRANSITION_RECOVERY_DETECTOR.md
+@@ -0,0 +1,47 @@
++# 2026-08-07 Transition–Recovery–Detector 计划补丁
++
++本补丁只新增/更新下一阶段的**设计、讨论记录、执行合同与声明式配置**；不伪造任何新实验结果，也不声称新 pipeline 已实现。
++
++## 新增
++
++- `docs/research_transition_recovery_detector_20260807/README.md`
++- `docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md`
++- `docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md`
++- `docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md`
++- `docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md`
++- `docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md`
++- `docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md`
++- `docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md`
++- `docs/sessions/20260807_transition_recovery_detector_discussion_record.md`
++- `configs/research_transition_recovery_detector_20260807/session_defaults.yaml`
++- `TRANSITION_RECOVERY_DETECTOR_20260807_PATCH_MANIFEST.json`
++
++## 更新
++
++- `docs/sessions/SESSION_INDEX.md`：加入 2026-08-07 hot session。
++
++## 核心变化
++
++1. Slot/non-slot 归入 Align query；不再把 slot 当串行方案；
++2. Transition 独立比较 T0 independent、T1 direct serial、T2 core+boundary、T3 stable-boundary；
++3. Audio 主倾向压缩超长静音并保留约 3–5s，silence snap 为主 planner；
++4. full-slot 为主，non-slot 只少量对照；raw 为研究主输出，official 为次选/reference；
++5. 先 Transition，再 propagation / oracle Recovery，再接 Detector closed-loop；
++6. 补齐 stress evaluator、serial propagation、hidden、cross-view、occurrence/CNN1D 等旧缺口；
++7. Detector 必须正式完成 SA60、SA80、R95；joint 不可行也不能停；
++8. 所有新结果写入全新的 session root，不覆盖旧 OUT_ROOT；
++9. 单一实验失败、负结果、样本不足不能让 Agent 中途停止整个 session。
++
++## 应用
++
++将 patch archive 解压到仓库根目录覆盖新增文档即可，或运行随包的 `APPLY_TRANSITION_RECOVERY_DETECTOR_20260807.sh` 做存在性检查。
++
++应用后先读：
++
++```text
++docs/research_transition_recovery_detector_20260807/README.md
++docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md
++docs/sessions/20260807_transition_recovery_detector_discussion_record.md
++```
++
++声明式 YAML 当前 `status: declarative_not_yet_wired`。Agent 必须先 inventory/mapping 现有实现后再接线，不得把配置文件存在误写为已经实现完成。
+diff --git a/APPLY_TRANSITION_RECOVERY_DETECTOR_20260807.sh b/APPLY_TRANSITION_RECOVERY_DETECTOR_20260807.sh
+new file mode 100755
+index 0000000..8fd6900
+--- /dev/null
++++ b/APPLY_TRANSITION_RECOVERY_DETECTOR_20260807.sh
+@@ -0,0 +1,35 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++REPO="${REPO:-$SCRIPT_DIR}"
++
++if [[ ! -f "$REPO/README.md" || ! -d "$REPO/docs/research_v7_align_behavior" ]]; then
++  echo "[error] REPO does not look like the expected LyricAlignment tree: $REPO" >&2
++  exit 2
++fi
++
++required=(
++  "$REPO/docs/research_transition_recovery_detector_20260807/README.md"
++  "$REPO/docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md"
++  "$REPO/docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md"
++  "$REPO/docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md"
++  "$REPO/docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md"
++  "$REPO/docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md"
++  "$REPO/docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md"
++  "$REPO/docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md"
++  "$REPO/docs/sessions/20260807_transition_recovery_detector_discussion_record.md"
++  "$REPO/configs/research_transition_recovery_detector_20260807/session_defaults.yaml"
++  "$REPO/TRANSITION_RECOVERY_DETECTOR_20260807_PATCH_MANIFEST.json"
++)
++
++for path in "${required[@]}"; do
++  [[ -f "$path" ]] || { echo "[error] missing patch file: $path" >&2; exit 3; }
++done
++
++grep -q '20260807_transition_recovery_detector_discussion_record.md' "$REPO/docs/sessions/SESSION_INDEX.md" \
++  || { echo "[error] SESSION_INDEX was not updated" >&2; exit 4; }
++
++echo "[ok] Transition–Recovery–Detector 20260807 planning patch is present."
++echo "[next] Read: $REPO/docs/research_transition_recovery_detector_20260807/README.md"
++echo "[contract] $REPO/docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md"
+diff --git a/TRANSITION_RECOVERY_DETECTOR_20260807_PATCH_MANIFEST.json b/TRANSITION_RECOVERY_DETECTOR_20260807_PATCH_MANIFEST.json
+new file mode 100644
+index 0000000..ebba9e1
+--- /dev/null
++++ b/TRANSITION_RECOVERY_DETECTOR_20260807_PATCH_MANIFEST.json
+@@ -0,0 +1,73 @@
++{
++  "schema_version": "transition_recovery_detector_patch_manifest_v1",
++  "created_date": "2026-08-07",
++  "base_package": "LyricAlignment_202608061251_alignandslot3.zip",
++  "purpose": "Planning/documentation patch for a new Transition-Recovery-Detector session; no new experiment results claimed.",
++  "files": [
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/README.md",
++      "size": 3295,
++      "sha256": "a1473e807547e4beb3c518dce1658e99f4bdb7f6757c77413681626ca2941c42"
++    },
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/00_FACTOR_MODEL_AND_FREEZE.md",
++      "size": 8086,
++      "sha256": "92820cdcbc1a0e8897accabdfe1ca3b720b47266f0594f1b73f0bff499f2b859"
++    },
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/01_MASTER_EXPERIMENT_PLAN.md",
++      "size": 8888,
++      "sha256": "1bfde11ea71d065e1200545afc98defbbe0e09c514d86a8d00e306c0e43e3eb8"
++    },
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/02_TRANSITION_RECOVERY_MAINLINE.md",
++      "size": 8315,
++      "sha256": "9f4da16de5d34dbc147aec5d66889dcbd7e0f37cf3fbdf26f3e7fed1c1392440"
++    },
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/03_LEGACY_GAP_COMPLETION.md",
++      "size": 4844,
++      "sha256": "68e99ba3fc502b587f1f824c317513111f341c271b2dfa02aa62a8038b09030a"
++    },
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/04_DETECTOR_RESEARCH_PLAN.md",
++      "size": 5317,
++      "sha256": "8e08f2c8dc9a828463d4cf1f551736e04cf3f674be75f2bc7f236931b97f1400"
++    },
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/05_DATA_METRICS_BUDGET.md",
++      "size": 4427,
++      "sha256": "3f11adfdf8deb940b27072c2bec51e69c8bea7e0002737b3ef877e34349a9840"
++    },
++    {
++      "path": "docs/research_transition_recovery_detector_20260807/06_AGENT_EXECUTION_CONTRACT.md",
++      "size": 7027,
++      "sha256": "2f60d1c8bb3355ce5de7dfa7edc0434a9f3865d63bf904a6f6c497a6f95e6890"
++    },
++    {
++      "path": "docs/sessions/20260807_transition_recovery_detector_discussion_record.md",
++      "size": 15452,
++      "sha256": "4d6810f2e9836dc2367bef554a3f24e4843f6956a0a5102e97b2263fe2a388ab"
++    },
++    {
++      "path": "docs/sessions/SESSION_INDEX.md",
++      "size": 7123,
++      "sha256": "04edb3a45e4a9312ebb6ad6cc96c0a97c3c813febd590f3905b4a332be39e1f6"
++    },
++    {
++      "path": "configs/research_transition_recovery_detector_20260807/session_defaults.yaml",
++      "size": 2310,
++      "sha256": "27dd7d52cba81780aab4cf5a3ee20c22ef774c41eb844722523c075065e02a65"
++    },
++    {
++      "path": "PATCH_README_20260807_TRANSITION_RECOVERY_DETECTOR.md",
++      "size": 2645,
++      "sha256": "66f446293fb5e888df7e770bad913cbec358b9477ffb02bb80494cda72151d4c"
++    },
++    {
++      "path": "APPLY_TRANSITION_RECOVERY_DETECTOR_20260807.sh",
++      "size": 1850,
++      "sha256": "6c9f4a2b0d851a0992a0a1bf41f13852be4dd31e751a71346c44ec1285620ce1"
++    }
++  ]
++}
+diff --git a/docs/sessions/SESSION_INDEX.md b/docs/sessions/SESSION_INDEX.md
+index 327eeb8..c3784b1 100644
+--- a/docs/sessions/SESSION_INDEX.md
++++ b/docs/sessions/SESSION_INDEX.md
+@@ -8,6 +8,7 @@
+ 
+ | Date | Session | Temperature | Summary |
+ |---|---|---|---|
++| 2026-08-07 | `20260807_transition_recovery_detector_discussion_record.md` | hot | Reframed next stage into Align/query, Window/Audio, four Transition policies, propagation and Recovery mainline, legacy evidence gap completion, SA60/SA80/R95 Detector research, and a new resumable session contract that must continue through negative or infeasible branches. |
+ | 2026-08-06 | `20260806_fullslot_serial_detector_discussion_record.md` | hot | Full review-to-design record: full-slot serial, stable 10+60+10 silence-snap Base, W/L consistent routes, real prefix-carried errors, raw/hidden sequence signals, mandatory SA60/R95, automated Test Demo statistics and B4 shadow control. |
+ | 2026-08-04 | `20260804_align_behavior_slot_region_assessor_archive.md` | hot | Reviewed research-v7 evidence and corrections; ≥180s timelines with fixed 60s requests; absolute+percentage mutations; missing/replace evaluation; slot-density fairness; H/R/O cross-domain assessor; human-label audit; 10h target/12h hard limit. |
+ | 2026-07-31 | `20260731_alignment_research_v6_formal_decoder_route_completion.md` | hot | Frozen decoder is applied before formal serial commit/cursor updates; pilot test leakage, under-selection, and E8 failed-propagation effect contamination are fixed. |
