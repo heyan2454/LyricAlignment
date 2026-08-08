@@ -68,6 +68,7 @@ def main() -> None:
 
     combo_results: dict[str, dict] = {}
     artifacts: list[dict] = []
+    combo_models: dict[str, dict] = {}
     # 先跑 legacy8 与 extended 拿到 baseline 比较，再跑矩阵
     for combo, fams, note in MATRIX + [("legacy8", LEGACY8, "旧 8 特征 baseline"), ("extended", EXTENDED, "legacy8+V+S")]:
         names = family_union(*fams)
@@ -126,6 +127,9 @@ def main() -> None:
             "note": note,
         }
         artifacts.append(artifact)
+        # 保存模型 pkl（供 closed_loop_v3 消费）：record 到 combo_models 待 main 汇总选最优
+        combo_models[combo] = {"model": model, "scaler": scaler, "feature_names": tuple(names),
+                               "auc_heldout": ho["auc"], "n_heldout": ho["n"]}
         print(f"[v2] {combo}: train_auc={tr['auc_train']:.4f} heldout_auc={ho['auc']} n={ho['n']}")
 
     legacy_auc = combo_results["legacy8"].get("auc_heldout")
@@ -183,6 +187,15 @@ def main() -> None:
     }
     (out_dir / "TRAIN_META_v2.json").write_text(json.dumps(train_meta_json, indent=2, ensure_ascii=False), encoding="utf-8")
     (out_dir / "SIGNAL_COMPLETION_MATRIX_v2.json").write_text(json.dumps(matrix_json, indent=2, ensure_ascii=False), encoding="utf-8")
+    # v3 格式（单阈值 -> 双阈值，供 closed_loop_v3）：SA: (t, 1.0)；R95: (0.0, t)
+    frozen_v3 = {}
+    for _wp in frozen.get("working_points", []):
+        _t = _wp["threshold"]
+        if _wp["point"].startswith("SA"):
+            frozen_v3[_wp["point"]] = {"t_accept": float(_t), "t_reject": 1.0}
+        else:
+            frozen_v3[_wp["point"]] = {"t_accept": 0.0, "t_reject": float(_t)}
+    frozen["working_points_v3_format"] = frozen_v3
     (out_dir / "FROZEN_WORKING_POINTS_v2.json").write_text(json.dumps(frozen, indent=2, ensure_ascii=False), encoding="utf-8")
     for f, names in family_names_map().items():
         if f in ("H", "PR"):
@@ -195,6 +208,23 @@ def main() -> None:
                 json.dumps({"combo": c, **r}, indent=2, ensure_ascii=False), encoding="utf-8")
 
     partial = "H blocked_api; PR not_executed"
+    # 保存最优 executed combo 模型（heldout AUC 最高）供 closed_loop_v3 消费
+    import pickle
+    best_combo = max(
+        ((c, m) for c, m in combo_models.items() if m.get("auc_heldout") is not None),
+        key=lambda x: x[1]["auc_heldout"],
+        default=None,
+    )
+    if best_combo is not None:
+        bc, bm = best_combo
+        pkl_path = out_dir / "detector_mlp_v2.pkl"
+        with open(pkl_path, "wb") as f:
+            pickle.dump({"model": bm["model"], "scaler": bm["scaler"],
+                         "feature_names": bm["feature_names"],
+                         "combo": bc, "auc_heldout": bm["auc_heldout"]}, f)
+        print(f"[v2] saved best model: {bc} (heldout {bm['auc_heldout']:.4f}) -> {pkl_path}")
+    else:
+        print("[v2] WARN: no executed combo model saved")
     print(f"[v2] done -> {out_dir}")
     print(f"[v2] partial evidence: {partial} (仅 R/O/V/S/P 部分可用)")
 

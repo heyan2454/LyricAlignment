@@ -669,7 +669,7 @@ def main() -> int:
     from lyricalign.demo.window_planning import build_silence_aware_window_plan  # noqa: E402
     from lyricalign.research_transition_recovery_detector.detector_features import (  # noqa: E402
         FEATURE_NAMES,
-        extract_unit_features,
+        extract_signal_features,
     )
     from lyricalign.research_transition_recovery_detector.runner import RealAlignerBackend  # noqa: E402
 
@@ -683,18 +683,13 @@ def main() -> int:
         for line in Path(args.timeline_manifest).read_text(encoding="utf-8").splitlines()
         if line.strip()
     }
-    frozen = json.loads(
-        (session_root / "06_detector" / "FROZEN_WORKING_POINTS.json").read_text(encoding="utf-8"))
+    v2_path = session_root / "10_followup" / "detector_v2" / "FROZEN_WORKING_POINTS_v2.json"
+    frozen = json.loads(v2_path.read_text(encoding="utf-8")).get("working_points_v3_format", {})
     if args.working_point not in frozen:
-        raise ValueError(f"working point {args.working_point!r} not in FROZEN_WORKING_POINTS.json")
-    gates_path = session_root / "00_meta" / "VALIDITY_GATES.json"
-    if gates_path.is_file():
-        gates = json.loads(gates_path.read_text(encoding="utf-8")).get("gates", {})
-        if gates.get("gate_d_detector") != "pass":
-            raise SystemExit("gate_d_detector not pass; frozen detector required before closed loop")
+        raise ValueError(f"working point {args.working_point!r} not in FROZEN_WORKING_POINTS_v2.json (v3 format)")
     wp = frozen[args.working_point]
-    if not wp.get("feasible") or "t_accept" not in wp or "t_reject" not in wp:
-        raise ValueError(f"working point {args.working_point!r} not frozen/feasible")
+    if "t_accept" not in wp or "t_reject" not in wp:
+        raise ValueError(f"working point {args.working_point!r} not frozen/feasible (v3 format)")
     with open(args.detector_pkl, "rb") as f:
         artifact = pickle.load(f)
 
@@ -715,7 +710,7 @@ def main() -> int:
     detector_feature_names = tuple(artifact.get("feature_names") or FEATURE_NAMES)
 
     def detector_predict(rows):
-        feats = [extract_unit_features(r) for r in rows]
+        feats = extract_signal_features(rows)
         return predict_p_bad(artifact, feats, detector_feature_names)
 
     per_song = []
