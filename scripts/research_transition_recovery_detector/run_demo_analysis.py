@@ -128,7 +128,7 @@ def main() -> int:
                 global_audio_offset_sec=0.0, args=infer_args,
             )
             feats = [extract_unit_features(r) for r in rows]
-            p_bad = predict_p_bad(detector, feats, FEATURE_NAMES)
+            p_bad = predict_p_bad(detector, feats, tuple(detector.get("feature_names") or FEATURE_NAMES))
             wp = frozen["SA80"]
             states = [tristate_labels(float(pp), wp["t_accept"], wp["t_reject"]) for pp in p_bad]
             # 结构指标

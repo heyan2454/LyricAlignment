@@ -115,7 +115,7 @@ def main() -> int:
                 diffs.append(abs(float(r["fixed_global_start_sec"]) - float(g["start_sec"])))
         correct = sum(1 for d in diffs if d <= TOLERANCE)
         feats = [extract_unit_features(r) for r in rows]
-        p_bad = predict_p_bad(detector, feats, FEATURE_NAMES)
+        p_bad = predict_p_bad(detector, feats, tuple(detector.get("feature_names") or FEATURE_NAMES))
         tristate = {k: 0 for k in (STATE_ACCEPT, STATE_REJECT, STATE_UNCERTAIN)}
         for pp, g in zip(p_bad, [gt.get(int(r["global_character_index"])) for r in rows], strict=True):
             wp = frozen["SA80"]
