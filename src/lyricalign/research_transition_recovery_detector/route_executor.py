@@ -73,8 +73,11 @@ class RouteExecutor:
                 retry, audio=audio, document=document, state=state, gt_timeline=gt_timeline
             )
             executed_forward_count = 1
+            # runner backend 契约：(rows, audit dict)；audit 可选携带成本字段。
+            audit = outcome[1] if isinstance(outcome, tuple) else outcome
+            audit = audit or {}
             forward_cost = {
-                k: float(outcome.get(k, 0.0)) for k in ("forward_seconds", "audio_seconds")
+                k: float(audit.get(k, 0.0)) for k in ("forward_seconds", "audio_seconds")
             }
 
         new_state = self._advance(state, plan)

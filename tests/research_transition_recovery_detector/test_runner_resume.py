@@ -18,6 +18,7 @@ from lyricalign.research_transition_recovery_detector.identity import (
     forward_cache_key,
     trajectory_cache_key,
 )
+from lyricalign.research_transition_recovery_detector.query_estimator import QueryEstimator
 from lyricalign.research_transition_recovery_detector.runner import (
     FakeAlignerBackend,
     TransitionRunner,
@@ -31,7 +32,6 @@ SR = 16000
 
 def make_config(session_root):
     return {
-        "unit_density_sec": 1.2,
         "lookback_units": 8,
         "audio_sha": "resume-test-v1",
         "model_identity": {"kind": "fake", "checkpoint": "none"},
@@ -68,7 +68,7 @@ def test_resume_reuses_forward_cache(tmp_path):
     document = make_document()
     config = make_config(tmp_path)
 
-    first = FakeAlignerBackend(unit_density_sec=1.2)
+    first = FakeAlignerBackend(sec_per_unit=1.2)
     runner1 = TransitionRunner(config, session_root=tmp_path, backend=first)
     records1 = runner1.run_song(
         song_id="song-a", audio=audio, document=document, window_plan=plan,
@@ -76,7 +76,7 @@ def test_resume_reuses_forward_cache(tmp_path):
     )
     assert first.forward_calls > 0
 
-    second = FakeAlignerBackend(unit_density_sec=1.2)
+    second = FakeAlignerBackend(sec_per_unit=1.2)
     runner2 = TransitionRunner(config, session_root=tmp_path, backend=second)
     records2 = runner2.run_song(
         song_id="song-a", audio=audio, document=document, window_plan=plan,
@@ -95,14 +95,14 @@ def test_config_change_invalidates_forward_cache(tmp_path):
     document = make_document()
     config = make_config(tmp_path)
 
-    backend = FakeAlignerBackend(unit_density_sec=1.2)
+    backend = FakeAlignerBackend(sec_per_unit=1.2)
     TransitionRunner(config, session_root=tmp_path, backend=backend).run_song(
         song_id="song-a", audio=audio, document=document, window_plan=plan,
         transition=TRANSITION_T1_DIRECT,
     )
     changed = dict(config)
     changed["lookback_units"] = 40  # 改变 query 范围 → request 变化 → key 不同
-    backend2 = FakeAlignerBackend(unit_density_sec=1.2)
+    backend2 = FakeAlignerBackend(sec_per_unit=1.2)
     runner2 = TransitionRunner(changed, session_root=tmp_path, backend=backend2)
     runner2.run_song(
         song_id="song-a", audio=audio, document=document, window_plan=plan,
@@ -144,14 +144,15 @@ def test_query_ids_t0_requires_gt():
     bounds = (0.0, 10.0, 70.0, 80.0)
     ids = build_query_ids(
         transition="T0_oracle_independent", state=None, model_bounds=bounds,
-        unit_density_sec=1.2, gt_timeline={0: {"start_sec": 9.0}, 5: {"start_sec": 50.0},
-                                           9: {"start_sec": 71.0}},
+        estimator=QueryEstimator(n_units=200, effective_audio_sec=240.0),
+        gt_timeline={0: {"start_sec": 9.0}, 5: {"start_sec": 50.0}, 9: {"start_sec": 71.0}},
         lookback_units=8,
     )
     assert ids == (5,)
     assert build_query_ids(
         transition="T0_oracle_independent", state=None, model_bounds=bounds,
-        unit_density_sec=1.2, gt_timeline=None, lookback_units=8,
+        estimator=QueryEstimator(n_units=200, effective_audio_sec=240.0),
+        gt_timeline=None, lookback_units=8,
     ) is None
 
 

@@ -25,7 +25,6 @@ from lyricalign.research_transition_recovery_detector.contracts import (  # noqa
     TransitionState,
 )
 from lyricalign.research_transition_recovery_detector.runner import (  # noqa: E402
-    DEFAULT_UNIT_DENSITY_SEC,
     RealAlignerBackend,
     TransitionRunner,
 )
@@ -36,7 +35,7 @@ TOLERANCE = 0.32
 
 
 def corrupted_states(
-    state: TransitionState, *, n_units: int, unit_density_sec: float,
+    state: TransitionState, *, n_units: int, sec_per_unit: float,
 ) -> list[tuple[str, dict, TransitionState]]:
     """返回 (family, 强度描述, corrupted state) 列表。
 
@@ -75,7 +74,7 @@ def corrupted_states(
             committed_ids=tuple(range(new_end)),
             next_input_cursor=min(base.next_input_cursor, new_end),
             previous_committed_end_model_sec=base.previous_committed_end_model_sec
-            + delta * unit_density_sec,
+            + delta * sec_per_unit,
         )
         families.append(("coupled_self_consistent", {"delta_units": delta}, coupled))
     wrong_occ = base.derive(
@@ -144,7 +143,6 @@ def run(args: argparse.Namespace) -> int:
         research_model_identity=model_identity, device=args.device,
     )
     config = {
-        "unit_density_sec": DEFAULT_UNIT_DENSITY_SEC,
         "lookback_units": 8,
         "model_identity": model_identity,
         "env_identity": "gpu-propagation",
@@ -167,20 +165,23 @@ def run(args: argparse.Namespace) -> int:
         row = by_song[song_id]
         audio, document, gt = load_song_from_timeline(row)
         n_units = len(row["canonical_units"])
-        density = n_units / float(row["duration_sec"])
+        sec_per_unit = float(row["duration_sec"]) / max(n_units, 1)
         duration = float(len(audio) / 16000)
         plan = build_silence_aware_window_plan(
             duration, build_vocal_activity_profile(audio, sample_rate=16000),
             target_core_sec=60.0, left_context_sec=10.0, right_context_sec=10.0,
         )
-        # clean 起点：正常 T2 首窗后的 state（作为 corruption 的 base）
+        # clean 起点：正常 T2 首窗后的 state（作为 corruption 的 base）；
+        # continuation 语义（09 P0.2）：corrupted.window_index=k+1 时只执行 windows[k+1:]，
+        # 并恢复前序 observations，绝不重放已执行窗口。
         clean_records = runner.run_song(
             song_id=f"{song_id}::clean", audio=audio, document=document, window_plan=plan,
             transition=TRANSITION_T2_CORE, gt_timeline=gt, compress=True, retained_total_sec=3.0,
         )
+        clean_observations = dict(runner.last_observations)
         base_state = TransitionState(**clean_records[0]["state_after"])
         for family, spec, corrupted in corrupted_states(
-            base_state, n_units=n_units, unit_density_sec=density,
+            base_state, n_units=n_units, sec_per_unit=sec_per_unit,
         ):
             eid = f"corr_{song_id}__{family}__{json.dumps(spec, sort_keys=True)}"
             if eid in by_episode:
@@ -190,6 +191,7 @@ def run(args: argparse.Namespace) -> int:
                 window_plan=plan, transition=TRANSITION_T2_CORE, gt_timeline=gt,
                 compress=True, retained_total_sec=3.0,
                 starting_state=corrupted,
+                observations=clean_observations,
             )
             followup = []
             first_new_wrong = 0
@@ -209,14 +211,27 @@ def run(args: argparse.Namespace) -> int:
                 if not first_new_wrong:
                     first_new_wrong = wrong
             episode = {
-                "episode_id": eid, "family": family, "source": "canonical_state_corruption",
-                "song_id": song_id, "natural": False,
+                "episode_id": eid, "family": family,
+                "source": "canonical_state_corruption",
+                "source_song_id": song_id,
+                "transition_id": TRANSITION_T2_CORE,
+                "natural": False,
+                "window_index_before_intervention": corrupted.window_index - 1,
+                "continue_from_window_index": corrupted.window_index,
+                "state_before": corrupted.__dict__,
+                "state_after_clean_window": base_state.__dict__,
+                "intervention": {"family": family, "spec": spec},
+                "provenance": {
+                    "clean_run_song_id": f"{song_id}::clean",
+                    "query_estimator_version": "units_per_sec_v2",
+                    "clean_observations_restored": True,
+                    "continuation": True,
+                },
                 "corruption_spec": spec,
-                "error_before_state": {"committed_end": corrupted.committed_end_exclusive,
-                                       "previous_committed_end_model_sec": corrupted.previous_committed_end_model_sec},
                 "state_delta": {"committed_end": corrupted.committed_end_exclusive},
                 "followup_windows": followup[:5],
                 "recovery_class": recovery_class(followup[:5], first_new_wrong),
+                "no_effect_attempt": all(w["new_committed"] == 0 for w in followup[:2]),
             }
             with open(episodes_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(episode, ensure_ascii=False) + "\n")
@@ -230,7 +245,8 @@ def run(args: argparse.Namespace) -> int:
         "per_song_episodes": song_counts,
         "max_single_song_fraction": round(max(song_counts.values(), default=0) / max(new_episodes, 1), 3),
         "family_budget": 64,
-        "note": "natural 9 + corruption; 单歌占比上限 25%，source-song 下限 8",
+        "note": "corruption episodes（continuation 语义，09 P2）；单歌占比上限 25%，source-song 下限 8",
+        "gate_p": "pending_corrected_transition",
         "count_rejected_before_commit_as_propagated": False,
     }
     (session_root / "03_propagation" / "ATTEMPT_DENOMINATORS.json").write_text(

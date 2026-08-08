@@ -35,7 +35,6 @@ from lyricalign.research_transition_recovery_detector.contracts import (  # noqa
     TransitionState,
 )
 from lyricalign.research_transition_recovery_detector.runner import (  # noqa: E402
-    DEFAULT_UNIT_DENSITY_SEC,
     FakeAlignerBackend,
     RealAlignerBackend,
     TransitionRunner,
@@ -79,9 +78,9 @@ def fake_document() -> Any:
     return parse_lyrics_text("\n".join(lines), language="Chinese")
 
 
-def fake_gt_timeline(n_units: int, unit_density_sec: float) -> dict[int, dict]:
+def fake_gt_timeline(n_units: int, sec_per_unit: float) -> dict[int, dict]:
     return {
-        i: {"start_sec": i * unit_density_sec, "end_sec": i * unit_density_sec + 0.08, "text": "啊"}
+        i: {"start_sec": i * sec_per_unit, "end_sec": i * sec_per_unit + 0.08, "text": "啊"}
         for i in range(n_units)
     }
 
@@ -114,9 +113,8 @@ def run_fake(session_root: Path, args: argparse.Namespace) -> int:
     duration_sec = float(len(audio) / sample_rate)
     plan = fake_window_plan(duration_sec, audio, sample_rate)
     document = fake_document()
-    gt = fake_gt_timeline(int(duration_sec / DEFAULT_UNIT_DENSITY_SEC), DEFAULT_UNIT_DENSITY_SEC)
+    gt = fake_gt_timeline(int(duration_sec / SEC_PER_UNIT_FAKE), SEC_PER_UNIT_FAKE)
     config = {
-        "unit_density_sec": DEFAULT_UNIT_DENSITY_SEC,
         "lookback_units": 8,
         "audio_sha": "fake-v1",
         "model_identity": {"kind": "fake"},
@@ -125,7 +123,7 @@ def run_fake(session_root: Path, args: argparse.Namespace) -> int:
         "sample_rate": sample_rate,
         "audio_profile_provider": lambda a: None,
     }
-    backend = FakeAlignerBackend(unit_density_sec=DEFAULT_UNIT_DENSITY_SEC)
+    backend = FakeAlignerBackend(sec_per_unit=SEC_PER_UNIT_FAKE)
     runner = TransitionRunner(config, session_root=session_root, backend=backend)
     states: dict[str, Any] = {}
     for transition in (TRANSITION_T1_DIRECT, TRANSITION_T2_CORE, TRANSITION_T3_STABLE):
@@ -210,7 +208,6 @@ def run_real(session_root: Path, args: argparse.Namespace) -> int:
         device=args.device,
     )
     config = {
-        "unit_density_sec": DEFAULT_UNIT_DENSITY_SEC,
         "lookback_units": 8,
         "model_identity": model_identity,
         "env_identity": "gpu-dev",

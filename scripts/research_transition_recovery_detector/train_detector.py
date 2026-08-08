@@ -21,7 +21,6 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from lyricalign.research_transition_recovery_detector.contracts import TRANSITION_T2_CORE  # noqa: E402
 from lyricalign.research_transition_recovery_detector.runner import (  # noqa: E402
-    DEFAULT_UNIT_DENSITY_SEC,
     RealAlignerBackend,
     TransitionRunner,
 )
@@ -121,7 +120,7 @@ def main() -> int:
             research_model_identity=model_identity, device=args.device,
         )
         config = {
-            "unit_density_sec": DEFAULT_UNIT_DENSITY_SEC, "lookback_units": 8,
+            "lookback_units": 8,
             "model_identity": model_identity, "env_identity": f"gpu-{args.role}",
             "config_hash": f"detector-collect-{args.role}-v1", "sample_rate": 16000,
             "audio_profile_provider": lambda a: build_vocal_activity_profile(a, sample_rate=16000),

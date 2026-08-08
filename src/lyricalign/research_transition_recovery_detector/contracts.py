@@ -130,6 +130,8 @@ class WindowRequest:
     original_bounds / model_bounds 字段顺序：
     (input_start, core_start, core_end, input_end)，model 时钟为压缩后时钟。
     所有对外 timestamp 输出统一回到 original clock。
+    parent_state_hash 必须为 state_before 的真实 state_hash（非空）。
+    query_estimator_version 记录 query 预算估计器版本（09 §2.1）。
     """
 
     request_id: str
@@ -141,6 +143,8 @@ class WindowRequest:
     slot_canonical_ids: tuple[int, ...]
     decoder_evidence: tuple[str, ...] = ()
     transition: str = TRANSITION_T1_DIRECT
+    query_estimator_version: str = "units_per_sec_v2"
+    window_index: int = 0
 
     def validate(self) -> None:
         if not self.request_id:

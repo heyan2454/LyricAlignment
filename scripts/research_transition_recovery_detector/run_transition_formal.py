@@ -22,7 +22,6 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from lyricalign.research_transition_recovery_detector.contracts import TRANSITIONS  # noqa: E402
 from lyricalign.research_transition_recovery_detector.runner import (  # noqa: E402
-    DEFAULT_UNIT_DENSITY_SEC,
     RealAlignerBackend,
     TransitionRunner,
 )
@@ -109,7 +108,6 @@ def run_formal(args: argparse.Namespace) -> int:
         device=args.device,
     )
     config = {
-        "unit_density_sec": DEFAULT_UNIT_DENSITY_SEC,
         "lookback_units": 8,
         "model_identity": model_identity,
         "env_identity": f"gpu-{args.role}",

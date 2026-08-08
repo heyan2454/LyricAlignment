@@ -90,16 +90,21 @@ def test_tristate_labels():
 
 
 def test_working_point_metrics_uncertain_not_reject():
+    # 09 §1：gt=0/1 全部计入分母（UNCERTAIN 留在分母），三态率和为 1；UNCERTAIN 不算 REJECT
     labels_gt = [
         (STATE_ACCEPT, 0), (STATE_ACCEPT, 1), (STATE_REJECT, 1), (STATE_REJECT, 0),
         (STATE_UNCERTAIN, 1), (STATE_UNCERTAIN, 0), (STATE_UNCERTAIN, None),
     ]
     m = working_point_metrics(labels_gt)
-    assert m["safe_accept"] == 0.5
-    assert m["unsafe_reject"] == 0.5  # 1 unsafe rejected + 1 unsafe accepted; UNCERTAIN 不进分母
-    assert m["unsafe_denominator"] == 2
-    assert m["safe_denominator"] == 2
-    assert m["grey_denominator"] == 3
+    assert m["safe_denominator"] == 3      # 2 classified + 1 uncertain
+    assert m["unsafe_denominator"] == 3    # 2 classified + 1 uncertain
+    assert m["safe_accept"] == 1 / 3
+    assert m["safe_reject"] == 1 / 3
+    assert m["safe_uncertain"] == 1 / 3
+    assert m["unsafe_accept"] == 1 / 3
+    assert m["unsafe_reject"] == 1 / 3     # UNCERTAIN 不算 REJECT
+    assert m["unsafe_uncertain"] == 1 / 3
+    assert m["grey_denominator"] == 1      # 仅 gt=None 排除
 
 
 def test_select_sa60():

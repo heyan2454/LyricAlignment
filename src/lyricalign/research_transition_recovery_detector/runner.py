@@ -26,10 +26,11 @@ from .contracts import (
     TransitionState,
     WindowRequest,
 )
-from .identity import forward_cache_key
+from .identity import forward_cache_key, state_hash
+from .query_estimator import QueryEstimator, DensityContractError
 from .transitions import apply_transition_policy
 
-DEFAULT_UNIT_DENSITY_SEC = 1.2
+DEFAULT_UNITS_PER_SEC = 1.0  # 每首歌按 n_units/duration 动态估计；仅缺歌词时回退
 
 
 class BackendError(RuntimeError):
@@ -46,10 +47,12 @@ class FakeAlignerBackend:
     def __init__(
         self,
         *,
-        unit_density_sec: float = DEFAULT_UNIT_DENSITY_SEC,
+        sec_per_unit: float = 1.2,
         error_spec: dict[int, dict[int, dict[str, float]]] | None = None,
     ) -> None:
-        self.unit_density_sec = float(unit_density_sec)
+        # fake 合成行使用 sec_per_unit（seconds per unit）作为显式 reciprocal 字段；
+        # 真实行为由 QueryEstimator（units_per_sec）决定。
+        self.sec_per_unit = float(sec_per_unit)
         self.error_spec = error_spec or {}
         self.forward_calls = 0
 
@@ -60,7 +63,7 @@ class FakeAlignerBackend:
         rows: list[dict] = []
         errors = self.error_spec.get(window_index, {})
         for j, cid in enumerate(request.query_canonical_ids):
-            start = int(cid) * self.unit_density_sec
+            start = int(cid) * self.sec_per_unit
             override = errors.get(j)
             if override is not None:
                 start = float(override.get("start_sec", start))
@@ -130,19 +133,18 @@ def build_query_ids(
     transition: str,
     state: TransitionState,
     model_bounds: tuple[float, float, float, float],
-    unit_density_sec: float,
+    estimator: QueryEstimator,
     gt_timeline: dict[int, dict] | None,
     lookback_units: int,
     observations: dict[int, dict] | None = None,
 ) -> tuple[int, ...] | None:
-    """构造本窗 query canonical ids。
+    """构造本窗 query canonical ids（09 §2.1 Density contract，units_per_sec）。
 
     - T0 oracle：gt_timeline 中 start 位于 [core_start, core_end) 的 ids；GT 缺失返回 None。
-    - T1/T2/T3：行范围由**时间位置**决定，避免把已唱过的字重新塞进当前窗音频：
-      query 起点行 = observations 中 end_sec <= input_start 的最大 id + 1（无则用
-      previous_committed_end_model_sec 按密度估算），再回看 lookback 行作声学上下文；
-      query 终点行 = input_end 按密度估算。行号跨度与音频时间窗口匹配，
-      相邻窗 query 仅随 observations 滑动（state 分叉后 query span 允许不同，07 §3.2）。
+    - T1/T2/T3：query 起点行 = observations 中 end_sec <= input_start 的最大 id + 1
+      （无则用 previous_committed_end_model_sec * units_per_sec 估算），再回看 lookback；
+      query 终点行 = input_end * units_per_sec（秒 × units/秒 = units）。
+      禁止再做 span/units_per_sec 除法（单位倒置 bug 修复，09 §1）。
     """
     is_, cs, ce, ie = model_bounds
     if transition == TRANSITION_T0_ORACLE:
@@ -161,11 +163,9 @@ def build_query_ids(
     if candidates:
         time_start = max(candidates) + 1
     else:
-        time_start = int(round(float(state.previous_committed_end_model_sec) / max(unit_density_sec, 1e-6)))
-    # query 必须覆盖 committed 边界，保证未提交候选行可被重新观察（提交连续性）；
-    # 时间估算起点只用于把 query 右移到当前观察区，不早于 committed 边界。
+        time_start = int(round(float(state.previous_committed_end_model_sec) * estimator.units_per_sec))
     start_row = max(0, min(time_start, state.committed_end_exclusive) - lookback_units)
-    end_row = max(start_row + 1, int(round(ie / max(unit_density_sec, 1e-6))) + 1)
+    end_row = estimator.query_end_id_exclusive(ie, start_id=start_row)
     return tuple(range(start_row, end_row))
 
 
@@ -208,8 +208,14 @@ class TransitionRunner:
         self.model_identity = config.get("model_identity", {})
         self.env_identity = config.get("env_identity", "dev")
         self.config_hash = config.get("config_hash", "dev")
-        self.unit_density_sec = float(config.get("unit_density_sec", DEFAULT_UNIT_DENSITY_SEC))
-        self._effective_density = self.unit_density_sec
+        legacy = config.get("unit_density_sec")
+        if legacy is not None:
+            # 旧字段同时表示两种物理量（09 §2.1）：fail closed，不静默解释。
+            raise DensityContractError(
+                "config field 'unit_density_sec' is ambiguous (sec/unit vs units/sec); "
+                "remove it and let QueryEstimator derive units_per_sec from n_units/duration"
+            )
+        self._estimator: QueryEstimator | None = None
         self.lookback_units = int(config.get("lookback_units", 8))
         self.transition_dir = self.session_root / "02_transition"
         self.transition_dir.mkdir(parents=True, exist_ok=True)
@@ -230,7 +236,7 @@ class TransitionRunner:
             transition=transition,
             state=state,
             model_bounds=model_bounds,
-            unit_density_sec=self._effective_density,
+            estimator=self._estimator,
             gt_timeline=gt_timeline,
             lookback_units=self.lookback_units,
             observations=self._observations,
@@ -241,7 +247,7 @@ class TransitionRunner:
         request_id = f"{song_id}__{transition}__w{window_index:03d}"
         return WindowRequest(
             request_id=request_id,
-            parent_state_hash="",
+            parent_state_hash=state_hash(state),
             audio_identity=audio_identity,
             original_bounds=original_bounds,
             model_bounds=model_bounds,
@@ -249,6 +255,8 @@ class TransitionRunner:
             slot_canonical_ids=(),
             decoder_evidence=("raw",),
             transition=transition,
+            query_estimator_version=self._estimator.version,
+            window_index=window_index,
         )
 
     def _cached_forward(self, request: WindowRequest, audio: Any, document: Any) -> list[dict]:
@@ -280,6 +288,8 @@ class TransitionRunner:
         compress: bool = False,
         retained_total_sec: float | None = None,
         starting_state: TransitionState | None = None,
+        start_window_index: int | None = None,
+        observations: dict[int, dict] | None = None,
     ) -> list[dict]:
         mapping: dict | None = None
         if compress:
@@ -298,10 +308,10 @@ class TransitionRunner:
 
         audio_bytes = audio.tobytes() if hasattr(audio, "tobytes") else bytes(audio)
         self._audio_identity = f"audio-{_hashlib.sha256(audio_bytes).hexdigest()[:24]}"
-        # 动态单位密度：歌词总行数 / 实际（模型时钟）音频时长；无歌词时回退 config 值。
+        # 动态单位密度（09 §2.1）：units_per_sec = n_units / 实际（模型时钟）音频时长。
         n_units = max(1, len(getattr(document, "characters", ()) or ()))
         duration_model = float(len(audio) / int(self.config.get("sample_rate", 16000)))
-        self._effective_density = float(n_units) / max(duration_model, 1e-6)
+        self._estimator = QueryEstimator(n_units=n_units, effective_audio_sec=max(duration_model, 1e-6))
         state = starting_state or TransitionState(
             song_id=song_id,
             transition=transition,
@@ -309,10 +319,23 @@ class TransitionRunner:
             next_input_cursor=0,
             committed_end_exclusive=0,
         )
-        self._observations: dict[int, dict] = {}
+        self._observations: dict[int, dict] = dict(observations or {})
         records: list[dict] = []
+        self.last_observations: dict[int, dict] = {}
         windows = list(window_plan.get("windows") or [])
+        # continuation：starting_state.window_index == k+1 时只执行 windows[k+1:]
+        # （09 P0.2：propagation 不重放已执行窗口；request id 用绝对 window index）
+        if start_window_index is None and starting_state is not None:
+            start_window_index = starting_state.window_index
+        start_window_index = start_window_index or 0
+        if start_window_index > len(windows):
+            raise ValueError(f"start_window_index {start_window_index} beyond {len(windows)} windows")
+        windows = windows[start_window_index:]
+        state = state.derive(window_index=state.window_index) if state.window_index == 0 and start_window_index > 0 else state
         for index, win in enumerate(windows):
+            index = index + start_window_index
+            if index < start_window_index:
+                continue
             state_before = state
             request = self._request_for(
                 song_id=song_id,
@@ -403,6 +426,7 @@ class TransitionRunner:
             records.append(record)
             self._append_record(song_id, transition, record)
             state = state_after
+        self.last_observations = dict(self._observations)
         return records
 
     @staticmethod

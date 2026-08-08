@@ -49,41 +49,43 @@ def tristate_labels(p_bad: float, t_accept: float, t_reject: float) -> str:
 
 
 def working_point_metrics(labels_gt: list[tuple[str, int]]) -> dict:
-    """labels_gt = [(tristate, gt)]；gt 1=unsafe 0=safe。UNCERTAIN 不计 REJECT。"""
-    counts = {"safe_accept": 0, "safe_reject": 0, "unsafe_accept": 0, "unsafe_reject": 0,
-              "uncertain": 0, "safe_total": 0, "unsafe_total": 0, "grey": 0}
+    """labels_gt = [(tristate, gt)]；gt 1=unsafe 0=safe，None=无 GT（不评估）。
+
+    09 §1 纠偏：所有 gt=0/1 记录都计入 safe/unsafe 总分母（UNCERTAIN 留在分母内），
+    分别输出 safe/unsafe 的 ACCEPT/REJECT/UNCERTAIN 三态率，且各组三态率和为 1。
+    UNCERTAIN 永远不算 REJECT（R95 = unsafe REJECT / all unsafe）。
+    gt=None 与 GT ambiguity 另行排除计数（grey_denominator）。
+    """
+    per_gt = {"safe": {"ACCEPT": 0, "REJECT": 0, "UNCERTAIN": 0},
+              "unsafe": {"ACCEPT": 0, "REJECT": 0, "UNCERTAIN": 0}}
+    grey = 0
     for state, gt in labels_gt:
-        if state == STATE_UNCERTAIN:
-            counts["uncertain"] += 1
-            counts["grey"] += 1
-            continue
         if gt is None:
+            grey += 1
             continue
-        if state == STATE_ACCEPT:
-            if gt == 0:
-                counts["safe_accept"] += 1
-                counts["safe_total"] += 1
-            else:
-                counts["unsafe_accept"] += 1
-                counts["unsafe_total"] += 1
-        else:  # REJECT
-            if gt == 0:
-                counts["safe_reject"] += 1
-                counts["safe_total"] += 1
-            else:
-                counts["unsafe_reject"] += 1
-                counts["unsafe_total"] += 1
-    safe_den = max(counts["safe_total"], 1)
-    unsafe_den = max(counts["unsafe_total"], 1)
+        key = "safe" if gt == 0 else "unsafe"
+        per_gt[key][state] += 1
+    s = per_gt["safe"]
+    u = per_gt["unsafe"]
+    safe_total = s["ACCEPT"] + s["REJECT"] + s["UNCERTAIN"]
+    unsafe_total = u["ACCEPT"] + u["REJECT"] + u["UNCERTAIN"]
+    sd = safe_total or 1
+    ud = unsafe_total or 1
+    if safe_total:
+        assert abs((s["ACCEPT"] + s["REJECT"] + s["UNCERTAIN"]) / safe_total - 1.0) < 1e-9
+    if unsafe_total:
+        assert abs((u["ACCEPT"] + u["REJECT"] + u["UNCERTAIN"]) / unsafe_total - 1.0) < 1e-9
     return {
-        "safe_accept": counts["safe_accept"] / safe_den,
-        "safe_reject": counts["safe_reject"] / safe_den,
-        "unsafe_accept": counts["unsafe_accept"] / unsafe_den,
-        "unsafe_reject": counts["unsafe_reject"] / unsafe_den,
-        "uncertain_rate": counts["uncertain"] / max(counts["uncertain"] + counts["safe_total"] + counts["unsafe_total"], 1),
-        "safe_denominator": counts["safe_total"],
-        "unsafe_denominator": counts["unsafe_total"],
-        "grey_denominator": counts["grey"],
+        "safe_accept": s["ACCEPT"] / sd,
+        "safe_reject": s["REJECT"] / sd,
+        "safe_uncertain": s["UNCERTAIN"] / sd,
+        "unsafe_accept": u["ACCEPT"] / ud,
+        "unsafe_reject": u["REJECT"] / ud,
+        "unsafe_uncertain": u["UNCERTAIN"] / ud,
+        "uncertain_rate": (s["UNCERTAIN"] + u["UNCERTAIN"]) / max(safe_total + unsafe_total, 1),
+        "safe_denominator": safe_total,
+        "unsafe_denominator": unsafe_total,
+        "grey_denominator": grey,
     }
 
 
