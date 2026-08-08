@@ -109,6 +109,8 @@ def main() -> int:
         for rec in records:
             n_requests += 1
             ev = runner.last_evidence or {}
+            if song_id == "always_online" and rec["window_index"] == 0:
+                print("DEBUG ev:", json.dumps({k: list(v.keys()) if isinstance(v, dict) else v for k, v in ev.items()})[:200])
             req = rec["request"]
             qids = req["query_canonical_ids"]
             if ev.get("hidden"):
@@ -116,6 +118,8 @@ def main() -> int:
                     "song_id": song_id, "window_index": rec["window_index"],
                     "request_id": req["request_id"], "n_units": len(qids),
                     "layers": ev["hidden"]["layers"], "dim": ev["hidden"]["dim"],
+                    "n_slots": ev["hidden"].get("n_slots"),
+                    "vector_paths": ev["hidden"].get("vector_paths"),
                     "schema": ev["hidden"]["schema"],
                 })
                 n_hidden += 1
@@ -125,6 +129,7 @@ def main() -> int:
                     "request_id": req["request_id"], "n_units": len(qids),
                     "n_slots": ev["full_posterior"]["n_slots"],
                     "n_classes": ev["full_posterior"]["n_classes"],
+                    "path": ev["full_posterior"].get("path"),
                     "schema": ev["full_posterior"]["schema"],
                 })
                 n_posterior += 1
@@ -149,14 +154,14 @@ def main() -> int:
             })
         print(json.dumps({"song": song_id, "requests": len(records), "hidden": n_hidden,
                           "posterior": n_posterior}))
-    # 落盘
-    with open(out_dir / "evidence_hidden.jsonl", "w") as f:
+    # 落盘（按 role 分文件，避免多次运行互相覆盖）
+    with open(out_dir / f"evidence_hidden_{args.role}.jsonl", "w") as f:
         for r in hidden_rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    with open(out_dir / "evidence_posterior.jsonl", "w") as f:
+    with open(out_dir / f"evidence_posterior_{args.role}.jsonl", "w") as f:
         for r in posterior_rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    with open(out_dir / "evidence_trajectory.jsonl", "w") as f:
+    with open(out_dir / f"evidence_trajectory_{args.role}.jsonl", "w") as f:
         for r in traj_rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     schema = {

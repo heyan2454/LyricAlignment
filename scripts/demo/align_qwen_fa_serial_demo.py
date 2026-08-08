@@ -264,10 +264,25 @@ def infer_slice(
         cache_path = Path(cache_root) / f"{cache_key}.json"
         if cache_path.is_file():
             payload = json.loads(cache_path.read_text(encoding="utf-8"))
-            stats = getattr(args, "research_infer_cache_stats", None)
-            if stats is not None:
-                stats["hits"] = int(stats.get("hits", 0)) + 1
-            return [dict(row) for row in payload["rows"]], dict(payload["audit"])
+            ev = payload.get("evidence_v3") or {}
+            ev_ok = True
+            for section in (ev.get("hidden") or {}, ev.get("full_posterior") or {}):
+                if not section:
+                    continue
+                if section.get("values") is not None or section.get("vectors") is not None:
+                    ev_ok = False  # 旧内联格式（JSON values/vectors）→ 强制重 forward 生成 npy 引用
+                    break
+                paths = section.get("vector_paths", section.get("path"))
+                refs = [paths] if isinstance(paths, str) else (list(paths.values()) if isinstance(paths, dict) else [])
+                for ref in refs:
+                    if ref and not Path(ref).is_file():
+                        ev_ok = False
+            if ev_ok:
+                stats = getattr(args, "research_infer_cache_stats", None)
+                if stats is not None:
+                    stats["hits"] = int(stats.get("hits", 0)) + 1
+                return [dict(row) for row in payload["rows"]], dict(payload["audit"])
+            # evidence 文件缺失（旧 cache 或磁盘清理）→ 不命中，重新 forward 生成新 evidence
     transcript_policy = "pretokenized_content_items"
     inputs, words = prepare_pretokenized_aligner_inputs(
         processor,
@@ -297,16 +312,19 @@ def infer_slice(
     slot_logits = output.logits[0, positions].float()
     hidden_evidence = None
     if evidence_cfg is not None and output.hidden_states is not None:
+        import numpy as np
+
         layers = list(evidence_cfg.get("hidden_layers", [-4, -1]))
         gathered = {}
         for layer in layers:
             hs = output.hidden_states[layer][0].float()  # (seq, dim)
-            vec = hs[positions]  # (n_slots, dim)
-            gathered[str(layer)] = vec.half().cpu().numpy().tolist()
+            vec = hs[positions].half().cpu().numpy()  # (n_slots, dim) float16
+            gathered[str(layer)] = vec
         hidden_evidence = {
             "schema": "hidden_evidence_v1", "layers": [str(l) for l in layers],
-            "dim": output.hidden_states[layers[0]][0].shape[-1],
-            "vectors": gathered,  # layer -> list[list[float]] (n_slots x dim, float16 values)
+            "dim": int(output.hidden_states[layers[0]][0].shape[-1]),
+            "n_slots": int(positions.shape[0]),
+            "vectors_npy": gathered,  # layer -> np.ndarray float16 (n_slots, dim)
         }
     if int(slot_logits.shape[0]) != 2 * len(output_meta):
         raise RuntimeError(
@@ -316,11 +334,13 @@ def infer_slice(
     probabilities = torch.softmax(slot_logits, dim=-1)
     full_posterior = None
     if evidence_cfg is not None and evidence_cfg.get("save_full_posterior"):
+        import numpy as np
+
         full_posterior = {
             "schema": "full_posterior_v1",
             "n_slots": int(probabilities.shape[0]),
             "n_classes": int(probabilities.shape[1]),
-            "values": probabilities.half().cpu().numpy().tolist(),
+            "values_npy": probabilities.half().cpu().numpy(),  # float16 (n_slots, n_classes)
         }
     saved_top_k = max(2, min(int(getattr(args, "decoder_top_k", 8)), int(probabilities.shape[-1])))
     top_values, top_indices = torch.topk(probabilities, k=saved_top_k, dim=-1)
@@ -470,7 +490,26 @@ def infer_slice(
         ),
     }
     if hidden_evidence is not None or full_posterior is not None:
-        audit["evidence_v3"] = {"hidden": hidden_evidence, "full_posterior": full_posterior}
+        import numpy as np
+
+        ev_dir = (Path(cache_root) if cache_root else Path("/tmp/opencode")) / "evidence_v3"
+        ev_dir.mkdir(parents=True, exist_ok=True)
+        ev_audit: dict = {}
+        if hidden_evidence is not None:
+            hidden_refs = {}
+            for layer, arr in hidden_evidence.pop("vectors_npy").items():
+                p_ = ev_dir / f"{cache_key}_hidden_{layer}.npy"
+                np.save(p_, arr)
+                hidden_refs[layer] = str(p_)
+            hidden_evidence["vector_paths"] = hidden_refs
+            ev_audit["hidden"] = hidden_evidence
+        if full_posterior is not None:
+            arr = full_posterior.pop("values_npy")
+            p_ = ev_dir / f"{cache_key}_posterior.npy"
+            np.save(p_, arr)
+            full_posterior["path"] = str(p_)
+            ev_audit["full_posterior"] = full_posterior
+        audit["evidence_v3"] = ev_audit
     if cache_path is not None:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         atomic_json(cache_path, {
