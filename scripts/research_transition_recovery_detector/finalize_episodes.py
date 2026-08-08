@@ -57,8 +57,24 @@ def recompute_from_records(episodes_path: Path, transition_dir: Path, gt_by_song
             out.append(ep)
             continue
         records = [json.loads(l) for l in rec_path.read_text(encoding="utf-8").splitlines() if l.strip()]
-        followup = []
+        # 同 family 多 spec 共用同一 records 文件（09 review P0-2：轨迹按 window 交错）。
+        # 按 state_before.committed_end 链式还原本 episode 对应的轨迹：
+        # 首窗 = corrupted state 的 committed_end；其后窗 = 上一窗 state_after.committed_end。
+        target = int(ep["state_before"]["committed_end_exclusive"])
+        by_before = {}
         for rec in records:
+            by_before.setdefault(int(rec["state_before"]["committed_end_exclusive"]), []).append(rec)
+        chain = []
+        cur = target
+        while cur in by_before and len(chain) < 8:
+            rec = by_before[cur][0]
+            chain.append(rec)
+            cur = int(rec["state_after"]["committed_end_exclusive"])
+        if not chain:
+            out.append(ep)
+            continue
+        followup = []
+        for rec in chain:
             before = rec["state_before"]["committed_end_exclusive"]
             after = rec["decision"]["committed_end_exclusive"]
             max_err = 0.0

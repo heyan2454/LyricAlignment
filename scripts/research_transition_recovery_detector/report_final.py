@@ -85,9 +85,11 @@ def main() -> int:
             "note": "T2 serial 系统性错位机制（query 起点估算缺陷）",
         },
         "oracle_recovery": {
-            "segments": oracle.get("segments"),
+            "modes": oracle.get("modes") or (
+                {"O0": oracle.get("oracle_recovery_rate"), "single_mode": oracle.get("mode")}
+                if oracle.get("mode") else None
+            ),
             "recovery_rate": oracle.get("oracle_recovery_rate"),
-            "mode": oracle.get("mode"),
             "conclusion": "模型固有偏移（~0.4-1.3s）重跑不可修复",
         },
         "detector": {

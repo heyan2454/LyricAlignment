@@ -198,8 +198,9 @@ def run(args: argparse.Namespace) -> int:
             eid = f"corr_{song_id}__{family}__{json.dumps(spec, sort_keys=True)}"
             if eid in by_episode:
                 continue
+            spec_suffix = json.dumps(spec, sort_keys=True).replace(" ", "").replace('"', "").replace(":", "_").replace(",", "_").replace(".", "p").replace("-", "m")
             records = runner.run_song(
-                song_id=f"{song_id}::corr::{family}", audio=audio, document=document,
+                song_id=f"{song_id}::corr::{family}::{spec_suffix}", audio=audio, document=document,
                 window_plan=plan, transition=TRANSITION_T2_CORE, gt_timeline=gt,
                 compress=True, retained_total_sec=3.0,
                 starting_state=corrupted,
@@ -246,7 +247,9 @@ def run(args: argparse.Namespace) -> int:
                 "no_effect_attempt": all(w["new_committed"] == 0 for w in followup[:2]),
             }
             tmp = episodes_path.with_suffix(".jsonl.tmp")
-            with open(tmp, "a", encoding="utf-8") as f:
+            with open(tmp, "w", encoding="utf-8") as f:
+                for existing_ep in by_episode.values():
+                    f.write(json.dumps(existing_ep, ensure_ascii=False) + "\n")
                 f.write(json.dumps(episode, ensure_ascii=False) + "\n")
             tmp.replace(episodes_path)
             by_episode[eid] = episode

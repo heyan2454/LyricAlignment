@@ -38,7 +38,7 @@ def find_error_segments(rows: list[dict], gt: dict[int, dict]) -> list[dict]:
     segments = []
     cur: list[int] = []
     for cid, _t in wrong:
-        if cur and cid != cur[-1] + 1 and (cid - cur[-1]) <= 2:
+        if cur and cid != cur[-1] + 1 and (cid - cur[-1]) <= 3:
             cur.append(cid)
             continue
         if cur and cid != cur[-1] + 1:
@@ -60,6 +60,7 @@ def main() -> int:
     p.add_argument("--timeline-manifest", required=True)
     p.add_argument("--song-ids", default="")
     p.add_argument("--mode", choices=("O0", "O1", "O2"), default="O0")
+    p.add_argument("--out-suffix", default="")
     p.add_argument("--checkpoint", default=R2_CHECKPOINT_DEFAULT)
     p.add_argument("--model-revision", default=MODEL_REVISION_DEFAULT)
     p.add_argument("--cache-dir", default="/home/hyan/Data/lyricalign/models/hf_cache")
@@ -140,9 +141,9 @@ def main() -> int:
                 # legacy：GT 时间范围 [r_start-10, r_end+10] 内行
                 qids = sorted(i for i, u in gt.items() if r_start - 10.0 <= u["start_sec"] <= r_end + 10.0)
             elif args.mode == "O1":
-                # GT 只设置 head：query 起点 = 段 GT 首行；窗仍按冻结 retry
+                # GT 只设置 head：query 起点 = 段 GT 首行；字符范围对齐冻结 retry 窗（±5s）
                 head = min(seg["ids"])
-                qids = [i for i in sorted(gt) if r_start - 10.0 <= float(gt[i]["start_sec"]) <= r_end + 10.0 and i >= head]
+                qids = [i for i in sorted(gt) if r_start - 5.0 <= float(gt[i]["start_sec"]) <= r_end + 5.0 and i >= head]
             else:  # O2 exact-pair
                 qids = sorted(seg["ids"])
             if not qids:
@@ -152,9 +153,12 @@ def main() -> int:
                 1 for r in rows_r if int(r["global_character_index"]) in seg_ids
                 and abs(float(r["fixed_global_start_sec"]) - gt[int(r["global_character_index"])]["start_sec"]) <= TOLERANCE
             )
-            # interval @75/@100：段内修复行的最大连续覆盖
+            # interval @75/@100：段内**修复**行（容差内）的最大连续覆盖
             ordered = sorted(
-                (int(r["global_character_index"]) for r in rows_r if int(r["global_character_index"]) in seg_ids),
+                int(r["global_character_index"])
+                for r in rows_r
+                if int(r["global_character_index"]) in seg_ids
+                and abs(float(r["fixed_global_start_sec"]) - gt[int(r["global_character_index"])]["start_sec"]) <= TOLERANCE
             )
             intervals = []
             for cid in ordered:
@@ -193,6 +197,8 @@ def main() -> int:
         "interval_at75_fixed_rows": at75,
         "per_song": results,
     }
+    out_name = f"ORACLE_{args.mode}{args.out_suffix}.json"
+    (out_dir / out_name).write_text(json.dumps(summary, ensure_ascii=False, indent=2), "utf-8")
     (out_dir / "ORACLE_SUMMARY.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), "utf-8")
     print(json.dumps({"segments": summary["segments"], "recovery_rate": summary["oracle_recovery_rate"]},
                       ensure_ascii=False))
