@@ -10,7 +10,40 @@ from __future__ import annotations
 from collections import Counter
 from typing import Optional
 
-DEFAULT_TOLERANCE_SEC = 0.32
+DEFAULT_TOLERANCE_SEC = 0.32  # legacy 兼容（09 §1：正式标签使用 100/250/500/1000ms）
+FORMAL_TOLERANCES_MS = (100, 250, 500, 1000)
+
+
+def error_distribution(committed_rows: list[dict], gt: dict[int, dict]) -> dict:
+    """连续 start error 分布（09 P0.5）：所有已评估行的 |pred-gt| 秒。"""
+    errors = []
+    for row in committed_rows:
+        g = gt.get(int(row["global_character_index"]))
+        if g is None:
+            continue
+        errors.append(abs(float(row["start_sec"]) - float(g["start_sec"])))
+    errors_sorted = sorted(errors)
+    n = len(errors_sorted)
+    return {
+        "n": n,
+        "min_sec": errors_sorted[0] if n else None,
+        "median_sec": errors_sorted[n // 2] if n else None,
+        "p90_sec": errors_sorted[int(n * 0.9)] if n else None,
+        "max_sec": errors_sorted[-1] if n else None,
+        "mean_sec": sum(errors_sorted) / n if n else None,
+    }
+
+
+def multi_tolerance_accuracy(committed_rows: list[dict], gt: dict[int, dict],
+                             *, tolerances_ms: tuple[int, ...] = FORMAL_TOLERANCES_MS) -> dict:
+    """100/250/500/1000ms 多容差正确率（09 §1）；320ms 仅 legacy_320ms。"""
+    out = {}
+    for ms in tolerances_ms:
+        acc = unit_accuracy(committed_rows, gt, tolerance_sec=ms / 1000.0)
+        out[f"correct_rate_{ms}ms"] = acc["correct_rate"]
+        out[f"correct_{ms}ms"] = acc["correct"]
+    out["legacy_320ms"] = unit_accuracy(committed_rows, gt, tolerance_sec=0.32)["correct_rate"]
+    return out
 
 
 def _sorted_gt(gt: dict[int, dict]) -> list[tuple[int, dict]]:
