@@ -19,6 +19,7 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 R2_CHECKPOINT_DEFAULT = "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
+DETECTOR_PKL = "/home/hyan/Data/lyricalign/models/transition_recovery_detector_20260807/detector_mlp.pkl"
 MODEL_REVISION_DEFAULT = "c07281df297b9905d24a508279258cccf987a064"
 TOLERANCE = 0.32
 
@@ -70,7 +71,7 @@ def main() -> int:
         if line.strip()
     }
     frozen = json.loads((session_root / "06_detector" / "FROZEN_WORKING_POINTS.json").read_text(encoding="utf-8"))
-    with open(session_root / "06_detector" / "detector_mlp.pkl", "rb") as f:
+    with open(Path(DETECTOR_PKL), "rb") as f:
         detector = pickle.load(f)
 
     model_args = _argparse.Namespace(
