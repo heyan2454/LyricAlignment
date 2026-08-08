@@ -62,6 +62,7 @@ def main() -> int:
 
     report = {
         "session_root": str(root),
+        "gates": (read("00_meta/VALIDITY_GATES.json") or {}).get("gates"),
         "scope": "development + m4_formal + mir_transfer + demo",
         "transition_selection": {
             "product_candidate": cand.get("product_candidate"),
@@ -110,7 +111,10 @@ def main() -> int:
                 for route in (song.get("routes") or {}).values()
                 for s in (route.get("segments") or [])
             ),
-            "conclusion": (closed.get("pooled") or {}).get("conclusion")
+            "gate_c": closed.get("gate_c"),
+            "configs": closed.get("configs"),
+            "conclusion": closed.get("conclusion")
+            or (closed.get("pooled") or {}).get("conclusion")
             or "detector 标记段的 L 重跑净效果为负（模型重跑同段产生相同或更差偏移）",
         },
         "mir_transfer": {
