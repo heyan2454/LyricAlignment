@@ -53,6 +53,14 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
 - **子 agent 限制步数**：opencode 配置层已设 `agent.general/explore.steps=8`（见 `opencode.json`），
   达到 8 次工具调用后强制转 text-only。派发 prompt 中同时写明 `STEP BUDGET=8`，并要求到步数
   后整理输出：已完成/未完成与原因/关键产物路径/上下文摘要/下一步建议，不得无限循环重试。
+- **子 agent 失败自动重启**：子 agent 返回 blocked/空转/异常/步数耗尽但未完成时，默认
+  **自动重启**（优先 `task_id` resume 续跑，其次拆小任务重派），同一任务最多重试 2 次；
+  仅当失败明确不可重试（依赖/数据/环境缺失、任务不可能）才记录 blocked 并降级为
+  `not_executed_dependency` 或简化方案。每次重启前读上一次的总结，避免重复探索。
+- **网络/超时兜底**：provider 级 `timeout=300s`/`chunkTimeout=60s`/`headerTimeout=15s`
+  （`opencode.json`）使子 agent 请求快速失败；主会话断线由 `.opencode/plugins/auto-reconnect.ts`
+  自动重连（10 分钟间隔、1 小时窗口内 6 次上限），无需人工重发。主 agent 收到子 agent
+  失败后不阻塞其他任务，继续派发/完成 CPU 工作。
 - **测试分层**（避免每次都跑全量）：
   - L1 快速层 `tests/research_v7/test_detector_v2_*.py`：每个子 agent 必跑（秒级）；
   - L2 模块层 `tests/research_v7`：跨模块改动时跑（约 1 分钟）；

@@ -9,5 +9,14 @@
       "steps": 8,
       "description": "Fast codebase exploration subagent. Steps capped at 8: at the last step the agent must stop and summarize findings instead of looping."
     }
+  },
+  "provider": {
+    "opencode-go": {
+      "options": {
+        "timeout": 300000,
+        "chunkTimeout": 60000,
+        "headerTimeout": 15000
+      }
+    }
   }
 }
