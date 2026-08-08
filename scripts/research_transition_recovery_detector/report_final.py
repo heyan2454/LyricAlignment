@@ -86,8 +86,8 @@ def main() -> int:
         },
         "oracle_recovery": {
             "segments": oracle.get("segments"),
-            "L_recovery_rate": oracle.get("oracle_L_recovery_rate"),
-            "W_recovery_rate": oracle.get("oracle_W_recovery_rate"),
+            "recovery_rate": oracle.get("oracle_recovery_rate"),
+            "mode": oracle.get("mode"),
             "conclusion": "模型固有偏移（~0.4-1.3s）重跑不可修复",
         },
         "detector": {

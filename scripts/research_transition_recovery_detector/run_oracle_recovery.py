@@ -194,8 +194,8 @@ def main() -> int:
         "per_song": results,
     }
     (out_dir / "ORACLE_SUMMARY.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), "utf-8")
-    print(json.dumps({"segments": summary["segments"], "L": summary["oracle_L_recovery_rate"],
-                      "W": summary["oracle_W_recovery_rate"]}, ensure_ascii=False))
+    print(json.dumps({"segments": summary["segments"], "recovery_rate": summary["oracle_recovery_rate"]},
+                      ensure_ascii=False))
     return 0
 
 

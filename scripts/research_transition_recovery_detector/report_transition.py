@@ -34,16 +34,53 @@ def pooled(rows: list[dict], key: str) -> float:
     return correct / total if total else 0.0
 
 
+def _first_catastrophic(session_root: Path, song_id: str, transition: str,
+                         manifest_gt: dict[str, dict[int, dict]]) -> int | None:
+    """首窗提交行中错误率 >=0.9 的窗（灾难性错位）。"""
+    import json as _json
+
+    rec_path = session_root / "02_transition" / f"{song_id}__{transition}.jsonl"
+    if not rec_path.is_file():
+        return None
+    gt = manifest_gt.get(song_id)
+    if gt is None:
+        return None
+    for line in rec_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        rec = _json.loads(line)
+        before = rec["state_before"]["committed_end_exclusive"]
+        after = rec["decision"]["committed_end_exclusive"]
+        rows = [x for x in rec["evidence_summary"]["raw_global_rows"]
+                if before <= int(x["global_character_index"]) < after]
+        if not rows:
+            continue
+        wrong = sum(
+            1 for x in rows
+            if abs(float(x.get("original_global_start_sec", x["fixed_global_start_sec"]))
+                   - gt[int(x["global_character_index"])]["start_sec"]) > 0.25
+        )
+        if wrong / len(rows) >= 0.9:
+            return rec["window_index"]
+    return None
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--session-root", required=True)
     p.add_argument("--role", default="model_selection")
+    p.add_argument("--timeline-manifest", required=True)
     args = p.parse_args()
 
     session_root = Path(args.session_root)
     out_dir = session_root / "02_transition"
     formal = load(out_dir / f"FORMAL_{args.role}.json")
     full_song = load(out_dir / f"FULL_SONG_{args.role}.json")
+    manifest_gt: dict[str, dict[int, dict]] = {}
+    for line in Path(args.timeline_manifest).read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            r = json.loads(line)
+            manifest_gt[r["song_id"]] = {int(u["canonical_unit_id"]): u for u in r["canonical_units"]}
 
     by_transition: dict[str, list[dict]] = {}
     for r in formal:
@@ -64,6 +101,11 @@ def main() -> int:
             "macro_committed_coverage": round(statistics.mean(committed_cov), 4),
             "total_wrong_committed": wrong_committed,
             "total_committed": sum(r["committed"] for r in rows),
+            "first_error_window": [r["first_error_window"] for r in rows],
+            "first_catastrophic_window": [
+                _first_catastrophic(session_root, r["song_id"], r["transition"], manifest_gt)
+                for r in rows
+            ],
             "cost": {"windows": sum(r["cost"]["windows"] for r in rows),
                      "audio_seconds": round(sum(r["cost"]["audio_seconds"] for r in rows), 1)},
         }
