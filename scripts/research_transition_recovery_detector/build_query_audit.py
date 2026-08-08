@@ -90,6 +90,7 @@ def main() -> int:
     p.add_argument("--mode", choices=("audit", "verify"), default="audit")
     p.add_argument("--fail-on-systematic-bias", action="store_true")
     p.add_argument("--head-strategy", default="H0")
+    p.add_argument("--transition", default="T2_core_boundary_serial")
     args = p.parse_args()
 
     session_root = Path(args.session_root)
@@ -102,12 +103,12 @@ def main() -> int:
     song_ids = split["roles"][args.role]
     out_dir = session_root / "01_query_audit"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "QUERY_AUDIT.jsonl"
+    out_path = out_dir / f"QUERY_AUDIT_{args.transition}.jsonl"
 
     rows = []
     if args.mode == "audit":
         for song_id in song_ids:
-            rec_path = session_root / "02_transition" / f"{song_id}__T2_core_boundary_serial.jsonl"
+            rec_path = session_root / "02_transition" / f"{song_id}__{args.transition}.jsonl"
             if not rec_path.is_file():
                 continue
             gt = {int(u["canonical_unit_id"]): u for u in by_song[song_id]["canonical_units"]}
@@ -122,10 +123,13 @@ def main() -> int:
             for row in rows:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
     else:
-        if not out_path.is_file():
+        audit_files = sorted(out_dir.glob("QUERY_AUDIT_*.jsonl"))
+        if not audit_files:
             print("QUERY_AUDIT missing", file=sys.stderr)
             return 2
-        rows = [json.loads(l) for l in out_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+        rows = []
+        for f in audit_files:
+            rows.extend(json.loads(l) for l in f.read_text(encoding="utf-8").splitlines() if l.strip())
 
     # gate：系统性偏差检查（audit 行内）
     versions = {r.get("query_estimator_version") for r in rows}

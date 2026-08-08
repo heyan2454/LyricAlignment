@@ -245,8 +245,10 @@ def run(args: argparse.Namespace) -> int:
                 "recovery_class": recovery_class(followup[:5], first_new_wrong),
                 "no_effect_attempt": all(w["new_committed"] == 0 for w in followup[:2]),
             }
-            with open(episodes_path, "a", encoding="utf-8") as f:
+            tmp = episodes_path.with_suffix(".jsonl.tmp")
+            with open(tmp, "a", encoding="utf-8") as f:
                 f.write(json.dumps(episode, ensure_ascii=False) + "\n")
+            tmp.replace(episodes_path)
             by_episode[eid] = episode
             new_episodes += 1
             song_counts[song_id] = song_counts.get(song_id, 0) + 1

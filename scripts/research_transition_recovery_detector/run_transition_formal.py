@@ -57,6 +57,7 @@ def committed_rows_for(record: dict) -> list[dict]:
             "global_character_index": r["global_character_index"],
             "start_sec": r.get("original_global_start_sec", r["fixed_global_start_sec"]),
             "end_sec": r.get("original_global_end_sec", r["fixed_global_end_sec"]),
+            "occurrence": r.get("occurrence"),
         }
         for r in raw
     ]
@@ -158,6 +159,11 @@ def run_formal(args: argparse.Namespace) -> int:
             first_err = first_error_window(records, gt)
             md = missing_duplicate_committed(committed, gt)
             occ = occurrence_jump_rate(committed, {i: "" for i in gt})
+            if occ["total"] and occ["jumps"] == occ["total"] and all(
+                r.get("occurrence") is None for r in committed
+            ):
+                occ = {"jumps": None, "total": len(committed), "jump_rate": None,
+                       "note": "not_applicable: GT schema 无 occurrence，occurrence 跳变无法评估"}
             cost = cost_summary(records)
             summary = {
                 "song_id": song_id, "transition": transition, "role": args.role,
