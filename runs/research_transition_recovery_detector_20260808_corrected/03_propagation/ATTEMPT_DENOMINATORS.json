@@ -1,0 +1,20 @@
+{
+  "songs_analyzed": 9,
+  "corruption_episodes_new": 162,
+  "per_song_episodes": {
+    "newboy": 18,
+    "你给我听好": 18,
+    "内疚": 18,
+    "圣诞结": 18,
+    "宿敌": 18,
+    "左边": 18,
+    "我们都太倔强": 18,
+    "最后一页": 18,
+    "歌颂者": 18
+  },
+  "max_single_song_fraction": 0.111,
+  "family_budget": 64,
+  "note": "corruption episodes（continuation 语义，09 P2）；单歌占比上限 25%，source-song 下限 8",
+  "gate_p": "pending_corrected_transition",
+  "count_rejected_before_commit_as_propagated": false
+}

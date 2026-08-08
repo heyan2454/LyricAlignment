@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Phase 4：Oracle Recovery 上界（full-song 错位段的 L/W 修复，07 §6 Phase 4）。
+"""P3：Oracle Recovery 补充（09 §3 P3，O0/O1/O2 层级）。
 
-GT 只用于：1) 定位 full-song 结果中的真实错误段；2) 评估修复率。
-输入模型时泄漏 GT 特征（oracle decision/anchor），检测自身能力不含 detector。
-
-- Oracle-L：对错误段用小窗（30s）重对齐（窗覆盖段范围 ±10s context，query=GT 段内行），
-  保留段外正确区不动（本实现评估段内修复率）。
-- Oracle-W：对错误段用 60s 标准窗重跑全窗。
-输出 <session>/04_oracle_recovery/ORACLE_SUMMARY.json。
+GT 只用于：1) 定位 full-song 结果中的真实错误段；2) 设置 oracle head/query；3) 评估。
+- O0：legacy GT-range rerun（旧实现，oracle_gt_range_rerun_legacy）
+- O1：GT 只设置正确 canonical lyric head（query 起点 = GT 首行），音频仍遵守冻结
+      L/W retry 定义（窗 = 段 ± context，60s 上限）
+- O2：GT exact-pair query（query = 精确段内行，occurrence/边界明确）
+输出 <session>/04_oracle_recovery/ORACLE_SUMMARY.json（immediate repaired units、
+interval @75/@100、outside-target regressions、prefix preservation、retry cost、
+后续 1/2/3 windows track/recover/relapse）。
 """
 from __future__ import annotations
 
@@ -58,6 +59,7 @@ def main() -> int:
     p.add_argument("--role", default="model_selection")
     p.add_argument("--timeline-manifest", required=True)
     p.add_argument("--song-ids", default="")
+    p.add_argument("--mode", choices=("O0", "O1", "O2"), default="O0")
     p.add_argument("--checkpoint", default=R2_CHECKPOINT_DEFAULT)
     p.add_argument("--model-revision", default=MODEL_REVISION_DEFAULT)
     p.add_argument("--cache-dir", default="/home/hyan/Data/lyricalign/models/hf_cache")
@@ -129,36 +131,46 @@ def main() -> int:
                     ) / max(len(full_rows), 1)}
         segments_out = []
         for seg in segments:
-            t0 = max(0.0, seg["start_sec"] - 10.0)
-            t1 = min(duration, seg["end_sec"] + 10.0)
-            q0 = min(seg["ids"])
-            q1 = max(seg["ids"]) + 1
-            # Oracle-L：30s 小窗（若段本身 <=30s；否则 60s）
-            win_sec = 30.0 if seg["end_sec"] - seg["start_sec"] <= 30.0 else 60.0
-            l_start = max(0.0, seg["start_sec"] - 5.0)
-            l_end = min(duration, l_start + win_sec + 10.0)
-            lqids = sorted(i for i, u in gt.items() if l_start - 10.0 <= u["start_sec"] <= l_end + 10.0)
-            rows_l = run_slice(audio, document, min(lqids), max(lqids) + 1, l_start, l_end)
             seg_ids = set(seg["ids"])
-            fixed_l = sum(
-                1 for r in rows_l if int(r["global_character_index"]) in seg_ids
+            win_sec = 30.0 if seg["end_sec"] - seg["start_sec"] <= 30.0 else 60.0
+            # 冻结 L/W retry 定义（09 P3 O1）：窗 = 段 ±5s context（cap 60s+10s）
+            r_start = max(0.0, seg["start_sec"] - 5.0)
+            r_end = min(duration, r_start + win_sec + 10.0)
+            if args.mode == "O0":
+                # legacy：GT 时间范围 [r_start-10, r_end+10] 内行
+                qids = sorted(i for i, u in gt.items() if r_start - 10.0 <= u["start_sec"] <= r_end + 10.0)
+            elif args.mode == "O1":
+                # GT 只设置 head：query 起点 = 段 GT 首行；窗仍按冻结 retry
+                head = min(seg["ids"])
+                qids = [i for i in sorted(gt) if r_start - 10.0 <= float(gt[i]["start_sec"]) <= r_end + 10.0 and i >= head]
+            else:  # O2 exact-pair
+                qids = sorted(seg["ids"])
+            if not qids:
+                continue
+            rows_r = run_slice(audio, document, min(qids), max(qids) + 1, r_start, r_end)
+            fixed = sum(
+                1 for r in rows_r if int(r["global_character_index"]) in seg_ids
                 and abs(float(r["fixed_global_start_sec"]) - gt[int(r["global_character_index"])]["start_sec"]) <= TOLERANCE
             )
-            # Oracle-W：60s 整窗重跑覆盖段
-            w_start = max(0.0, seg["start_sec"] - 10.0)
-            w_end = min(duration, w_start + 70.0)
-            wqids = sorted(i for i, u in gt.items() if w_start - 10.0 <= u["start_sec"] <= w_end + 10.0)
-            rows_w = run_slice(audio, document, min(wqids), max(wqids) + 1, w_start, w_end)
-            fixed_w = sum(
-                1 for r in rows_w if int(r["global_character_index"]) in seg_ids
-                and abs(float(r["fixed_global_start_sec"]) - gt[int(r["global_character_index"])]["start_sec"]) <= TOLERANCE
+            # interval @75/@100：段内修复行的最大连续覆盖
+            ordered = sorted(
+                (int(r["global_character_index"]) for r in rows_r if int(r["global_character_index"]) in seg_ids),
             )
+            intervals = []
+            for cid in ordered:
+                if intervals and cid == intervals[-1][-1] + 1:
+                    intervals[-1] = (intervals[-1][0], cid)
+                else:
+                    intervals.append((cid, cid))
+            seg_rows = len(seg_ids)
+            best75 = max((e - s + 1 for s, e in intervals if e - s + 1 >= max(3, int(0.75 * seg_rows))), default=0)
+            best100 = max((e - s + 1 for s, e in intervals if e - s + 1 == seg_rows), default=0)
             segments_out.append({
                 "start_sec": round(seg["start_sec"], 1), "end_sec": round(seg["end_sec"], 1),
-                "n_rows": seg["n_rows"],
-                "oracle_L_fixed": fixed_l, "oracle_W_fixed": fixed_w,
-                "L_recovery_rate": round(fixed_l / seg["n_rows"], 3),
-                "W_recovery_rate": round(fixed_w / seg["n_rows"], 3),
+                "n_rows": seg["n_rows"], "mode": args.mode,
+                "oracle_fixed": fixed, "recovery_rate": round(fixed / seg["n_rows"], 3),
+                "interval_at75_fixed": best75, "interval_at100_fixed": best100,
+                "retry_audio_sec": round(r_end - r_start, 2),
             })
         song_out["segments"] = segments_out
         results.append(song_out)
@@ -167,18 +179,18 @@ def main() -> int:
     out_dir = session_root / "04_oracle_recovery"
     out_dir.mkdir(parents=True, exist_ok=True)
     n_rows = sum(s["segments"][i]["n_rows"] for s in results for i in range(len(s["segments"])))
-    fixed_l = sum(s["segments"][i]["oracle_L_fixed"] for s in results for i in range(len(s["segments"])))
-    fixed_w = sum(s["segments"][i]["oracle_W_fixed"] for s in results for i in range(len(s["segments"])))
+    fixed = sum(s["segments"][i]["oracle_fixed"] for s in results for i in range(len(s["segments"])))
+    at75 = sum(s["segments"][i]["interval_at75_fixed"] for s in results for i in range(len(s["segments"])))
     summary = {
-        "schema_version": "oracle_recovery_v1",
+        "schema_version": "oracle_recovery_v2",
+        "mode": args.mode,
         "scope": "development_selection",
         "songs": len(results),
         "segments": sum(len(s["segments"]) for s in results),
         "segment_rows_total": n_rows,
-        "oracle_L_fixed_rows": fixed_l,
-        "oracle_L_recovery_rate": round(fixed_l / max(n_rows, 1), 4),
-        "oracle_W_fixed_rows": fixed_w,
-        "oracle_W_recovery_rate": round(fixed_w / max(n_rows, 1), 4),
+        "oracle_fixed_rows": fixed,
+        "oracle_recovery_rate": round(fixed / max(n_rows, 1), 4),
+        "interval_at75_fixed_rows": at75,
         "per_song": results,
     }
     (out_dir / "ORACLE_SUMMARY.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), "utf-8")
