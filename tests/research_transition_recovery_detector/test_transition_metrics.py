@@ -79,7 +79,7 @@ class TestCursorTimeDrift:
             _record(1, [_row(0, 0.05), _row(1, 0.8)], committed_end=2, gt=gt_all),
             _record(2, [_row(0, 0.05), _row(1, 0.8), _row(2, 2.7)], committed_end=3, gt=gt_all),
         ]
-        drift = cursor_time_drift(records)
+        drift = cursor_time_drift(records, gt_all)
         assert drift["window_drifts_sec"] == pytest.approx([0.95, 1.2, 0.3])
         assert drift["max_drift_sec"] == pytest.approx(1.2)
         assert drift["final_drift_sec"] == pytest.approx(0.3)

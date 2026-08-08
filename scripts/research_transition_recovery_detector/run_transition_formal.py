@@ -149,7 +149,7 @@ def run_formal(args: argparse.Namespace) -> int:
             committed = [r for rec in records for r in committed_rows_for(rec)]
             acc = unit_accuracy(committed, gt)
             cov = coverage_stats(len(gt), records[-1]["state_after"]["committed_end_exclusive"] if not records[-1].get("skipped") else 0)
-            drift = cursor_time_drift(records)
+            drift = cursor_time_drift(records, gt)
             first_err = first_error_window(records, gt)
             md = missing_duplicate_committed(committed, gt)
             occ = occurrence_jump_rate(committed, {i: "" for i in gt})

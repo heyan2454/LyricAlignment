@@ -62,24 +62,21 @@ def _window_committed_end(record: dict) -> int:
     return int(getattr(state_after, "committed_end_exclusive", 0))
 
 
-def cursor_time_drift(records: list[dict]) -> dict:
-    """每窗：期望时间 = 第 committed_end 个 GT 行 start_sec（GT 来自 evidence_summary）；
-    漂移 = |期望时间 - 该窗最后 committed 行的 start_sec|。"""
-    gt = {}
+def cursor_time_drift(records: list[dict], gt: dict[int, dict] | None = None) -> dict:
+    """每窗：期望时间 = 第 committed_end 个 GT 行 start_sec（gt 参数或外部提供）；
+    漂移 = |期望时间 - 该窗最后 committed 行的 start_sec|。
+
+    注意：records 不携带 GT（runner 只存 evidence），调用方必须传 gt；
+    gt 缺失时返回空（不再从 evidence 猜测）。
+    """
     last_committed = {}
     drifts: list[float] = []
     for record in records:
-        evidence = record.get("evidence_summary") or {}
-        if isinstance(evidence, dict):
-            for item in evidence.get("rows", evidence.get("committed_rows", [])):
-                gt[int(item["global_character_index"])] = item
-        if isinstance(evidence, dict) and evidence.get("gt"):
-            gt.update({int(k): v for k, v in evidence["gt"].items()})
-        committed = (record.get("evidence_summary") or {}).get("committed_rows") or []
+        committed = _window_committed_rows(record)
         for row in committed:
             last_committed[int(row["global_character_index"])] = row
         end = _window_committed_end(record)
-        if end and end in gt and last_committed:
+        if gt and end in gt and last_committed:
             expected = float(gt[end]["start_sec"])
             actual = float(last_committed[max(last_committed)]["start_sec"])
             drifts.append(abs(expected - actual))
@@ -91,10 +88,21 @@ def cursor_time_drift(records: list[dict]) -> dict:
 
 
 def _window_committed_rows(record: dict) -> list[dict]:
+    """本窗提交行（兼容 runner 的 evidence schema raw_global_rows + decision 范围）。"""
     evidence = record.get("evidence_summary") or {}
     if not isinstance(evidence, dict):
         return []
-    return list(evidence.get("committed_rows") or [])
+    raw = list(evidence.get("raw_global_rows") or [])
+    if not raw:
+        return list(evidence.get("committed_rows") or [])
+    before = int((record.get("state_before") or {}).get("committed_end_exclusive", 0))
+    decision = record.get("decision") or {}
+    if decision.get("mode") == "oracle_independent":
+        return raw
+    after = decision.get("committed_end_exclusive")
+    if after is None:
+        return []
+    return [r for r in raw if before <= int(r["global_character_index"]) < int(after)]
 
 
 def first_error_window(records: list[dict], gt: dict[int, dict], *,

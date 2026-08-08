@@ -104,16 +104,19 @@ class RouteExecutor:
             retry = replace(request, **base)
         else:
             gap_start, gap_end = plan.unresolved_gap
-            slot_ids = tuple(
-                i
-                for i in request.slot_canonical_ids
-                if gap_start <= i < gap_end
-            )
-            if not slot_ids:
-                raise ValueError("gap interval not covered by request.slot_canonical_ids")
+            # 优先用 slot_canonical_ids 覆盖 gap；runner 的 full-slot 请求
+            # slot_canonical_ids=()（所有 query 行都有 slot），此时回退到
+            # query_canonical_ids 中 gap 区间的行（full-slot 语义等价）。
+            slots = tuple(i for i in request.slot_canonical_ids if gap_start <= i < gap_end)
+            if slots:
+                gap_ids = slots
+            else:
+                gap_ids = tuple(i for i in request.query_canonical_ids if gap_start <= i < gap_end)
+            if not gap_ids:
+                raise ValueError("gap interval not covered by request")
             left_context = tuple(i for i in request.query_canonical_ids if i < gap_start)[-1:]
-            query_ids = left_context + slot_ids
-            retry = replace(request, query_canonical_ids=query_ids, slot_canonical_ids=slot_ids, **base)
+            query_ids = left_context + gap_ids
+            retry = replace(request, query_canonical_ids=query_ids, slot_canonical_ids=gap_ids, **base)
         retry.validate()
         return retry
 
