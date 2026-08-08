@@ -178,7 +178,18 @@ def run(args: argparse.Namespace) -> int:
             song_id=f"{song_id}::clean", audio=audio, document=document, window_plan=plan,
             transition=TRANSITION_T2_CORE, gt_timeline=gt, compress=True, retained_total_sec=3.0,
         )
-        clean_observations = dict(runner.last_observations)
+        # 只恢复至窗口 k 的前序观察（09 review P1：不得把未来窗观察注入 corruption 起点）
+        clean_observations = {
+            int(r["global_character_index"]): obs
+            for rec in clean_records[:1]
+            for r in rec.get("evidence_summary", {}).get("raw_global_rows", [])
+            for obs in [{
+                "global_character_index": int(r["global_character_index"]),
+                "start_sec": float(r["fixed_global_start_sec"]),
+                "end_sec": float(r["fixed_global_end_sec"]),
+                "source": "raw",
+            }]
+        }
         base_state = TransitionState(**clean_records[0]["state_after"])
         for family, spec, corrupted in corrupted_states(
             base_state, n_units=n_units, sec_per_unit=sec_per_unit,

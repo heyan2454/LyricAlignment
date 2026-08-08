@@ -166,3 +166,31 @@ class TestEmptySafety:
         assert missing_duplicate_committed([], {})["missing_count"] == 0
         assert occurrence_jump_rate([], {})["jump_rate"] == 0.0
         assert cost_summary([], None)["windows"] == 0
+
+
+class TestMultiTolerance:
+    def test_multi_tolerance_curve(self):
+        from lyricalign.research_transition_recovery_detector.transition_metrics import (
+            FORMAL_TOLERANCES_MS,
+            multi_tolerance_accuracy,
+        )
+
+        rows = [_row(i, i * 1.0) for i in range(10)]  # start == id 秒
+        gt = {i: {"start_sec": i * 1.0 + 0.05} for i in range(10)}  # 恒定 +50ms 偏差
+        out = multi_tolerance_accuracy(rows, gt)
+        assert out["correct_rate_100ms"] == 1.0   # 50ms <= 100ms
+        assert out["correct_rate_250ms"] == 1.0
+        assert out["correct_rate_500ms"] == 1.0
+        assert out["correct_rate_1000ms"] == 1.0
+        assert "legacy_320ms" in out
+        assert len(FORMAL_TOLERANCES_MS) == 4
+
+    def test_error_distribution(self):
+        from lyricalign.research_transition_recovery_detector.transition_metrics import error_distribution
+
+        rows = [_row(i, i * 1.0) for i in range(4)]
+        gt = {i: {"start_sec": i * 1.0} for i in range(4)}
+        d = error_distribution(rows, gt)
+        assert d["n"] == 4
+        assert d["median_sec"] == 0.0
+        assert d["max_sec"] == 0.0

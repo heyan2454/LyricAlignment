@@ -45,8 +45,14 @@ class QueryEstimator:
         return audio_span_sec * self.units_per_sec
 
     def query_end_id_exclusive(self, audio_span_sec: float, start_id: int = 0) -> int:
-        """从 start_id 起覆盖 span 所需的 end id（exclusive）。"""
-        return max(start_id + 1, start_id + int(round(self.expected_units(audio_span_sec))))
+        """覆盖到 audio_span_sec 的绝对 end id（exclusive）。
+
+        绝对语义：end = round(span * units_per_sec)，start_id 只约束下界
+        （end 不得早于 start_id+1），绝不把 start_id 再次加进预算
+        （09 review P0：start_row>0 时双重计入起点偏移会导致后续窗 overfeed）。
+        """
+        absolute_end = int(round(self.expected_units(audio_span_sec)))
+        return max(start_id + 1, absolute_end)
 
     def to_dict(self) -> dict:
         return {

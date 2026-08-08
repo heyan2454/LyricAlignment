@@ -31,6 +31,7 @@ from lyricalign.research_transition_recovery_detector.transition_metrics import 
     cursor_time_drift,
     first_error_window,
     missing_duplicate_committed,
+    multi_tolerance_accuracy,
     occurrence_jump_rate,
     unit_accuracy,
 )
@@ -146,6 +147,7 @@ def run_formal(args: argparse.Namespace) -> int:
             )
             committed = [r for rec in records for r in committed_rows_for(rec)]
             acc = unit_accuracy(committed, gt)
+            multi = multi_tolerance_accuracy(committed, gt)
             cov = coverage_stats(len(gt), records[-1]["state_after"]["committed_end_exclusive"] if not records[-1].get("skipped") else 0)
             drift = cursor_time_drift(records, gt)
             first_err = first_error_window(records, gt)
@@ -158,6 +160,7 @@ def run_formal(args: argparse.Namespace) -> int:
                 "n_windows": len(records), "n_units_total": len(gt),
                 "committed": len(committed),
                 "accuracy": acc,
+                "multi_tolerance": multi,
                 "coverage": cov,
                 "drift": drift,
                 "first_error_window": first_err,

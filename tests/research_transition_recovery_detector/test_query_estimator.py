@@ -52,7 +52,9 @@ def test_n_units_halved_halves_units_per_sec():
 def test_query_end_id_exclusive():
     est = QueryEstimator(n_units=480, effective_audio_sec=240.0)
     assert est.query_end_id_exclusive(60.0) == 120
-    assert est.query_end_id_exclusive(60.0, start_id=50) == 170
+    # 绝对语义：end 由 span 决定（120），start_id 只保底（不得双重计入偏移）
+    assert est.query_end_id_exclusive(60.0, start_id=50) == 120
+    assert est.query_end_id_exclusive(60.0, start_id=130) == 131
 
 
 def test_build_estimator_equivalent_and_invalid_inputs():

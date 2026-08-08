@@ -60,7 +60,12 @@ def test_l_and_w_retry_regions_differ():
     assert plan_l.unresolved_gap is not None
     executor.execute(plan_l, request=make_request(), audio="a", document="d", state=make_state())
     l_call = backend.calls[-1]
-    # L retry query 只覆盖 gap + 左 context（不覆盖窗尾 ACCEPT 区）
+    # L retry query 只覆盖 gap + 左 context：unit 1 REJECT、2 ACCEPT →
+    # gap = (1,2) → retry query 只含 1（+左 context 0），绝不含 2/3
+    l_gap_ids = [i for i in l_call.query_canonical_ids if 1 <= i < 2]
+    assert l_gap_ids == [1]
+    assert 2 not in l_call.query_canonical_ids
+    assert 3 not in l_call.query_canonical_ids
 
     # W：同输入但 route_mode="W" → REJECT 触发整窗零提交
     plan_w = build_route_plan(
