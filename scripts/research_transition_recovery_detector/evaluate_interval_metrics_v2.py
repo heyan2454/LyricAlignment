@@ -60,13 +60,15 @@ def main() -> int:
         unit_states = [(i, s) for i, s in enumerate(states)]
         intervals = build_intervals(unit_states)
         # labels: 0=safe 1=grey 2=unsafe
-        unsafe_ids = {i for i, l in enumerate(labels) if l == 2}
+        # 兼容 v2 二元 EVAL（1=unsafe，grey 已排除）与 v3 三态（2=unsafe）
+        unsafe_ids = {i for i, l in enumerate(labels) if l in (1, 2)}
         safe_ids = {i for i, l in enumerate(labels) if l == 0}
 
         def _interval_capture(protected_uncertain: bool) -> dict:
             captured_all = captured_75 = 0
             for iv in intervals:
-                ids = [cid for cid in range(iv["start_id"], iv["end_id"] + 1) if cid in labels]
+                ids = [cid for cid in range(iv["start_id"], iv["end_id"] + 1)
+                       if cid < len(labels) and labels[cid] is not None]
                 n_unsafe = sum(1 for cid in ids if cid in unsafe_ids)
                 if n_unsafe == 0:
                     continue
