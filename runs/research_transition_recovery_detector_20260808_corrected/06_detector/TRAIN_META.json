@@ -1,0 +1,18 @@
+{
+  "role": "detector_train",
+  "n_songs": 26,
+  "n_units": 9495,
+  "n_labeled": 9495,
+  "n_safe": 4759,
+  "n_unsafe": 4736,
+  "feature_names": [
+    "raw_start_entropy",
+    "raw_end_entropy",
+    "raw_start_margin",
+    "raw_end_margin",
+    "raw_start_top1_probability",
+    "raw_end_top1_probability",
+    "raw_official_start_diff_sec",
+    "start_top2_gap_sec"
+  ]
+}

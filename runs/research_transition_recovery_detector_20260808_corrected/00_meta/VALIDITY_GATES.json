@@ -4,9 +4,9 @@
   "gates": {
     "gate_t_query_estimator": "pass",
     "gate_t_transition_formal": "pass",
-    "gate_p_propagation": "pending",
-    "gate_d_detector": "pending",
-    "gate_c_closed_loop": "pending"
+    "gate_p_propagation": "pass",
+    "gate_d_detector": "pass",
+    "gate_c_closed_loop": "pass"
   },
   "invalidated_20260807": [
     "T1/T2/T3 formal（density 单位倒置）",
@@ -39,5 +39,17 @@
       "coverage": 0.296
     },
     "note": "density bug 修复后 serial 反超 full-song(0.388)；T3 保守性限制覆盖"
+  },
+  "propagation_summary": {
+    "episodes": 171,
+    "corruption": 162,
+    "natural": 9,
+    "recovery": {
+      "amplifying": 114,
+      "persistent": 54,
+      "occurrence_jump": 3
+    },
+    "no_effect": 0,
+    "note": "continuation 语义（不重放窗 0），occurrence_jump 用 error_sec>10s 判定"
   }
 }

@@ -1,0 +1,170 @@
+{
+  "schema_version": "signal_completion_matrix_v1",
+  "correction_plan": "20260808_correction_v1",
+  "n_rows": 8,
+  "n_completed": 3,
+  "completed_rows": [
+    "R",
+    "O",
+    "R+O"
+  ],
+  "rows": [
+    {
+      "branch_id": "H",
+      "signal_groups": [
+        "H"
+      ],
+      "status": "blocked_api",
+      "input_artifacts": [
+        "06_detector/evidence_hidden.jsonl"
+      ],
+      "n_train_songs": null,
+      "n_val_songs": null,
+      "n_test_songs": null,
+      "n_units": null,
+      "n_intervals": null,
+      "metrics_artifact": null,
+      "failure_or_block_reason": "hidden hook 未接入 real inference（raw availability=0）；V/P/S 数据源依赖序列/跨窗 collect 增强"
+    },
+    {
+      "branch_id": "R",
+      "signal_groups": [
+        "R"
+      ],
+      "status": "executed",
+      "input_artifacts": [
+        "06_detector/evidence_raw.jsonl"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 10,
+      "n_test_songs": 15,
+      "n_units": 9495,
+      "n_intervals": null,
+      "metrics_artifact": "06_detector/FROZEN_WORKING_POINTS.json",
+      "failure_or_block_reason": null
+    },
+    {
+      "branch_id": "O",
+      "signal_groups": [
+        "O"
+      ],
+      "status": "executed",
+      "input_artifacts": [
+        "06_detector/evidence_official.jsonl"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 10,
+      "n_test_songs": 15,
+      "n_units": 9495,
+      "n_intervals": null,
+      "metrics_artifact": "06_detector/FROZEN_WORKING_POINTS.json",
+      "failure_or_block_reason": null
+    },
+    {
+      "branch_id": "H+R",
+      "signal_groups": [
+        "H",
+        "R"
+      ],
+      "status": "blocked_api",
+      "input_artifacts": [
+        "06_detector/evidence_hidden.jsonl",
+        "06_detector/evidence_raw.jsonl"
+      ],
+      "n_train_songs": null,
+      "n_val_songs": null,
+      "n_test_songs": null,
+      "n_units": null,
+      "n_intervals": null,
+      "metrics_artifact": null,
+      "failure_or_block_reason": "hidden hook 未接入 real inference（raw availability=0）；V/P/S 数据源依赖序列/跨窗 collect 增强"
+    },
+    {
+      "branch_id": "H+O",
+      "signal_groups": [
+        "H",
+        "O"
+      ],
+      "status": "blocked_api",
+      "input_artifacts": [
+        "06_detector/evidence_hidden.jsonl",
+        "06_detector/evidence_official.jsonl"
+      ],
+      "n_train_songs": null,
+      "n_val_songs": null,
+      "n_test_songs": null,
+      "n_units": null,
+      "n_intervals": null,
+      "metrics_artifact": null,
+      "failure_or_block_reason": "hidden hook 未接入 real inference（raw availability=0）；V/P/S 数据源依赖序列/跨窗 collect 增强"
+    },
+    {
+      "branch_id": "R+O",
+      "signal_groups": [
+        "R",
+        "O"
+      ],
+      "status": "executed",
+      "input_artifacts": [
+        "06_detector/evidence_raw.jsonl",
+        "06_detector/evidence_official.jsonl"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 10,
+      "n_test_songs": 15,
+      "n_units": 9495,
+      "n_intervals": null,
+      "metrics_artifact": "06_detector/FROZEN_WORKING_POINTS.json",
+      "failure_or_block_reason": null
+    },
+    {
+      "branch_id": "H+R+O",
+      "signal_groups": [
+        "H",
+        "R",
+        "O"
+      ],
+      "status": "blocked_api",
+      "input_artifacts": [
+        "06_detector/evidence_hidden.jsonl",
+        "06_detector/evidence_raw.jsonl",
+        "06_detector/evidence_official.jsonl"
+      ],
+      "n_train_songs": null,
+      "n_val_songs": null,
+      "n_test_songs": null,
+      "n_units": null,
+      "n_intervals": null,
+      "metrics_artifact": null,
+      "failure_or_block_reason": "hidden hook 未接入 real inference（raw availability=0）；V/P/S 数据源依赖序列/跨窗 collect 增强"
+    },
+    {
+      "branch_id": "H+R+O+selected(V/P/S)",
+      "signal_groups": [
+        "H",
+        "R",
+        "O",
+        "V",
+        "P",
+        "S"
+      ],
+      "status": "pending",
+      "input_artifacts": [
+        "06_detector/evidence_hidden.jsonl",
+        "06_detector/evidence_raw.jsonl",
+        "06_detector/evidence_official.jsonl",
+        "06_detector/evidence_cross_window.jsonl",
+        "06_detector/evidence_posterior.jsonl",
+        "06_detector/evidence_trajectory.jsonl"
+      ],
+      "n_train_songs": null,
+      "n_val_songs": null,
+      "n_test_songs": null,
+      "n_units": null,
+      "n_intervals": null,
+      "metrics_artifact": null,
+      "failure_or_block_reason": null
+    }
+  ],
+  "built_at": "2026-08-08T12:49:46.792946+00:00"
+}

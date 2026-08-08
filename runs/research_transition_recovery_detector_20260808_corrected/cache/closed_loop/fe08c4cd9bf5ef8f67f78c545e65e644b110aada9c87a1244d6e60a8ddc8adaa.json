@@ -1,0 +1,126 @@
+{
+  "schema_version": "serial_infer_actual_input_cache_v1",
+  "identity": {
+    "schema_version": "serial_infer_actual_input_cache_v1",
+    "audio_sha256": "2de5693972f9be35806f0a28c13f61791bc3ec93a7e20fb60f643e3814dc9195",
+    "audio_sample_count": 1076320,
+    "global_audio_offset_sec": 0.0,
+    "character_range": [
+      0,
+      1
+    ],
+    "alignment_units": [
+      "好"
+    ],
+    "timestamp_slot_indices": null,
+    "timestamp_segment_sec": 0.08,
+    "decoder_top_k": 8,
+    "decoder_beam_size": 96,
+    "decoder_kind": "raw",
+    "model_identity": {
+      "kind": "raw"
+    }
+  },
+  "rows": [
+    {
+      "global_character_index": 0,
+      "line_index": 0,
+      "index_in_line": 0,
+      "character": "好",
+      "alignment_unit": "好",
+      "unit_type": "cjk_character",
+      "display_prefix": "",
+      "display_text": "好",
+      "display_suffix": "",
+      "raw_local_start_sec": 0.0,
+      "raw_local_end_sec": 0.08,
+      "raw_global_start_sec": 0.0,
+      "raw_global_end_sec": 0.08,
+      "decoder_kind": "raw",
+      "official_fixed_local_start_sec": 0.0,
+      "official_fixed_local_end_sec": 0.08,
+      "official_fixed_global_start_sec": 0.0,
+      "official_fixed_global_end_sec": 0.08,
+      "gpu_fixed_local_start_sec": null,
+      "gpu_fixed_local_end_sec": null,
+      "gpu_fixed_global_start_sec": null,
+      "gpu_fixed_global_end_sec": null,
+      "fixed_local_start_sec": 0.0,
+      "fixed_local_end_sec": 0.08,
+      "fixed_global_start_sec": 0.0,
+      "fixed_global_end_sec": 0.08,
+      "raw_start_top1_probability": 0.9960208535194397,
+      "raw_end_top1_probability": 0.9537632465362549,
+      "raw_start_top2_class": 1,
+      "raw_end_top2_class": 0,
+      "raw_start_topk_classes": [
+        0,
+        1,
+        2,
+        8,
+        3,
+        9,
+        4,
+        7
+      ],
+      "raw_end_topk_classes": [
+        1,
+        0,
+        2,
+        3,
+        9,
+        8,
+        4,
+        10
+      ],
+      "raw_start_topk_probabilities": [
+        0.9960208535194397,
+        0.002178786788135767,
+        0.00044264737516641617,
+        0.00023693205730523914,
+        0.0001628408645046875,
+        0.00011547147005330771,
+        9.278392826672643e-05,
+        8.716243610251695e-05
+      ],
+      "raw_end_topk_probabilities": [
+        0.9537632465362549,
+        0.03698141500353813,
+        0.006426406092941761,
+        0.0006773382192477584,
+        0.0005793580785393715,
+        0.00030056704417802393,
+        0.0002823566028382629,
+        0.00020657647110056132
+      ],
+      "raw_start_margin": 0.9938420653343201,
+      "raw_end_margin": 0.9167818427085876,
+      "raw_start_entropy": 0.034407082945108414,
+      "raw_end_entropy": 0.22410063445568085,
+      "raw_boundary_margin_mean": 0.9553119540214539,
+      "gpu_decoder_start_gate": null,
+      "gpu_decoder_end_gate": null
+    }
+  ],
+  "audit": {
+    "character_start": 0,
+    "character_end": 1,
+    "character_count": 1,
+    "alignment_unit_count": 1,
+    "alignment_unit_mode": "cjk_character_or_latin_word",
+    "language": "Chinese",
+    "transcript": "好",
+    "transcript_policy": "pretokenized_content_items",
+    "processor_units": [
+      "好"
+    ],
+    "word_count": 1,
+    "timestamp_position_count": 2,
+    "timestamp_logit_class_count": 5000,
+    "saved_timestamp_top_k": 8,
+    "audio_sample_count": 1076320,
+    "audio_duration_sec": 67.27,
+    "decoder_kind": "raw",
+    "gpu_decoder_identity": null
+  }
+}

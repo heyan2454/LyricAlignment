@@ -60,7 +60,7 @@ from lyricalign.research_transition_recovery_detector.thresholds import (  # noq
 )
 
 DETECTOR_PKL_DEFAULT = (
-    "/home/hyan/LyricAlignment/models/transition_recovery_detector_20260807/detector_mlp.pkl"
+    "/home/hyan/LyricAlignment/models/transition_recovery_detector_20260808_corrected/detector_mlp.pkl"
 )
 LOOKBACK_UNITS = 8
 HEAD_STRATEGY = "H1"
@@ -510,6 +510,11 @@ def main() -> int:
     frozen = json.loads((session_root / "06_detector" / "FROZEN_WORKING_POINTS.json").read_text(encoding="utf-8"))
     if args.working_point not in frozen:
         raise ValueError(f"working point {args.working_point!r} not in FROZEN_WORKING_POINTS.json")
+    gates_path = session_root / "00_meta" / "VALIDITY_GATES.json"
+    if gates_path.is_file():
+        gates = json.loads(gates_path.read_text(encoding="utf-8")).get("gates", {})
+        if gates.get("gate_d_detector") != "pass":
+            raise SystemExit("gate_d_detector not pass; frozen detector required before closed loop")
     wp = frozen[args.working_point]
     if not wp.get("feasible") or "t_accept" not in wp or "t_reject" not in wp:
         raise ValueError(f"working point {args.working_point!r} not frozen/feasible")

@@ -1,0 +1,122 @@
+{
+  "schema_version": "transition_recovery_detector_final_v2",
+  "correction_plan": "20260808_correction_v1",
+  "head_strategy": "H0",
+  "gates": {
+    "gate_t_query_estimator": "pass",
+    "gate_t_transition_formal": "pass",
+    "gate_p_propagation": "pass",
+    "gate_d_detector": "pending",
+    "gate_c_closed_loop": "pending"
+  },
+  "corrected_transition": {
+    "model_selection_9songs": {
+      "T1_direct_serial": 0.4905,
+      "T2_core_boundary_serial": 0.4961,
+      "T3_stable_boundary_serial": 0.479
+    },
+    "m4_formal_15songs_T2": 0.4557
+  },
+  "propagation": {
+    "episodes": 171,
+    "recovery": {
+      "self_recover": 0,
+      "slow_recover": 0,
+      "persistent": 54,
+      "amplifying": 114,
+      "occurrence_jump": 3
+    }
+  },
+  "oracle_recovery": {
+    "O0_oracle_gt_range_rerun_legacy": {
+      "segments": 85,
+      "recovery_rate": 0.1862
+    },
+    "O1_gt_head": {
+      "segments": 85,
+      "recovery_rate": 0.194
+    },
+    "O2_gt_exact_pair": {
+      "segments": 85,
+      "recovery_rate": 0.1947
+    }
+  },
+  "detector": {
+    "auc_train": null,
+    "working_points": {
+      "SA60": {
+        "feasible": true,
+        "t_accept": 0.4678626445,
+        "t_reject": 0.4692602085,
+        "safe_accept": 0.603558,
+        "unsafe_reject": 0.520154
+      },
+      "SA80": {
+        "feasible": true,
+        "t_accept": 0.5345258174,
+        "t_reject": 0.5375945096,
+        "safe_accept": 0.804956,
+        "unsafe_reject": 0.331414
+      },
+      "R95": {
+        "feasible": true,
+        "t_accept": 0.3870960729,
+        "t_reject": 0.3885416162,
+        "safe_accept": 0.066709,
+        "unsafe_reject": 0.952655
+      }
+    },
+    "joint": false,
+    "joint_pareto_note": "分布重叠（KS D=0.149）致 joint 不可行；SA60/SA80/R95 独立冻结"
+  },
+  "closed_loop": {
+    "gate_c": {
+      "passed": true,
+      "n_songs": 9,
+      "n_songs_passed": 9,
+      "n_songs_failed": 0
+    },
+    "configs": {
+      "L_SA60": {
+        "committed_coverage": 0.0,
+        "gate_c": "pass",
+        "note": "detector REJECT 率高（p_bad 压缩 0.4-0.72，窗首行 p_bad>=t_reject）→ 连续 ACCEPT prefix 为空 → 零提交"
+      },
+      "L_SA80": {
+        "committed_coverage": 0.0,
+        "gate_c": "pass"
+      },
+      "W_R95": {
+        "committed_coverage": 0.0,
+        "gate_c": "pass"
+      }
+    },
+    "conclusion": "Gate C 机制验证通过（writeback 真实改变后续 request/state，9/9 首）。但 corrected serial 上 detector（AUC 0.63）的 p_bad 整体偏高，任何保护性工作点下 L/W 均零提交（保护完全抑制覆盖）。closed loop 产出 = 零 unsafe commit、零覆盖；拒绝全部不能凭低错误率获胜（09 §3 P5）。"
+  },
+  "mir_transfer": {
+    "pooled_correct_rate": 1.0,
+    "n_songs": 17
+  },
+  "demo": {
+    "n_items": 23,
+    "top_suspicious": [
+      "English/Camelia.mp3",
+      "Cantonese/电灯胆.mp3",
+      "English/I See Fire.mp3"
+    ]
+  },
+  "invalidated_20260807": [
+    "T1/T2/T3 formal（density 单位倒置）",
+    "T2 propagation episodes",
+    "detector rows/working points（来自无效 T2）",
+    "closed-loop L/W 结论",
+    "320ms 单容差标签"
+  ],
+  "still_valid_20260807": [
+    "full-song align",
+    "T0 oracle（GT query）",
+    "MIR transfer",
+    "legacy gap status",
+    "repeated occurrence 无跳变"
+  ]
+}

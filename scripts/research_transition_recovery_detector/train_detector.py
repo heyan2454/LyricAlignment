@@ -102,6 +102,11 @@ def main() -> int:
     args = p.parse_args()
     session_root = Path(args.session_root)
 
+    gates_path = session_root / "00_meta" / "VALIDITY_GATES.json"
+    if gates_path.is_file():
+        gates = json.loads(gates_path.read_text(encoding="utf-8")).get("gates", {})
+        if args.mode in ("train", "evaluate", "freeze") and gates.get("gate_t_transition_formal") != "pass":
+            raise SystemExit("gate_t_transition_formal not pass; corrected formal required before detector train/eval/freeze")
     if args.mode == "collect":
         import argparse as _argparse
 

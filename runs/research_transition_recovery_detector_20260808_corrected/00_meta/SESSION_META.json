@@ -1,0 +1,27 @@
+{
+  "schema_version": "transition_recovery_detector_session_v2",
+  "correction_plan_version": "20260808_correction_v1",
+  "query_estimator_version": "units_per_sec_v2",
+  "head_strategy": "H0",
+  "label_schema_version": "safe100_grey100_250_unsafe250_structural_v1",
+  "source_split_version": "four_role_source_song_disjoint_v1",
+  "model_identity": {
+    "kind": "lora",
+    "checkpoint": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
+  },
+  "audio_preprocessing_identity": {
+    "compress": "retained_3s",
+    "planner": "silence_snap"
+  },
+  "decoder_evidence_version": "raw_official_shared_forward_v2",
+  "gt_schema_version": "canonical_source_segment_mapping_v2",
+  "session_root_physical": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected",
+  "reports_location": "/home/hyan/LyricAlignment/reports/research_transition_recovery_detector_20260808_corrected",
+  "invalidated_20260807": [
+    "serial formal（density bug）",
+    "T2 propagation",
+    "detector rows/working points",
+    "closed-loop",
+    "320ms 标签"
+  ]
+}

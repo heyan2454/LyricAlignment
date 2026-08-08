@@ -1,0 +1,231 @@
+{
+  "schema_version": "mir_transfer_v1",
+  "fixed_transfer": true,
+  "n_songs": 17,
+  "pooled_units": 2035,
+  "pooled_correct_rate": 1.0,
+  "per_song": [
+    {
+      "item_id": "Ani_1",
+      "song_id": "Ani_1.wav",
+      "n_units": 88,
+      "correct": 88,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.02,
+      "tristate_SA80": {
+        "ACCEPT": 72,
+        "REJECT": 16,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "abjones_1",
+      "song_id": "abjones_1.wav",
+      "n_units": 60,
+      "correct": 60,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.025,
+      "tristate_SA80": {
+        "ACCEPT": 48,
+        "REJECT": 12,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "amy_1",
+      "song_id": "amy_1.wav",
+      "n_units": 70,
+      "correct": 70,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.035,
+      "tristate_SA80": {
+        "ACCEPT": 50,
+        "REJECT": 19,
+        "UNCERTAIN": 1
+      }
+    },
+    {
+      "item_id": "annar_1",
+      "song_id": "annar_1.wav",
+      "n_units": 85,
+      "correct": 85,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.028,
+      "tristate_SA80": {
+        "ACCEPT": 72,
+        "REJECT": 13,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "ariel_1",
+      "song_id": "ariel_1.wav",
+      "n_units": 103,
+      "correct": 103,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.03,
+      "tristate_SA80": {
+        "ACCEPT": 85,
+        "REJECT": 17,
+        "UNCERTAIN": 1
+      }
+    },
+    {
+      "item_id": "bobon_1",
+      "song_id": "bobon_1.wav",
+      "n_units": 170,
+      "correct": 170,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.029,
+      "tristate_SA80": {
+        "ACCEPT": 162,
+        "REJECT": 8,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "bug_1",
+      "song_id": "bug_1.wav",
+      "n_units": 48,
+      "correct": 48,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.033,
+      "tristate_SA80": {
+        "ACCEPT": 35,
+        "REJECT": 13,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "davidson_1",
+      "song_id": "davidson_1.wav",
+      "n_units": 164,
+      "correct": 164,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.026,
+      "tristate_SA80": {
+        "ACCEPT": 147,
+        "REJECT": 17,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "fdps_1",
+      "song_id": "fdps_1.wav",
+      "n_units": 159,
+      "correct": 159,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.04,
+      "tristate_SA80": {
+        "ACCEPT": 136,
+        "REJECT": 23,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "geniusturtle_1",
+      "song_id": "geniusturtle_1.wav",
+      "n_units": 105,
+      "correct": 105,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.02,
+      "tristate_SA80": {
+        "ACCEPT": 56,
+        "REJECT": 49,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "heycat_1",
+      "song_id": "heycat_1.wav",
+      "n_units": 128,
+      "correct": 128,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.029,
+      "tristate_SA80": {
+        "ACCEPT": 118,
+        "REJECT": 10,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "jmzen_1",
+      "song_id": "jmzen_1.wav",
+      "n_units": 154,
+      "correct": 154,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.029,
+      "tristate_SA80": {
+        "ACCEPT": 138,
+        "REJECT": 16,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "khair_1",
+      "song_id": "khair_1.wav",
+      "n_units": 109,
+      "correct": 109,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.021,
+      "tristate_SA80": {
+        "ACCEPT": 91,
+        "REJECT": 17,
+        "UNCERTAIN": 1
+      }
+    },
+    {
+      "item_id": "leon_1",
+      "song_id": "leon_1.wav",
+      "n_units": 160,
+      "correct": 160,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.03,
+      "tristate_SA80": {
+        "ACCEPT": 137,
+        "REJECT": 23,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "stool_1",
+      "song_id": "stool_1.wav",
+      "n_units": 153,
+      "correct": 153,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.025,
+      "tristate_SA80": {
+        "ACCEPT": 141,
+        "REJECT": 12,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "tammy_1",
+      "song_id": "tammy_1.wav",
+      "n_units": 108,
+      "correct": 108,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.033,
+      "tristate_SA80": {
+        "ACCEPT": 97,
+        "REJECT": 11,
+        "UNCERTAIN": 0
+      }
+    },
+    {
+      "item_id": "yifen_1",
+      "song_id": "yifen_1.wav",
+      "n_units": 171,
+      "correct": 171,
+      "correct_rate": 1.0,
+      "median_abs_diff": 0.024,
+      "tristate_SA80": {
+        "ACCEPT": 145,
+        "REJECT": 26,
+        "UNCERTAIN": 0
+      }
+    }
+  ],
+  "note": "MIR 标签 schema 与 M4 不同（字符级 ground_truth），不拼入 M4 总表；detector/threshold 未重调"
+}

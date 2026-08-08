@@ -1,0 +1,18 @@
+{
+  "schema_version": "oracle_recovery_v2",
+  "modes": {
+    "O0_oracle_gt_range_rerun_legacy": {
+      "segments": 85,
+      "recovery_rate": 0.1862
+    },
+    "O1_gt_head": {
+      "segments": 85,
+      "recovery_rate": 0.194
+    },
+    "O2_gt_exact_pair": {
+      "segments": 85,
+      "recovery_rate": 0.1947
+    }
+  },
+  "conclusion": "oracle recovery 上界 ≈19.5%（GT exact-pair）；模型对同段重跑产生相同系统性偏移，recovery 上限受 aligner intrinsic limitation 限制；O1/O2 仅比 O0 高 ~0.8pp"
+}

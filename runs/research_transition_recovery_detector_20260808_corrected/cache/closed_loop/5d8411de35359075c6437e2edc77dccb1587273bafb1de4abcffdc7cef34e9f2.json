@@ -1,0 +1,126 @@
+{
+  "schema_version": "serial_infer_actual_input_cache_v1",
+  "identity": {
+    "schema_version": "serial_infer_actual_input_cache_v1",
+    "audio_sha256": "99c918e419d26dfe992b4a7a1efe5d11bb5d550c253ad558434118c209bc0673",
+    "audio_sample_count": 1120000,
+    "global_audio_offset_sec": 0.0,
+    "character_range": [
+      0,
+      1
+    ],
+    "alignment_units": [
+      "你"
+    ],
+    "timestamp_slot_indices": null,
+    "timestamp_segment_sec": 0.08,
+    "decoder_top_k": 8,
+    "decoder_beam_size": 96,
+    "decoder_kind": "raw",
+    "model_identity": {
+      "kind": "raw"
+    }
+  },
+  "rows": [
+    {
+      "global_character_index": 0,
+      "line_index": 0,
+      "index_in_line": 0,
+      "character": "你",
+      "alignment_unit": "你",
+      "unit_type": "cjk_character",
+      "display_prefix": "",
+      "display_text": "你",
+      "display_suffix": "",
+      "raw_local_start_sec": 0.48,
+      "raw_local_end_sec": 0.64,
+      "raw_global_start_sec": 0.48,
+      "raw_global_end_sec": 0.64,
+      "decoder_kind": "raw",
+      "official_fixed_local_start_sec": 0.48,
+      "official_fixed_local_end_sec": 0.64,
+      "official_fixed_global_start_sec": 0.48,
+      "official_fixed_global_end_sec": 0.64,
+      "gpu_fixed_local_start_sec": null,
+      "gpu_fixed_local_end_sec": null,
+      "gpu_fixed_global_start_sec": null,
+      "gpu_fixed_global_end_sec": null,
+      "fixed_local_start_sec": 0.48,
+      "fixed_local_end_sec": 0.64,
+      "fixed_global_start_sec": 0.48,
+      "fixed_global_end_sec": 0.64,
+      "raw_start_top1_probability": 0.6771119832992554,
+      "raw_end_top1_probability": 0.9890546798706055,
+      "raw_start_top2_class": 5,
+      "raw_end_top2_class": 0,
+      "raw_start_topk_classes": [
+        6,
+        5,
+        0,
+        4,
+        7,
+        3,
+        1,
+        8
+      ],
+      "raw_end_topk_classes": [
+        8,
+        0,
+        7,
+        9,
+        6,
+        12,
+        10,
+        4
+      ],
+      "raw_start_topk_probabilities": [
+        0.6771119832992554,
+        0.3004666268825531,
+        0.01592414826154709,
+        0.0036659471224993467,
+        0.0014811765868216753,
+        0.0002004554553423077,
+        0.00014665632625110447,
+        0.000137770883156918
+      ],
+      "raw_end_topk_probabilities": [
+        0.9890546798706055,
+        0.006664197891950607,
+        0.0021635484881699085,
+        0.0015828858595341444,
+        0.0001567269064253196,
+        3.1347357435151935e-05,
+        2.5188306608470157e-05,
+        2.4034850866883062e-05
+      ],
+      "raw_start_margin": 0.37664535641670227,
+      "raw_end_margin": 0.9823904633522034,
+      "raw_start_entropy": 0.7363194227218628,
+      "raw_end_entropy": 0.07384156435728073,
+      "raw_boundary_margin_mean": 0.679517924785614,
+      "gpu_decoder_start_gate": null,
+      "gpu_decoder_end_gate": null
+    }
+  ],
+  "audit": {
+    "character_start": 0,
+    "character_end": 1,
+    "character_count": 1,
+    "alignment_unit_count": 1,
+    "alignment_unit_mode": "cjk_character_or_latin_word",
+    "language": "Chinese",
+    "transcript": "你",
+    "transcript_policy": "pretokenized_content_items",
+    "processor_units": [
+      "你"
+    ],
+    "word_count": 1,
+    "timestamp_position_count": 2,
+    "timestamp_logit_class_count": 5000,
+    "saved_timestamp_top_k": 8,
+    "audio_sample_count": 1120000,
+    "audio_duration_sec": 70.0,
+    "decoder_kind": "raw",
+    "gpu_decoder_identity": null
+  }
+}
