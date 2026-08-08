@@ -1,8 +1,0 @@
-{
-  "role": "detector_train",
-  "n_songs": 26,
-  "n_units": 3993,
-  "n_labeled": 3993,
-  "n_safe": 733,
-  "n_unsafe": 3260
-}

@@ -1,9 +1,0 @@
-{
-  "schema_version": "repeated_occurrence_v1",
-  "scope": "development_selection",
-  "n_songs_with_repeat": 8,
-  "n_repeat_rows": 80,
-  "occ1_correct_rate": 0.55,
-  "alternate_biased_rows": 0,
-  "conclusion": "full-song 对齐下模型不跳 occurrence（0/80 alternate）；重复段对齐正确率 55% 与整体相当；occurrence ambiguity 不是 full-song 的主要失败模式"
-}
