@@ -55,10 +55,11 @@ def audit_records(records: list[dict], gt: dict[int, dict]) -> list[dict]:
                 gt_active_recall = len(covered) / len(active)
                 extra_left = max(0, gt_first - q0)
                 extra_right = max(0, q1 - (active[-1] + 1))
-                correct_occurrence = True  # occurrence 判定由 caller 提供 gt_occurrence 时细化
+                correct_occurrence = None  # 需 gt_occurrence 输入；当前 GT schema 无 occurrence → not_applicable
                 first_sung_rank = next((k for k, i in enumerate(qids) if i in active), None)
         row = {
             "window_index": req.get("window_index", 0),
+            "head_strategy_actual": (rec.get("query_audit") or {}).get("head_strategy"),
             "original_bounds": [round(float(v), 4) for v in req["original_bounds"]],
             "model_bounds": [round(float(v), 4) for v in model_bounds],
             "query_start_id": q0,
@@ -115,7 +116,7 @@ def main() -> int:
             ]
             for row in audit_records(records, gt):
                 row["song_id"] = song_id
-                row["head_strategy"] = args.head_strategy
+                row["head_strategy"] = row.get("head_strategy_actual") or args.head_strategy
                 rows.append(row)
         with open(out_path, "w", encoding="utf-8") as f:
             for row in rows:

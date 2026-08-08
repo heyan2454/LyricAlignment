@@ -113,7 +113,7 @@ def run_formal(args: argparse.Namespace) -> int:
         "head_strategy": getattr(args, "head_strategy", "H0"),
         "model_identity": model_identity,
         "env_identity": f"gpu-{args.role}",
-        "config_hash": f"formal-{args.role}-v1",
+        "config_hash": f"formal-{args.role}-{getattr(args, chr(104)+chr(101)+chr(97)+chr(100)+chr(95)+chr(115)+chr(116)+chr(114)+chr(97)+chr(116)+chr(101)+chr(103)+chr(121), chr(72)+chr(48))}",
         "sample_rate": 16000,
         "audio_profile_provider": lambda a: build_vocal_activity_profile(a, sample_rate=16000),
         "min_original_silence_sec": 5.0,
@@ -152,7 +152,8 @@ def run_formal(args: argparse.Namespace) -> int:
             committed = [r for rec in records for r in committed_rows_for(rec)]
             acc = unit_accuracy(committed, gt)
             multi = multi_tolerance_accuracy(committed, gt)
-            cov = coverage_stats(len(gt), records[-1]["state_after"]["committed_end_exclusive"] if not records[-1].get("skipped") else 0)
+            final_rec = next((r for r in reversed(records) if not r.get("skipped")), None)
+            cov = coverage_stats(len(gt), final_rec["state_after"]["committed_end_exclusive"] if final_rec else 0)
             drift = cursor_time_drift(records, gt)
             first_err = first_error_window(records, gt)
             md = missing_duplicate_committed(committed, gt)

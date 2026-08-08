@@ -1,0 +1,1604 @@
+[
+  {
+    "song_id": "newboy",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 443,
+    "committed": 127,
+    "accuracy": {
+      "correct": 73,
+      "wrong": 54,
+      "total": 127,
+      "correct_rate": 0.5748031496062992,
+      "wrong_rate": 0.4251968503937008
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.14173228346456693,
+      "correct_100ms": 18,
+      "correct_rate_250ms": 0.4330708661417323,
+      "correct_250ms": 55,
+      "correct_rate_500ms": 0.8031496062992126,
+      "correct_500ms": 102,
+      "correct_rate_1000ms": 0.9606299212598425,
+      "correct_1000ms": 122,
+      "legacy_320ms": 0.5748031496062992
+    },
+    "coverage": {
+      "total_units": 443,
+      "committed": 127,
+      "uncommitted": 316,
+      "coverage_rate": 0.2866817155756208
+    },
+    "drift": {
+      "window_drifts_sec": [
+        2.1850000000000023,
+        0.31330000000001235,
+        0.31330000000001235,
+        0.31330000000001235
+      ],
+      "max_drift_sec": 2.1850000000000023,
+      "final_drift_sec": 0.31330000000001235
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 127,
+      "total": 127,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 291.539,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "你给我听好",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 434,
+    "committed": 126,
+    "accuracy": {
+      "correct": 62,
+      "wrong": 64,
+      "total": 126,
+      "correct_rate": 0.49206349206349204,
+      "wrong_rate": 0.5079365079365079
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.1746031746031746,
+      "correct_100ms": 22,
+      "correct_rate_250ms": 0.4126984126984127,
+      "correct_250ms": 52,
+      "correct_rate_500ms": 0.6904761904761905,
+      "correct_500ms": 87,
+      "correct_rate_1000ms": 0.9603174603174603,
+      "correct_1000ms": 121,
+      "legacy_320ms": 0.49206349206349204
+    },
+    "coverage": {
+      "total_units": 434,
+      "committed": 126,
+      "uncommitted": 308,
+      "coverage_rate": 0.2903225806451613
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.5649999999999977,
+        1.217100000000002,
+        1.217100000000002,
+        1.217100000000002
+      ],
+      "max_drift_sec": 1.5649999999999977,
+      "final_drift_sec": 1.217100000000002
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 126,
+      "total": 126,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 300.76212499999997,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "内疚",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 289,
+    "committed": 75,
+    "accuracy": {
+      "correct": 26,
+      "wrong": 49,
+      "total": 75,
+      "correct_rate": 0.3466666666666667,
+      "wrong_rate": 0.6533333333333333
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.09333333333333334,
+      "correct_100ms": 7,
+      "correct_rate_250ms": 0.25333333333333335,
+      "correct_250ms": 19,
+      "correct_rate_500ms": 0.64,
+      "correct_500ms": 48,
+      "correct_rate_1000ms": 0.92,
+      "correct_1000ms": 69,
+      "legacy_320ms": 0.3466666666666667
+    },
+    "coverage": {
+      "total_units": 289,
+      "committed": 75,
+      "uncommitted": 214,
+      "coverage_rate": 0.25951557093425603
+    },
+    "drift": {
+      "window_drifts_sec": [
+        3.155000000000001,
+        0.2727000000000004,
+        0.2727000000000004,
+        0.2727000000000004
+      ],
+      "max_drift_sec": 3.155000000000001,
+      "final_drift_sec": 0.2727000000000004
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 75,
+      "total": 75,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 270.6924375,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "圣诞结",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 463,
+    "committed": 141,
+    "accuracy": {
+      "correct": 51,
+      "wrong": 90,
+      "total": 141,
+      "correct_rate": 0.3617021276595745,
+      "wrong_rate": 0.6382978723404256
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.09219858156028368,
+      "correct_100ms": 13,
+      "correct_rate_250ms": 0.2695035460992908,
+      "correct_250ms": 38,
+      "correct_rate_500ms": 0.5886524822695035,
+      "correct_500ms": 83,
+      "correct_rate_1000ms": 0.851063829787234,
+      "correct_1000ms": 120,
+      "legacy_320ms": 0.3617021276595745
+    },
+    "coverage": {
+      "total_units": 463,
+      "committed": 141,
+      "uncommitted": 322,
+      "coverage_rate": 0.3045356371490281
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.19240000000000634,
+        0.6805999999999983,
+        0.6805999999999983,
+        0.6805999999999983
+      ],
+      "max_drift_sec": 0.6805999999999983,
+      "final_drift_sec": 0.6805999999999983
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 141,
+      "total": 141,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 285.31212500000004,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "宿敌",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 321,
+    "committed": 100,
+    "accuracy": {
+      "correct": 39,
+      "wrong": 61,
+      "total": 100,
+      "correct_rate": 0.39,
+      "wrong_rate": 0.61
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.12,
+      "correct_100ms": 12,
+      "correct_rate_250ms": 0.31,
+      "correct_250ms": 31,
+      "correct_rate_500ms": 0.57,
+      "correct_500ms": 57,
+      "correct_rate_1000ms": 0.83,
+      "correct_1000ms": 83,
+      "legacy_320ms": 0.39
+    },
+    "coverage": {
+      "total_units": 321,
+      "committed": 100,
+      "uncommitted": 221,
+      "coverage_rate": 0.3115264797507788
+    },
+    "drift": {
+      "window_drifts_sec": [
+        2.569999999999993,
+        0.16440000000000055,
+        0.16440000000000055,
+        0.16440000000000055
+      ],
+      "max_drift_sec": 2.569999999999993,
+      "final_drift_sec": 0.16440000000000055
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 100,
+      "total": 100,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 274.3704375,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "左边",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 421,
+    "committed": 128,
+    "accuracy": {
+      "correct": 77,
+      "wrong": 51,
+      "total": 128,
+      "correct_rate": 0.6015625,
+      "wrong_rate": 0.3984375
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.1953125,
+      "correct_100ms": 25,
+      "correct_rate_250ms": 0.453125,
+      "correct_250ms": 58,
+      "correct_rate_500ms": 0.8203125,
+      "correct_500ms": 105,
+      "correct_rate_1000ms": 0.984375,
+      "correct_1000ms": 126,
+      "legacy_320ms": 0.6015625
+    },
+    "coverage": {
+      "total_units": 421,
+      "committed": 128,
+      "uncommitted": 293,
+      "coverage_rate": 0.30403800475059384
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.26950000000000784,
+        0.41729999999999734,
+        0.41729999999999734,
+        0.41729999999999734
+      ],
+      "max_drift_sec": 0.41729999999999734,
+      "final_drift_sec": 0.41729999999999734
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 128,
+      "total": 128,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 289.63356250000004,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "我们都太倔强",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 359,
+    "committed": 97,
+    "accuracy": {
+      "correct": 55,
+      "wrong": 42,
+      "total": 97,
+      "correct_rate": 0.5670103092783505,
+      "wrong_rate": 0.4329896907216495
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.15463917525773196,
+      "correct_100ms": 15,
+      "correct_rate_250ms": 0.44329896907216493,
+      "correct_250ms": 43,
+      "correct_rate_500ms": 0.6907216494845361,
+      "correct_500ms": 67,
+      "correct_rate_1000ms": 0.865979381443299,
+      "correct_1000ms": 84,
+      "legacy_320ms": 0.5670103092783505
+    },
+    "coverage": {
+      "total_units": 359,
+      "committed": 97,
+      "uncommitted": 262,
+      "coverage_rate": 0.27019498607242337
+    },
+    "drift": {
+      "window_drifts_sec": [
+        2.575000000000003,
+        0.719300000000004,
+        0.719300000000004,
+        0.719300000000004
+      ],
+      "max_drift_sec": 2.575000000000003,
+      "final_drift_sec": 0.719300000000004
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 97,
+      "total": 97,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 315.915625,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "最后一页",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 318,
+    "committed": 109,
+    "accuracy": {
+      "correct": 64,
+      "wrong": 45,
+      "total": 109,
+      "correct_rate": 0.5871559633027523,
+      "wrong_rate": 0.41284403669724773
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.21100917431192662,
+      "correct_100ms": 23,
+      "correct_rate_250ms": 0.48623853211009177,
+      "correct_250ms": 53,
+      "correct_rate_500ms": 0.8165137614678899,
+      "correct_500ms": 89,
+      "correct_rate_1000ms": 0.981651376146789,
+      "correct_1000ms": 107,
+      "legacy_320ms": 0.5871559633027523
+    },
+    "coverage": {
+      "total_units": 318,
+      "committed": 109,
+      "uncommitted": 209,
+      "coverage_rate": 0.34276729559748426
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.0955999999999975,
+        1.3212999999999937,
+        1.3212999999999937,
+        1.3212999999999937
+      ],
+      "max_drift_sec": 1.3212999999999937,
+      "final_drift_sec": 1.3212999999999937
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 109,
+      "total": 109,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 264.09837500000003,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "歌颂者",
+    "transition": "T3_stable_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 326,
+    "committed": 95,
+    "accuracy": {
+      "correct": 31,
+      "wrong": 64,
+      "total": 95,
+      "correct_rate": 0.3263157894736842,
+      "wrong_rate": 0.6736842105263158
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.08421052631578947,
+      "correct_100ms": 8,
+      "correct_rate_250ms": 0.2631578947368421,
+      "correct_250ms": 25,
+      "correct_rate_500ms": 0.4631578947368421,
+      "correct_500ms": 44,
+      "correct_rate_1000ms": 0.7473684210526316,
+      "correct_1000ms": 71,
+      "legacy_320ms": 0.3263157894736842
+    },
+    "coverage": {
+      "total_units": 326,
+      "committed": 95,
+      "uncommitted": 231,
+      "coverage_rate": 0.29141104294478526
+    },
+    "drift": {
+      "window_drifts_sec": [
+        3.444999999999993,
+        1.2924999999999969,
+        1.2924999999999969,
+        1.2924999999999969
+      ],
+      "max_drift_sec": 3.444999999999993,
+      "final_drift_sec": 1.2924999999999969
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 95,
+      "total": 95,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 298.7008125,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "newboy",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 443,
+    "committed": 443,
+    "accuracy": {
+      "correct": 266,
+      "wrong": 177,
+      "total": 443,
+      "correct_rate": 0.600451467268623,
+      "wrong_rate": 0.39954853273137697
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.2076749435665914,
+      "correct_100ms": 92,
+      "correct_rate_250ms": 0.47404063205417607,
+      "correct_250ms": 210,
+      "correct_rate_500ms": 0.781038374717833,
+      "correct_500ms": 346,
+      "correct_rate_1000ms": 0.9435665914221218,
+      "correct_1000ms": 418,
+      "legacy_320ms": 0.600451467268623
+    },
+    "coverage": {
+      "total_units": 443,
+      "committed": 443,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.49499999999999034,
+        1.2049999999999983,
+        0.2021000000000015
+      ],
+      "max_drift_sec": 1.2049999999999983,
+      "final_drift_sec": 0.2021000000000015
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 443,
+      "total": 443,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 291.539,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "你给我听好",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 434,
+    "committed": 434,
+    "accuracy": {
+      "correct": 234,
+      "wrong": 200,
+      "total": 434,
+      "correct_rate": 0.5391705069124424,
+      "wrong_rate": 0.4608294930875576
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.19815668202764977,
+      "correct_100ms": 86,
+      "correct_rate_250ms": 0.4608294930875576,
+      "correct_250ms": 200,
+      "correct_rate_500ms": 0.7304147465437788,
+      "correct_500ms": 317,
+      "correct_rate_1000ms": 0.9516129032258065,
+      "correct_1000ms": 413,
+      "legacy_320ms": 0.5391705069124424
+    },
+    "coverage": {
+      "total_units": 434,
+      "committed": 434,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.217100000000002,
+        0.9966999999999899,
+        0.5049999999999955
+      ],
+      "max_drift_sec": 1.217100000000002,
+      "final_drift_sec": 0.5049999999999955
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 434,
+      "total": 434,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 300.76212499999997,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "内疚",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 289,
+    "committed": 289,
+    "accuracy": {
+      "correct": 120,
+      "wrong": 169,
+      "total": 289,
+      "correct_rate": 0.41522491349480967,
+      "wrong_rate": 0.5847750865051903
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.14878892733564014,
+      "correct_100ms": 43,
+      "correct_rate_250ms": 0.3391003460207612,
+      "correct_250ms": 98,
+      "correct_rate_500ms": 0.643598615916955,
+      "correct_500ms": 186,
+      "correct_rate_1000ms": 0.9100346020761245,
+      "correct_1000ms": 263,
+      "legacy_320ms": 0.41522491349480967
+    },
+    "coverage": {
+      "total_units": 289,
+      "committed": 289,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.8263000000000034,
+        0.9507000000000119,
+        1.2190000000000225
+      ],
+      "max_drift_sec": 1.8263000000000034,
+      "final_drift_sec": 1.2190000000000225
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 289,
+      "total": 289,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 270.6924375,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "圣诞结",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 463,
+    "committed": 463,
+    "accuracy": {
+      "correct": 201,
+      "wrong": 262,
+      "total": 463,
+      "correct_rate": 0.43412526997840173,
+      "wrong_rate": 0.5658747300215983
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.11879049676025918,
+      "correct_100ms": 55,
+      "correct_rate_250ms": 0.326133909287257,
+      "correct_250ms": 151,
+      "correct_rate_500ms": 0.6263498920086393,
+      "correct_500ms": 290,
+      "correct_rate_1000ms": 0.8315334773218143,
+      "correct_1000ms": 385,
+      "legacy_320ms": 0.43412526997840173
+    },
+    "coverage": {
+      "total_units": 463,
+      "committed": 463,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        2.5649999999999977,
+        1.7383000000000095,
+        0.18769999999997822
+      ],
+      "max_drift_sec": 2.5649999999999977,
+      "final_drift_sec": 0.18769999999997822
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 463,
+      "total": 463,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 285.31212500000004,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "宿敌",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 321,
+    "committed": 321,
+    "accuracy": {
+      "correct": 119,
+      "wrong": 202,
+      "total": 321,
+      "correct_rate": 0.3707165109034268,
+      "wrong_rate": 0.6292834890965732
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.14330218068535824,
+      "correct_100ms": 46,
+      "correct_rate_250ms": 0.2866043613707165,
+      "correct_250ms": 92,
+      "correct_rate_500ms": 0.5264797507788161,
+      "correct_500ms": 169,
+      "correct_rate_1000ms": 0.7663551401869159,
+      "correct_1000ms": 246,
+      "legacy_320ms": 0.3707165109034268
+    },
+    "coverage": {
+      "total_units": 321,
+      "committed": 321,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.7831999999999937,
+        27.593700000000013,
+        29.985800000000012
+      ],
+      "max_drift_sec": 29.985800000000012,
+      "final_drift_sec": 29.985800000000012
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 321,
+      "total": 321,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 274.3704375,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "左边",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 421,
+    "committed": 421,
+    "accuracy": {
+      "correct": 248,
+      "wrong": 173,
+      "total": 421,
+      "correct_rate": 0.5890736342042755,
+      "wrong_rate": 0.41092636579572445
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.19239904988123516,
+      "correct_100ms": 81,
+      "correct_rate_250ms": 0.46318289786223277,
+      "correct_250ms": 195,
+      "correct_rate_500ms": 0.7814726840855107,
+      "correct_500ms": 329,
+      "correct_rate_1000ms": 0.9287410926365796,
+      "correct_1000ms": 391,
+      "legacy_320ms": 0.5890736342042755
+    },
+    "coverage": {
+      "total_units": 421,
+      "committed": 421,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.49729999999999563,
+        1.1060999999999979,
+        0.8021000000000242
+      ],
+      "max_drift_sec": 1.1060999999999979,
+      "final_drift_sec": 0.8021000000000242
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 421,
+      "total": 421,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 289.63356250000004,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "我们都太倔强",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 359,
+    "committed": 359,
+    "accuracy": {
+      "correct": 197,
+      "wrong": 162,
+      "total": 359,
+      "correct_rate": 0.5487465181058496,
+      "wrong_rate": 0.45125348189415043
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.17270194986072424,
+      "correct_100ms": 62,
+      "correct_rate_250ms": 0.45403899721448465,
+      "correct_250ms": 163,
+      "correct_rate_500ms": 0.6963788300835655,
+      "correct_500ms": 250,
+      "correct_rate_1000ms": 0.8885793871866295,
+      "correct_1000ms": 319,
+      "legacy_320ms": 0.5487465181058496
+    },
+    "coverage": {
+      "total_units": 359,
+      "committed": 359,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.8902999999999963,
+        2.566100000000006,
+        0.5536999999999921
+      ],
+      "max_drift_sec": 2.566100000000006,
+      "final_drift_sec": 0.5536999999999921
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 359,
+      "total": 359,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 315.915625,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "最后一页",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 318,
+    "committed": 318,
+    "accuracy": {
+      "correct": 171,
+      "wrong": 147,
+      "total": 318,
+      "correct_rate": 0.5377358490566038,
+      "wrong_rate": 0.46226415094339623
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.1761006289308176,
+      "correct_100ms": 56,
+      "correct_rate_250ms": 0.4591194968553459,
+      "correct_250ms": 146,
+      "correct_rate_500ms": 0.7610062893081762,
+      "correct_500ms": 242,
+      "correct_rate_1000ms": 0.9591194968553459,
+      "correct_1000ms": 305,
+      "legacy_320ms": 0.5377358490566038
+    },
+    "coverage": {
+      "total_units": 318,
+      "committed": 318,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.3212999999999937,
+        22.261700000000005,
+        0.10609999999999786
+      ],
+      "max_drift_sec": 22.261700000000005,
+      "final_drift_sec": 0.10609999999999786
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 318,
+      "total": 318,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 264.09837500000003,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "歌颂者",
+    "transition": "T1_direct_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 326,
+    "committed": 326,
+    "accuracy": {
+      "correct": 99,
+      "wrong": 227,
+      "total": 326,
+      "correct_rate": 0.30368098159509205,
+      "wrong_rate": 0.696319018404908
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.08588957055214724,
+      "correct_100ms": 28,
+      "correct_rate_250ms": 0.25153374233128833,
+      "correct_250ms": 82,
+      "correct_rate_500ms": 0.39570552147239263,
+      "correct_500ms": 129,
+      "correct_rate_1000ms": 0.6349693251533742,
+      "correct_1000ms": 207,
+      "legacy_320ms": 0.30368098159509205
+    },
+    "coverage": {
+      "total_units": 326,
+      "committed": 326,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.2924999999999969,
+        1.7766999999999769,
+        0.5627999999999815
+      ],
+      "max_drift_sec": 1.7766999999999769,
+      "final_drift_sec": 0.5627999999999815
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 326,
+      "total": 326,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 298.7008125,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "newboy",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 443,
+    "committed": 443,
+    "accuracy": {
+      "correct": 265,
+      "wrong": 178,
+      "total": 443,
+      "correct_rate": 0.5981941309255079,
+      "wrong_rate": 0.4018058690744921
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.20316027088036118,
+      "correct_100ms": 90,
+      "correct_rate_250ms": 0.4717832957110609,
+      "correct_250ms": 209,
+      "correct_rate_500ms": 0.7787810383747178,
+      "correct_500ms": 345,
+      "correct_rate_1000ms": 0.9435665914221218,
+      "correct_1000ms": 418,
+      "legacy_320ms": 0.5981941309255079
+    },
+    "coverage": {
+      "total_units": 443,
+      "committed": 443,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        2.1850000000000023,
+        1.6950000000000074,
+        1.1846999999999923
+      ],
+      "max_drift_sec": 2.1850000000000023,
+      "final_drift_sec": 1.1846999999999923
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 443,
+      "total": 443,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 291.539,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "你给我听好",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 434,
+    "committed": 434,
+    "accuracy": {
+      "correct": 235,
+      "wrong": 199,
+      "total": 434,
+      "correct_rate": 0.5414746543778802,
+      "wrong_rate": 0.45852534562211983
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.19815668202764977,
+      "correct_100ms": 86,
+      "correct_rate_250ms": 0.4631336405529954,
+      "correct_250ms": 201,
+      "correct_rate_500ms": 0.7327188940092166,
+      "correct_500ms": 318,
+      "correct_rate_1000ms": 0.9539170506912442,
+      "correct_1000ms": 414,
+      "legacy_320ms": 0.5414746543778802
+    },
+    "coverage": {
+      "total_units": 434,
+      "committed": 434,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.5649999999999977,
+        0.9822999999999951,
+        2.7800000000000296
+      ],
+      "max_drift_sec": 2.7800000000000296,
+      "final_drift_sec": 2.7800000000000296
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 434,
+      "total": 434,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 300.76212499999997,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "内疚",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 289,
+    "committed": 289,
+    "accuracy": {
+      "correct": 117,
+      "wrong": 172,
+      "total": 289,
+      "correct_rate": 0.40484429065743943,
+      "wrong_rate": 0.5951557093425606
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.1384083044982699,
+      "correct_100ms": 40,
+      "correct_rate_250ms": 0.33217993079584773,
+      "correct_250ms": 96,
+      "correct_rate_500ms": 0.629757785467128,
+      "correct_500ms": 182,
+      "correct_rate_1000ms": 0.8996539792387543,
+      "correct_1000ms": 260,
+      "legacy_320ms": 0.40484429065743943
+    },
+    "coverage": {
+      "total_units": 289,
+      "committed": 289,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        3.155000000000001,
+        2.075000000000003,
+        0.5579999999999927
+      ],
+      "max_drift_sec": 3.155000000000001,
+      "final_drift_sec": 0.5579999999999927
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 289,
+      "total": 289,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 270.6924375,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "圣诞结",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 463,
+    "committed": 463,
+    "accuracy": {
+      "correct": 213,
+      "wrong": 250,
+      "total": 463,
+      "correct_rate": 0.46004319654427644,
+      "wrong_rate": 0.5399568034557235
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.13174946004319654,
+      "correct_100ms": 61,
+      "correct_rate_250ms": 0.34989200863930886,
+      "correct_250ms": 162,
+      "correct_rate_500ms": 0.6457883369330454,
+      "correct_500ms": 299,
+      "correct_rate_1000ms": 0.8531317494600432,
+      "correct_1000ms": 395,
+      "legacy_320ms": 0.46004319654427644
+    },
+    "coverage": {
+      "total_units": 463,
+      "committed": 463,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.19240000000000634,
+        0.19499999999997897,
+        0.6367999999999938
+      ],
+      "max_drift_sec": 0.6367999999999938,
+      "final_drift_sec": 0.6367999999999938
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 463,
+      "total": 463,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 285.31212500000004,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "宿敌",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 321,
+    "committed": 321,
+    "accuracy": {
+      "correct": 129,
+      "wrong": 192,
+      "total": 321,
+      "correct_rate": 0.40186915887850466,
+      "wrong_rate": 0.5981308411214953
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.14330218068535824,
+      "correct_100ms": 46,
+      "correct_rate_250ms": 0.3052959501557632,
+      "correct_250ms": 98,
+      "correct_rate_500ms": 0.5607476635514018,
+      "correct_500ms": 180,
+      "correct_rate_1000ms": 0.8130841121495327,
+      "correct_1000ms": 261,
+      "legacy_320ms": 0.40186915887850466
+    },
+    "coverage": {
+      "total_units": 321,
+      "committed": 321,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        2.569999999999993,
+        2.8200000000000074,
+        1.0159000000000162
+      ],
+      "max_drift_sec": 2.8200000000000074,
+      "final_drift_sec": 1.0159000000000162
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 321,
+      "total": 321,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 274.3704375,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "左边",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 421,
+    "committed": 421,
+    "accuracy": {
+      "correct": 247,
+      "wrong": 174,
+      "total": 421,
+      "correct_rate": 0.5866983372921615,
+      "wrong_rate": 0.41330166270783847
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.19239904988123516,
+      "correct_100ms": 81,
+      "correct_rate_250ms": 0.46318289786223277,
+      "correct_250ms": 195,
+      "correct_rate_500ms": 0.7814726840855107,
+      "correct_500ms": 329,
+      "correct_rate_1000ms": 0.9287410926365796,
+      "correct_1000ms": 391,
+      "legacy_320ms": 0.5866983372921615
+    },
+    "coverage": {
+      "total_units": 421,
+      "committed": 421,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        0.26950000000000784,
+        0.9225000000000136,
+        0.9128999999999792
+      ],
+      "max_drift_sec": 0.9225000000000136,
+      "final_drift_sec": 0.9128999999999792
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 421,
+      "total": 421,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 289.63356250000004,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "我们都太倔强",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 359,
+    "committed": 359,
+    "accuracy": {
+      "correct": 196,
+      "wrong": 163,
+      "total": 359,
+      "correct_rate": 0.5459610027855153,
+      "wrong_rate": 0.45403899721448465
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.17270194986072424,
+      "correct_100ms": 62,
+      "correct_rate_250ms": 0.45125348189415043,
+      "correct_250ms": 162,
+      "correct_rate_500ms": 0.6963788300835655,
+      "correct_500ms": 250,
+      "correct_rate_1000ms": 0.8913649025069638,
+      "correct_1000ms": 320,
+      "legacy_320ms": 0.5459610027855153
+    },
+    "coverage": {
+      "total_units": 359,
+      "committed": 359,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        2.575000000000003,
+        1.7299999999999898,
+        2.655000000000001
+      ],
+      "max_drift_sec": 2.655000000000001,
+      "final_drift_sec": 2.655000000000001
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 359,
+      "total": 359,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 315.915625,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "最后一页",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 318,
+    "committed": 318,
+    "accuracy": {
+      "correct": 173,
+      "wrong": 145,
+      "total": 318,
+      "correct_rate": 0.5440251572327044,
+      "wrong_rate": 0.4559748427672956
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.17295597484276728,
+      "correct_100ms": 55,
+      "correct_rate_250ms": 0.46540880503144655,
+      "correct_250ms": 148,
+      "correct_rate_500ms": 0.7704402515723271,
+      "correct_500ms": 245,
+      "correct_rate_1000ms": 0.9622641509433962,
+      "correct_1000ms": 306,
+      "legacy_320ms": 0.5440251572327044
+    },
+    "coverage": {
+      "total_units": 318,
+      "committed": 318,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        1.0955999999999975,
+        1.3950000000000102,
+        1.0699999999999932
+      ],
+      "max_drift_sec": 1.3950000000000102,
+      "final_drift_sec": 1.0699999999999932
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 318,
+      "total": 318,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 264.09837500000003,
+      "wall_sec": null
+    }
+  },
+  {
+    "song_id": "歌颂者",
+    "transition": "T2_core_boundary_serial",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "n_windows": 4,
+    "n_units_total": 326,
+    "committed": 326,
+    "accuracy": {
+      "correct": 99,
+      "wrong": 227,
+      "total": 326,
+      "correct_rate": 0.30368098159509205,
+      "wrong_rate": 0.696319018404908
+    },
+    "multi_tolerance": {
+      "correct_rate_100ms": 0.08588957055214724,
+      "correct_100ms": 28,
+      "correct_rate_250ms": 0.25153374233128833,
+      "correct_250ms": 82,
+      "correct_rate_500ms": 0.39570552147239263,
+      "correct_500ms": 129,
+      "correct_rate_1000ms": 0.6349693251533742,
+      "correct_1000ms": 207,
+      "legacy_320ms": 0.30368098159509205
+    },
+    "coverage": {
+      "total_units": 326,
+      "committed": 326,
+      "uncommitted": 0,
+      "coverage_rate": 1.0
+    },
+    "drift": {
+      "window_drifts_sec": [
+        3.444999999999993,
+        1.7766999999999769,
+        0.5661000000000058
+      ],
+      "max_drift_sec": 3.444999999999993,
+      "final_drift_sec": 0.5661000000000058
+    },
+    "first_error_window": 0,
+    "missing_duplicate": {
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "missing_ids": []
+    },
+    "occurrence": {
+      "jumps": 326,
+      "total": 326,
+      "jump_rate": 1.0
+    },
+    "cost": {
+      "windows": 4,
+      "forward_count": 4,
+      "audio_seconds": 298.7008125,
+      "wall_sec": null
+    }
+  }
+]
