@@ -1,0 +1,16 @@
+{
+  "schema_version": "budget_projection_v1",
+  "target_gpu_hours": 10.0,
+  "hard_gpu_hours": 12.0,
+  "gpu_seconds_recorded": 900,
+  "phases": {
+    "phase_1_smoke_pilot": 0.7,
+    "phase_2_transition_selection": 1.5,
+    "phase_3_propagation": 1.2,
+    "phase_4_oracle_recovery": 0.5,
+    "phase_6_detector_collect": 1.0,
+    "phase_7_closed_loop": 1.0,
+    "phase_8_mir_demo": 0.8
+  },
+  "note": "GPU 秒数由 SessionState.update_gpu_seconds 显式累计（900s 为已记录值）；实际总成本受 infer_slice 内容寻址缓存命中显著降低；hard_budget 43200s 未超。"
+}

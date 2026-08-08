@@ -1,0 +1,23 @@
+{
+  "n_long_songs": 60,
+  "total_duration_sec": 13681.0,
+  "roles": {
+    "detector_train": {
+      "n_songs": 26,
+      "duration_sec": 6116.5
+    },
+    "model_selection": {
+      "n_songs": 9,
+      "duration_sec": 2053.3
+    },
+    "threshold_validation": {
+      "n_songs": 10,
+      "duration_sec": 2141.6
+    },
+    "m4_formal": {
+      "n_songs": 15,
+      "duration_sec": 3369.7
+    }
+  },
+  "input_manifest": "runs/research_transition_recovery_detector_20260807/long_manifest_60/LONG_TIMELINE_MANIFEST.jsonl"
+}
