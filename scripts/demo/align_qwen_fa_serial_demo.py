@@ -256,6 +256,9 @@ def infer_slice(
             "decoder_beam_size": int(getattr(args, "decoder_beam_size", 96)),
             "decoder_kind": str(getattr(args, "decoder_kind", "official")),
             "model_identity": getattr(args, "research_model_identity", None),
+            "evidence_config": json.dumps(
+                getattr(args, "research_evidence_config", None), sort_keys=True
+            ) if getattr(args, "research_evidence_config", None) else None,
         }
         cache_key = canonical_hash(cache_identity)
         cache_path = Path(cache_root) / f"{cache_key}.json"
@@ -283,17 +286,42 @@ def infer_slice(
         output_meta = [selected[i] for i in chosen]
 
     batch = move_inputs(inputs, args.device, torch.bfloat16)
+    evidence_cfg = getattr(args, "research_evidence_config", None)
     with torch.inference_mode():
-        output = model(**batch)
+        if evidence_cfg is not None:
+            output = model(**batch, output_hidden_states=True)
+        else:
+            output = model(**batch)
     input_ids = batch["input_ids"][0]
     positions = (input_ids == model.config.timestamp_token_id).nonzero(as_tuple=False).flatten()
     slot_logits = output.logits[0, positions].float()
+    hidden_evidence = None
+    if evidence_cfg is not None and output.hidden_states is not None:
+        layers = list(evidence_cfg.get("hidden_layers", [-4, -1]))
+        gathered = {}
+        for layer in layers:
+            hs = output.hidden_states[layer][0].float()  # (seq, dim)
+            vec = hs[positions]  # (n_slots, dim)
+            gathered[str(layer)] = vec.half().cpu().numpy().tolist()
+        hidden_evidence = {
+            "schema": "hidden_evidence_v1", "layers": [str(l) for l in layers],
+            "dim": output.hidden_states[layers[0]][0].shape[-1],
+            "vectors": gathered,  # layer -> list[list[float]] (n_slots x dim, float16 values)
+        }
     if int(slot_logits.shape[0]) != 2 * len(output_meta):
         raise RuntimeError(
             f"timestamp slots mismatch: slots={slot_logits.shape[0]} units={len(output_meta)}"
         )
     raw_classes = slot_logits.argmax(dim=-1)
     probabilities = torch.softmax(slot_logits, dim=-1)
+    full_posterior = None
+    if evidence_cfg is not None and evidence_cfg.get("save_full_posterior"):
+        full_posterior = {
+            "schema": "full_posterior_v1",
+            "n_slots": int(probabilities.shape[0]),
+            "n_classes": int(probabilities.shape[1]),
+            "values": probabilities.half().cpu().numpy().tolist(),
+        }
     saved_top_k = max(2, min(int(getattr(args, "decoder_top_k", 8)), int(probabilities.shape[-1])))
     top_values, top_indices = torch.topk(probabilities, k=saved_top_k, dim=-1)
     entropy = -(probabilities * probabilities.clamp_min(1e-12).log()).sum(dim=-1)
@@ -441,6 +469,8 @@ def infer_slice(
             else getattr(getattr(args, "gpu_decoder_runtime", None), "identity", None)
         ),
     }
+    if hidden_evidence is not None or full_posterior is not None:
+        audit["evidence_v3"] = {"hidden": hidden_evidence, "full_posterior": full_posterior}
     if cache_path is not None:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         atomic_json(cache_path, {
@@ -448,6 +478,7 @@ def infer_slice(
             "identity": cache_identity,
             "rows": rows,
             "audit": audit,
+            "evidence_v3": audit.get("evidence_v3"),
         })
         stats = getattr(args, "research_infer_cache_stats", None)
         if stats is not None:

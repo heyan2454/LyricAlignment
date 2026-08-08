@@ -279,11 +279,14 @@ class TransitionRunner:
         cache_path = self.cache_root / f"{key}.json"
         if cache_path.is_file():
             payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            self.last_evidence = payload.get("evidence_v3")
             return [dict(row) for row in payload["rows"]]
-        rows, _audit = self.backend.forward(request, audio, document)
+        rows, audit = self.backend.forward(request, audio, document)
         tmp = cache_path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps({"rows": rows}, ensure_ascii=False), "utf-8")
+        tmp.write_text(json.dumps({"rows": rows, "evidence_v3": audit.get("evidence_v3")},
+                                  ensure_ascii=False), "utf-8")
         tmp.replace(cache_path)
+        self.last_evidence = audit.get("evidence_v3")
         return rows
 
     def run_song(
@@ -332,6 +335,7 @@ class TransitionRunner:
         self._observations: dict[int, dict] = dict(observations or {})
         records: list[dict] = []
         self.last_observations: dict[int, dict] = {}
+        self.last_evidence: dict | None = None
         windows = list(window_plan.get("windows") or [])
         # continuation：starting_state.window_index == k+1 时只执行 windows[k+1:]
         # （09 P0.2：propagation 不重放已执行窗口；request id 用绝对 window index）
