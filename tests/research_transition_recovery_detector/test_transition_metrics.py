@@ -80,13 +80,36 @@ class TestCursorTimeDrift:
             _record(2, [_row(0, 0.05), _row(1, 0.8), _row(2, 2.7)], committed_end=3, gt=gt_all),
         ]
         drift = cursor_time_drift(records, gt_all)
-        assert drift["window_drifts_sec"] == pytest.approx([0.95, 1.2, 0.3])
-        assert drift["max_drift_sec"] == pytest.approx(1.2)
-        assert drift["final_drift_sec"] == pytest.approx(0.3)
+        # 半开 cursor：每窗期望 = GT[end-1]（最后已提交行）
+        assert drift["window_drifts_sec"] == pytest.approx([0.05, 0.2, 0.7])
+        assert drift["max_drift_sec"] == pytest.approx(0.7)
+        assert drift["final_drift_sec"] == pytest.approx(0.7)
+
+    def test_half_open_cursor_compares_last_committed_row(self):
+        # 已提交 0..2（cursor=3）：期望 = GT[2]（最后已提交行），而非 GT[3]（未提交行）
+        gt_all = {0: {"start_sec": 0.0}, 1: {"start_sec": 1.0}, 2: {"start_sec": 2.0},
+                  3: {"start_sec": 3.0}}
+        records = [
+            _record(0, [_row(0, 0.05), _row(1, 1.1), _row(2, 2.05)], committed_end=3, gt=gt_all),
+        ]
+        drift = cursor_time_drift(records, gt_all)
+        assert drift["window_drifts_sec"] == pytest.approx([0.05])  # |2.05 - GT[2]=2.0|
+        assert drift["missing_last_row_windows"] == 0
+
+    def test_missing_last_row_reports_contract_diagnostic(self):
+        # 已提交 0..2（cursor=3），但 evidence 缺最后一行（只有 0..1）→ 合同缺失诊断
+        gt_all = {0: {"start_sec": 0.0}, 1: {"start_sec": 1.0}, 2: {"start_sec": 2.0}}
+        records = [
+            _record(0, [_row(0, 0.05), _row(1, 1.1)], committed_end=3, gt=gt_all),
+        ]
+        drift = cursor_time_drift(records, gt_all)
+        assert drift["window_drifts_sec"] == []
+        assert drift["missing_last_row_windows"] == 1
 
     def test_empty_records(self):
         drift = cursor_time_drift([])
-        assert drift == {"window_drifts_sec": [], "max_drift_sec": 0.0, "final_drift_sec": 0.0}
+        assert drift == {"window_drifts_sec": [], "max_drift_sec": 0.0, "final_drift_sec": 0.0,
+                         "missing_last_row_windows": 0}
 
 
 class TestFirstErrorWindow:

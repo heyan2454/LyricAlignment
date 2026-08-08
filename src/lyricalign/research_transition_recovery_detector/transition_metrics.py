@@ -101,32 +101,44 @@ def _window_committed_end(record: dict) -> int:
 
 
 def cursor_time_drift(records: list[dict], gt: dict[int, dict] | None = None) -> dict:
-    """每窗：期望时间 = 第 committed_end 个 GT 行 start_sec（gt 参数或外部提供）；
-    漂移 = |期望时间 - 该窗最后 committed 行的 start_sec|。
+    """每窗：期望时间 = 最后已提交行（id=end-1）的 GT start_sec；漂移 = |期望 - 该行预测|。
+
+    10_FOLLOWUP Task D：committed_end_exclusive 为半开 cursor——已提交 0..126 时
+    cursor=127，最后已提交 row 是 126。比较 GT[126] 而非 GT[127]（未提交行）。
+    最后一行缺失时输出合同缺失诊断，不用较早行替代。
 
     注意：records 不携带 GT（runner 只存 evidence），调用方必须传 gt；
     gt 缺失时返回空（不再从 evidence 猜测）。
     """
     last_committed = {}
     drifts: list[float] = []
+    missing_last_row = 0
     for record in records:
         committed = _window_committed_rows(record)
         for row in committed:
             last_committed[int(row["global_character_index"])] = row
         end = _window_committed_end(record)
-        if gt and end in gt and last_committed:
-            expected = float(gt[end]["start_sec"])
-            last_row = last_committed[max(last_committed)]
-            last_start = next(
-                (float(last_row[k]) for k in ("original_global_start_sec", "fixed_global_start_sec", "start_sec")
-                 if last_row.get(k) is not None),
-                0.0,
-            )
-            drifts.append(abs(expected - last_start))
+        if gt and last_committed:
+            last_id = max(last_committed)
+            expected_id = end - 1  # 半开 cursor：最后已提交行 id = end-1
+            if last_id != expected_id:
+                missing_last_row += 1  # 最后已提交行缺失（evidence 缺行）→ 合同缺失诊断
+                continue
+            if expected_id in gt:
+                expected = float(gt[expected_id]["start_sec"])
+                last_row = last_committed[last_id]
+                last_start = next(
+                    (float(last_row[k]) for k in ("original_global_start_sec", "fixed_global_start_sec", "start_sec")
+                     if last_row.get(k) is not None),
+                    None,
+                )
+                if last_start is not None:
+                    drifts.append(abs(expected - last_start))
     return {
         "window_drifts_sec": drifts,
         "max_drift_sec": max(drifts) if drifts else 0.0,
         "final_drift_sec": drifts[-1] if drifts else 0.0,
+        "missing_last_row_windows": missing_last_row,
     }
 
 
