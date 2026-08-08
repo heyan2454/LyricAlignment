@@ -28,6 +28,8 @@ _IGNORED_DIRECTORY_NAMES = {
     "build",
     "dist",
     ".cache",
+    ".patch_backups",
+    ".repair_backups",
 }
 _IGNORED_ROOT_DIRECTORY_NAMES = {
     "external_data",
@@ -60,6 +62,23 @@ _IGNORED_EXACT_RELATIVE_PATHS = {
     "configs/paths/local_paths.yaml",
     "configs/assets/assets.local.yaml",
     "configs/assets/smoke_samples.local.yaml",
+    "docs_sessions_patch_notes_20260729_timeline_render.md",
+    "PATCH_README_20260728_CONTROL_VISUAL_COLLECTION_FIX.md",
+    "PATCH_README_20260803_RESEARCH_V7_ALIGN_BEHAVIOR.md",
+    "PATCH_README_20260804_LONG_SLOT_REGION_ASSESSOR_ARCHIVE.md",
+    "PATCH_README_20260805_DETECTOR_V2.md",
+    "PATCH_README_20260807_TRANSITION_RECOVERY_DETECTOR.md",
+    "PATCH_README_mir1k_import_fix.md",
+    "APPLY_LONG_SLOT_REGION_ASSESSOR_ARCHIVE_PATCH.sh",
+    "APPLY_RESEARCH_V7_DISCUSSION_PATCH.sh",
+    "APPLY_TRANSITION_RECOVERY_DETECTOR_20260807.sh",
+    "RESEARCH_V6_PACKAGE_MANIFEST.json",
+    "RESEARCH_V7_DISCUSSION_PATCH_MANIFEST.json",
+    "RESEARCH_V7_LONG_SLOT_REGION_ASSESSOR_ARCHIVE.patch",
+    "RESEARCH_V7_LONG_SLOT_REGION_ASSESSOR_PATCH_MANIFEST.json",
+    "TRANSITION_RECOVERY_DETECTOR_20260807.patch",
+    "TRANSITION_RECOVERY_DETECTOR_20260807_PATCH_MANIFEST.json",
+    "ARCHIVE_MANIFEST.generated.json",
 }
 
 
@@ -111,10 +130,20 @@ def tracked_files(excluded_root_names: set[str] | None = None) -> list[Path]:
     # It is an archive output, never a source entry, and adding it here would
     # create two ZIP members with the same name when the fresh manifest below
     # is written.
+    def _excluded(relative_posix: str) -> bool:
+        if relative_posix in _IGNORED_EXACT_RELATIVE_PATHS:
+            return True
+        for rule in excluded_root_names:
+            if rule in (".", ""):
+                continue
+            if relative_posix == rule or relative_posix.startswith(rule.rstrip("/") + "/"):
+                return True
+        return False
+
     return [
         path for path in paths
         if path.relative_to(ROOT).as_posix() != GENERATED_MANIFEST
-        and (not path.relative_to(ROOT).parts or path.relative_to(ROOT).parts[0] not in excluded_root_names)
+        and not _excluded(path.relative_to(ROOT).as_posix())
     ]
 
 
@@ -124,6 +153,11 @@ def build(output: Path, root_name: str, excluded_root_names: set[str] | None = N
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in tracked_files(excluded_root_names):
             relative = path.relative_to(ROOT).as_posix()
+            # Tracked symlinks may point at directories on a larger data disk
+            # (e.g. session cache dirs); they are not portable archive content.
+            # is_file() also covers files deleted from disk but still tracked.
+            if path.is_symlink() or not path.is_file():
+                continue
             payload = path.read_bytes()
             archive.writestr(f"{root_name}/{relative}", payload)
             entries.append({"path": relative, "size": len(payload), "sha256": sha256_bytes(payload)})
