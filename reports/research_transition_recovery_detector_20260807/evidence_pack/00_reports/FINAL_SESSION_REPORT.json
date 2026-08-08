@@ -1,0 +1,117 @@
+{
+  "session_root": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z",
+  "scope": "development + m4_formal + mir_transfer + demo",
+  "transition_selection": {
+    "product_candidate": "full_song_align",
+    "mechanism_candidate": "T2_core_boundary_serial",
+    "model_selection_pooled": {
+      "T0_oracle_independent": 0.4552,
+      "T1_direct_serial": 0.1519,
+      "T2_core_boundary_serial": 0.1456,
+      "T3_stable_boundary_serial": 0.4645,
+      "full_song_align": 0.3883
+    }
+  },
+  "m4_formal_pooled": {
+    "full_song_align": 0.3903,
+    "T2_core_boundary_serial": 0.1796
+  },
+  "propagation": {
+    "episodes": 171,
+    "natural": 9,
+    "corruption": 162,
+    "note": "T2 serial 系统性错位机制（query 起点估算缺陷）"
+  },
+  "oracle_recovery": {
+    "segments": 85,
+    "L_recovery_rate": 0.1862,
+    "W_recovery_rate": 0.214,
+    "conclusion": "模型固有偏移（~0.4-1.3s）重跑不可修复"
+  },
+  "detector": {
+    "train_auc": null,
+    "threshold_validation": {
+      "SA60": {
+        "feasible": true,
+        "t_accept": 0.4532395552,
+        "t_reject": 0.958441585,
+        "safe_accept": 0.666667,
+        "unsafe_reject": 0.990119
+      },
+      "SA80": {
+        "feasible": true,
+        "t_accept": 0.4532395552,
+        "t_reject": 0.9900073673,
+        "safe_accept": 1.0,
+        "unsafe_reject": 0.987374
+      },
+      "R95": {
+        "feasible": true,
+        "t_accept": 0.4532395552,
+        "t_reject": 0.9900073673,
+        "safe_accept": 1.0,
+        "unsafe_reject": 0.987374
+      }
+    },
+    "threshold_validation_denominators": {
+      "safe": 322,
+      "unsafe": 1156,
+      "total": 1478
+    },
+    "threshold_validation_denominator_note": "rate 分母 = 该工作点下被分类（ACCEPT/REJECT）的行数（UNCERTAIN 为 grey 不进分母）；threshold_validation_denominators 为全部有标签行，两者关系：grey 行被排除",
+    "joint_sa60_r95": true,
+    "fixed_threshold_transfer": {
+      "model_selection_eval": {
+        "auc": 0.8328,
+        "n": 1284,
+        "safe": 187,
+        "unsafe": 1097,
+        "SA60": {
+          "safe_accept": 0.005,
+          "unsafe_reject": 0.536
+        },
+        "SA80": {
+          "safe_accept": 0.005,
+          "unsafe_reject": 0.423
+        },
+        "R95": {
+          "safe_accept": 0.005,
+          "unsafe_reject": 0.423
+        }
+      },
+      "note": "固定阈值跨歌分布漂移显著（p_bad 分布随歌变化）；按 07 §7 只报告 fixed-threshold transfer，不重调。closed-loop 使用 threshold_validation 冻结点。"
+    }
+  },
+  "closed_loop": {
+    "segments": 88,
+    "routes_counted": "SA80",
+    "delta": -330,
+    "conclusion": "detector 标记段的 L 重跑净效果为负（模型重跑同段产生相同或更差偏移）"
+  },
+  "mir_transfer": {
+    "n_songs": 17,
+    "pooled_correct_rate": 1.0,
+    "note": "MIR 100% vs M4 38-55%：vocal 分离/短歌/人工 GT vs rule_validated 长歌"
+  },
+  "demo": {
+    "n_items": 23,
+    "n_failed": 2,
+    "top_suspicious": [
+      "Cantonese/红日.mp3",
+      "Cantonese/难念的经.mp3",
+      "English/I See Fire.mp3",
+      "Cantonese/乙女解剖.mp3",
+      "English/Camelia.mp3"
+    ]
+  },
+  "legacy_gaps": {
+    "stress_evaluator_model_consistency": "complete",
+    "hidden_extraction_gate": "blocked",
+    "cross_view_full_posterior": "not_executed_dependency",
+    "cnn1d_protocol_correction": "complete",
+    "isotonic_calibration": "complete",
+    "old_working_points_sa60_sa80_r95": "not_executed_dependency",
+    "serial_propagation_gap": "complete"
+  },
+  "gpu_seconds_used": 900.0
+}

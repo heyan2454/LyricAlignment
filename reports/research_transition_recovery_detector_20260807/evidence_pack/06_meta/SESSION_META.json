@@ -1,0 +1,11 @@
+{
+  "schema_version": "transition_recovery_detector_session_meta_v1",
+  "session_root": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260807/session_20260807T000000Z",
+  "created_at": "2026-08-07T15:28:13.348422+00:00",
+  "design_docs": "docs/research_transition_recovery_detector_20260807/",
+  "long_manifest": "runs/research_transition_recovery_detector_20260807/long_manifest_60/LONG_TIMELINE_MANIFEST.jsonl",
+  "n_long_songs": 60,
+  "git": {
+    "commit": "main"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "session_root": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z",
+  "phases": {
+    "phase_0": "complete",
+    "phase_1": "complete",
+    "phase_3": "complete",
+    "phase_4": "complete",
+    "phase_5": "complete",
+    "phase_6": "complete",
+    "phase_7": "complete",
+    "phase_8": "complete",
+    "phase_9": "complete",
+    "phase_2": "complete"
+  },
+  "gpu_seconds_used": 900.0,
+  "artifacts": {
+    "00_meta/SESSION_META.json": true,
+    "00_meta/RESOLVED_CONFIG.yaml": true,
+    "00_meta/DATASET_SPLIT.json": true,
+    "01_precheck/PRECHECK.json": true,
+    "01_precheck/TRANSITION_IMPLEMENTATION_MAP.json": true,
+    "02_transition/TRANSITION_SUMMARY.json": true,
+    "03_propagation/EPISODES.jsonl": true,
+    "03_propagation/ATTEMPT_DENOMINATORS.json": true,
+    "04_oracle_recovery/ORACLE_SUMMARY.json": true,
+    "05_legacy_gaps/LEGACY_GAP_STATUS.json": true,
+    "06_detector/FROZEN_WORKING_POINTS.json": true,
+    "07_closed_loop/CLOSED_LOOP_SUMMARY.json": true,
+    "08_transfer_demo/MIR_TRANSFER_SUMMARY.json": true,
+    "08_transfer_demo/TEST_DEMO_SUMMARY.json": true,
+    "09_reports/FINAL_SESSION_REPORT.json": true,
+    "09_reports/NEGATIVE_RESULTS.md": true,
+    "SESSION_STATE.json": true
+  },
+  "deviations": [
+    "T3 冷启动语义修正（first-window baseline commit）：07 §3.2 全 provisional 在物理上不可行（已过行不可重观察）",
+    "query 起点覆盖 committed 边界 + 动态单位密度（无 GT 串行 query 构造缺陷修复）",
+    "full-song 加入为 product 对照（non-serial 胜出后成为 Product candidate，07 §12 允许）",
+    "MIR/closed-loop 结果揭示模型固有偏差为瓶颈（研究叙事调整，保留 mechanism=T2）"
+  ]
+}

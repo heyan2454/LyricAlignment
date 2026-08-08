@@ -35,7 +35,7 @@ from lyricalign.research_transition_recovery_detector.thresholds import (  # noq
 )
 
 R2_CHECKPOINT_DEFAULT = "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
-DETECTOR_PKL = "/home/hyan/Data/lyricalign/models/transition_recovery_detector_20260807/detector_mlp.pkl"
+DETECTOR_PKL = "/home/hyan/LyricAlignment/models/transition_recovery_detector_20260807/detector_mlp.pkl"
 MODEL_REVISION_DEFAULT = "c07281df297b9905d24a508279258cccf987a064"
 TOLERANCE = 0.32
 

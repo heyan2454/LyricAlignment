@@ -1,0 +1,454 @@
+{
+  "schema_version": "evidence_pack_index_v1",
+  "pack_dir": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260807/session_20260807T000000Z/09_reports/evidence_pack",
+  "n_files": 89,
+  "total_bytes": 19832187,
+  "archive": "evidence_pack.tar.gz (3.0M 附近)",
+  "files": [
+    {
+      "path": "00_reports/EXECUTION_AUDIT.json",
+      "size_bytes": 1742,
+      "sha256": "615c781e7a902b1e"
+    },
+    {
+      "path": "00_reports/EXPLORE_1_SUMMARY.md",
+      "size_bytes": 1954,
+      "sha256": "35b8e9cf3fa5c714"
+    },
+    {
+      "path": "00_reports/EXPLORE_BIAS_CORRECTION.json",
+      "size_bytes": 2293,
+      "sha256": "a393a6ed5988a65c"
+    },
+    {
+      "path": "00_reports/EXPLORE_GT_AUDIT.json",
+      "size_bytes": 5056,
+      "sha256": "2d929b4b997b0019"
+    },
+    {
+      "path": "00_reports/EXPLORE_TOLERANCE.json",
+      "size_bytes": 1212,
+      "sha256": "4e631e1102f98ec9"
+    },
+    {
+      "path": "00_reports/FINAL_SESSION_REPORT.json",
+      "size_bytes": 3642,
+      "sha256": "d0805144d4cfa6f6"
+    },
+    {
+      "path": "00_reports/FINAL_SESSION_REPORT.md",
+      "size_bytes": 2854,
+      "sha256": "d397c7ccf78f8561"
+    },
+    {
+      "path": "00_reports/NEGATIVE_RESULTS.md",
+      "size_bytes": 1220,
+      "sha256": "69a7704d963a90b8"
+    },
+    {
+      "path": "01_transition/CANDIDATE_SELECTION.json",
+      "size_bytes": 992,
+      "sha256": "baeb1c974c207b58"
+    },
+    {
+      "path": "01_transition/FORMAL_m4_formal.json",
+      "size_bytes": 59128,
+      "sha256": "e6a2b30ac5a53c15"
+    },
+    {
+      "path": "01_transition/FORMAL_m4_formal.jsonl",
+      "size_bytes": 205454,
+      "sha256": "318a9849c7a0f863"
+    },
+    {
+      "path": "01_transition/FORMAL_model_selection.json",
+      "size_bytes": 35815,
+      "sha256": "71da6c5245f44163"
+    },
+    {
+      "path": "01_transition/FORMAL_model_selection.jsonl",
+      "size_bytes": 119541,
+      "sha256": "e1f81a87ac59bc88"
+    },
+    {
+      "path": "01_transition/FULL_SONG_m4_formal.json",
+      "size_bytes": 5243,
+      "sha256": "c501fc60ec14d432"
+    },
+    {
+      "path": "01_transition/FULL_SONG_model_selection.json",
+      "size_bytes": 3155,
+      "sha256": "00764b6768f5d2a9"
+    },
+    {
+      "path": "01_transition/TRANSITION_REPORT.json",
+      "size_bytes": 3480,
+      "sha256": "6bdbf3f30dc1491b"
+    },
+    {
+      "path": "01_transition/TRANSITION_REPORT.md",
+      "size_bytes": 1147,
+      "sha256": "c2d51bf4dcb196fd"
+    },
+    {
+      "path": "01_transition/TRANSITION_SUMMARY.json",
+      "size_bytes": 1740,
+      "sha256": "713b5a7ecb5901d4"
+    },
+    {
+      "path": "01_transition/example_newboy_T2_records.jsonl",
+      "size_bytes": 110881,
+      "sha256": "77ec8f838b146ed1"
+    },
+    {
+      "path": "01_transition/example_交换余生_T2_records.jsonl",
+      "size_bytes": 129149,
+      "sha256": "50c42ed8f49a5d32"
+    },
+    {
+      "path": "01_transition/example_倒带_T2_records.jsonl",
+      "size_bytes": 98173,
+      "sha256": "ea6d105096bb9cf5"
+    },
+    {
+      "path": "01_transition/example_全世界失眠_T2_records.jsonl",
+      "size_bytes": 147438,
+      "sha256": "3a4741f33204bca6"
+    },
+    {
+      "path": "01_transition/example_凄美的_T2_records.jsonl",
+      "size_bytes": 122067,
+      "sha256": "defd1290dcd16d0c"
+    },
+    {
+      "path": "01_transition/example_暗香_T2_records.jsonl",
+      "size_bytes": 224916,
+      "sha256": "82c67141bd5f0c3a"
+    },
+    {
+      "path": "01_transition/example_望月_T2_records.jsonl",
+      "size_bytes": 167294,
+      "sha256": "dba6dd92a9a0f47e"
+    },
+    {
+      "path": "01_transition/example_水手_T2_records.jsonl",
+      "size_bytes": 98707,
+      "sha256": "beb5d04dc94470b7"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_0.json",
+      "size_bytes": 574337,
+      "sha256": "4e16297f28c0b097"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_0.txt",
+      "size_bytes": 150,
+      "sha256": "2dca458da07b4c02"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_1.json",
+      "size_bytes": 696324,
+      "sha256": "9a78d8a6a01d165e"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_1.txt",
+      "size_bytes": 150,
+      "sha256": "d4ea73d91c29d73a"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_10.json",
+      "size_bytes": 1030469,
+      "sha256": "78a52c820e5b1253"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_10.txt",
+      "size_bytes": 150,
+      "sha256": "dbcadb8b47169d98"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_11.json",
+      "size_bytes": 1020854,
+      "sha256": "55233394347e5d2c"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_11.txt",
+      "size_bytes": 150,
+      "sha256": "ba273dde8e352b8b"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_12.json",
+      "size_bytes": 1527441,
+      "sha256": "36dce3efcf2370f1"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_12.txt",
+      "size_bytes": 150,
+      "sha256": "fd68ac93f74e5e99"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_13.json",
+      "size_bytes": 908508,
+      "sha256": "22aebe35e8ef4722"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_13.txt",
+      "size_bytes": 150,
+      "sha256": "8bb0ba75996fe7c6"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_14.json",
+      "size_bytes": 642383,
+      "sha256": "16a6a37059d596b8"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_14.txt",
+      "size_bytes": 150,
+      "sha256": "49edcb529e0a6c34"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_15.json",
+      "size_bytes": 1041893,
+      "sha256": "07736e0d156c14e6"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_15.txt",
+      "size_bytes": 150,
+      "sha256": "68c616e5dc0b465a"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_16.json",
+      "size_bytes": 747581,
+      "sha256": "0bf03f862d2a1a31"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_16.txt",
+      "size_bytes": 150,
+      "sha256": "c963d4029aa7dc3f"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_17.json",
+      "size_bytes": 844605,
+      "sha256": "d26c65f89abb6de0"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_17.txt",
+      "size_bytes": 150,
+      "sha256": "3d65d358eb606707"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_18.json",
+      "size_bytes": 1126275,
+      "sha256": "3716c8d3e1aa9693"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_18.txt",
+      "size_bytes": 150,
+      "sha256": "25278e464f591770"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_19.json",
+      "size_bytes": 822812,
+      "sha256": "ef9676e3a4a061a4"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_19.txt",
+      "size_bytes": 150,
+      "sha256": "8c4dc8d6d72f6cc4"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_2.json",
+      "size_bytes": 734146,
+      "sha256": "8c8617bc747355d9"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_2.txt",
+      "size_bytes": 150,
+      "sha256": "eef017e4a79de996"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_20.json",
+      "size_bytes": 679716,
+      "sha256": "dc915eeef5b8dcd6"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_20.txt",
+      "size_bytes": 150,
+      "sha256": "0d1152bfd4c1fef3"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_21.json",
+      "size_bytes": 681026,
+      "sha256": "e82afef71254a1c6"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_21.txt",
+      "size_bytes": 150,
+      "sha256": "875deb7a58e84c94"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_22.json",
+      "size_bytes": 1327443,
+      "sha256": "a380aaf0942a9fd5"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_22.txt",
+      "size_bytes": 150,
+      "sha256": "a178669d24916d61"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_23.txt",
+      "size_bytes": 150,
+      "sha256": "ca948121249d2fa5"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_3.json",
+      "size_bytes": 989597,
+      "sha256": "f33225dff20dbdf3"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_3.txt",
+      "size_bytes": 150,
+      "sha256": "2b00a46cf0b33680"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_4.json",
+      "size_bytes": 527601,
+      "sha256": "436025d447ab10e9"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_4.txt",
+      "size_bytes": 150,
+      "sha256": "683f1d832f22c528"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_5.json",
+      "size_bytes": 1132938,
+      "sha256": "c951caa4b53a4d06"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_5.txt",
+      "size_bytes": 150,
+      "sha256": "d7c394080db69f57"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_6.json",
+      "size_bytes": 924823,
+      "sha256": "dad9371d2f500b60"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_6.txt",
+      "size_bytes": 150,
+      "sha256": "c4a8b4a8851f427b"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_7.txt",
+      "size_bytes": 150,
+      "sha256": "6aa92da7075a313d"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_8.txt",
+      "size_bytes": 150,
+      "sha256": "2b02ebd2ce4c57b4"
+    },
+    {
+      "path": "01_transition/full_song_predictions/full_song_9.txt",
+      "size_bytes": 150,
+      "sha256": "f35226e7ecb58436"
+    },
+    {
+      "path": "02_propagation/ATTEMPT_DENOMINATORS.json",
+      "size_bytes": 658,
+      "sha256": "d3b3fe1de0d6f562"
+    },
+    {
+      "path": "02_propagation/EPISODES.jsonl",
+      "size_bytes": 113421,
+      "sha256": "4b6e196107e5077d"
+    },
+    {
+      "path": "03_oracle_closedloop/CLOSED_LOOP_SUMMARY.json",
+      "size_bytes": 74489,
+      "sha256": "7d7ab068c3efaa73"
+    },
+    {
+      "path": "03_oracle_closedloop/ORACLE_SUMMARY.json",
+      "size_bytes": 21356,
+      "sha256": "9023c2035efa70b7"
+    },
+    {
+      "path": "04_detector/EVAL_model_selection.json",
+      "size_bytes": 29488,
+      "sha256": "1ec04b629e0a2527"
+    },
+    {
+      "path": "04_detector/FROZEN_WORKING_POINTS.json",
+      "size_bytes": 2473,
+      "sha256": "a0ce8995db40d23d"
+    },
+    {
+      "path": "04_detector/TRAIN_META.json",
+      "size_bytes": 124,
+      "sha256": "e1a3aea9a1537045"
+    },
+    {
+      "path": "05_transfer_demo/MIR_TRANSFER_SUMMARY.json",
+      "size_bytes": 4966,
+      "sha256": "64f09594c89e6c84"
+    },
+    {
+      "path": "05_transfer_demo/TEST_DEMO_SUMMARY.json",
+      "size_bytes": 10273,
+      "sha256": "6eb899e22649f9f5"
+    },
+    {
+      "path": "06_meta/BUDGET_PROJECTION.json",
+      "size_bytes": 587,
+      "sha256": "2f4ec8cb6dc5c3df"
+    },
+    {
+      "path": "06_meta/DATASET_SPLIT.json",
+      "size_bytes": 2837,
+      "sha256": "25deabd713a67550"
+    },
+    {
+      "path": "06_meta/LEGACY_GAP_STATUS.json",
+      "size_bytes": 3145,
+      "sha256": "26e34295ab70d3e5"
+    },
+    {
+      "path": "06_meta/PRECHECK.json",
+      "size_bytes": 2548,
+      "sha256": "800dd89e6e00c824"
+    },
+    {
+      "path": "06_meta/REPEATED_OCCURRENCE.json",
+      "size_bytes": 385,
+      "sha256": "e9dcbe8dc23a02d5"
+    },
+    {
+      "path": "06_meta/RESOLVED_CONFIG.yaml",
+      "size_bytes": 2544,
+      "sha256": "6c510794b07e3d06"
+    },
+    {
+      "path": "06_meta/SESSION_META.json",
+      "size_bytes": 498,
+      "sha256": "da6a9aa29af74bb7"
+    },
+    {
+      "path": "06_meta/SESSION_STATE.json",
+      "size_bytes": 503,
+      "sha256": "7d0126235be9c3ac"
+    },
+    {
+      "path": "06_meta/TRANSITION_IMPLEMENTATION_MAP.json",
+      "size_bytes": 10474,
+      "sha256": "5001f36c80b8d571"
+    },
+    {
+      "path": "06_meta/TRANSITION_IMPLEMENTATION_MAP.md",
+      "size_bytes": 12753,
+      "sha256": "e87f4d451620f1a4"
+    }
+  ]
+}

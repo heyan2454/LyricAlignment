@@ -1,0 +1,94 @@
+{
+  "schema_version": "frozen_working_points_v1",
+  "model": "runs/research_transition_recovery_detector_20260807/session_20260807T000000Z/06_detector/detector_mlp.pkl",
+  "feature_names": [
+    "raw_start_entropy",
+    "raw_end_entropy",
+    "raw_start_margin",
+    "raw_end_margin",
+    "raw_start_top1_probability",
+    "raw_end_top1_probability",
+    "raw_official_start_diff_sec",
+    "start_top2_gap_sec"
+  ],
+  "SA60": {
+    "constraint": "SA60",
+    "level": 0.6,
+    "feasible": true,
+    "t_accept": 0.4532395552,
+    "t_reject": 0.958441585,
+    "safe_accept": 0.666667,
+    "safe_reject": 0.333333,
+    "unsafe_accept": 0.009881,
+    "unsafe_reject": 0.990119,
+    "uncertain_rate": 0.655616,
+    "safe_denominator": 3,
+    "unsafe_denominator": 506
+  },
+  "SA80": {
+    "constraint": "SA80",
+    "level": 0.8,
+    "feasible": true,
+    "t_accept": 0.4532395552,
+    "t_reject": 0.9900073673,
+    "safe_accept": 1.0,
+    "safe_reject": 0.0,
+    "unsafe_accept": 0.012626,
+    "unsafe_reject": 0.987374,
+    "uncertain_rate": 0.730717,
+    "safe_denominator": 2,
+    "unsafe_denominator": 396
+  },
+  "R95": {
+    "constraint": "R95",
+    "level": 0.95,
+    "feasible": true,
+    "t_accept": 0.4532395552,
+    "t_reject": 0.9900073673,
+    "safe_accept": 1.0,
+    "safe_reject": 0.0,
+    "unsafe_accept": 0.012626,
+    "unsafe_reject": 0.987374,
+    "uncertain_rate": 0.730717,
+    "safe_denominator": 2,
+    "unsafe_denominator": 396
+  },
+  "joint_sa60_r95": {
+    "feasible": true,
+    "t_accept": 0.4532395552,
+    "t_reject": 0.958441585,
+    "safe_accept": 0.666667,
+    "safe_reject": 0.333333,
+    "unsafe_accept": 0.009881,
+    "unsafe_reject": 0.990119,
+    "uncertain_rate": 0.655616,
+    "safe_denominator": 3,
+    "unsafe_denominator": 506
+  },
+  "threshold_validation_denominators": {
+    "safe": 322,
+    "unsafe": 1156,
+    "total": 1478
+  },
+  "fixed_threshold_transfer": {
+    "model_selection_eval": {
+      "auc": 0.8328,
+      "n": 1284,
+      "safe": 187,
+      "unsafe": 1097,
+      "SA60": {
+        "safe_accept": 0.005,
+        "unsafe_reject": 0.536
+      },
+      "SA80": {
+        "safe_accept": 0.005,
+        "unsafe_reject": 0.423
+      },
+      "R95": {
+        "safe_accept": 0.005,
+        "unsafe_reject": 0.423
+      }
+    },
+    "note": "固定阈值跨歌分布漂移显著（p_bad 分布随歌变化）；按 07 §7 只报告 fixed-threshold transfer，不重调。closed-loop 使用 threshold_validation 冻结点。"
+  }
+}

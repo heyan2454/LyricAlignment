@@ -1,0 +1,387 @@
+{
+  "schema_version": "test_demo_analysis_v1",
+  "n_items": 23,
+  "n_failed": 2,
+  "no_gt": true,
+  "ranking": [
+    {
+      "item": "Cantonese/红日.mp3",
+      "lang": "cantonese",
+      "duration_sec": 291.3,
+      "n_units": 534,
+      "raw_official_mean_diff_sec": 21.474,
+      "zero_duration_max_run": 3,
+      "top2_competing_peak_units": 8,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 492,
+        "UNCERTAIN": 42
+      },
+      "suspicious_score": 0.9633,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Cantonese/难念的经.mp3",
+      "lang": "cantonese",
+      "duration_sec": 288.6,
+      "n_units": 680,
+      "raw_official_mean_diff_sec": 18.657,
+      "zero_duration_max_run": 4,
+      "top2_competing_peak_units": 23,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 617,
+        "UNCERTAIN": 63
+      },
+      "suspicious_score": 0.9582,
+      "monotonic_starts": false
+    },
+    {
+      "item": "English/I See Fire.mp3",
+      "lang": "english",
+      "duration_sec": 316.9,
+      "n_units": 311,
+      "raw_official_mean_diff_sec": 23.779,
+      "zero_duration_max_run": 2,
+      "top2_competing_peak_units": 7,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 281,
+        "UNCERTAIN": 30
+      },
+      "suspicious_score": 0.9553,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Cantonese/乙女解剖.mp3",
+      "lang": "cantonese",
+      "duration_sec": 230.2,
+      "n_units": 539,
+      "raw_official_mean_diff_sec": 14.306,
+      "zero_duration_max_run": 3,
+      "top2_competing_peak_units": 24,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 481,
+        "UNCERTAIN": 58
+      },
+      "suspicious_score": 0.9518,
+      "monotonic_starts": false
+    },
+    {
+      "item": "English/Camelia.mp3",
+      "lang": "english",
+      "duration_sec": 287.9,
+      "n_units": 334,
+      "raw_official_mean_diff_sec": 8.699,
+      "zero_duration_max_run": 4,
+      "top2_competing_peak_units": 17,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 283,
+        "UNCERTAIN": 51
+      },
+      "suspicious_score": 0.9311,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Cantonese/电灯胆.mp3",
+      "lang": "cantonese",
+      "duration_sec": 213.9,
+      "n_units": 350,
+      "raw_official_mean_diff_sec": 3.395,
+      "zero_duration_max_run": 3,
+      "top2_competing_peak_units": 16,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 290,
+        "UNCERTAIN": 60
+      },
+      "suspicious_score": 0.9206,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/梦良衣.mp3",
+      "lang": "chinese",
+      "duration_sec": 187.4,
+      "n_units": 112,
+      "raw_official_mean_diff_sec": 10.702,
+      "zero_duration_max_run": 1,
+      "top2_competing_peak_units": 4,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 89,
+        "UNCERTAIN": 23
+      },
+      "suspicious_score": 0.9027,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Cantonese/月半小夜曲.mp3",
+      "lang": "cantonese",
+      "duration_sec": 263.8,
+      "n_units": 388,
+      "raw_official_mean_diff_sec": 21.518,
+      "zero_duration_max_run": 3,
+      "top2_competing_peak_units": 34,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 302,
+        "UNCERTAIN": 86
+      },
+      "suspicious_score": 0.8995,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Cantonese/浮夸.mp3",
+      "lang": "cantonese",
+      "duration_sec": 287.0,
+      "n_units": 487,
+      "raw_official_mean_diff_sec": 12.852,
+      "zero_duration_max_run": 3,
+      "top2_competing_peak_units": 53,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 331,
+        "UNCERTAIN": 156
+      },
+      "suspicious_score": 0.852,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/TH讠NK.mp3",
+      "lang": "chinese",
+      "duration_sec": 249.2,
+      "n_units": 450,
+      "raw_official_mean_diff_sec": 7.193,
+      "zero_duration_max_run": 3,
+      "top2_competing_peak_units": 97,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 256,
+        "UNCERTAIN": 194
+      },
+      "suspicious_score": 0.8073,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/画下灯塔水母.mp3",
+      "lang": "chinese",
+      "duration_sec": 230.8,
+      "n_units": 532,
+      "raw_official_mean_diff_sec": 7.662,
+      "zero_duration_max_run": 2,
+      "top2_competing_peak_units": 99,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 305,
+        "UNCERTAIN": 227
+      },
+      "suspicious_score": 0.806,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/本草纲目.mp3",
+      "lang": "chinese",
+      "duration_sec": 209.9,
+      "n_units": 499,
+      "raw_official_mean_diff_sec": 3.57,
+      "zero_duration_max_run": 5,
+      "top2_competing_peak_units": 121,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 272,
+        "UNCERTAIN": 227
+      },
+      "suspicious_score": 0.7988,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/六重不忠.mp3",
+      "lang": "chinese",
+      "duration_sec": 269.1,
+      "n_units": 579,
+      "raw_official_mean_diff_sec": 10.052,
+      "zero_duration_max_run": 4,
+      "top2_competing_peak_units": 119,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 320,
+        "UNCERTAIN": 259
+      },
+      "suspicious_score": 0.7983,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/安全词.mp3",
+      "lang": "chinese",
+      "duration_sec": 262.9,
+      "n_units": 411,
+      "raw_official_mean_diff_sec": 6.348,
+      "zero_duration_max_run": 1,
+      "top2_competing_peak_units": 127,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 171,
+        "UNCERTAIN": 240
+      },
+      "suspicious_score": 0.7394,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/若梦境来袭.mp3",
+      "lang": "chinese",
+      "duration_sec": 268.6,
+      "n_units": 427,
+      "raw_official_mean_diff_sec": 6.262,
+      "zero_duration_max_run": 3,
+      "top2_competing_peak_units": 119,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 176,
+        "UNCERTAIN": 251
+      },
+      "suspicious_score": 0.7354,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/权御天下.mp3",
+      "lang": "chinese",
+      "duration_sec": 249.9,
+      "n_units": 762,
+      "raw_official_mean_diff_sec": 8.903,
+      "zero_duration_max_run": 5,
+      "top2_competing_peak_units": 173,
+      "tristate_SA80": {
+        "ACCEPT": 5,
+        "REJECT": 321,
+        "UNCERTAIN": 436
+      },
+      "suspicious_score": 0.7314,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/画下灯塔水母 - 副本.mp3",
+      "lang": "chinese",
+      "duration_sec": 230.8,
+      "n_units": 381,
+      "raw_official_mean_diff_sec": 6.111,
+      "zero_duration_max_run": 2,
+      "top2_competing_peak_units": 113,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 141,
+        "UNCERTAIN": 240
+      },
+      "suspicious_score": 0.7157,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/四季折之羽.mp3",
+      "lang": "chinese",
+      "duration_sec": 286.4,
+      "n_units": 637,
+      "raw_official_mean_diff_sec": 9.286,
+      "zero_duration_max_run": 7,
+      "top2_competing_peak_units": 155,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 226,
+        "UNCERTAIN": 411
+      },
+      "suspicious_score": 0.7039,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/为何入眠.mp3",
+      "lang": "chinese",
+      "duration_sec": 206.8,
+      "n_units": 285,
+      "raw_official_mean_diff_sec": 3.614,
+      "zero_duration_max_run": 4,
+      "top2_competing_peak_units": 100,
+      "tristate_SA80": {
+        "ACCEPT": 0,
+        "REJECT": 71,
+        "UNCERTAIN": 214
+      },
+      "suspicious_score": 0.6625,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/人造卫星.mp3",
+      "lang": "chinese",
+      "duration_sec": 192.4,
+      "n_units": 477,
+      "raw_official_mean_diff_sec": 1.062,
+      "zero_duration_max_run": 4,
+      "top2_competing_peak_units": 218,
+      "tristate_SA80": {
+        "ACCEPT": 2,
+        "REJECT": 86,
+        "UNCERTAIN": 389
+      },
+      "suspicious_score": 0.6354,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/何时何地.mp3",
+      "lang": "chinese",
+      "duration_sec": 222.8,
+      "n_units": 368,
+      "raw_official_mean_diff_sec": 2.15,
+      "zero_duration_max_run": 1,
+      "top2_competing_peak_units": 152,
+      "tristate_SA80": {
+        "ACCEPT": 4,
+        "REJECT": 62,
+        "UNCERTAIN": 302
+      },
+      "suspicious_score": 0.6207,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/此处通往天空.mp3",
+      "lang": "chinese",
+      "duration_sec": 203.8,
+      "n_units": 286,
+      "raw_official_mean_diff_sec": 0.951,
+      "zero_duration_max_run": 1,
+      "top2_competing_peak_units": 148,
+      "tristate_SA80": {
+        "ACCEPT": 1,
+        "REJECT": 27,
+        "UNCERTAIN": 258
+      },
+      "suspicious_score": 0.5979,
+      "monotonic_starts": false
+    },
+    {
+      "item": "Chinese/伊卡洛斯奔向月亮.mp3",
+      "lang": "chinese",
+      "duration_sec": 250.9,
+      "n_units": 537,
+      "raw_official_mean_diff_sec": 0.196,
+      "zero_duration_max_run": 1,
+      "top2_competing_peak_units": 252,
+      "tristate_SA80": {
+        "ACCEPT": 1,
+        "REJECT": 55,
+        "UNCERTAIN": 481
+      },
+      "suspicious_score": 0.5976,
+      "monotonic_starts": false
+    }
+  ],
+  "failed": [
+    {
+      "item": "/home/hyan/Data/lyricalign/test/Chinese/Side by Side.mp4",
+      "reason": "Error opening '/home/hyan/Data/lyricalign/test/Chinese/Side by Side.mp4': Format not recognised."
+    },
+    {
+      "item": "/home/hyan/Data/lyricalign/test/Chinese/祈愿花开.mp4",
+      "reason": "Error opening '/home/hyan/Data/lyricalign/test/Chinese/祈愿花开.mp4': Format not recognised."
+    }
+  ],
+  "note": "无 GT，不报告 MAE/accuracy；suspicious_score 为 REJECT/UNCERTAIN/竞争峰/零时长 run 的启发式组合"
+}
