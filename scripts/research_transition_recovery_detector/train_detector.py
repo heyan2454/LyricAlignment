@@ -34,7 +34,7 @@ from lyricalign.research_transition_recovery_detector.thresholds import (  # noq
 )
 
 R2_CHECKPOINT_DEFAULT = "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
-DETECTOR_PKL = "/home/hyan/LyricAlignment/models/transition_recovery_detector_20260807/detector_mlp.pkl"
+DETECTOR_PKL = "/home/hyan/LyricAlignment/models/transition_recovery_detector_20260808_corrected/detector_mlp.pkl"
 MODEL_REVISION_DEFAULT = "c07281df297b9905d24a508279258cccf987a064"
 TOLERANCE = 0.32
 
@@ -137,12 +137,13 @@ def main() -> int:
             train_mlp,
         )
 
-        features, labels, meta = build_dataset(session_root, args.role, tolerance=TOLERANCE)
-        model, scaler, auc = train_mlp(features, labels, feature_names=FEATURE_NAMES)
+        features, labels, meta = build_dataset(session_root, args.role, tolerance=TOLERANCE,
+                                              timeline_manifest=args.timeline_manifest)
+        model, scaler, auc = train_mlp(features, labels, feature_names=tuple(meta["feature_names"]))
         out_dir = session_root / "06_detector"
         out_dir.mkdir(parents=True, exist_ok=True)
         with open(Path(DETECTOR_PKL), "wb") as f:
-            pickle.dump({"model": model, "scaler": scaler, "feature_names": FEATURE_NAMES}, f)
+            pickle.dump({"model": model, "scaler": scaler, "feature_names": tuple(meta["feature_names"])}, f)
         (out_dir / "TRAIN_META.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), "utf-8")
         print(json.dumps({"mode": "train", "n_units": len(features), **auc}))
         return 0
@@ -154,8 +155,9 @@ def main() -> int:
         )
         with open(Path(DETECTOR_PKL), "rb") as f:
             artifact = pickle.load(f)
-        features, labels, meta = build_dataset(session_root, args.role, tolerance=TOLERANCE)
-        p_bad = predict_p_bad(artifact, features, FEATURE_NAMES)
+        features, labels, meta = build_dataset(session_root, args.role, tolerance=TOLERANCE,
+                                              timeline_manifest=args.timeline_manifest)
+        p_bad = predict_p_bad(artifact, features, tuple(artifact.get("feature_names") or FEATURE_NAMES))
         out = session_root / "06_detector" / f"EVAL_{args.role}.json"
         out.write_text(json.dumps({
             "role": args.role, "n_units": len(p_bad),
@@ -171,8 +173,9 @@ def main() -> int:
         )
         with open(Path(DETECTOR_PKL), "rb") as f:
             artifact = pickle.load(f)
-        features, labels, meta = build_dataset(session_root, "threshold_validation", tolerance=TOLERANCE)
-        p_bad = predict_p_bad(artifact, features, FEATURE_NAMES)
+        features, labels, meta = build_dataset(session_root, "threshold_validation", tolerance=TOLERANCE,
+                                              timeline_manifest=args.timeline_manifest)
+        p_bad = predict_p_bad(artifact, features, tuple(artifact.get("feature_names") or FEATURE_NAMES))
         valid = [(float(p), g) for p, g in zip(p_bad, labels, strict=True) if g is not None]
         p_list = [p for p, _ in valid]
         g_list = [g for _, g in valid]
@@ -183,7 +186,7 @@ def main() -> int:
         frozen = {
             "schema_version": "frozen_working_points_v1",
             "model": str(Path(DETECTOR_PKL)),
-            "feature_names": list(FEATURE_NAMES),
+            "feature_names": list(artifact.get("feature_names") or FEATURE_NAMES),
             "SA60": sa60, "SA80": sa80, "R95": r95, "joint_sa60_r95": joint,
             "threshold_validation_denominators": {
                 "safe": sum(1 for g in g_list if g == 0),

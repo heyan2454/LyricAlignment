@@ -530,9 +530,11 @@ def main() -> int:
         research_model_identity={"kind": "raw"}, device=args.device,
     )
 
+    detector_feature_names = tuple(artifact.get("feature_names") or FEATURE_NAMES)
+
     def detector_predict(rows):
         feats = [extract_unit_features(r) for r in rows]
-        return predict_p_bad(artifact, feats, FEATURE_NAMES)
+        return predict_p_bad(artifact, feats, detector_feature_names)
 
     per_song = []
     for song_id in song_ids:
