@@ -154,6 +154,7 @@ def run(args: argparse.Namespace) -> int:
     backend = RealAlignerBackend(processor=processor, model=model, args=infer_args)
     runner = TransitionRunner(config, session_root=session_root, backend=backend)
 
+    (session_root / "03_propagation").mkdir(parents=True, exist_ok=True)
     episodes_path = session_root / "03_propagation" / "EPISODES.jsonl"
     existing = []
     if episodes_path.is_file():
