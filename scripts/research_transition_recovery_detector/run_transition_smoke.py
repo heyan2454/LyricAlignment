@@ -78,6 +78,9 @@ def fake_document() -> Any:
     return parse_lyrics_text("\n".join(lines), language="Chinese")
 
 
+SEC_PER_UNIT_FAKE = 1.2
+
+
 def fake_gt_timeline(n_units: int, sec_per_unit: float) -> dict[int, dict]:
     return {
         i: {"start_sec": i * sec_per_unit, "end_sec": i * sec_per_unit + 0.08, "text": "啊"}
@@ -116,6 +119,7 @@ def run_fake(session_root: Path, args: argparse.Namespace) -> int:
     gt = fake_gt_timeline(int(duration_sec / SEC_PER_UNIT_FAKE), SEC_PER_UNIT_FAKE)
     config = {
         "lookback_units": 8,
+        "head_strategy": args.head_strategy,
         "audio_sha": "fake-v1",
         "model_identity": {"kind": "fake"},
         "env_identity": "cpu-smoke",
@@ -209,6 +213,7 @@ def run_real(session_root: Path, args: argparse.Namespace) -> int:
     )
     config = {
         "lookback_units": 8,
+        "head_strategy": args.head_strategy,
         "model_identity": model_identity,
         "env_identity": "gpu-dev",
         "config_hash": "dev-song-smoke-v1",
@@ -224,8 +229,12 @@ def run_real(session_root: Path, args: argparse.Namespace) -> int:
         transitions = [args.transition] if args.transition else list(TRANSITIONS)
         for transition in transitions:
             for retained in ([float(args.retained)] if args.retained else [None, 3.0, 5.0]):
+                run_song_id = f"{song_id}:r{retained}" if retained else song_id
+                target = session_root / "02_transition" / f"{run_song_id}__{transition}.jsonl"
+                if target.is_file():
+                    target.unlink()
                 records = runner.run_song(
-                    song_id=f"{song_id}:r{retained}" if retained else song_id,
+                    song_id=run_song_id,
                     audio=audio, document=document, window_plan=fake_window_plan(
                         float(len(audio) / 16000), audio, 16000,
                     ),
@@ -245,6 +254,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--mode", choices=("fake", "real"), default="fake")
     p.add_argument("--session-root", required=True)
     p.add_argument("--transition", choices=list(TRANSITIONS))
+    p.add_argument("--head-strategy", choices=("H0", "H1"), default="H0")
     p.add_argument("--song-ids", default="")
     p.add_argument("--timeline-manifest", default="")
     p.add_argument("--retained", type=float, help="silence retained_total_sec pilot (default: real 跑 None,3,5)")

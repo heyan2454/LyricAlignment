@@ -64,7 +64,12 @@ def unit_accuracy(committed_rows: list[dict], gt: dict[int, dict], *,
         if g is None:
             wrong += 1
             continue
-        if abs(float(row["start_sec"]) - float(g["start_sec"])) <= tolerance_sec:
+        pred_start = next(
+            (float(row[k]) for k in ("original_global_start_sec", "fixed_global_start_sec", "start_sec")
+             if row.get(k) is not None),
+            None,
+        )
+        if abs(pred_start - float(g["start_sec"])) <= tolerance_sec:
             correct += 1
         else:
             wrong += 1
@@ -111,8 +116,13 @@ def cursor_time_drift(records: list[dict], gt: dict[int, dict] | None = None) ->
         end = _window_committed_end(record)
         if gt and end in gt and last_committed:
             expected = float(gt[end]["start_sec"])
-            actual = float(last_committed[max(last_committed)]["start_sec"])
-            drifts.append(abs(expected - actual))
+            last_row = last_committed[max(last_committed)]
+            last_start = next(
+                (float(last_row[k]) for k in ("original_global_start_sec", "fixed_global_start_sec", "start_sec")
+                 if last_row.get(k) is not None),
+                0.0,
+            )
+            drifts.append(abs(expected - last_start))
     return {
         "window_drifts_sec": drifts,
         "max_drift_sec": max(drifts) if drifts else 0.0,

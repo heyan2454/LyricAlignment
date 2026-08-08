@@ -137,15 +137,20 @@ def build_query_ids(
     gt_timeline: dict[int, dict] | None,
     lookback_units: int,
     observations: dict[int, dict] | None = None,
+    head_strategy: str = "H0",
 ) -> tuple[int, ...] | None:
     """构造本窗 query canonical ids（09 §2.1 Density contract，units_per_sec）。
 
     - T0 oracle：gt_timeline 中 start 位于 [core_start, core_end) 的 ids；GT 缺失返回 None。
-    - T1/T2/T3：query 起点行 = observations 中 end_sec <= input_start 的最大 id + 1
-      （无则用 previous_committed_end_model_sec * units_per_sec 估算），再回看 lookback；
-      query 终点行 = input_end * units_per_sec（秒 × units/秒 = units）。
-      禁止再做 span/units_per_sec 除法（单位倒置 bug 修复，09 §1）。
+    - T1/T2/T3 head strategy（09 P1）：
+      * H0：query 起点行 = observations 中 end_sec <= input_start 的最大 id + 1
+        （无则用 previous_committed_end_model_sec * units_per_sec 估算），再回看 lookback；
+      * H1：以 committed canonical cursor 决定 lyric head（start_row = committed_end），
+        density 只负责 future budget；
+      两种策略下 query 终点行 = input_end * units_per_sec（绝对语义，禁止 span/ups 除法）。
     """
+    if head_strategy not in ("H0", "H1"):
+        raise ValueError(f"unknown head_strategy {head_strategy!r}")
     is_, cs, ce, ie = model_bounds
     if transition == TRANSITION_T0_ORACLE:
         if gt_timeline is None:
@@ -155,16 +160,19 @@ def build_query_ids(
         )
         return tuple(ids) if ids else None
     observations = observations or {}
-    candidates = [
-        int(i)
-        for i, obs in observations.items()
-        if float(obs["end_sec"]) <= is_ + 1e-9
-    ]
-    if candidates:
-        time_start = max(candidates) + 1
+    if head_strategy == "H1":
+        start_row = max(0, state.committed_end_exclusive - lookback_units)
     else:
-        time_start = int(round(float(state.previous_committed_end_model_sec) * estimator.units_per_sec))
-    start_row = max(0, min(time_start, state.committed_end_exclusive) - lookback_units)
+        candidates = [
+            int(i)
+            for i, obs in observations.items()
+            if float(obs["end_sec"]) <= is_ + 1e-9
+        ]
+        if candidates:
+            time_start = max(candidates) + 1
+        else:
+            time_start = int(round(float(state.previous_committed_end_model_sec) * estimator.units_per_sec))
+        start_row = max(0, min(time_start, state.committed_end_exclusive) - lookback_units)
     end_row = estimator.query_end_id_exclusive(ie, start_id=start_row)
     return tuple(range(start_row, end_row))
 
@@ -217,6 +225,7 @@ class TransitionRunner:
             )
         self._estimator: QueryEstimator | None = None
         self.lookback_units = int(config.get("lookback_units", 8))
+        self.head_strategy = str(config.get("head_strategy", "H0"))
         self.transition_dir = self.session_root / "02_transition"
         self.transition_dir.mkdir(parents=True, exist_ok=True)
 
@@ -240,6 +249,7 @@ class TransitionRunner:
             gt_timeline=gt_timeline,
             lookback_units=self.lookback_units,
             observations=self._observations,
+            head_strategy=self.head_strategy,
         )
         if query_ids is None:
             return None
@@ -360,6 +370,12 @@ class TransitionRunner:
             rows = self._cached_forward(request, audio, document)
             rows = self._normalize_rows(rows)
             record["request"] = request.__dict__
+            record["query_audit"] = {
+                "units_per_sec": round(self._estimator.units_per_sec, 6),
+                "sec_per_unit": round(self._estimator.sec_per_unit, 6),
+                "query_estimator_version": self._estimator.version,
+                "head_strategy": self.head_strategy,
+            }
             evidence = {
                 "row_count": len(rows),
                 "raw_global_rows": [

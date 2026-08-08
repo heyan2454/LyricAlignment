@@ -110,6 +110,7 @@ def run_formal(args: argparse.Namespace) -> int:
     )
     config = {
         "lookback_units": 8,
+        "head_strategy": getattr(args, "head_strategy", "H0"),
         "model_identity": model_identity,
         "env_identity": f"gpu-{args.role}",
         "config_hash": f"formal-{args.role}-v1",
@@ -140,6 +141,9 @@ def run_formal(args: argparse.Namespace) -> int:
             target_core_sec=60.0, left_context_sec=10.0, right_context_sec=10.0,
         )
         for transition in transitions:
+            target = session_root / "02_transition" / f"{song_id}__{transition}.jsonl"
+            if target.is_file():
+                target.unlink()
             records = runner.run_song(
                 song_id=song_id, audio=audio, document=document, window_plan=plan,
                 transition=transition, gt_timeline=gt,
@@ -175,7 +179,13 @@ def run_formal(args: argparse.Namespace) -> int:
             })
             print(json.dumps({k: summary[k] for k in ("song_id", "transition", "committed", "accuracy", "coverage", "first_error_window")}, ensure_ascii=False))
     formal_path = session_root / "02_transition" / f"FORMAL_{args.role}.json"
-    formal_path.write_text(json.dumps(out_rows, ensure_ascii=False, indent=2), "utf-8")
+    existing = []
+    if formal_path.is_file():
+        existing = json.loads(formal_path.read_text(encoding="utf-8"))
+    merged = {f"{r['song_id']}::{r['transition']}": r for r in existing}
+    for r in out_rows:
+        merged[f"{r['song_id']}::{r['transition']}"] = r
+    formal_path.write_text(json.dumps(list(merged.values()), ensure_ascii=False, indent=2), "utf-8")
     detail_path = session_root / "02_transition" / f"FORMAL_{args.role}.jsonl"
     with open(detail_path, "w", encoding="utf-8") as f:
         for line in detail_lines:
@@ -190,6 +200,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--role", default="model_selection")
     p.add_argument("--transition", choices=list(TRANSITIONS))
     p.add_argument("--song-ids", default="")
+    p.add_argument("--head-strategy", choices=("H0", "H1"), default="H0")
     p.add_argument("--timeline-manifest", required=True)
     p.add_argument("--checkpoint", default=R2_CHECKPOINT_DEFAULT)
     p.add_argument("--model-revision", default=MODEL_REVISION_DEFAULT)
