@@ -1,0 +1,15 @@
+{
+  "v_coverage": 0.3001,
+  "results": {
+    "baseline_legacy8": {
+      "auc_transfer": 0.5951,
+      "n_train": 9495,
+      "n_val": 3374
+    },
+    "with_V": {
+      "auc_transfer": 0.5875,
+      "n_train": 9495,
+      "n_val": 3374
+    }
+  }
+}

@@ -39,8 +39,8 @@
       "n_val_songs": 10,
       "n_test_songs": 15,
       "n_units": 9495,
-      "n_intervals": null,
-      "metrics_artifact": "06_detector/FROZEN_WORKING_POINTS.json",
+      "n_intervals": 1296,
+      "metrics_artifact": "06_detector/INTERVAL_METRICS.json + FROZEN_WORKING_POINTS.json",
       "failure_or_block_reason": null
     },
     {
@@ -56,8 +56,8 @@
       "n_val_songs": 10,
       "n_test_songs": 15,
       "n_units": 9495,
-      "n_intervals": null,
-      "metrics_artifact": "06_detector/FROZEN_WORKING_POINTS.json",
+      "n_intervals": 1296,
+      "metrics_artifact": "06_detector/INTERVAL_METRICS.json + FROZEN_WORKING_POINTS.json",
       "failure_or_block_reason": null
     },
     {
@@ -113,8 +113,8 @@
       "n_val_songs": 10,
       "n_test_songs": 15,
       "n_units": 9495,
-      "n_intervals": null,
-      "metrics_artifact": "06_detector/FROZEN_WORKING_POINTS.json",
+      "n_intervals": 1296,
+      "metrics_artifact": "06_detector/INTERVAL_METRICS.json + FROZEN_WORKING_POINTS.json",
       "failure_or_block_reason": null
     },
     {
@@ -148,7 +148,7 @@
         "P",
         "S"
       ],
-      "status": "pending",
+      "status": "not_executed_dependency",
       "input_artifacts": [
         "06_detector/evidence_hidden.jsonl",
         "06_detector/evidence_raw.jsonl",
@@ -163,7 +163,7 @@
       "n_units": null,
       "n_intervals": null,
       "metrics_artifact": null,
-      "failure_or_block_reason": null
+      "failure_or_block_reason": "V/P/S 数据源依赖序列/跨窗 collect 增强（未执行）；H 依赖 hidden hook（blocked_api）"
     }
   ],
   "built_at": "2026-08-08T12:49:46.792946+00:00"

@@ -144,7 +144,9 @@ def main() -> int:
         "inputs": {"prediction_artifact": args.eval, "threshold_artifact": args.thresholds,
                    "target": "raw", "split": args.role,
                    "label_definition": "Safe<=100ms Grey(100,250] Unsafe>250ms; Grey excluded from binary",
-                   "intervalization_rule_hash": RULE_HASH},
+                   "intervalization_rule_hash": RULE_HASH,
+                   "C3_denominator_note": "C3.n_unsafe 为 intervalization 后的 unsafe unit 计数（unit 可跨 interval 重复），"
+                                          "与 FROZEN_WORKING_POINTS 的全体 unsafe 单元基数不同；unsafe_reject 为 REJECT-only recall"},
         "working_points": results,
         "joint_sa60_r95": {
             "feasible": joint_feasible,

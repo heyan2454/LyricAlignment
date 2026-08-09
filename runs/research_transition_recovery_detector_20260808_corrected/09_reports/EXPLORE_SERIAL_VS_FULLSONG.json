@@ -1,0 +1,15 @@
+{
+  "four_way": {
+    "both_correct": 928,
+    "serial_only": 263,
+    "full_only": 134,
+    "both_wrong": 2049
+  },
+  "n": 3374,
+  "serial_lead": 0.0779,
+  "full_lead": 0.0397,
+  "boundary_wrong_rate": {
+    "near": 0.6143,
+    "mid": 0.6492
+  }
+}

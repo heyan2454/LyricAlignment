@@ -1,0 +1,21 @@
+{
+  "schema_version": "execution_audit_v2",
+  "tasks": {
+    "A_transition_reaggregate": "complete",
+    "B_closed_loop_v3": "complete",
+    "C_detector_v2": "partial",
+    "D_report_v2": "complete"
+  },
+  "artifacts_present": {
+    "reaggregate": true,
+    "selection_v2": true,
+    "closed_loop_v3": true,
+    "frozen_v2": true,
+    "matrix_v2": true
+  },
+  "superseded": {
+    "old_final_report": "runs/research_transition_recovery_detector_20260808_corrected/09_reports/FINAL_SESSION_REPORT.json",
+    "mark": "superseded_for_formal_interpretation by FINAL_SESSION_REPORT_v2.json",
+    "reason": "旧报告以 320ms/0.32s 为 primary、无 Safe/Grey/Unsafe 标签、closed loop 无 retry writeback 语义"
+  }
+}

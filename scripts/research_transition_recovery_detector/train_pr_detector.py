@@ -16,6 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from lyricalign.research_transition_recovery_detector.contracts import TRANSITION_T2_CORE  # noqa: E402
 from lyricalign.research_transition_recovery_detector.detector_features import (  # noqa: E402
     LEGACY_FEATURE_NAMES,
     extract_signal_features,
@@ -24,6 +25,50 @@ from scripts.research_transition_recovery_detector.train_detector_helpers import
     predict_p_bad,
     train_mlp,
 )
+
+
+def _episode_first_window(records_root: Path, session_root: Path, ep: dict,
+                          transition: str) -> list[dict] | None:
+    """取 episode 干预后首窗的 committed rows（决策时 evidence）。
+
+    - mild：{song}::mild::{family}::{spec} 序列的 rec[0]（干预注入后首窗）
+    - canonical_state_corruption：{song}::corr::{family} 序列的 rec[0]
+    - natural：clean {song} 序列的 rec[0]
+    返回首窗 committed rows（state_before..decision 区间），取不到则 None。
+    """
+    song = ep.get("source_song_id")
+    import json as _json
+
+    def committed(rec):
+        before = int(rec["state_before"]["committed_end_exclusive"])
+        after = int(rec["decision"]["committed_end_exclusive"])
+        return [r for r in rec["evidence_summary"]["raw_global_rows"]
+                if before <= int(r["global_character_index"]) < after]
+
+    if ep.get("episode_id", "").startswith("mild_"):
+        fam = ep["family"]
+        spec = _json.dumps(ep["intervention"]["spec"], sort_keys=True)
+        cand = f"{song}::mild::{fam}::{spec}__{transition}.jsonl"
+    elif ep.get("source") == "canonical_state_corruption" and ep.get("family") != "natural":
+        fam = ep["family"]
+        cand = f"{song}::corr::{fam}__{transition}.jsonl"
+    else:
+        cand = f"{song}__{transition}.jsonl"
+
+    for root in (session_root / "02_transition", records_root / "02_transition"):
+        p = root / cand
+        if not p.is_file():
+            continue
+        recs = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+        recs = [r for r in recs if not r.get("skipped")]
+        if not recs:
+            return None
+        # 干预序列首窗为 rec[0]（continue_from_window_index 之后第一窗口）；
+        # 对 canonical corruption 序列，window_index>=1 即干预后首窗。
+        first = recs[0]
+        rows = committed(first)
+        return rows or None
+    return None
 
 
 def main() -> int:
@@ -38,7 +83,6 @@ def main() -> int:
 
     import pickle
 
-    det = json.loads((records_root / "06_detector" / "detector_mlp.pkl").read_bytes()) if False else None
     with open(args.detector_pkl, "rb") as f:
         artifact = pickle.load(f)
     feature_names = tuple(artifact.get("feature_names") or LEGACY_FEATURE_NAMES)
@@ -68,17 +112,8 @@ def main() -> int:
                                   ("medium" if ep.get("recovery_class") == "slow_recover" else "low"))
         y.append(1 if risk == "high" else 0)
         song_of.append(song)
-        # 首窗 committed rows：从 corrected records 取（episode 首窗）
-        rec_path = records_root / "02_transition" / f"{song}__T2_core_boundary_serial.jsonl"
-        if not rec_path.is_file():
-            X.append([0.0] * len(feature_names))
-            continue
-        recs = [json.loads(l) for l in rec_path.read_text(encoding="utf-8").splitlines() if l.strip()]
-        rec0 = recs[0]
-        before = int(rec0["state_before"]["committed_end_exclusive"])
-        after = int(rec0["decision"]["committed_end_exclusive"])
-        rows = [r for r in rec0["evidence_summary"]["raw_global_rows"]
-                if before <= int(r["global_character_index"]) < after]
+        # 首窗 committed rows：从该 episode 对应干预序列（mild/corr）或 clean 序列取
+        rows = _episode_first_window(records_root, session_root, ep, TRANSITION_T2_CORE)
         if not rows:
             X.append([0.0] * len(feature_names))
             continue
@@ -94,13 +129,8 @@ def main() -> int:
                 vec[i] += float(v)
             n += 1
         X.append([v / max(n, 1) for v in vec])
-    # correctness score 对比列（决策时 detector p_bad 均值）
-    Xc = [0.0] * len(X)
-    for i, ep in enumerate(episodes):
-        if ep.get("source_song_id") not in song_ids:
-            continue
-        # 简化：用 episode 首窗的 detector 分数（此处以 R 特征均值作为代理 correctness 列）
-        Xc[i] = sum(X[i]) / max(len(X[i]), 1)
+    # correctness score 对比列（决策时 detector p_bad 均值，与 X 逐行对齐）
+    Xc = [sum(row) / max(len(row), 1) for row in X]
 
     # 训练（MLP 16-8）：high vs non-high
     model, scaler, tr = train_mlp([{f"f{k}": v for k, v in enumerate(row)} for row in X],

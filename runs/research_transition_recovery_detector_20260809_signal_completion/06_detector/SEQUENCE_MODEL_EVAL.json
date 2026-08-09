@@ -1,0 +1,38 @@
+{
+  "status": "executed",
+  "families": [
+    "R",
+    "V"
+  ],
+  "input_features": [
+    "raw_start_entropy",
+    "raw_end_entropy",
+    "raw_start_margin",
+    "raw_end_margin",
+    "raw_start_top1_probability",
+    "raw_end_top1_probability",
+    "raw_start_interval_gap_sec",
+    "raw_end_interval_gap_sec",
+    "v_n_observations",
+    "v_start_displacement_sec"
+  ],
+  "mlp": {
+    "auc": 0.6703508567667198,
+    "auprc": 0.9070374541121993,
+    "n": 2652,
+    "auc_train": 0.7562834447341082
+  },
+  "cnn1d": {
+    "auc": 0.6218904332376531,
+    "auprc": 0.8842522273521217,
+    "n": 2652,
+    "n_epochs": 40,
+    "arch": "Conv1d(n_feat->16,k=3,pad=1)+ReLU+Conv1d(16->1,k=1); per-unit output",
+    "input": "sequence features (10 dims) padded to 1041 per song",
+    "n_songs_train": 26,
+    "n_songs_eval": 9
+  },
+  "comparison": {
+    "cnn1d_gt_mlp": false
+  }
+}

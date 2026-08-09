@@ -1,0 +1,25 @@
+{
+  "family": "V",
+  "coverage": {
+    "n_units": 9495,
+    "n_available_rows": 8756,
+    "coverage": 0.9222,
+    "missing_fields": {
+      "v_start_std_sec": 739,
+      "v_start_top1_std": 739
+    },
+    "row_song_coverage": {
+      "n_units": 9495,
+      "n_songs": 26
+    },
+    "field_coverage": {
+      "v_n_observations": 1.0,
+      "v_start_displacement_sec": 1.0,
+      "v_start_std_sec": 0.9221695629278568,
+      "v_start_top1_std": 0.9221695629278568
+    },
+    "missing_reasons": [
+      "cid observed in only one window (no cross-window displacement)"
+    ]
+  }
+}

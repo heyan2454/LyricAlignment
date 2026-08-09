@@ -72,5 +72,6 @@
     "safe": 1574,
     "unsafe": 1563,
     "total": 3137
-  }
+  },
+  "denominator_scope_note": "threshold_validation_denominators(3137)=threshold_validation role 全量有标签行；JOINT_PARETO_ANALYSIS 用 EVAL_model_selection(3374)=model_selection role——两者是不同 source-song 集合，非同一数据口径"
 }

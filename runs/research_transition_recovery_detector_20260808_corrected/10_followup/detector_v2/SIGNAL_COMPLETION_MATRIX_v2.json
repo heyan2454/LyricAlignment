@@ -1,0 +1,243 @@
+{
+  "label_schema": "safe100_grey100_250_unsafe250_structural_v1",
+  "note": "8 信号族 + legacy8/extended 组合；blocked 分支不算 executed",
+  "families": {
+    "R": {
+      "status": "executed",
+      "reason": null,
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.9973,
+      "metrics_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected/10_followup/detector_v2/matrix_R.json"
+    },
+    "O": {
+      "status": "executed",
+      "reason": null,
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "metrics_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected/10_followup/detector_v2/matrix_O.json"
+    },
+    "RO": {
+      "status": "executed",
+      "reason": null,
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "metrics_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected/10_followup/detector_v2/matrix_RO.json"
+    },
+    "V": {
+      "status": "executed",
+      "reason": null,
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.9222,
+      "metrics_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected/10_followup/detector_v2/matrix_V.json"
+    },
+    "P": {
+      "status": "executed",
+      "reason": null,
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "metrics_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected/10_followup/detector_v2/matrix_P.json"
+    },
+    "S": {
+      "status": "executed",
+      "reason": null,
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.9918,
+      "metrics_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected/10_followup/detector_v2/matrix_S.json"
+    },
+    "H": {
+      "status": "blocked_api",
+      "reason": "no hidden_* fields in records (output_hidden_states not exported) -> blocked_api",
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "metrics_artifact": null
+    },
+    "PR": {
+      "status": "not_executed",
+      "reason": "PR label requires Gate P corpus; not executed in this session",
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.9973,
+      "metrics_artifact": null
+    },
+    "legacy8": {
+      "status": "executed",
+      "reason": null,
+      "split": "detector_train",
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 1.0,
+      "metrics_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260808_corrected/10_followup/detector_v2/matrix_legacy8.json"
+    }
+  },
+  "combos": [
+    {
+      "combo": "H",
+      "status": "blocked_api",
+      "reason": "hidden extraction unavailable (blocked_api, evidence in coverage audit)"
+    },
+    {
+      "combo": "R",
+      "status": "executed",
+      "families": [
+        "R"
+      ],
+      "n_features": 8,
+      "features_used": [
+        "raw_start_entropy",
+        "raw_end_entropy",
+        "raw_start_margin",
+        "raw_end_margin",
+        "raw_start_top1_probability",
+        "raw_end_top1_probability",
+        "raw_start_interval_gap_sec",
+        "raw_end_interval_gap_sec"
+      ],
+      "auc_train": 0.7058600513926796,
+      "n_train": 7333,
+      "auc_heldout": 0.6378250792299324,
+      "n_heldout": 2661,
+      "note": "raw 几何"
+    },
+    {
+      "combo": "O",
+      "status": "executed",
+      "families": [
+        "O"
+      ],
+      "n_features": 5,
+      "features_used": [
+        "official_start_sec",
+        "repair_shift_sec",
+        "repair_shift_abs_sec",
+        "repair_shift_run_len",
+        "repair_shift_delta_sec"
+      ],
+      "auc_train": 0.5339098196674182,
+      "n_train": 7333,
+      "auc_heldout": 0.46111867934345585,
+      "n_heldout": 2661,
+      "note": "official 几何"
+    },
+    {
+      "combo": "H+R",
+      "status": "blocked_api",
+      "reason": "hidden extraction unavailable (blocked_api, evidence in coverage audit)"
+    },
+    {
+      "combo": "H+O",
+      "status": "blocked_api",
+      "reason": "hidden extraction unavailable (blocked_api, evidence in coverage audit)"
+    },
+    {
+      "combo": "R+O",
+      "status": "executed",
+      "families": [
+        "R",
+        "O",
+        "RO"
+      ],
+      "n_features": 16,
+      "features_used": [
+        "raw_start_entropy",
+        "raw_end_entropy",
+        "raw_start_margin",
+        "raw_end_margin",
+        "raw_start_top1_probability",
+        "raw_end_top1_probability",
+        "raw_start_interval_gap_sec",
+        "raw_end_interval_gap_sec",
+        "official_start_sec",
+        "repair_shift_sec",
+        "repair_shift_abs_sec",
+        "repair_shift_run_len",
+        "repair_shift_delta_sec",
+        "raw_official_start_diff_sec",
+        "raw_official_start_diff_bucket",
+        "raw_official_start_diff_sign"
+      ],
+      "auc_train": 0.7271451984845786,
+      "n_train": 7333,
+      "auc_heldout": 0.6333456317108936,
+      "n_heldout": 2661,
+      "note": "raw+official(+交互)"
+    },
+    {
+      "combo": "H+R+O",
+      "status": "blocked_api",
+      "reason": "hidden extraction unavailable (blocked_api, evidence in coverage audit)"
+    },
+    {
+      "combo": "legacy8",
+      "status": "executed",
+      "families": [
+        "legacy8"
+      ],
+      "n_features": 8,
+      "features_used": [
+        "raw_start_entropy",
+        "raw_end_entropy",
+        "raw_start_margin",
+        "raw_end_margin",
+        "raw_start_top1_probability",
+        "raw_end_top1_probability",
+        "raw_official_start_diff_sec",
+        "start_top2_gap_sec"
+      ],
+      "auc_train": 0.6476710374046251,
+      "n_train": 7358,
+      "auc_heldout": 0.5993880282677136,
+      "n_heldout": 2670,
+      "note": "旧 8 特征 baseline"
+    },
+    {
+      "combo": "extended",
+      "status": "executed",
+      "families": [
+        "legacy8",
+        "V",
+        "S"
+      ],
+      "n_features": 18,
+      "features_used": [
+        "raw_start_entropy",
+        "raw_end_entropy",
+        "raw_start_margin",
+        "raw_end_margin",
+        "raw_start_top1_probability",
+        "raw_end_top1_probability",
+        "raw_official_start_diff_sec",
+        "start_top2_gap_sec",
+        "v_n_observations",
+        "v_start_displacement_sec",
+        "v_start_std_sec",
+        "v_start_top1_std",
+        "raw_zero_duration_flag",
+        "start_velocity_sec",
+        "start_acceleration_sec",
+        "gap_overlap_sec",
+        "compression_run_len",
+        "zero_duration_run_len"
+      ],
+      "auc_train": 0.7474056709839899,
+      "n_train": 6775,
+      "auc_heldout": 0.6276902528610023,
+      "n_heldout": 2392,
+      "note": "legacy8+V+S"
+    }
+  ]
+}

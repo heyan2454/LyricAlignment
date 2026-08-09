@@ -20364,5 +20364,23 @@
     "n_songs_passed": 9,
     "n_songs_failed": 0
   },
-  "detector_identity_note": "使用 corrected detector（AUC 0.63）；review P1 修复前曾误用 20260807 旧模型，重跑后结论不变（零提交）"
+  "detector_identity_note": "使用 corrected detector（AUC 0.63）；review P1 修复前曾误用 20260807 旧模型，重跑后结论不变（零提交）",
+  "configs": {
+    "L_SA60": {
+      "committed_coverage": 0.0,
+      "gate_c": "pass",
+      "note": "窗首段高危（REJECT 率 44-58%）→ 零提交"
+    },
+    "L_SA80": {
+      "committed_coverage": 0.0,
+      "gate_c": "pass"
+    },
+    "W_R95": {
+      "committed_coverage": 0.0,
+      "gate_c": "pass",
+      "note": "本 summary 为 W_R95 最终配置"
+    }
+  },
+  "conclusion": "Gate C 机制验证通过（writeback 真实改变后续 request/state，9/9 首）。corrected detector（AUC 0.60）下 L_SA60/L_SA80/W_R95 均零提交——窗首段行 p_bad 高（REJECT 44-58%），任何保护性工作点下 L/W 无产出；拒绝全部不能凭低错误率获胜（09 §3 P5）。",
+  "gate_d": "pass"
 }

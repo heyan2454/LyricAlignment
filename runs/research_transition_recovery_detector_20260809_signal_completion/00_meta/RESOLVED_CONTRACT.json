@@ -1,0 +1,31 @@
+{
+  "schema_version": "signal_completion_contract_v1",
+  "label": {
+    "safe": 0.1,
+    "grey": 0.25,
+    "grey_excluded_from_binary": true
+  },
+  "report_tolerances_ms": [
+    100,
+    250,
+    500,
+    1000
+  ],
+  "legacy_320ms": "legacy-only",
+  "learner": "frozen MLP (16-8), logistic sanity baseline",
+  "hidden": {
+    "layers": [
+      -4,
+      -1
+    ],
+    "storage": "float16",
+    "compute": "float32"
+  },
+  "posterior": {
+    "algorithm": "single k-best monotonic beam DP"
+  },
+  "sequence_model": "CNN1D only (per-unit output)",
+  "source_split": "four_role_source_song_disjoint (reuse 20260808 corrected split)",
+  "gpu_budget_hours": 12.0,
+  "session_root": "runs/research_transition_recovery_detector_20260809_signal_completion"
+}

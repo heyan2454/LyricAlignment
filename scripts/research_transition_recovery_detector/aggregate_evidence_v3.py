@@ -107,13 +107,6 @@ def main() -> int:
 
     # 最终 coverage audit
     totals = {k: {"denominator": 0, "covered": 0} for k in ("H", "P", "R", "O", "S")}
-    # R/O：从 model_selection records 的 committed rows 真实计数（evidence 存在性）
-    corrected = Path("runs/research_transition_recovery_detector_20260808_corrected")
-    split = json.loads((corrected / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))
-    n_r_rows = 0
-    for role in ROLES:
-        n_r_rows += sum(1 for _ in (det / f"evidence_hidden_{role}.jsonl").open()
-                        if (det / f"evidence_hidden_{role}.jsonl").is_file())
     for role in ROLES:
         h = det / f"evidence_hidden_{role}.jsonl"
         p_ = det / f"evidence_P_{role}.jsonl"
@@ -133,6 +126,8 @@ def main() -> int:
         totals["S"]["covered"] += min(n_requests, nt)
     audit = {
         "schema_version": "signal_coverage_audit_v1",
+        "source": "aggregate_evidence_v3 (request-level evidence existence; "
+                  "unit-level feature consumption 见 MODEL_SELECTION_v3.coverage_by_role)",
         "requests_total": totals["R"]["denominator"],
         **{k: {"denominator": v["denominator"], "covered": v["covered"],
                "coverage": round(v["covered"] / max(v["denominator"], 1), 4)}

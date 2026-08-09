@@ -1,0 +1,25 @@
+{
+  "family": "O",
+  "coverage": {
+    "n_units": 9495,
+    "n_available_rows": 0,
+    "coverage": 0.0,
+    "missing_fields": {
+      "official_end_sec": 9495,
+      "repair_shift_delta_sec": 26
+    },
+    "row_song_coverage": {
+      "n_units": 9495,
+      "n_songs": 26
+    },
+    "field_coverage": {
+      "official_start_sec": 1.0,
+      "official_end_sec": 0.0,
+      "repair_shift_sec": 1.0,
+      "repair_shift_abs_sec": 1.0,
+      "repair_shift_run_len": 1.0,
+      "repair_shift_delta_sec": 0.9972617166929963
+    },
+    "missing_reasons": []
+  }
+}

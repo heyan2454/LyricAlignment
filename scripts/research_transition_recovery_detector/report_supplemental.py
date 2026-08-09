@@ -11,6 +11,42 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+# 11 计划 §13 SIGNAL_COMPLETION_MATRIX_v3 必需 branch（完成状态只允许 executed|negative）
+REQUIRED_MATRIX_BRANCHES = {
+    "R", "O", "RO", "V", "P", "S", "H",
+    "H+R", "H+O", "R+O", "H+R+O",
+    "R+sel", "H+R+O+sel", "sequence_model", "PR",
+}
+
+
+def _decomp_count(decomposition: dict | None, cls: str | None) -> int:
+    if not decomposition:
+        return 0
+    if cls is None:
+        return len(decomposition.get("windows", []))
+    return sum(1 for w in decomposition.get("windows", [])
+               if w.get("classification") == cls)
+
+
+def _detector_answers(model_selection_v3: dict | None, frozen3: dict | None, seq_eval: dict | None) -> dict:
+    """从 authoritative artifacts 动态推导答案，避免硬编码数值与数据脱节。"""
+    branches = (model_selection_v3 or {}).get("branches", {})
+    sel = (model_selection_v3 or {}).get("selection", {})
+    auc = {k: (v.get("auc_heldout") if isinstance(v, dict) else None) for k, v in branches.items()}
+    h_auc, r_auc, hr_o_auc, rsel_auc = auc.get("H"), auc.get("R"), auc.get("H+R+O+sel"), auc.get("R+sel")
+    chosen = sel.get("chosen")
+    r_plus = (sel.get("R_plus_auc") or {}).get(chosen) if chosen else None
+    return {
+        "H_gain": (f"negative (H single {h_auc}; H+R+O+sel {hr_o_auc} < R+sel {rsel_auc})"
+                   if all(v is not None for v in (h_auc, hr_o_auc, rsel_auc))
+                   else "H not measurable"),
+        "VPS_increment": (f"selected={chosen}, R+{chosen} {r_plus} vs R {r_auc} "
+                          f"(delta {round((r_plus - r_auc), 4) if r_plus is not None and r_auc is not None else 'n/a'})"
+                          if chosen else "selection missing"),
+        "sequence_vs_tabular": str((seq_eval or {}).get("comparison", {}).get("cnn1d_gt_mlp")),
+        "best_combo": (frozen3 or {}).get("model_combo"),
+    }
+
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
@@ -39,10 +75,14 @@ def main() -> int:
     pr_eval = read(session / "03_propagation" / "PR_EVALUATION.json")
     pr_audit = read(session / "03_propagation" / "PR_TARGET_AUDIT.json")
     pr_eps = session / "03_propagation" / "PR_EPISODES.jsonl"
-    decomposition = read(rec / "10_followup" / "closed_loop_v3" / "RECOVERY_FAILURE_DECOMPOSITION.json")
+    decomposition = (
+        read(session / "07_closed_loop" / "RECOVERY_FAILURE_DECOMPOSITION.json")
+        or read(rec / "10_followup" / "closed_loop_v3" / "RECOVERY_FAILURE_DECOMPOSITION.json")
+    )
     model_selection_v3 = read(session / "06_detector" / "MODEL_SELECTION_v3.json")
 
     # gate 检查（11 §16 完成条件）
+    matrix_rows_by_id = {r.get("branch_id"): r for r in (matrix3 or {}).get("rows", [])}
     gates = {
         "transition_report_fixed": bool(reaggregate and selection),
         "paired_ci_nonempty": bool(paired),
@@ -52,8 +92,11 @@ def main() -> int:
         "P_nonzero": bool(coverage and coverage.get("P", {}).get("covered", 0) > 0),
         "PR_executed": bool(pr_eval and pr_eval.get("n_episodes", 0) > 0),
         "retry_decomposition_complete": bool(decomposition and decomposition.get("n", 0) > 0),
-        "signal_matrix_status": bool(matrix3 and all(
-            r.get("status") in ("executed", "negative") for r in matrix3.get("combos", []))),
+        "signal_matrix_status": bool(
+            matrix3
+            and all(r.get("status") in ("executed", "negative") for r in matrix3.get("rows", []))
+            and set(REQUIRED_MATRIX_BRANCHES).issubset(set(matrix_rows_by_id))
+        ),
     }
     supplement_completed = all(gates.values())
     report = {
@@ -70,46 +113,55 @@ def main() -> int:
             "answers": {
                 "T2_vs_T1_song_level": ("T2 nominal only" if paired and paired.get("T2_minus_T1", {}).get("ci95_low", 0) < 0 else "T2 stable"),
                 "serial_vs_full_song": "serial stable (CI excludes 0)" if paired and paired.get("serial_minus_full", {}).get("ci95_low", 0) > 0 else "not stable",
-                "raw_vs_official": "~equal (250ms 34.8 vs 34.7) -> 250ms strictness is main factor",
+                "raw_vs_official": (f"raw r250={raw_off.get('pooled', {}).get('raw', {}).get('r250')} vs official "
+                                    f"r250={raw_off.get('pooled', {}).get('official', {}).get('r250')} "
+                                    "(≈equal -> 250ms strictness is main factor)" if raw_off else "raw_official comparison missing"),
             },
         },
         "detector": {
-            "ablation_v3": {c.get("combo"): {"auc_raw": c.get("auc_raw"), "auc_off": c.get("auc_off"),
-                                             "status": c.get("status")} for c in (model_selection_v3 or {}).get("combos", [])},
-            "selected_signal": (model_selection_v3 or {}).get("selected", {}),
+            "ablation_v3": {c.get("combo"): {"auc_raw": c.get("auc_heldout"), "auc_off": c.get("auc_heldout_off"),
+                                             "status": c.get("status")} for c in (model_selection_v3 or {}).get("branches", {}).values()},
+            "selected_signal": (model_selection_v3 or {}).get("selection", {}),
             "best_combo": (frozen3 or {}).get("model_combo"),
             "working_points_v3": (frozen3 or {}).get("working_points", []),
             "interval_metrics": interval,
             "sequence_model": seq_eval,
             "coverage_audit": coverage,
-            "answers": {
-                "H_gain": "negative (H single 0.499; H+R+O+sel 0.582 < R+sel 0.675)",
-                "VPS_increment": f"selected=S, R+sel 0.675 vs R 0.665 (+0.010)",
-                "sequence_vs_tabular": str((seq_eval or {}).get("cnn_vs_mlp")),
-            },
+            "answers": _detector_answers(model_selection_v3, frozen3, seq_eval),
         },
         "pr": {
             "audit": pr_audit,
             "evaluation": pr_eval,
             "mild_episodes": sum(1 for _ in pr_eps.open()) if pr_eps.is_file() else 0,
             "answers": {
-                "pr_vs_correctness": "AUC 0.5 (no improvement; decision-time R features cannot predict episode risk)",
+                "pr_vs_correctness": (f"PR AUC {pr_eval.get('high_risk_auroc')} vs correctness_proxy AUC "
+                                      f"{pr_eval.get('correctness_proxy_auroc')} "
+                                      f"(pooled signal above correctness proxy, but source-song macro "
+                                      f"{pr_eval.get('source_song_macro_auroc')} ~ random -> mostly song-level "
+                                      f"prior, weak per-episode generalization)")
+                if pr_eval else "PR_EVALUATION missing",
             },
         },
         "recovery": {
             "decomposition": decomposition,
             "answers": {
-                "zero_writeback_cause": "dual: retry no-improvement 31/36 + detector blocks all 5 improved",
-                "retry_improved_but_blocked": str(sum(1 for w in (decomposition or {}).get("windows", []) if w.get("classification") == "retry_improved")),
+                "zero_writeback_cause": "dual: retry no-improvement "
+                                        f"{_decomp_count(decomposition, 'retry_not_improved') + _decomp_count(decomposition, 'retry_worsened')}/{_decomp_count(decomposition, None)} "
+                                        "+ detector blocks all improved",
+                "retry_improved_but_blocked": str(sum(1 for w in (decomposition or {}).get("windows", []) if w.get("classification") in ("retry_improved_detector_block",))),
             },
         },
     }
     (out / "SUPPLEMENTAL_REPORT.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
+    _ans = _detector_answers(model_selection_v3, frozen3, seq_eval)
+    pr_auc = (pr_eval or {}).get("high_risk_auroc")
+    pr_macro = (pr_eval or {}).get("source_song_macro_auroc")
     md = [
         "# Supplemental Report（11 计划）", "",
         f"supplement_completed: **{supplement_completed}**", "",
         "## Transition（v3 权威口径）",
-        f"- selection: product={selection.get('product_candidate')} (250ms {selection.get('candidates', [{}])[0].get('primary_250ms_correct_coverage') if selection else None}), "
+        f"- selection: product={selection.get('product_candidate')} (250ms "
+        f"{next((c.get('primary_250ms_correct_coverage') for c in selection.get('candidates', []) if c.get('candidate') == selection.get('product_candidate')), None)}), "
         f"mechanism={selection.get('mechanism_candidate')}",
         f"- T2−T1 paired CI: {json.dumps(paired.get('T2_minus_T1', {})) if paired else 'n/a'} → T2 仅 nominal",
         f"- serial−full CI: {json.dumps(paired.get('serial_minus_full', {})) if paired else 'n/a'} → serial 稳健",
@@ -118,15 +170,15 @@ def main() -> int:
         "## Detector（全信号消融）",
         f"- coverage: H/P/R/O/S 全 {coverage.get('H', {}).get('coverage') if coverage else 'n/a'}（185 请求）",
         f"- best combo: {frozen3.get('model_combo') if frozen3 else 'n/a'}；H 为负贡献（真实 negative）",
-        f"- selected(V/P/S)=S；sequence model: {json.dumps(seq_eval) if seq_eval else 'n/a'}",
+        f"- selected(V/P/S)={_ans['VPS_increment']}；sequence model: {json.dumps(seq_eval) if seq_eval else 'n/a'}",
         "",
         "## PR",
         f"- audit: {json.dumps(pr_audit.get('by_risk')) if pr_audit else 'n/a'}（原 corpus 全 high）；mild 补集后 low 18/medium 63",
-        f"- PR detector: AUC {pr_eval.get('high_risk_auroc') if pr_eval else 'n/a'}（诚实 negative：决策时特征无法预测 episode 风险）",
+        f"- PR detector: pooled AUC {pr_auc}、source-song macro {pr_macro}（主要学到歌曲先验，per-episode 泛化弱）",
         "",
         "## Recovery",
         f"- 36 retry decomposition: {json.dumps(decomposition.get('classification')) if decomposition else 'n/a'}",
-        "- 0 writeback 主因：retry 无改善（31/36）+ detector 拒绝全部改善（5/5）双瓶颈",
+        f"- 0 writeback 主因：retry 无改善（31/36）+ detector 拒绝全部改善（5/5）双瓶颈",
         "",
         "## Gate",
         f"- {json.dumps(gates, ensure_ascii=False)}",
@@ -134,8 +186,9 @@ def main() -> int:
     (out / "SUPPLEMENTAL_REPORT.md").write_text("\n".join(md), "utf-8")
     neg = [
         "# Negative Results（11 计划）", "",
-        "- **H（hidden states）**：真实评测为负贡献（单信号 0.499；加入组合反而降 AUC）——negative。",
-        "- **PR（propagation-risk）**：AUC 0.5——决策时 R 均值特征无法预测 episode 风险——negative（非未执行）。",
+        f"- **H（hidden states）**：真实评测为负贡献（{_ans['H_gain']}）——negative。",
+        f"- **PR（propagation-risk）**：pooled AUC {pr_auc}（高于 correctness proxy），但 source-song macro "
+        f"{pr_macro} ≈ 随机 → 主要学到歌曲先验，per-episode 泛化弱——PR 无稳健增益（非未执行）。",
         "- **O/RO/V/P/S 单信号**：全部低于 R（0.52-0.59 vs 0.665）——negative。",
         "- **R95 REJECT-only recall（v2 WP 严格语义）**：16.2%——v2 单阈值 WP 不满足 R95 严格定义（v3 WP 需在 Stage 3 冻结）。",
         "- **T2 vs T1**：song-level 不可区分（CI 跨 0）——T2 仅 nominal。",

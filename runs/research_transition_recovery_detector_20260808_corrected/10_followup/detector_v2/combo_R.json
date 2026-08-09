@@ -1,0 +1,25 @@
+{
+  "combo": "R",
+  "status": "executed",
+  "families": [
+    "R"
+  ],
+  "features_used": [
+    "raw_start_entropy",
+    "raw_end_entropy",
+    "raw_start_margin",
+    "raw_end_margin",
+    "raw_start_top1_probability",
+    "raw_end_top1_probability",
+    "raw_start_interval_gap_sec",
+    "raw_end_interval_gap_sec"
+  ],
+  "note": "raw 几何",
+  "auc_train": 0.7058600513926796,
+  "n_train": 7333,
+  "auc_heldout": 0.6378250792299324,
+  "n_heldout": 2661,
+  "n_grey_excluded": 704,
+  "threshold_role_n": 3137,
+  "judgement": "positive"
+}

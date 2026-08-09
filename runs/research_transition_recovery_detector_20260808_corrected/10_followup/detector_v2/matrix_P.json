@@ -1,0 +1,25 @@
+{
+  "family": "P",
+  "coverage": {
+    "n_units": 9495,
+    "n_available_rows": 0,
+    "coverage": 0.0,
+    "missing_fields": {
+      "start_second_peak_adjacent": 9495,
+      "end_top2_gap_sec": 9495,
+      "end_second_peak_ratio": 9495
+    },
+    "row_song_coverage": {
+      "n_units": 9495,
+      "n_songs": 26
+    },
+    "field_coverage": {
+      "start_top2_gap_sec": 1.0,
+      "start_second_peak_ratio": 1.0,
+      "start_second_peak_adjacent": 0.0,
+      "end_top2_gap_sec": 0.0,
+      "end_second_peak_ratio": 0.0
+    },
+    "missing_reasons": []
+  }
+}

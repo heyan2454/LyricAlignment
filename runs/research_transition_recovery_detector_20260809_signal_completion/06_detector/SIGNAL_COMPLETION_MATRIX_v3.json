@@ -1,0 +1,274 @@
+{
+  "schema_version": "safe100_grey100_250_unsafe250_structural_v1",
+  "status_allowed": [
+    "executed",
+    "negative"
+  ],
+  "selected_vps": "V",
+  "note": "H/P evidence 实际进入特征（coverage>0），禁止 blocked_api/not_executed/planned",
+  "rows": [
+    {
+      "branch_id": "H",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_h"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.7465,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 22,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "R",
+      "status": "executed",
+      "input_artifacts": [
+        "evidence_r"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.9973,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 8,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "O",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_o"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 5,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "RO",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_ro"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 3,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "V",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_v"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.3001,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 2,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "P",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_p"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 2,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "S",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_s"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.9893,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 5,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "H+R",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_h",
+        "evidence_r"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.7465,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 30,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "H+O",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_h",
+        "evidence_o"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 27,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "R+O",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_r",
+        "evidence_o",
+        "evidence_ro"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 16,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "H+R+O",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_h",
+        "evidence_r",
+        "evidence_o",
+        "evidence_ro"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 38,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "R+sel",
+      "status": "executed",
+      "input_artifacts": [
+        "evidence_r",
+        "evidence_v"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.3001,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 10,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "H+R+O+sel",
+      "status": "negative",
+      "input_artifacts": [
+        "evidence_h",
+        "evidence_r",
+        "evidence_o",
+        "evidence_ro",
+        "evidence_v"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": 0.0,
+      "coverage_definition": "min family coverage in detector_train (all requested fields present per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+      "features_used_count": 40,
+      "metrics_artifact": "MODEL_SELECTION_v3.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "sequence_model",
+      "status": "executed",
+      "input_artifacts": [
+        "sequence features of R+sel"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 9495,
+      "n_intervals": 26,
+      "coverage": null,
+      "metrics_artifact": "SEQUENCE_MODEL_EVAL.json",
+      "failure_reason": null
+    },
+    {
+      "branch_id": "PR",
+      "status": "negative",
+      "input_artifacts": [
+        "PR_EVALUATION.json (R-family decision-time features)"
+      ],
+      "n_train_songs": 26,
+      "n_val_songs": 9,
+      "n_test_songs": 10,
+      "n_units": 252,
+      "n_intervals": null,
+      "coverage": null,
+      "metrics_artifact": "PR_EVALUATION.json",
+      "failure_reason": null
+    }
+  ]
+}

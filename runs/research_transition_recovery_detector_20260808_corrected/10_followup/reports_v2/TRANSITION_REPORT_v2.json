@@ -1,0 +1,324 @@
+{
+  "scope": "development_selection (model_selection)",
+  "primary_250ms_correct_coverage": [
+    {
+      "transition": "T1_direct_serial",
+      "kind": "serial",
+      "n_songs": 9,
+      "evaluated": 3374,
+      "total": 3374,
+      "committed_coverage": 1.0,
+      "safe": 549,
+      "grey": 788,
+      "unsafe": 2037,
+      "no_gt": 0,
+      "legacy_320ms_count": 1655,
+      "legacy_320ms_committed_rate": 0.490515708358032,
+      "correct_100ms": 549,
+      "correct_rate_100ms_committed": 0.16271487848251334,
+      "correct_coverage_100ms": 0.16271487848251334,
+      "correct_250ms": 1337,
+      "correct_rate_250ms_committed": 0.3962655601659751,
+      "correct_coverage_250ms": 0.3962655601659751,
+      "correct_500ms": 2258,
+      "correct_rate_500ms_committed": 0.6692353289863663,
+      "correct_coverage_500ms": 0.6692353289863663,
+      "correct_1000ms": 2947,
+      "correct_rate_1000ms_committed": 0.8734439834024896,
+      "correct_coverage_1000ms": 0.8734439834024896
+    },
+    {
+      "transition": "T2_core_boundary_serial",
+      "kind": "serial",
+      "n_songs": 9,
+      "evaluated": 3374,
+      "total": 3374,
+      "committed_coverage": 1.0,
+      "safe": 549,
+      "grey": 804,
+      "unsafe": 2021,
+      "no_gt": 0,
+      "legacy_320ms_count": 1674,
+      "legacy_320ms_committed_rate": 0.4961470065204505,
+      "correct_100ms": 549,
+      "correct_rate_100ms_committed": 0.16271487848251334,
+      "correct_coverage_100ms": 0.16271487848251334,
+      "correct_250ms": 1353,
+      "correct_rate_250ms_committed": 0.4010077059869591,
+      "correct_coverage_250ms": 0.4010077059869591,
+      "correct_500ms": 2277,
+      "correct_rate_500ms_committed": 0.6748666271487849,
+      "correct_coverage_500ms": 0.6748666271487849,
+      "correct_1000ms": 2972,
+      "correct_rate_1000ms_committed": 0.8808535862477771,
+      "correct_coverage_1000ms": 0.8808535862477771
+    },
+    {
+      "transition": "T3_stable_boundary_serial",
+      "kind": "serial",
+      "n_songs": 9,
+      "evaluated": 998,
+      "total": 3374,
+      "committed_coverage": 0.2957913455838767,
+      "safe": 143,
+      "grey": 231,
+      "unsafe": 624,
+      "no_gt": 0,
+      "legacy_320ms_count": 478,
+      "legacy_320ms_committed_rate": 0.4789579158316633,
+      "correct_100ms": 143,
+      "correct_rate_100ms_committed": 0.1432865731462926,
+      "correct_coverage_100ms": 0.04238292827504446,
+      "correct_250ms": 374,
+      "correct_rate_250ms_committed": 0.374749498997996,
+      "correct_coverage_250ms": 0.11084765856550088,
+      "correct_500ms": 682,
+      "correct_rate_500ms_committed": 0.6833667334669339,
+      "correct_coverage_500ms": 0.2021339656194428,
+      "correct_1000ms": 903,
+      "correct_rate_1000ms_committed": 0.9048096192384769,
+      "correct_coverage_1000ms": 0.2676348547717842
+    },
+    {
+      "transition": "full_song",
+      "kind": "full_song",
+      "n_songs": 9,
+      "evaluated": 3374,
+      "total": 3374,
+      "committed_coverage": 1.0,
+      "safe": 414,
+      "grey": 648,
+      "unsafe": 2312,
+      "no_gt": 0,
+      "legacy_320ms_count": 1310,
+      "legacy_320ms_committed_rate": 0.3882631890930646,
+      "correct_100ms": 414,
+      "correct_rate_100ms_committed": 0.12270302311796087,
+      "correct_coverage_100ms": 0.12270302311796087,
+      "correct_250ms": 1062,
+      "correct_rate_250ms_committed": 0.3147599288678127,
+      "correct_coverage_250ms": 0.3147599288678127,
+      "correct_500ms": 1802,
+      "correct_rate_500ms_committed": 0.5340841730883225,
+      "correct_coverage_500ms": 0.5340841730883225,
+      "correct_1000ms": 2377,
+      "correct_rate_1000ms_committed": 0.7045050385299348,
+      "correct_coverage_1000ms": 0.7045050385299348
+    }
+  ],
+  "selection": {
+    "schema_version": "authoritative_transition_selection_v2",
+    "role": "model_selection",
+    "scope": "development_selection",
+    "derived_from_data": true,
+    "primary_metric": "250ms correct coverage over ALL target units",
+    "candidates": [
+      {
+        "candidate": "T1_direct_serial",
+        "kind": "serial",
+        "primary_250ms_correct_coverage": 0.3962655601659751,
+        "correct_250ms": 1337,
+        "evaluated": 3374,
+        "total": 3374,
+        "wrong_committed_250ms": 0
+      },
+      {
+        "candidate": "T2_core_boundary_serial",
+        "kind": "serial",
+        "primary_250ms_correct_coverage": 0.4010077059869591,
+        "correct_250ms": 1353,
+        "evaluated": 3374,
+        "total": 3374,
+        "wrong_committed_250ms": 0
+      },
+      {
+        "candidate": "T3_stable_boundary_serial",
+        "kind": "serial",
+        "primary_250ms_correct_coverage": 0.11084765856550088,
+        "correct_250ms": 374,
+        "evaluated": 998,
+        "total": 3374,
+        "wrong_committed_250ms": 0
+      },
+      {
+        "candidate": "full_song",
+        "kind": "full_song",
+        "primary_250ms_correct_coverage": 0.3147599288678127,
+        "correct_250ms": 1062,
+        "evaluated": 3374,
+        "total": 3374,
+        "wrong_committed_250ms": 2312
+      }
+    ],
+    "product_candidate": "T2_core_boundary_serial",
+    "mechanism_candidate": "full_song",
+    "rationale": {
+      "product": "highest 250ms correct coverage (denominator=total target units): 0.401",
+      "mechanism": "largest wrong-committed count at 250ms: 2312"
+    }
+  },
+  "crosscheck_vs_formal": [
+    {
+      "song_id": "newboy",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "你给我听好",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "内疚",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "圣诞结",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "宿敌",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "左边",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "我们都太倔强",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "最后一页",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "歌颂者",
+      "transition": "T3_stable_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "newboy",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "你给我听好",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "内疚",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "圣诞结",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "宿敌",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "左边",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "我们都太倔强",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "最后一页",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "歌颂者",
+      "transition": "T1_direct_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "newboy",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "你给我听好",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "内疚",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "圣诞结",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "宿敌",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "左边",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "我们都太倔强",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "最后一页",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    },
+    {
+      "song_id": "歌颂者",
+      "transition": "T2_core_boundary_serial",
+      "consistent": true,
+      "diffs": {}
+    }
+  ]
+}

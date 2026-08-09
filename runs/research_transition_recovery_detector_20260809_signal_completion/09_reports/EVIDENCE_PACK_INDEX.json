@@ -1,0 +1,120 @@
+{
+  "schema_version": "evidence_pack_v3_index",
+  "pack_dir": "runs/research_transition_recovery_detector_20260809_signal_completion/evidence_pack",
+  "archive": "evidence_pack.tar.gz",
+  "note": "11/12 计划补充实验完整 review 证据：Transition v3 权威口径 + Detector v3 全信号消融 + PR + retry decomposition",
+  "n_files": 22,
+  "total_bytes": 2605302,
+  "files": [
+    {
+      "path": "00_plans/11_SUPPLEMENTAL_SIGNAL_COMPLETION_PLAN_20260809.md",
+      "size_bytes": 26533,
+      "sha256": "5024db01ecae9590"
+    },
+    {
+      "path": "00_plans/12_SIGNAL_COMPLETION_IMPLEMENTATION_BLUEPRINT_20260809.md",
+      "size_bytes": 10299,
+      "sha256": "1632c336d244a983"
+    },
+    {
+      "path": "00_plans/13_SUPPLEMENTAL_RESULTS_20260809.md",
+      "size_bytes": 2900,
+      "sha256": "d5228b6588377d42"
+    },
+    {
+      "path": "01_transition/AUTHORITATIVE_TRANSITION_SELECTION_v3.json",
+      "size_bytes": 1420,
+      "sha256": "4b61893803ddabc3"
+    },
+    {
+      "path": "01_transition/RAW_OFFICIAL_TIMING_COMPARISON.json",
+      "size_bytes": 4971,
+      "sha256": "59f55dbc8caea92e"
+    },
+    {
+      "path": "01_transition/REAGGREGATE_v3_model_selection.json",
+      "size_bytes": 23647,
+      "sha256": "01b247e56aa91559"
+    },
+    {
+      "path": "01_transition/TRANSITION_PAIRED_BY_SONG.json",
+      "size_bytes": 442,
+      "sha256": "7463978bcfe82f4c"
+    },
+    {
+      "path": "02_detector/EVIDENCE_SCHEMA_v3.json",
+      "size_bytes": 379,
+      "sha256": "ae7c361fe269f521"
+    },
+    {
+      "path": "02_detector/FROZEN_WORKING_POINTS_v3.json",
+      "size_bytes": 2566,
+      "sha256": "852f26e01a2f35ad"
+    },
+    {
+      "path": "02_detector/INTERVAL_METRICS_REPRODUCIBLE.json",
+      "size_bytes": 5456,
+      "sha256": "5c12af1896cce538"
+    },
+    {
+      "path": "02_detector/MODEL_SELECTION_v3.json",
+      "size_bytes": 2418262,
+      "sha256": "4c74064d7e2c6e87"
+    },
+    {
+      "path": "02_detector/RO_SIGNAL_ATLAS.json",
+      "size_bytes": 13467,
+      "sha256": "02fc81f6d1010478"
+    },
+    {
+      "path": "02_detector/SEQUENCE_MODEL_EVAL.json",
+      "size_bytes": 868,
+      "sha256": "273ecffc0d64d5e2"
+    },
+    {
+      "path": "02_detector/SIGNAL_COMPLETION_MATRIX_v3.json",
+      "size_bytes": 8835,
+      "sha256": "a887db1594fd0267"
+    },
+    {
+      "path": "02_detector/SIGNAL_COVERAGE_AUDIT.json",
+      "size_bytes": 612,
+      "sha256": "d49fb5aed9c86a3b"
+    },
+    {
+      "path": "03_propagation/PR_EPISODES.jsonl",
+      "size_bytes": 39098,
+      "sha256": "85a5bfb30dbed0c8"
+    },
+    {
+      "path": "03_propagation/PR_EVALUATION.json",
+      "size_bytes": 481,
+      "sha256": "5f29364cff7b5f1b"
+    },
+    {
+      "path": "03_propagation/PR_TARGET_AUDIT.json",
+      "size_bytes": 358,
+      "sha256": "393ea5f852fbbed7"
+    },
+    {
+      "path": "04_closed_loop/RECOVERY_FAILURE_DECOMPOSITION.json",
+      "size_bytes": 8617,
+      "sha256": "b548c5e0cb428567"
+    },
+    {
+      "path": "05_reports/NEGATIVE_RESULTS.md",
+      "size_bytes": 828,
+      "sha256": "9066a5b843870887"
+    },
+    {
+      "path": "05_reports/SUPPLEMENTAL_REPORT.json",
+      "size_bytes": 32901,
+      "sha256": "ac6b6c523de5a3b3"
+    },
+    {
+      "path": "05_reports/SUPPLEMENTAL_REPORT.md",
+      "size_bytes": 2362,
+      "sha256": "e92f83b1ac3372b3"
+    }
+  ]
+}

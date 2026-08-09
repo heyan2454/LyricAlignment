@@ -1,0 +1,51 @@
+{
+  "schema_version": "authoritative_transition_selection_v2",
+  "role": "model_selection",
+  "scope": "development_selection",
+  "derived_from_data": true,
+  "primary_metric": "250ms correct coverage over ALL target units",
+  "candidates": [
+    {
+      "candidate": "T1_direct_serial",
+      "kind": "serial",
+      "primary_250ms_correct_coverage": 0.3962655601659751,
+      "correct_250ms": 1337,
+      "evaluated": 3374,
+      "total": 3374,
+      "wrong_committed_250ms": 0
+    },
+    {
+      "candidate": "T2_core_boundary_serial",
+      "kind": "serial",
+      "primary_250ms_correct_coverage": 0.4010077059869591,
+      "correct_250ms": 1353,
+      "evaluated": 3374,
+      "total": 3374,
+      "wrong_committed_250ms": 0
+    },
+    {
+      "candidate": "T3_stable_boundary_serial",
+      "kind": "serial",
+      "primary_250ms_correct_coverage": 0.11084765856550088,
+      "correct_250ms": 374,
+      "evaluated": 998,
+      "total": 3374,
+      "wrong_committed_250ms": 0
+    },
+    {
+      "candidate": "full_song",
+      "kind": "full_song",
+      "primary_250ms_correct_coverage": 0.3147599288678127,
+      "correct_250ms": 1062,
+      "evaluated": 3374,
+      "total": 3374,
+      "wrong_committed_250ms": 2312
+    }
+  ],
+  "product_candidate": "T2_core_boundary_serial",
+  "mechanism_candidate": "full_song",
+  "rationale": {
+    "product": "highest 250ms correct coverage (denominator=total target units): 0.401",
+    "mechanism": "largest wrong-committed count at 250ms: 2312"
+  }
+}

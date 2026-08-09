@@ -1,0 +1,26 @@
+{
+  "family": "S",
+  "coverage": {
+    "n_units": 9495,
+    "n_available_rows": 9417,
+    "coverage": 0.9918,
+    "missing_fields": {
+      "start_velocity_sec": 52,
+      "start_acceleration_sec": 78,
+      "gap_overlap_sec": 26
+    },
+    "row_song_coverage": {
+      "n_units": 9495,
+      "n_songs": 26
+    },
+    "field_coverage": {
+      "raw_zero_duration_flag": 1.0,
+      "start_velocity_sec": 0.9945234333859926,
+      "start_acceleration_sec": 0.9917851500789889,
+      "gap_overlap_sec": 0.9972617166929963,
+      "compression_run_len": 1.0,
+      "zero_duration_run_len": 1.0
+    },
+    "missing_reasons": []
+  }
+}

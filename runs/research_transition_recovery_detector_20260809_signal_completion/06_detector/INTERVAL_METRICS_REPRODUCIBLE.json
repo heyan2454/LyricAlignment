@@ -1,0 +1,183 @@
+{
+  "schema_version": "interval_metrics_reproducible_v1",
+  "inputs": {
+    "prediction_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260809_signal_completion/06_detector/_eval_v3_threshold.json",
+    "threshold_artifact": "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260809_signal_completion/06_detector/_frozen_v3_for_intervals.json",
+    "target": "raw",
+    "split": "threshold_validation",
+    "label_definition": "Safe<=100ms Grey(100,250] Unsafe>250ms; Grey excluded from binary",
+    "intervalization_rule_hash": "9ad2d4b8bfc07248",
+    "C3_denominator_note": "C3.n_unsafe 为 intervalization 后的 unsafe unit 计数（unit 可跨 interval 重复），与 FROZEN_WORKING_POINTS 的全体 unsafe 单元基数不同；unsafe_reject 为 REJECT-only recall"
+  },
+  "working_points": {
+    "SA60": {
+      "n_intervals": 1202,
+      "interval_states": {
+        "ACCEPT": 597,
+        "REJECT": 4,
+        "UNCERTAIN": 601
+      },
+      "interval_len_mean": 2.61,
+      "interval_len_median": 2,
+      "C1": {
+        "reject_only": {
+          "intervals_with_unsafe": 1070,
+          "captured_100pct": 4,
+          "captured_75pct": 4
+        },
+        "reject_plus_uncertain": {
+          "intervals_with_unsafe": 1070,
+          "captured_100pct": 457,
+          "captured_75pct": 494
+        },
+        "unit_unsafe_recall_reject_only": 0.0015,
+        "unit_unsafe_recall_reject_plus_uncertain": 0.6416
+      },
+      "C2": {
+        "safe_accept_rate": 0.5995,
+        "safe_reject_rate": 0.0,
+        "safe_uncertain_rate": 0.4005,
+        "safe_intervals_shattered": 148,
+        "longest_unsafe_accept_run": 7
+      },
+      "C3": {
+        "safe_accept": 0.5995,
+        "unsafe_reject": 0.0015,
+        "uncertain_rate": 0.6063,
+        "n_safe": 442,
+        "n_unsafe": 2695,
+        "n_grey_excluded": 678
+      },
+      "t_accept": 0.7614572538378281,
+      "t_reject": 1.0
+    },
+    "SA80": {
+      "n_intervals": 1034,
+      "interval_states": {
+        "ACCEPT": 513,
+        "REJECT": 4,
+        "UNCERTAIN": 517
+      },
+      "interval_len_mean": 3.03,
+      "interval_len_median": 2,
+      "C1": {
+        "reject_only": {
+          "intervals_with_unsafe": 957,
+          "captured_100pct": 4,
+          "captured_75pct": 4
+        },
+        "reject_plus_uncertain": {
+          "intervals_with_unsafe": 957,
+          "captured_100pct": 435,
+          "captured_75pct": 450
+        },
+        "unit_unsafe_recall_reject_only": 0.0015,
+        "unit_unsafe_recall_reject_plus_uncertain": 0.4935
+      },
+      "C2": {
+        "safe_accept_rate": 0.7986,
+        "safe_reject_rate": 0.0,
+        "safe_uncertain_rate": 0.2014,
+        "safe_intervals_shattered": 86,
+        "longest_unsafe_accept_run": 11
+      },
+      "C3": {
+        "safe_accept": 0.7986,
+        "unsafe_reject": 0.0015,
+        "uncertain_rate": 0.4511,
+        "n_safe": 442,
+        "n_unsafe": 2695,
+        "n_grey_excluded": 678
+      },
+      "t_accept": 0.816831254630993,
+      "t_reject": 1.0
+    },
+    "R95": {
+      "n_intervals": 328,
+      "interval_states": {
+        "ACCEPT": 0,
+        "REJECT": 164,
+        "UNCERTAIN": 164
+      },
+      "interval_len_mean": 9.56,
+      "interval_len_median": 2,
+      "C1": {
+        "reject_only": {
+          "intervals_with_unsafe": 288,
+          "captured_100pct": 65,
+          "captured_75pct": 137
+        },
+        "reject_plus_uncertain": {
+          "intervals_with_unsafe": 288,
+          "captured_100pct": 187,
+          "captured_75pct": 259
+        },
+        "unit_unsafe_recall_reject_only": 0.9432,
+        "unit_unsafe_recall_reject_plus_uncertain": 1.0
+      },
+      "C2": {
+        "safe_accept_rate": 0.0,
+        "safe_reject_rate": 0.8982,
+        "safe_uncertain_rate": 0.1018,
+        "safe_intervals_shattered": 141,
+        "longest_unsafe_accept_run": 0
+      },
+      "C3": {
+        "safe_accept": 0.0,
+        "unsafe_reject": 0.9432,
+        "uncertain_rate": 0.0631,
+        "n_safe": 442,
+        "n_unsafe": 2695,
+        "n_grey_excluded": 678
+      },
+      "t_accept": 0.0,
+      "t_reject": 0.6516219285056899
+    },
+    "SA60+R95_joint": {
+      "n_intervals": 1194,
+      "interval_states": {
+        "ACCEPT": 597,
+        "REJECT": 597,
+        "UNCERTAIN": 0
+      },
+      "interval_len_mean": 2.63,
+      "interval_len_median": 2,
+      "C1": {
+        "reject_only": {
+          "intervals_with_unsafe": 1062,
+          "captured_100pct": 450,
+          "captured_75pct": 486
+        },
+        "reject_plus_uncertain": {
+          "intervals_with_unsafe": 1062,
+          "captured_100pct": 450,
+          "captured_75pct": 486
+        },
+        "unit_unsafe_recall_reject_only": 0.6416,
+        "unit_unsafe_recall_reject_plus_uncertain": 0.6416
+      },
+      "C2": {
+        "safe_accept_rate": 0.5995,
+        "safe_reject_rate": 0.4005,
+        "safe_uncertain_rate": 0.0,
+        "safe_intervals_shattered": 147,
+        "longest_unsafe_accept_run": 7
+      },
+      "C3": {
+        "safe_accept": 0.5995,
+        "unsafe_reject": 0.6416,
+        "uncertain_rate": 0.0,
+        "n_safe": 442,
+        "n_unsafe": 2695,
+        "n_grey_excluded": 678
+      },
+      "t_accept": 0.7614572538378281,
+      "t_reject": 0.6516219285056899
+    }
+  },
+  "joint_sa60_r95": {
+    "feasible": false,
+    "max_safe_accept_at_r95": 0.0,
+    "max_unsafe_reject_at_sa60": 0.0015
+  }
+}

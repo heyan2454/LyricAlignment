@@ -48,9 +48,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 127,
+      "jumps": null,
       "total": 127,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -108,9 +109,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 126,
+      "jumps": null,
       "total": 126,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -168,9 +170,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 75,
+      "jumps": null,
       "total": 75,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -228,9 +231,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 141,
+      "jumps": null,
       "total": 141,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -288,9 +292,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 100,
+      "jumps": null,
       "total": 100,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -348,9 +353,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 128,
+      "jumps": null,
       "total": 128,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -408,9 +414,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 97,
+      "jumps": null,
       "total": 97,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -468,9 +475,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 109,
+      "jumps": null,
       "total": 109,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -528,9 +536,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 95,
+      "jumps": null,
       "total": 95,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -587,9 +596,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 443,
+      "jumps": null,
       "total": 443,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -646,9 +656,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 434,
+      "jumps": null,
       "total": 434,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -705,9 +716,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 289,
+      "jumps": null,
       "total": 289,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -764,9 +776,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 463,
+      "jumps": null,
       "total": 463,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -823,9 +836,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 321,
+      "jumps": null,
       "total": 321,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -882,9 +896,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 421,
+      "jumps": null,
       "total": 421,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -941,9 +956,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 359,
+      "jumps": null,
       "total": 359,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1000,9 +1016,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 318,
+      "jumps": null,
       "total": 318,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1059,9 +1076,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 326,
+      "jumps": null,
       "total": 326,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1118,9 +1136,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 443,
+      "jumps": null,
       "total": 443,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1177,9 +1196,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 434,
+      "jumps": null,
       "total": 434,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1236,9 +1256,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 289,
+      "jumps": null,
       "total": 289,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1295,9 +1316,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 463,
+      "jumps": null,
       "total": 463,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1354,9 +1376,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 321,
+      "jumps": null,
       "total": 321,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1413,9 +1436,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 421,
+      "jumps": null,
       "total": 421,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1472,9 +1496,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 359,
+      "jumps": null,
       "total": 359,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1531,9 +1556,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 318,
+      "jumps": null,
       "total": 318,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,
@@ -1590,9 +1616,10 @@
       "missing_ids": []
     },
     "occurrence": {
-      "jumps": 326,
+      "jumps": null,
       "total": 326,
-      "jump_rate": 1.0
+      "jump_rate": null,
+      "note": "not_applicable: GT schema 无 occurrence"
     },
     "cost": {
       "windows": 4,

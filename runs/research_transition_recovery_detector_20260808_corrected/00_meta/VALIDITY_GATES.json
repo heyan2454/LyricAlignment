@@ -45,11 +45,11 @@
     "corruption": 162,
     "natural": 9,
     "recovery": {
-      "amplifying": 114,
-      "persistent": 54,
-      "occurrence_jump": 3
+      "amplifying": 98,
+      "persistent": 58,
+      "occurrence_jump": 15
     },
     "no_effect": 0,
-    "note": "continuation 语义（不重放窗 0），occurrence_jump 用 error_sec>10s 判定"
+    "note": "continuation 语义（不重放窗 0），occurrence_jump 用 error_sec>10s 判定；P0-2 修复后按 state_before 链式还原各 spec 轨迹重算"
   }
 }

@@ -1,0 +1,342 @@
+{
+  "schema_version": "recovery_failure_decomposition_v1",
+  "n": 36,
+  "classification": {
+    "retry_worsened": 4,
+    "retry_not_improved": 27,
+    "retry_improved_detector_accept": 3,
+    "retry_improved_detector_block": 2
+  },
+  "windows": [
+    {
+      "song_id": "newboy",
+      "window_index": 0,
+      "before_250ms": 0.6,
+      "after_250ms": 0.0,
+      "classification": "retry_worsened",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "newboy",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "newboy",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "newboy",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "你给我听好",
+      "window_index": 0,
+      "before_250ms": 0.38,
+      "after_250ms": 0.5,
+      "classification": "retry_improved_detector_accept",
+      "retry_writeback_commits": [
+        4
+      ],
+      "gate_c_ok": true
+    },
+    {
+      "song_id": "你给我听好",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "你给我听好",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "你给我听好",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "内疚",
+      "window_index": 0,
+      "before_250ms": 0.3,
+      "after_250ms": 0.4,
+      "classification": "retry_improved_detector_accept",
+      "retry_writeback_commits": [
+        1
+      ],
+      "gate_c_ok": true
+    },
+    {
+      "song_id": "内疚",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "内疚",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "内疚",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "圣诞结",
+      "window_index": 0,
+      "before_250ms": 0.2,
+      "after_250ms": 0.3333,
+      "classification": "retry_improved_detector_accept",
+      "retry_writeback_commits": [
+        3
+      ],
+      "gate_c_ok": true
+    },
+    {
+      "song_id": "圣诞结",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "圣诞结",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "圣诞结",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "宿敌",
+      "window_index": 0,
+      "before_250ms": 0.2,
+      "after_250ms": 0.5,
+      "classification": "retry_improved_detector_block",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "宿敌",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "宿敌",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "宿敌",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "左边",
+      "window_index": 0,
+      "before_250ms": 0.42,
+      "after_250ms": 1.0,
+      "classification": "retry_improved_detector_block",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "左边",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "左边",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "左边",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "我们都太倔强",
+      "window_index": 0,
+      "before_250ms": 0.4,
+      "after_250ms": 0.0,
+      "classification": "retry_worsened",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "我们都太倔强",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "我们都太倔强",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "我们都太倔强",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "最后一页",
+      "window_index": 0,
+      "before_250ms": 0.44,
+      "after_250ms": 0.25,
+      "classification": "retry_worsened",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "最后一页",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "最后一页",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "最后一页",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "歌颂者",
+      "window_index": 0,
+      "before_250ms": 0.28,
+      "after_250ms": 0.0,
+      "classification": "retry_worsened",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "歌颂者",
+      "window_index": 1,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "歌颂者",
+      "window_index": 2,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    },
+    {
+      "song_id": "歌颂者",
+      "window_index": 3,
+      "before_250ms": 0.0,
+      "after_250ms": 0.0,
+      "classification": "retry_not_improved",
+      "retry_writeback_commits": [],
+      "gate_c_ok": false
+    }
+  ]
+}

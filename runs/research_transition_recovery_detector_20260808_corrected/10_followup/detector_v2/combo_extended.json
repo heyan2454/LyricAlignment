@@ -1,0 +1,37 @@
+{
+  "combo": "extended",
+  "status": "executed",
+  "families": [
+    "legacy8",
+    "V",
+    "S"
+  ],
+  "features_used": [
+    "raw_start_entropy",
+    "raw_end_entropy",
+    "raw_start_margin",
+    "raw_end_margin",
+    "raw_start_top1_probability",
+    "raw_end_top1_probability",
+    "raw_official_start_diff_sec",
+    "start_top2_gap_sec",
+    "v_n_observations",
+    "v_start_displacement_sec",
+    "v_start_std_sec",
+    "v_start_top1_std",
+    "raw_zero_duration_flag",
+    "start_velocity_sec",
+    "start_acceleration_sec",
+    "gap_overlap_sec",
+    "compression_run_len",
+    "zero_duration_run_len"
+  ],
+  "note": "legacy8+V+S",
+  "auc_train": 0.7474056709839899,
+  "n_train": 6775,
+  "auc_heldout": 0.6276902528610023,
+  "n_heldout": 2392,
+  "n_grey_excluded": 704,
+  "threshold_role_n": 3137,
+  "judgement": "positive"
+}

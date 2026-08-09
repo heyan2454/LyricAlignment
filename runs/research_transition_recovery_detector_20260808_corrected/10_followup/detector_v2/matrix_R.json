@@ -1,0 +1,27 @@
+{
+  "family": "R",
+  "coverage": {
+    "n_units": 9495,
+    "n_available_rows": 9469,
+    "coverage": 0.9973,
+    "missing_fields": {
+      "raw_start_interval_gap_sec": 26,
+      "raw_end_interval_gap_sec": 26
+    },
+    "row_song_coverage": {
+      "n_units": 9495,
+      "n_songs": 26
+    },
+    "field_coverage": {
+      "raw_start_entropy": 1.0,
+      "raw_end_entropy": 1.0,
+      "raw_start_margin": 1.0,
+      "raw_end_margin": 1.0,
+      "raw_start_top1_probability": 1.0,
+      "raw_end_top1_probability": 1.0,
+      "raw_start_interval_gap_sec": 0.9972617166929963,
+      "raw_end_interval_gap_sec": 0.9972617166929963
+    },
+    "missing_reasons": []
+  }
+}

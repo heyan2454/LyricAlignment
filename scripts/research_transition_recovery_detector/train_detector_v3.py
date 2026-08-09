@@ -237,12 +237,16 @@ def _unit_p_request(pinfo: dict, n_units: int, base_dirs: list[Path]) -> list[di
     return out
 
 
-def _s_features(sinfo: dict | None, song_intervals: list[float]) -> dict[str, float | None]:
+def _s_features(sinfo: dict | None, song_intervals_prefix: list[float]) -> dict[str, float | None]:
+    """S 族特征。song_intervals_prefix 必须只含当前及过去 unit 的 interval（禁止未来泄漏）。
+
+    12 蓝图要求 S 仅用当前及过去 evidence；rolling 统计基于前缀数组计算，不含未来 unit。
+    """
     if sinfo is None:
         return {n: None for n in S_NAMES}
     iv = _num(sinfo.get("interval_sec"))
     flag = sinfo.get("velocity_flag")
-    arr = np.asarray([x for x in song_intervals if x is not None], dtype=float)
+    arr = np.asarray([x for x in song_intervals_prefix if x is not None], dtype=float)
     return {
         "s_interval_sec": iv,
         "s_velocity_flag": (1.0 if flag == "ok" else (0.0 if flag else None)),
@@ -383,7 +387,7 @@ def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline
             pu = p_unit[uidx] if (uidx is not None and uidx < len(p_unit)) else {"p_unit_top2_gap": None}
             hu = hf[uidx] if (uidx is not None and uidx < len(hf)) else {n: None for n in H_NAMES}
             feats = {**per_row[idx], **v_feats.get(cid, {}),
-                     **_s_features(traj_by_key.get((song_id, cid)), song_intervals),
+                     **_s_features(traj_by_key.get((song_id, cid)), song_intervals[:idx + 1]),
                      **p_req, **pu, **hu}
             features.append(feats)
             ro = rowobjs[idx]
@@ -403,6 +407,7 @@ def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline
         "n_unsafe_off": sum(1 for l in labels_off if l == 2),
         "n_unlabeled": sum(1 for l in labels_raw if l is None),
         "label_schema": LABEL_SCHEMA,
+        "rows": meta_rows,
     }
     return meta, features, labels_raw, labels_off, cov
 
@@ -520,6 +525,7 @@ def _mlp_sequence_eval(train_feats, train_bin, ev_feats, ev_bin, names, meta_tra
              for fam in fams for nm in FAMILIES[fam]}
     names = tuple(n for n in names if avail.get(n, 0.0) >= 0.9)
     res["input_features"] = list(names)
+    m: dict | None = None
     try:
         model, scaler, tr = train_mlp(train_feats, train_bin, feature_names=names)
         ev_probs = predict_p_bad({"model": model, "scaler": scaler}, ev_feats, names)
@@ -533,9 +539,10 @@ def _mlp_sequence_eval(train_feats, train_bin, ev_feats, ev_bin, names, meta_tra
         import torch.nn as nn
 
         def seq_songs(feats, meta):
+            meta_rows = meta.get("rows") if isinstance(meta, dict) else meta
             out = []
-            for s in sorted({r["song_id"] for r in meta}):
-                idx = [i for i, r in enumerate(meta) if r["song_id"] == s]
+            for s in sorted({r["song_id"] for r in meta_rows}):
+                idx = [i for i, r in enumerate(meta_rows) if r["song_id"] == s]
                 X = np.asarray([[0.0 if feats[i].get(nm) is None else float(feats[i].get(nm))
                                  for nm in names] for i in idx], dtype=np.float32)
                 out.append((s, idx, X))
@@ -556,15 +563,15 @@ def _mlp_sequence_eval(train_feats, train_bin, ev_feats, ev_bin, names, meta_tra
             for s, idx, X in tr_songs:
                 y = _label_arrays(train_bin, idx)
                 nan = np.isnan(y)
-                if not nan.any():
+                if nan.all():
                     continue
                 xt = torch.from_numpy(np.pad(X, ((0, max_len - len(X)), (0, 0)))).unsqueeze(0).permute(0, 2, 1)
                 logits = head(torch.relu(conv(xt))).squeeze(0).squeeze(0)
                 yt = torch.from_numpy(np.where(nan, 0.0, y))[:len(X)]
-                m = torch.from_numpy((~nan).astype(np.float32))
-                loss = (loss_fn(logits[:len(X)], yt) * m).sum()
+                msk = torch.from_numpy((~nan).astype(np.float32))
+                loss = (loss_fn(logits[:len(X)], yt) * msk).sum()
                 total = total + loss
-                nw += float(m.sum())
+                nw += float(msk.sum())
             if nw == 0:
                 continue
             opt.zero_grad()
@@ -583,7 +590,8 @@ def _mlp_sequence_eval(train_feats, train_bin, ev_feats, ev_bin, names, meta_tra
                   "input": f"sequence features ({n_feat} dims) padded to {max_len} per song",
                   "n_songs_train": len(tr_songs), "n_songs_eval": len(ev_songs)})
         res["cnn1d"] = c
-        res["comparison"] = {"cnn1d_gt_mlp": bool(c.get("auc") is not None and m.get("auc") is not None
+        res["comparison"] = {"cnn1d_gt_mlp": bool(c.get("auc") is not None and m is not None
+                                                  and m.get("auc") is not None
                                                   and c["auc"] > m["auc"])}
     except Exception as e:  # noqa: BLE001
         res["cnn1d"] = {"status": "failed", "reason": f"{type(e).__name__}: {e}"}
@@ -609,7 +617,8 @@ def main() -> None:
         meta, feats, lraw, loff, cov = build_dataset_v3(
             session_root, records_root, role, args.timeline_manifest, out_dir)
         datasets[role] = (meta, feats, lraw, loff, cov)
-        print(f"[v3] {role}: {meta}")
+        print(f"[v3] {role}: role={meta.get('role')} n_songs={meta.get('n_songs')} "
+              f"n_units={meta.get('n_units')} n_intervals={meta.get('n_intervals')}")
 
     tr_meta, tr_feats, tr_lraw, tr_loff, tr_cov = datasets["detector_train"]
     va_meta, va_feats, va_lraw, va_loff, va_cov = datasets["model_selection"]
@@ -795,7 +804,11 @@ def main() -> None:
     for combo, r in branch_results.items():
         st = r.get("status")
         if st == "executed":
-            status = "negative" if r.get("judgement") == "negative" else "executed"
+            if r.get("auc_heldout") is None:
+                status = "failed"
+                r.setdefault("failure_reason", "heldout AUC unavailable (single class or empty evaluation)")
+            else:
+                status = "negative" if r.get("judgement") == "negative" else "executed"
         elif st in ("failed",):
             status = "failed"
         else:
@@ -810,18 +823,38 @@ def main() -> None:
             "n_intervals": tr_meta["n_intervals"],
             "coverage": min((tr_cov.get(f, {}).get("coverage") for f in r.get("families", [])),
                             default=None),
+            "coverage_definition": "min family coverage in detector_train (all requested fields present "
+                                   "per row); 部分 family（如 O/RO/P）训练时实际消费 features_used 中可用子集",
+            "features_used_count": len(r.get("features_used", []) or []),
             "metrics_artifact": "MODEL_SELECTION_v3.json",
             "failure_reason": r.get("failure_reason"),
         })
+    cnn_ok = bool(seq_eval.get("cnn1d") and seq_eval.get("cnn1d", {}).get("status") != "failed"
+                  and seq_eval.get("cnn1d", {}).get("auc") is not None)
     matrix_rows.append({
         "branch_id": "sequence_model",
-        "status": "executed" if seq_eval.get("status") == "executed" else "negative",
+        "status": "executed" if cnn_ok else "failed",
         "input_artifacts": [f"sequence features of {best_combo}"],
         "n_train_songs": tr_meta["n_songs"], "n_val_songs": va_meta["n_songs"],
         "n_test_songs": th_meta["n_songs"], "n_units": len(tr_feats),
         "n_intervals": tr_meta["n_intervals"], "coverage": None,
         "metrics_artifact": "SEQUENCE_MODEL_EVAL.json",
-        "failure_reason": None,
+        "failure_reason": (seq_eval.get("cnn1d") or {}).get("reason") if not cnn_ok else None,
+    })
+    pr_eval_path = out_dir.parent / "03_propagation" / "PR_EVALUATION.json"
+    pr_eval = (json.loads(pr_eval_path.read_text(encoding="utf-8"))
+               if pr_eval_path.is_file() else None)
+    pr_auc = (pr_eval or {}).get("high_risk_auroc")
+    matrix_rows.append({
+        "branch_id": "PR",
+        "status": ("negative" if pr_auc is not None else "failed"),
+        "input_artifacts": ["PR_EVALUATION.json (R-family decision-time features)"],
+        "n_train_songs": tr_meta["n_songs"], "n_val_songs": va_meta["n_songs"],
+        "n_test_songs": th_meta["n_songs"],
+        "n_units": (pr_eval or {}).get("n_episodes"),
+        "n_intervals": None, "coverage": None,
+        "metrics_artifact": "PR_EVALUATION.json",
+        "failure_reason": ("high_risk_auroc missing" if pr_auc is None else None),
     })
     matrix_json = {
         "schema_version": LABEL_SCHEMA,

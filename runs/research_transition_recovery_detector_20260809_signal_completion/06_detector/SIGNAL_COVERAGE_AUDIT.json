@@ -1,0 +1,30 @@
+{
+  "schema_version": "signal_coverage_audit_v1",
+  "requests_total": 185,
+  "H": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "P": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "R": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "O": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "S": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "note": "P 由 full posterior npy 经 beam DP 实际计算；H 由 output_hidden_states 实际采集；H/P 不再允许 blocked_api/coverage=0"
+}
