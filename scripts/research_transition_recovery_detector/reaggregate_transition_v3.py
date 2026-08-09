@@ -80,6 +80,7 @@ def full_song_rows(cache: dict, gt: dict[int, dict]) -> list[dict]:
         pred_off = r.get("official_fixed_global_start_sec")
         g = gt.get(cid)
         err_raw = abs(float(pred_raw) - float(g["start_sec"])) if (pred_raw is not None and g) else None
+        # raw 定义与 serial 一致：优先 original_global_start_sec（映射回 original clock）
         err_off = abs(float(pred_off) - float(g["start_sec"])) if (pred_off is not None and g) else None
         out.append({
             "song_id": "", "request_id": "full_song", "window_index": 0, "canonical_id": cid,
@@ -166,7 +167,6 @@ def main() -> int:
     for (song, t), rows in row_table.items():
         per_song[f"{song}::{t}"] = {"song_id": song, "transition": t,
                                     **row_summary(rows, len(load_gt(manifest[song])))}
-        assert rows and rows[0]["label"] is not None or True
     for song, rows in full_rows.items():
         per_song[f"{song}::full_song"] = {"song_id": song, "transition": "full_song",
                                           **row_summary(rows, len(load_gt(manifest[song])))}

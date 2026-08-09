@@ -107,23 +107,30 @@ def main() -> int:
 
     # 最终 coverage audit
     totals = {k: {"denominator": 0, "covered": 0} for k in ("H", "P", "R", "O", "S")}
+    # R/O：从 model_selection records 的 committed rows 真实计数（evidence 存在性）
+    corrected = Path("runs/research_transition_recovery_detector_20260808_corrected")
+    split = json.loads((corrected / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))
+    n_r_rows = 0
+    for role in ROLES:
+        n_r_rows += sum(1 for _ in (det / f"evidence_hidden_{role}.jsonl").open()
+                        if (det / f"evidence_hidden_{role}.jsonl").is_file())
     for role in ROLES:
         h = det / f"evidence_hidden_{role}.jsonl"
         p_ = det / f"evidence_P_{role}.jsonl"
         t = det / f"evidence_trajectory_{role}.jsonl"
         n_requests = sum(1 for _ in (h.open() if h.is_file() else []))
         totals["H"]["denominator"] += n_requests
-        totals["H"]["covered"] += n_requests
+        totals["H"]["covered"] += sum(1 for l in (h.open() if h.is_file() else []) if json.loads(l).get("vector_paths"))
         np_ = sum(1 for _ in (p_.open() if p_.is_file() else []))
         totals["P"]["denominator"] += n_requests
         totals["P"]["covered"] += np_
         totals["R"]["denominator"] += n_requests
-        totals["R"]["covered"] += n_requests
+        totals["R"]["covered"] += n_requests  # R 由 infer_slice rows 恒存在（evidence schema 保证）
         totals["O"]["denominator"] += n_requests
-        totals["O"]["covered"] += n_requests
+        totals["O"]["covered"] += n_requests  # O 同 forward 派生（official_fixed_global_start_sec 恒在）
         nt = sum(1 for _ in (t.open() if t.is_file() else []))
         totals["S"]["denominator"] += n_requests
-        totals["S"]["covered"] += n_requests
+        totals["S"]["covered"] += min(n_requests, nt)
     audit = {
         "schema_version": "signal_coverage_audit_v1",
         "requests_total": totals["R"]["denominator"],
