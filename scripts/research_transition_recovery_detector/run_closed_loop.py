@@ -84,6 +84,7 @@ class RecordingAlignerBackend:
         self.last_request: WindowRequest | None = None
         self.last_rows: list[dict] = []
         self.last_gt_seen = None
+        self.last_serial_rows: list[dict] = []
         self.forward_count = 0
 
     def forward(self, request, *, audio, document, state=None, gt_timeline=None, **kwargs):

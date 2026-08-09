@@ -261,6 +261,8 @@ def run_closed_loop_v3_song(
         wall0 = time.monotonic()
         rows, audit = backend.forward(request, audio=audio, document=document)
         rows = _normalize_rows(rows)
+        if hasattr(backend, "last_serial_rows"):
+            backend.last_serial_rows = rows
         serial_cost = {
             "forward_seconds": float(audit.get("forward_seconds", 0.0)),
             "audio_seconds": float(audit.get("audio_seconds", 0.0)),
@@ -460,6 +462,16 @@ def run_closed_loop_v3_song(
                 "next_input_cursor": plan.next_input_cursor,
             },
             "retry": retry_info,
+            "retry_rows_timing": [
+                {"canonical_id": int(r["global_character_index"]),
+                 "start_sec": float(r["fixed_global_start_sec"])}
+                for r in retry_rows[:50]
+            ],
+            "serial_rows_timing": [
+                {"canonical_id": int(r["global_character_index"]),
+                 "start_sec": float(r["fixed_global_start_sec"])}
+                for r in backend.last_serial_rows[:50]
+            ] if hasattr(backend, "last_serial_rows") and backend.last_serial_rows else [],
             "retry_writeback": {
                 "evidence": retry_evidence,
                 "commit_ids": list(retry_commits),
