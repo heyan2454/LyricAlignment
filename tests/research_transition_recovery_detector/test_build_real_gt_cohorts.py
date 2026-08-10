@@ -88,7 +88,8 @@ def _read_jsonl(p: Path) -> list[dict]:
 
 # ---------------------------------------------------------------- non-materialize
 def _build_static_fixture(tmp_path: Path) -> dict[str, Path]:
-    """S1=正常 test 200s；S2=短 validation 100s；S3=duplicate test；S4=非 role；S5=缺 audio train。"""
+    """S1=正常 test 200s；S2=短 validation 100s；S3=同歌同 role 重复行(test)；S4=非 role；
+    S5=缺 audio train；S6=同歌不同 role 冲突(test/validation)。"""
     audio_root = tmp_path / "audio"
     overlay = [
         _seg("S#S1#0000", "S1", "S1", 100.0, "我爱我的祖国大地", "s1/0000.wav"),
@@ -101,16 +102,20 @@ def _build_static_fixture(tmp_path: Path) -> dict[str, Path]:
         _seg("S#S4#0001", "S4", "S4", 100.0, "景色也不错", "s4/0001.wav"),
         _seg("S#S5#0000", "S5", "S5", 100.0, "家里盘着两条龙", "s5/0000.wav"),
         _seg("S#S5#0001", "S5", "S5", 100.0, "是长江与黄河", "s5/0001.wav"),
+        _seg("S#S6#0000", "S6", "S6", 100.0, "五千年的风和雨", "s6/0000.wav"),
+        _seg("S#S6#0001", "S6", "S6", 100.0, "藏了多少梦", "s6/0001.wav"),
     ]
-    for s in overlay[:8]:  # S5 故意缺音频
+    for s in overlay[:8] + overlay[10:]:  # S5 故意缺音频
         _mk_audio(audio_root, s["audio_relpath"])
     split = [
         _split_row("S1", "test"),
         _split_row("S2", "validation"),
         _split_row("S3", "test"),
-        _split_row("S3", "test"),
+        _split_row("S3", "test"),          # 同歌同 role 重复行 → 去重，不算 duplicate
         _split_row("S4", "other"),
         _split_row("S5", "train"),
+        _split_row("S6", "test"),
+        _split_row("S6", "validation"),    # 同歌跨行 role 不一致 → 真正冲突
     ]
     overlay_path = tmp_path / "overlay_manifest.jsonl"
     split_path = tmp_path / "split_manifest.jsonl"
@@ -136,19 +141,25 @@ def test_inventory_candidates_exclusions_and_audit(tmp_path):
     out = fx["out"]
 
     inv = _read_jsonl(out / "inventory" / "COMPLETE_SONG_INVENTORY.jsonl")
-    assert [r["song_id"] for r in inv] == ["S1", "S2", "S3", "S4", "S5"]
+    assert [r["song_id"] for r in inv] == ["S1", "S2", "S3", "S4", "S5", "S6"]
     by_id = {r["song_id"]: r for r in inv}
     assert by_id["S1"] == {"song_id": "S1", "role": "test", "n_segments": 2,
                            "natural_duration_sec": 200.0, "in_split": True,
-                           "n_split_occurrences": 1, "audio_ok": True,
+                           "n_split_occurrences": 1, "duplicate_in_split": False,
+                           "audio_ok": True,
                            "audio_path": str(fx["audio_root"] / "s1/0000.wav")}
+    # P0: 同歌同 role 多行 → 去重不算 duplicate；同歌跨行 role 不一致 → 真正冲突
     assert by_id["S3"]["n_split_occurrences"] == 2
+    assert by_id["S3"]["duplicate_in_split"] is False
+    assert by_id["S3"]["role"] == "test"
+    assert by_id["S6"]["n_split_occurrences"] == 2
+    assert by_id["S6"]["duplicate_in_split"] is True
     assert by_id["S5"]["audio_ok"] is False
 
     cand_a = _read_jsonl(out / "COHORT_A_FORMAL_candidates.jsonl")
     cand_b = _read_jsonl(out / "COHORT_B_DEVELOPMENT_candidates.jsonl")
     cand_d = _read_jsonl(out / "COHORT_D_TRAIN_OVERLAP_DIAGNOSTIC_candidates.jsonl")
-    assert [r["song_id"] for r in cand_a] == ["S1"]
+    assert [r["song_id"] for r in cand_a] == ["S1", "S3"]
     assert cand_a[0] == {"song_id": "S1", "split": "test", "natural_duration_sec": 200.0,
                          "n_segments": 2, "audio_path": str(fx["audio_root"] / "s1/0000.wav")}
     assert cand_b == []
@@ -156,8 +167,8 @@ def test_inventory_candidates_exclusions_and_audit(tmp_path):
 
     excl = _read_jsonl(out / "EXCLUSION_LOG.jsonl")
     reasons = {r["song_id"]: r["reason"] for r in excl}
-    assert reasons == {"S2": "below_min_natural_duration", "S3": "duplicate_in_split",
-                       "S4": "not_in_role", "S5": "missing_audio"}
+    assert reasons == {"S2": "below_min_natural_duration", "S4": "not_in_role",
+                       "S5": "missing_audio", "S6": "duplicate_in_split"}
 
     audit = json.loads((out / "SPLIT_AUDIT.json").read_text(encoding="utf-8"))
     assert audit["checks"]["a_b_disjoint"] is True
@@ -165,10 +176,12 @@ def test_inventory_candidates_exclusions_and_audit(tmp_path):
     assert audit["checks"]["a_songs_exactly_once_in_split"] is True
     assert audit["checks"]["b_songs_exactly_once_in_split"] is True
     assert audit["all_checks_pass"] is True
-    assert audit["counts"] == {"cohort_a": 1, "cohort_b": 0, "cohort_d": 0, "inventory_songs": 5}
+    assert audit["counts"] == {"cohort_a": 2, "cohort_b": 0, "cohort_d": 0, "inventory_songs": 6}
+    assert audit["split_occurrences_in_inventory"] == {
+        "S1": 1, "S2": 1, "S3": 2, "S4": 1, "S5": 1, "S6": 2}
 
     freeze = json.loads((out / "FREEZE.json").read_text(encoding="utf-8"))
-    assert freeze["candidate_counts"] == {"cohort_a": 1, "cohort_b": 0, "cohort_d": 0}
+    assert freeze["candidate_counts"] == {"cohort_a": 2, "cohort_b": 0, "cohort_d": 0}
     assert freeze["gates"]["min_natural_duration_sec"] == 180.0
     assert freeze["gates"]["primary_coverage_gate"] == 0.90
     assert freeze["gates"]["diagnostic_coverage_floor"] == 0.85
@@ -274,12 +287,17 @@ def test_materialize_full_chain_and_coverage_gate(tmp_path):
     assert audit_a["summary"]["songs"] == 1
     assert audit_a["per_song"]["M1"]["accepted_gt_units"] > 0
 
+    # P1#2: REAL_GT_COVERAGE per-song 键与 real_gt.py audit 对齐（accepted/unlabeled，保留 total_units）
+    assert cov_a[0]["accepted"] > 0
+    assert cov_a[0]["unlabeled"] == 0
+    assert cov_a[0]["total_units"] == cov_a[0]["accepted"] + cov_a[0]["unlabeled"]
+
     cohort_a = _read_jsonl(out / "COHORT_A_FORMAL.jsonl")
     cohort_b = _read_jsonl(out / "COHORT_B_DEVELOPMENT.jsonl")
     cohort_d = _read_jsonl(out / "COHORT_D_TRAIN_OVERLAP_DIAGNOSTIC.jsonl")
     assert [r["song_id"] for r in cohort_a] == ["M1"]
     assert cohort_a[0]["coverage"] == 1.0
-    assert cohort_a[0]["accepted_gt_units"] == cohort_a[0]["accepted_gt_units"]
+    assert cohort_a[0]["accepted_gt_units"] > 0  # formal frozen 行保留 accepted_gt_units/unlabeled_units 键
     assert cohort_a[0]["unlabeled_units"] == 0
     assert cohort_a[0]["long_manifest_row_sha"]
     assert cohort_b == []  # M2 coverage < floor 被移除
@@ -289,10 +307,14 @@ def test_materialize_full_chain_and_coverage_gate(tmp_path):
     assert [r for r in excl if r["reason"] == "below_coverage_gate"][0]["song_id"] == "M2"
 
     freeze = json.loads((out / "FREEZE.json").read_text(encoding="utf-8"))
-    assert freeze["final_counts"] == {"cohort_a": 1, "cohort_b": 0, "cohort_d": 0}
+    assert freeze["final_counts"] == {"cohort_a": 1, "cohort_b": 0, "cohort_d": 0,
+                                      "cohort_a_diagnostic": 0, "cohort_b_diagnostic": 0}
     assert freeze["exclusion_stats"]["below_coverage_gate"] == 1
+    assert freeze["exclusion_stats"]["diagnostic_only_range"] == 0
     assert freeze["coverage_rejected"]["cohort_b"] == ["M2"]
+    assert freeze["builder_rejected"]["count"] == 0
     assert freeze["files"]["cohort_a_formal"] == _sha(out / "COHORT_A_FORMAL.jsonl")
+    assert freeze["files"]["cohort_a_diagnostic"] == _sha(out / "COHORT_A_DIAGNOSTIC.jsonl")
     assert freeze["files"]["manifest_cohort_a"] == _sha(man_a)
     assert freeze["files"]["manifest_cohort_b"] == _sha(man_b)
     assert freeze["files"]["real_gt_coverage_a"] == _sha(out / "real_gt" / "REAL_GT_COVERAGE_a.jsonl")
@@ -334,3 +356,101 @@ def test_materialize_diagnostic_only_range(tmp_path):
     # 4 accepted + 4 review = 0.5 < floor 0.85 → below_floor；此处断言 gate 语义而非值
     assert cov_a[0]["gate_status"] in ("formal", "diagnostic_only", "below_floor")
     assert cov_a[0]["coverage"] == round(8 / 16, 6)
+
+
+def test_materialize_diagnostic_only_writes_separate_cohort(tmp_path):
+    """coverage ∈ [floor, gate) → COHORT_A_DIAGNOSTIC.jsonl + EXCLUSION_LOG diagnostic_only_range。"""
+    audio_root = tmp_path / "audio"
+    segs = [
+        _seg("S#D1#0000", "D1", "D1", 45.0, "我们都有一个家", "d1/0000.wav"),
+        _seg("S#D1#0001", "D1", "D1", 45.0, "名字叫中国", "d1/0001.wav"),
+    ]
+    for s in segs:
+        _mk_audio(audio_root, s["audio_relpath"])
+    overlay_path = tmp_path / "overlay_manifest.jsonl"
+    split_path = tmp_path / "split_manifest.jsonl"
+    ann_path = tmp_path / "annotations.jsonl"
+    _write_jsonl(overlay_path, segs)
+    _write_jsonl(split_path, [_split_row("D1", "test")])
+    # 7 accepted + 5 review（段 0001 整段被拒）→ coverage 7/12 ≈ 0.583 ∈ [0.5, 0.90) → diagnostic_only
+    ann = _make_annotations(segs, rejected_items={"S#D1#0001"})
+    _write_jsonl(ann_path, ann)
+    out = tmp_path / "out"
+    rc = brc.main([
+        "--overlay-manifest", str(overlay_path),
+        "--annotations", str(ann_path),
+        "--split-manifest", str(split_path),
+        "--audio-root", str(audio_root),
+        "--out-root", str(out),
+        "--min-natural-duration-sec", "80",
+        "--diagnostic-coverage-floor", "0.5",
+        "--materialize",
+    ])
+    assert rc == 0, rc
+
+    diag_a = _read_jsonl(out / "COHORT_A_DIAGNOSTIC.jsonl")
+    assert [r["song_id"] for r in diag_a] == ["D1"]
+    assert diag_a[0]["gate_status"] == "diagnostic_only"
+    assert diag_a[0]["coverage"] == round(7 / 12, 6)
+    assert diag_a[0]["diagnostic_only_note"]
+
+    cohort_a = _read_jsonl(out / "COHORT_A_FORMAL.jsonl")
+    assert cohort_a == []  # 冻结文件只收 coverage >= primary_gate
+
+    excl = _read_jsonl(out / "EXCLUSION_LOG.jsonl")
+    assert [r for r in excl if r["reason"] == "diagnostic_only_range"][0]["song_id"] == "D1"
+
+    freeze = json.loads((out / "FREEZE.json").read_text(encoding="utf-8"))
+    assert freeze["final_counts"]["cohort_a"] == 0
+    assert freeze["final_counts"]["cohort_a_diagnostic"] == 1
+    assert freeze["exclusion_stats"]["diagnostic_only_range"] == 1
+    assert freeze["files"]["cohort_a_diagnostic"] == _sha(out / "COHORT_A_DIAGNOSTIC.jsonl")
+
+
+def test_materialize_builder_rejected_in_exclusion_log(tmp_path, monkeypatch):
+    """builder 拒绝的歌 → EXCLUSION_LOG reason=builder_rejected + FREEZE.builder_rejected。"""
+    audio_root = tmp_path / "audio"
+    segs = [
+        _seg("S#B1#0000", "B1", "B1", 45.0, "我们都有一个家", "b1/0000.wav"),
+        _seg("S#B1#0001", "B1", "B1", 45.0, "名字叫中国", "b1/0001.wav"),
+    ]
+    for s in segs:
+        _mk_audio(audio_root, s["audio_relpath"])
+    overlay_path = tmp_path / "overlay_manifest.jsonl"
+    split_path = tmp_path / "split_manifest.jsonl"
+    ann_path = tmp_path / "annotations.jsonl"
+    _write_jsonl(overlay_path, segs)
+    _write_jsonl(split_path, [_split_row("B1", "test")])
+    _write_jsonl(ann_path, _make_annotations(segs, rejected_items=set()))
+    out = tmp_path / "out"
+
+    def _fake_builder(overlay_manifest, out_root, audio_root_, min_duration,
+                      seam_silence_sec, allowlist, n_allowlist):
+        out_root = Path(out_root)
+        out_root.mkdir(parents=True, exist_ok=True)
+        (out_root / "LONG_TIMELINE_MANIFEST.jsonl").write_text("", encoding="utf-8")
+        _write_jsonl(out_root / "ALLOWLIST_REJECTIONS.jsonl",
+                     [{"song_id": "B1", "reason": "not_in_allowlist"}])
+
+    monkeypatch.setattr(brc, "run_builder", _fake_builder)
+    rc = brc.main([
+        "--overlay-manifest", str(overlay_path),
+        "--annotations", str(ann_path),
+        "--split-manifest", str(split_path),
+        "--audio-root", str(audio_root),
+        "--out-root", str(out),
+        "--min-natural-duration-sec", "80",
+        "--materialize",
+    ])
+    assert rc == 0, rc
+
+    excl = _read_jsonl(out / "EXCLUSION_LOG.jsonl")
+    br_rows = [r for r in excl if r["reason"] == "builder_rejected"]
+    assert len(br_rows) == 1
+    assert br_rows[0]["song_id"] == "B1"
+    assert "not_in_allowlist" in br_rows[0]["note"]
+
+    freeze = json.loads((out / "FREEZE.json").read_text(encoding="utf-8"))
+    assert freeze["builder_rejected"]["count"] == 1
+    assert freeze["builder_rejected"]["by_cohort"]["cohort_a"] == ["B1"]
+    assert freeze["builder_rejected"]["details_files"]["cohort_a"].endswith("ALLOWLIST_REJECTIONS.jsonl")
