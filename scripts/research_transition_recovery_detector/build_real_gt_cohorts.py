@@ -104,9 +104,14 @@ def _git_head() -> str:
     return "unknown"
 
 
-def load_split_manifest(path: Path) -> dict[str, list[str]]:
-    """split manifest（含 split/song_id）→ {song_id: [role,...]}（保持文件顺序，允许重复）。"""
-    out: dict[str, list[str]] = {}
+def load_split_manifest(path: Path) -> dict[str, dict[str, Any]]:
+    """split manifest（含 split/song_id）→ {song_id: {role, n_split_occurrences, duplicate_in_split}}。
+
+    manifest 是逐段行（每首歌可能多行）。同一歌多行同 role 视为重复行去重；
+    仅当同一歌跨行 role 不一致（真正冲突）才记 duplicate_in_split=True。
+    role 取首个出现的值，n_split_occurrences 为该歌在 manifest 中的行数。
+    """
+    out: dict[str, dict[str, Any]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
@@ -115,7 +120,14 @@ def load_split_manifest(path: Path) -> dict[str, list[str]]:
         role = r.get("split")
         if not song or not role:
             continue
-        out.setdefault(song, []).append(role)
+        entry = out.setdefault(song, {
+            "role": None, "n_split_occurrences": 0, "duplicate_in_split": False,
+        })
+        entry["n_split_occurrences"] += 1
+        if entry["role"] is None:
+            entry["role"] = role
+        elif role != entry["role"]:
+            entry["duplicate_in_split"] = True
     return out
 
 
@@ -155,24 +167,25 @@ def _segment_audio_path(audio_root: Path, relpath: str) -> Path:
 
 def build_inventory(
     overlay: dict[str, dict[str, Any]],
-    split_songs: dict[str, list[str]],
+    split_songs: dict[str, dict[str, Any]],
     audio_root: Path,
 ) -> list[dict]:
     """过滤前完整 inventory（确定性，按 song_id 排序）。"""
     rows: list[dict] = []
     for song in sorted(overlay):
-        roles = split_songs.get(song, [])
+        entry = split_songs.get(song)
         segs = overlay[song]["segments"]
         first_rel = (segs[0].get("audio_relpath") or "") if segs else ""
         audio_paths = [_segment_audio_path(audio_root, s.get("audio_relpath") or "")
                        for s in segs]
         rows.append({
             "song_id": song,
-            "role": roles[0] if roles else None,
+            "role": entry["role"] if entry else None,
             "n_segments": overlay[song]["n_segments"],
             "natural_duration_sec": overlay[song]["natural_duration_sec"],
-            "in_split": bool(roles),
-            "n_split_occurrences": len(roles),
+            "in_split": bool(entry),
+            "n_split_occurrences": entry["n_split_occurrences"] if entry else 0,
+            "duplicate_in_split": entry["duplicate_in_split"] if entry else False,
             "audio_ok": all(p.is_file() for p in audio_paths) and bool(audio_paths),
             "audio_path": str(audio_root / first_rel) if first_rel else "",
         })
@@ -193,7 +206,7 @@ def classify_songs(
         reason = None
         if not row["in_split"]:
             reason = "not_in_split"
-        elif row["n_split_occurrences"] > 1:
+        elif row["duplicate_in_split"]:
             reason = "duplicate_in_split"
         elif row["role"] not in ALLOWED_SPLITS:
             reason = "not_in_role"
@@ -226,7 +239,7 @@ def candidate_rows(candidates: list[dict], role: str) -> list[dict]:
 
 def build_split_audit(
     inventory: list[dict],
-    split_songs: dict[str, list[str]],
+    split_songs: dict[str, dict[str, Any]],
     cand_a: list[dict],
     cand_b: list[dict],
     cand_d: list[dict],
@@ -240,10 +253,12 @@ def build_split_audit(
     checks = {
         "a_b_disjoint": a_ids.isdisjoint(b_ids),
         "a_b_no_train_overlap": a_ids.isdisjoint(d_ids) and b_ids.isdisjoint(d_ids),
-        "a_songs_exactly_once_in_split": all(len(split_songs.get(s, [])) == 1 for s in a_ids),
-        "b_songs_exactly_once_in_split": all(len(split_songs.get(s, [])) == 1 for s in b_ids),
+        "a_songs_exactly_once_in_split": all(not split_songs.get(s, {}).get("duplicate_in_split")
+                                             for s in a_ids),
+        "b_songs_exactly_once_in_split": all(not split_songs.get(s, {}).get("duplicate_in_split")
+                                             for s in b_ids),
     }
-    n_in_inventory = {s: len(split_songs.get(s, [])) for s in
+    n_in_inventory = {s: split_songs.get(s, {}).get("n_split_occurrences", 0) for s in
                       sorted({r["song_id"] for r in inventory})}
     return {
         "schema": "build_real_gt_cohorts_split_audit_v1",
@@ -350,7 +365,8 @@ def materialize_cohort(
             "summary": {"songs": 0, "accepted_gt_units": 0, "unlabeled_units": 0},
             "per_song": {},
         })
-        return [], {"rejected_songs": [], "builder_rejected": []}
+        return [], {"rejected_songs": [], "builder_rejected": [], "diagnostic_songs": [],
+                    "diag_rows": [], "builder_rejections_path": None}
     write_allowlist(allowlist, cand, role)
     run_builder(
         args.overlay_manifest, manifest_dir, args.audio_root,
@@ -376,6 +392,7 @@ def materialize_cohort(
 
     cov_rows = []
     frozen: list[dict] = []
+    diag_rows: list[dict] = []
     rejected_songs: list[str] = []
     for c in sorted(coverage.values(), key=lambda x: x["song_id"]):
         if c["coverage"] < floor:
@@ -386,8 +403,8 @@ def materialize_cohort(
             status = "formal"
         cov_rows.append({
             "song_id": c["song_id"], "split": role,
-            "total_units": c["total_units"], "accepted_gt_units": c["accepted_gt_units"],
-            "unlabeled_units": c["unlabeled_units"], "coverage": c["coverage"],
+            "total_units": c["total_units"], "accepted": c["accepted_gt_units"],
+            "unlabeled": c["unlabeled_units"], "coverage": c["coverage"],
             "gate_status": status, "diagnostic_only_note": DIAGNOSTIC_ONLY_NOTE
             if status == "diagnostic_only" else None,
         })
@@ -401,7 +418,7 @@ def materialize_cohort(
             })
             continue
         base = next(r for r in cand if r["song_id"] == c["song_id"])
-        frozen.append({
+        row = {
             "song_id": c["song_id"], "split": role,
             "natural_duration_sec": base["natural_duration_sec"],
             "n_segments": base["n_segments"], "audio_path": base["audio_path"],
@@ -409,7 +426,19 @@ def materialize_cohort(
             "coverage": c["coverage"],
             "accepted_gt_units": c["accepted_gt_units"],
             "unlabeled_units": c["unlabeled_units"],
-        })
+        }
+        if status == "diagnostic_only":
+            row["gate_status"] = "diagnostic_only"
+            row["diagnostic_only_note"] = DIAGNOSTIC_ONLY_NOTE
+            diag_rows.append(row)
+            exclusion_rows.append({
+                "song_id": c["song_id"], "role": role, "reason": "diagnostic_only_range",
+                "coverage": c["coverage"],
+                "note": f"coverage in [{floor}, {primary_gate}) kept as diagnostic-only "
+                        f"(not in formal/development cohort)",
+            })
+            continue
+        frozen.append(row)
     # builder 可能拒绝 allowlist 内歌曲（防御性上报，不参与 gate 统计）
     rej_path = manifest_dir / "ALLOWLIST_REJECTIONS.jsonl"
     builder_rejected = []
@@ -420,8 +449,20 @@ def materialize_cohort(
             rr = json.loads(line)
             if rr.get("song_id") in {r["song_id"] for r in cand}:
                 builder_rejected.append(rr)
+                exclusion_rows.append({
+                    "song_id": rr.get("song_id"), "role": role,
+                    "reason": "builder_rejected",
+                    "note": f"rejected by research_v7 builder; detail="
+                            f"{json.dumps(rr, ensure_ascii=False, sort_keys=True)}",
+                })
     _atomic_jsonl(real_gt_dir / f"REAL_GT_COVERAGE_{cohort_tag}.jsonl", cov_rows)
-    return frozen, {"rejected_songs": rejected_songs, "builder_rejected": builder_rejected}
+    return frozen, {
+        "rejected_songs": rejected_songs,
+        "builder_rejected": builder_rejected,
+        "diagnostic_songs": [r["song_id"] for r in diag_rows],
+        "diag_rows": diag_rows,
+        "builder_rejections_path": str(rej_path) if rej_path.is_file() else None,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -478,7 +519,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         if not row["in_split"]:
             reason = "not_in_split"
-        elif row["n_split_occurrences"] > 1:
+        elif row["duplicate_in_split"]:
             reason = "duplicate_in_split"
         elif row["role"] not in ALLOWED_SPLITS:
             reason = "not_in_role"
@@ -561,13 +602,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     _atomic_jsonl(excl_path, exclusion_rows)
     exclusion_stats["below_coverage_gate"] = len(info_a["rejected_songs"]) + len(info_b["rejected_songs"])
+    exclusion_stats["diagnostic_only_range"] = (
+        len(info_a["diagnostic_songs"]) + len(info_b["diagnostic_songs"]))
 
     cohort_a_path = out_root / "COHORT_A_FORMAL.jsonl"
     cohort_b_path = out_root / "COHORT_B_DEVELOPMENT.jsonl"
     cohort_d_path = out_root / "COHORT_D_TRAIN_OVERLAP_DIAGNOSTIC.jsonl"
+    diag_a_path = out_root / "COHORT_A_DIAGNOSTIC.jsonl"
+    diag_b_path = out_root / "COHORT_B_DIAGNOSTIC.jsonl"
     _atomic_jsonl(cohort_a_path, frozen_a)
     _atomic_jsonl(cohort_b_path, frozen_b)
     _atomic_jsonl(cohort_d_path, cand_d)
+    _atomic_jsonl(diag_a_path, info_a["diag_rows"])
+    _atomic_jsonl(diag_b_path, info_b["diag_rows"])
 
     freeze["files"].update({
         "real_gt_projection_audit_a": _sha_file(real_gt_dir / "REAL_GT_PROJECTION_AUDIT_a.json"),
@@ -577,6 +624,8 @@ def main(argv: list[str] | None = None) -> int:
         "cohort_a_formal": _sha_file(cohort_a_path),
         "cohort_b_development": _sha_file(cohort_b_path),
         "cohort_d_train_overlap_diagnostic": _sha_file(cohort_d_path),
+        "cohort_a_diagnostic": _sha_file(diag_a_path),
+        "cohort_b_diagnostic": _sha_file(diag_b_path),
     })
     for tag, mdir in (("a", manifest_a), ("b", manifest_b)):
         key = f"manifest_cohort_{tag}"
@@ -585,14 +634,29 @@ def main(argv: list[str] | None = None) -> int:
             freeze["files"][key] = _sha_file(tl)
     freeze["final_counts"] = {
         "cohort_a": len(frozen_a), "cohort_b": len(frozen_b), "cohort_d": len(cand_d),
+        "cohort_a_diagnostic": len(info_a["diagnostic_songs"]),
+        "cohort_b_diagnostic": len(info_b["diagnostic_songs"]),
     }
     freeze["coverage_rejected"] = {"cohort_a": info_a["rejected_songs"],
                                    "cohort_b": info_b["rejected_songs"]}
+    freeze["builder_rejected"] = {
+        "count": len(info_a["builder_rejected"]) + len(info_b["builder_rejected"]),
+        "by_cohort": {
+            "cohort_a": [r["song_id"] for r in info_a["builder_rejected"]],
+            "cohort_b": [r["song_id"] for r in info_b["builder_rejected"]],
+        },
+        "details_files": {
+            "cohort_a": info_a["builder_rejections_path"],
+            "cohort_b": info_b["builder_rejections_path"],
+        },
+    }
     _atomic_json(freeze_path, freeze)
     print(json.dumps({"ok": True, "materialized": True,
                       "cohort_a": len(frozen_a), "cohort_b": len(frozen_b),
                       "cohort_d": len(cand_d),
-                      "coverage_rejected": len(info_a["rejected_songs"]) + len(info_b["rejected_songs"])},
+                      "coverage_rejected": len(info_a["rejected_songs"]) + len(info_b["rejected_songs"]),
+                      "diagnostic_only": len(info_a["diagnostic_songs"]) + len(info_b["diagnostic_songs"]),
+                      "builder_rejected": len(info_a["builder_rejected"]) + len(info_b["builder_rejected"])},
                      ensure_ascii=False))
     return 0
 
