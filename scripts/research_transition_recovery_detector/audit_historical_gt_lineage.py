@@ -40,6 +40,7 @@ ROW_FIELDS = [
     "action",
     "category",
     "scan_error",
+    "note",
 ]
 
 DEFAULT_SCAN_ROOTS = [
@@ -295,9 +296,8 @@ def scan_file(path: str, skip_hash_large: bool, large_bytes: int) -> dict:
         row["action"] = CATEGORY_ACTIONS.get(category, "PROVENANCE_UNKNOWN")
     except Exception as exc:  # robustness: never crash on a bad artifact
         row["scan_error"] = f"{type(exc).__name__}: {exc}"
-        row.setdefault("category", "PROVENANCE_UNKNOWN")
-        row.setdefault("gt_axis", "PROVENANCE_UNKNOWN")
-        row.setdefault("action", "PROVENANCE_UNKNOWN")
+        row["gt_axis"] = row["category"] = row["action"] = "PROVENANCE_UNKNOWN"
+        row["note"] = "scan_error"
     return row
 
 
