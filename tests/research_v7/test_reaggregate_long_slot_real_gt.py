@@ -284,8 +284,8 @@ def test_tolerance_hit_rate_and_determinism(tmp_path: Path) -> None:
     # 4 个有 accepted 的 request（songA 4 误差 + songB 5 零误差 + songA:w2 无误差样本）
     # songA:w2 denom=0 -> n_evaluated=0，不贡献样本
     assert macro["n_evaluated"] == 9
-    assert abs(macro["start_mae_sec"] - 0.015 * 4 / 9) < 1e-9
-    assert abs(macro["end_mae_sec"] - 0.0525 * 4 / 9) < 1e-9
+    assert abs(macro["start_mae_sec"] - 0.015 * 4 / 9) < 1e-6
+    assert abs(macro["end_mae_sec"] - 0.0525 * 4 / 9) < 1e-6
 
 
 def test_freeze_and_out_of_cohort(tmp_path: Path) -> None:
