@@ -36,10 +36,7 @@ def load_gt_manifest(timeline_manifest: str | None, session_root: Path) -> dict[
     回退 synthetic-uniform LONG_TIMELINE_MANIFEST（仅作对照，明确非人工 GT）。
     返回 {song_id: {canonical_unit_id: {'start_sec','end_sec','text'}}}。
     """
-    from lyricalign.research_transition_recovery_detector.real_gt import (
-        load_real_gt,
-        load_uniform_gt,
-    )
+    from lyricalign.research_transition_recovery_detector.real_gt import load_real_gt
 
     # 真实 GT annotations（pinyin overlay，97% accepted）
     real_ann = Path("/home/hyan/Data/lyricalign/derived/20260723_m4singer_overlay_slur_time_v1/prepare/m4singer_character_annotations.jsonl")
@@ -53,11 +50,18 @@ def load_gt_manifest(timeline_manifest: str | None, session_root: Path) -> dict[
     if tl_path is None:
         raise FileNotFoundError("LONG_TIMELINE_MANIFEST.jsonl not found; pass --timeline-manifest")
 
-    if real_ann.is_file():
-        real = load_real_gt(real_ann, tl_path)
-        if real:
-            return real
-    return load_uniform_gt(tl_path)
+    if not real_ann.is_file():
+        raise ValueError(
+            "real-GT annotations missing; refusing synthetic-uniform fallback "
+            "for correctness labeling"
+        )
+    real = load_real_gt(real_ann, tl_path)
+    if not real:
+        raise ValueError(
+            "real-GT projection produced no accepted units; refusing "
+            "synthetic-uniform fallback for correctness labeling"
+        )
+    return real
 
 
 def collect_records(session_root: Path, song_ids: list[str]) -> dict[str, list[dict]]:
