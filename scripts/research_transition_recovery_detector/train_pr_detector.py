@@ -49,13 +49,19 @@ def _episode_first_window(records_root: Path, session_root: Path, ep: dict,
         fam = ep["family"]
         spec = _json.dumps(ep["intervention"]["spec"], sort_keys=True)
         cand = f"{song}::mild::{fam}::{spec}__{transition}.jsonl"
+        corr_after_intervention = False
     elif ep.get("source") == "canonical_state_corruption" and ep.get("family") != "natural":
         fam = ep["family"]
         cand = f"{song}::corr::{fam}__{transition}.jsonl"
+        corr_after_intervention = True
     else:
         cand = f"{song}__{transition}.jsonl"
+        corr_after_intervention = False
 
-    for root in (session_root / "02_transition", records_root / "02_transition"):
+    external = Path("/root/autodl-tmp/lyricalign_sessions")
+    for root in (session_root / "02_transition", records_root / "02_transition",
+                 external / "20260809_signal_completion" / "02_transition",
+                 external / "20260809_signal_completion" / "cache"):
         p = root / cand
         if not p.is_file():
             continue
@@ -63,9 +69,11 @@ def _episode_first_window(records_root: Path, session_root: Path, ep: dict,
         recs = [r for r in recs if not r.get("skipped")]
         if not recs:
             return None
-        # 干预序列首窗为 rec[0]（continue_from_window_index 之后第一窗口）；
-        # 对 canonical corruption 序列，window_index>=1 即干预后首窗。
-        first = recs[0]
+        # mild 序列 rec[0] 即干预后首窗；canonical corruption 序列需取首个 window_index>=1
+        first = next((r for r in recs if r.get("window_index", 0) >= 1), None) \
+            if corr_after_intervention else recs[0]
+        if first is None:
+            first = recs[0]
         rows = committed(first)
         return rows or None
     return None
@@ -82,6 +90,7 @@ def main() -> int:
     records_root = Path(args.records_root)
 
     import pickle
+    import numpy as np
 
     with open(args.detector_pkl, "rb") as f:
         artifact = pickle.load(f)
@@ -103,6 +112,7 @@ def main() -> int:
     X: list[list[float]] = []
     y: list[int] = []
     song_of: list[str] = []
+    first_rows: list[list[dict]] = []
     for ep in episodes:
         song = ep.get("source_song_id")
         if song not in song_ids:
@@ -116,6 +126,7 @@ def main() -> int:
         rows = _episode_first_window(records_root, session_root, ep, TRANSITION_T2_CORE)
         if not rows:
             X.append([0.0] * len(feature_names))
+            first_rows.append([])
             continue
         feats = extract_signal_features(rows)
         # 聚合：均值（decision-time unit-level R evidence）
@@ -129,62 +140,94 @@ def main() -> int:
                 vec[i] += float(v)
             n += 1
         X.append([v / max(n, 1) for v in vec])
-    # correctness score 对比列（决策时 detector p_bad 均值，与 X 逐行对齐）
-    Xc = [sum(row) / max(len(row), 1) for row in X]
+        # 保留每 episode 首窗 committed rows 供冻结 detector p_bad 计算
+        first_rows.append(rows)
+    # correctness 对比：用冻结 correctness detector p_bad（不再是 feature mean）
+    correctness_scores: list[float] = []
+    det_model = artifact.get("model")
+    det_scaler = artifact.get("scaler")
+    for rows in first_rows:
+        if not rows or det_model is None or det_scaler is None:
+            correctness_scores.append(0.0)
+            continue
+        det_feats = extract_signal_features(rows)
+        try:
+            pbs = predict_p_bad({"model": det_model, "scaler": det_scaler},
+                                det_feats, feature_names)
+            correctness_scores.append(float(np.mean(pbs)))
+        except Exception:  # noqa: BLE001
+            correctness_scores.append(0.0)
 
-    # 训练（MLP 16-8）：high vs non-high
-    model, scaler, tr = train_mlp([{f"f{k}": v for k, v in enumerate(row)} for row in X],
-                                  [float(v) for v in y], feature_names=tuple(f"f{k}" for k in range(len(X[0]))))
-    probs = predict_p_bad({"model": model, "scaler": scaler},
-                          [{f"f{k}": v for k, v in enumerate(row)} for row in X],
-                          tuple(f"f{k}" for k in range(len(X[0]))))
-    from sklearn.metrics import roc_auc_score, average_precision_score, recall_score
+    from sklearn.metrics import roc_auc_score, average_precision_score
     import numpy as np
 
     yb = np.array(y)
-    pb = np.array(probs)
-    auc = roc_auc_score(yb, pb) if len(set(y)) > 1 else None
-    auprc = average_precision_score(yb, pb) if len(set(y)) > 1 else None
-    # high-risk recall at 0.5 threshold
-    pred_high = (pb >= 0.5).astype(int)
-    high_recall = recall_score(yb, pred_high, pos_label=1) if len(set(y)) > 1 else None
-    fn = int(((yb == 1) & (pred_high == 0)).sum())
-    # source-song macro（leave-one-song-out AUROC）
-    macro = None
-    if len(set(y)) > 1:
-        aucs = []
-        for song in set(song_of):
-            tr_mask = [s != song for s in song_of]
-            te_mask = [s == song for s in song_of]
-            if sum(te_mask) < 1 or len(set(y[i] for i in range(len(y)) if te_mask[i])) < 2:
-                continue
-            try:
-                m2, s2, _ = train_mlp(
-                    [{f"f{k}": v for k, v in enumerate(X[i])} for i in range(len(X)) if tr_mask[i]],
-                    [float(y[i]) for i in range(len(y)) if tr_mask[i]],
-                    feature_names=tuple(f"f{k}" for k in range(len(X[0]))))
-                pr2 = predict_p_bad({"model": m2, "scaler": s2},
-                                    [{f"f{k}": v for k, v in enumerate(X[i])} for i in range(len(X)) if te_mask[i]],
-                                    tuple(f"f{k}" for k in range(len(X[0]))))
-                aucs.append(roc_auc_score([y[i] for i in range(len(y)) if te_mask[i]], pr2))
-            except Exception:
-                continue
-        macro = round(sum(aucs) / max(len(aucs), 1), 4) if aucs else None
+    n = len(X)
+    # OOF：leave-one-song-out，每 fold 在其余歌上训练，在 held-out 歌上 predict
+    oof_probs = np.zeros(n, dtype=np.float64)
+    loso_aucs: list[dict] = []
+    for song in sorted(set(song_of)):
+        tr_mask = np.array([s != song for s in song_of])
+        te_mask = ~tr_mask
+        if tr_mask.sum() < 5 or te_mask.sum() < 2:
+            continue
+        if len(set(int(v) for v in np.array(y)[tr_mask])) < 2:
+            continue
+        try:
+            m2, s2, _ = train_mlp(
+                [{f"f{k}": v for k, v in enumerate(X[i])} for i in range(n) if tr_mask[i]],
+                [float(y[i]) for i in range(n) if tr_mask[i]],
+                feature_names=tuple(f"f{k}" for k in range(len(X[0]))))
+            pr2 = predict_p_bad({"model": m2, "scaler": s2},
+                                [{f"f{k}": v for k, v in enumerate(X[i])} for i in range(n) if te_mask[i]],
+                                tuple(f"f{k}" for k in range(len(X[0]))))
+            te_idx = [i for i in range(n) if te_mask[i]]
+            for j, i in enumerate(te_idx):
+                oof_probs[i] = float(pr2[j])
+            te_y = [int(y[i]) for i in range(n) if te_mask[i]]
+            if len(set(te_y)) >= 2:
+                loso_aucs.append({"song": song, "auc": roc_auc_score(te_y, pr2)})
+        except Exception:  # noqa: BLE001
+            continue
+
+    valid = oof_probs > 0  # 有 OOF prediction 的样本
+    oof_pooled_auc = roc_auc_score(yb[valid], oof_probs[valid]) if valid.sum() >= 4 and len(set(yb[valid])) >= 2 else None
+    oof_pooled_auprc = average_precision_score(yb[valid], oof_probs[valid]) if valid.sum() >= 4 and len(set(yb[valid])) >= 2 else None
+    macro = round(float(np.mean([d["auc"] for d in loso_aucs])), 4) if loso_aucs else None
+    correctness_auroc = (
+        roc_auc_score(yb, np.array(correctness_scores))
+        if len(set(y)) > 1 and len(set(correctness_scores)) > 1 else None
+    )
+
     out = {
-        "schema_version": "pr_evaluation_v1",
+        "schema_version": "pr_evaluation_v2",
         "n_episodes": len(y), "n_high": sum(1 for v in y if v == 1),
         "n_non_high": sum(1 for v in y if v == 0),
-        "high_risk_auroc": round(auc, 4) if auc else None,
-        "high_risk_auprc": round(auprc, 4) if auprc else None,
-        "high_risk_recall_at_05": round(high_recall, 4) if high_recall else None,
-        "high_risk_false_negative": fn,
-        "source_song_macro_auroc": macro,
-        "correctness_proxy_auroc": round(roc_auc_score(yb, np.array(Xc)), 4) if len(set(y)) > 1 else None,
+        "oof_pooled_auroc": round(oof_pooled_auc, 4) if oof_pooled_auc is not None else None,
+        "oof_pooled_auprc": round(oof_pooled_auprc, 4) if oof_pooled_auprc is not None else None,
+        "loso_macro_auroc": macro,
+        "loso_song_aucs": [{"song": d["song"], "auc": round(d["auc"], 4)} for d in loso_aucs],
+        "correctness_auroc": round(correctness_auroc, 4) if correctness_auroc is not None else None,
+        "pr_vs_correctness": ("PR OOF AUROC vs frozen correctness detector AUROC; "
+                              "held-out source-song-disjoint evaluation"),
         "note": "输入=episode 首窗决策时 committed rows 的 R 族均值特征；label=high vs non-high；"
-                "correctness_proxy=同特征均值（对比 PR 是否优于纯 correctness）",
+                "correctness=冻结 correctness detector p_bad 聚合（max/mean）",
     }
     out_dir = session_root / "03_propagation"
-    (out_dir / "PR_EVALUATION.json").write_text(json.dumps(out, ensure_ascii=False, indent=2))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # 兼容字段（report_supplemental / train_detector_v3 matrix PR 行读取）
+    compat = {
+        "schema_version": "pr_evaluation_v1",
+        "n_episodes": out["n_episodes"], "n_high": out["n_high"], "n_non_high": out["n_non_high"],
+        "high_risk_auroc": out["oof_pooled_auroc"],
+        "high_risk_auprc": out["oof_pooled_auprc"],
+        "source_song_macro_auroc": macro,
+        "correctness_proxy_auroc": correctness_auroc,
+        "correctness_auroc": correctness_auroc,
+        "note": out["note"],
+    }
+    (out_dir / "PR_EVALUATION.json").write_text(json.dumps(compat, ensure_ascii=False, indent=2))
+    (out_dir / "PR_EVALUATION_V2.json").write_text(json.dumps(out, ensure_ascii=False, indent=2))
     print(json.dumps(out, ensure_ascii=False, indent=1))
     return 0
 

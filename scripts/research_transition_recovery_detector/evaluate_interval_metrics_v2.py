@@ -17,16 +17,21 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from lyricalign.research_transition_recovery_detector.detector_intervals import build_intervals  # noqa: E402
+from lyricalign.research_transition_recovery_detector.detector_intervals import (  # noqa: E402
+    build_intervals,
+    build_intervals_by_song,
+)
 from lyricalign.research_transition_recovery_detector.thresholds import (  # noqa: E402
     STATE_ACCEPT,
     STATE_REJECT,
     STATE_UNCERTAIN,
 )
 
-RULE = ("interval=maximal run of identical tristate over contiguous canonical ids; "
-        "Safe<=100ms Grey(100,250] Unsafe>250ms; Grey excluded from binary denominator; "
-        "REJECT if p_bad>=t_reject; ACCEPT if p_bad<t_accept; UNCERTAIN otherwise")
+RULE = ("interval=maximal run of identical tristate over contiguous canonical ids per song "
+        "(build_intervals_by_song: song boundary never merges); "
+        "Safe<=100ms Grey(100,250] Unsafe>250ms; Grey(1) excluded from unsafe denominator; "
+        "REJECT if p_bad>=t_reject; ACCEPT if p_bad<t_accept; UNCERTAIN otherwise; "
+        "REJECT-only vs protected(REJECT+UNCERTAIN) reported separately")
 RULE_HASH = hashlib.sha256(RULE.encode()).hexdigest()[:16]
 
 
@@ -43,7 +48,10 @@ def main() -> int:
     frozen = json.loads(Path(args.thresholds).read_text(encoding="utf-8"))
     wps = frozen.get("working_points_v3_format") or {}
     p_bad = eval_data["p_bad"]
-    labels = eval_data["labels"]  # 0/1/2 (safe/grey/unsafe from v2 labeling), None=no GT
+    labels = eval_data["labels"]  # 0/1/2 (safe/grey/unsafe), None=no GT
+    song_ids = eval_data.get("song_ids") or None
+    canonical_ids = eval_data.get("canonical_ids") or None
+    n = len(p_bad)
 
     results: dict[str, dict] = {}
     joint_candidates = []
@@ -57,19 +65,35 @@ def main() -> int:
                 states.append(STATE_REJECT)
             else:
                 states.append(STATE_UNCERTAIN)
-        unit_states = [(i, s) for i, s in enumerate(states)]
-        intervals = build_intervals(unit_states)
-        # labels: 0=safe 1=grey 2=unsafe
-        # 兼容 v2 二元 EVAL（1=unsafe，grey 已排除）与 v3 三态（2=unsafe）
-        unsafe_ids = {i for i, l in enumerate(labels) if l in (1, 2)}
+        if song_ids and canonical_ids and len(song_ids) == n:
+            # 多歌 intervalization：逐歌构造，interval 带 song_id
+            unit_rows = [{"song_id": song_ids[i], "canonical_id": canonical_ids[i],
+                          "state": states[i]} for i in range(n)]
+            intervals = build_intervals_by_song(unit_rows)
+            # (song_id, canonical_id) -> position 映射（多歌扁平 labels 定位）
+            pos_map = {(str(song_ids[i]), int(canonical_ids[i])): i for i in range(n)}
+        else:
+            intervals = build_intervals([(i, s) for i, s in enumerate(states)])
+            pos_map = None
+        # 严格三态：unsafe 只含 label==2，Grey(1) 单独统计
+        unsafe_ids = {i for i, l in enumerate(labels) if l == 2}
         safe_ids = {i for i, l in enumerate(labels) if l == 0}
+        grey_ids = {i for i, l in enumerate(labels) if l == 1}
+
+        def _interval_positions(iv: dict) -> list[int]:
+            """interval 覆盖的行 position（处理多歌 canonical_id 与扁平 labels 定位）。"""
+            if pos_map is not None:
+                return [pos_map[(iv["song_id"], cid)]
+                        for cid in range(iv["start_id"], iv["end_id"] + 1)
+                        if (iv["song_id"], cid) in pos_map]
+            return [cid for cid in range(iv["start_id"], iv["end_id"] + 1)
+                    if cid < len(labels)]
 
         def _interval_capture(protected_uncertain: bool) -> dict:
             captured_all = captured_75 = 0
             for iv in intervals:
-                ids = [cid for cid in range(iv["start_id"], iv["end_id"] + 1)
-                       if cid < len(labels) and labels[cid] is not None]
-                n_unsafe = sum(1 for cid in ids if cid in unsafe_ids)
+                ids = [p for p in _interval_positions(iv) if labels[p] is not None]
+                n_unsafe = sum(1 for p in ids if p in unsafe_ids)
                 if n_unsafe == 0:
                     continue
                 if iv["state"] == STATE_REJECT or (protected_uncertain and iv["state"] == STATE_UNCERTAIN):
@@ -79,18 +103,20 @@ def main() -> int:
                         captured_75 += 1
             return {"intervals_with_unsafe": sum(
                 1 for iv in intervals
-                if any(cid in unsafe_ids for cid in range(iv["start_id"], iv["end_id"] + 1))),
+                if any(p in unsafe_ids for p in _interval_positions(iv))),
                 "captured_100pct": captured_all, "captured_75pct": captured_75}
 
-        rejected = [s for s in states if s == STATE_REJECT]
-        rejected_or_uncertain = [s for s in states if s in (STATE_REJECT, STATE_UNCERTAIN)]
         safe_accept = sum(1 for i in safe_ids if states[i] == STATE_ACCEPT)
         safe_reject = sum(1 for i in safe_ids if states[i] == STATE_REJECT)
         safe_uncertain = sum(1 for i in safe_ids if states[i] == STATE_UNCERTAIN)
         unsafe_reject = sum(1 for i in unsafe_ids if states[i] == STATE_REJECT)
         unsafe_uncertain = sum(1 for i in unsafe_ids if states[i] == STATE_UNCERTAIN)
+        grey_reject = sum(1 for i in grey_ids if states[i] == STATE_REJECT)
+        grey_uncertain = sum(1 for i in grey_ids if states[i] == STATE_UNCERTAIN)
+        grey_accept = sum(1 for i in grey_ids if states[i] == STATE_ACCEPT)
         n_safe = len(safe_ids)
         n_unsafe = len(unsafe_ids)
+        n_grey = len(grey_ids)
         # 最长 unsafe ACCEPT run（危险放行）
         longest_unsafe_accept = 0
         cur = 0
@@ -123,14 +149,15 @@ def main() -> int:
                 "safe_intervals_shattered": sum(
                     1 for iv in intervals
                     if iv["state"] in (STATE_REJECT, STATE_UNCERTAIN)
-                    and any(cid in safe_ids for cid in range(iv["start_id"], iv["end_id"] + 1))),
+                    and any(p in safe_ids for p in _interval_positions(iv))),
                 "longest_unsafe_accept_run": longest_unsafe_accept,
             },
             "C3": {
                 "safe_accept": round(safe_accept / max(n_safe, 1), 4),
                 "unsafe_reject": round(unsafe_reject / max(n_unsafe, 1), 4),
                 "uncertain_rate": round(sum(1 for s in states if s == STATE_UNCERTAIN) / max(len(states), 1), 4),
-                "n_safe": n_safe, "n_unsafe": n_unsafe, "n_grey_excluded": sum(1 for l in labels if l == 1),
+                "n_safe": n_safe, "n_unsafe": n_unsafe, "n_grey_excluded": n_grey,
+                "grey_states": {"accept": grey_accept, "reject": grey_reject, "uncertain": grey_uncertain},
             },
             "t_accept": float(ta), "t_reject": float(tr),
         }
@@ -140,13 +167,14 @@ def main() -> int:
     joint_best_sa = max(joint_candidates, key=lambda x: x[0])
     joint_best_r95 = max(joint_candidates, key=lambda x: x[1])
     out = {
-        "schema_version": "interval_metrics_reproducible_v1",
+        "schema_version": "interval_metrics_reproducible_v2",
         "inputs": {"prediction_artifact": args.eval, "threshold_artifact": args.thresholds,
                    "target": "raw", "split": args.role,
-                   "label_definition": "Safe<=100ms Grey(100,250] Unsafe>250ms; Grey excluded from binary",
+                   "label_definition": "Safe<=100ms Grey(100,250] Unsafe>250ms; Grey excluded from unsafe denominator",
                    "intervalization_rule_hash": RULE_HASH,
-                   "C3_denominator_note": "C3.n_unsafe 为 intervalization 后的 unsafe unit 计数（unit 可跨 interval 重复），"
-                                          "与 FROZEN_WORKING_POINTS 的全体 unsafe 单元基数不同；unsafe_reject 为 REJECT-only recall"},
+                   "intervalization": "per-song (song_id, canonical_id); song boundary never merges",
+                   "C3_denominator_note": "C3.n_unsafe = count of unsafe(label==2) units; Grey counted separately; "
+                                          "unsafe_reject is REJECT-only recall (UNCERTAIN not counted)"},
         "working_points": results,
         "joint_sa60_r95": {
             "feasible": joint_feasible,

@@ -22,6 +22,25 @@ def build_intervals(unit_states: list[tuple[int, str]]) -> list[dict]:
     return intervals
 
 
+def build_intervals_by_song(unit_rows: list[dict]) -> list[dict]:
+    """多歌 intervalization：逐歌（song_id, canonical_id 升序）构造 interval。
+
+    unit_rows = [{song_id, canonical_id, state}, ...]。interval 增加 song_id 字段，
+    id 定位用 (song_id, canonical_id)。禁止跨歌合并（即使 canonical_id 连续）。
+    """
+    from collections import OrderedDict
+
+    by_song: "OrderedDict[str, list[tuple[int, str]]]" = OrderedDict()
+    for row in unit_rows:
+        by_song.setdefault(row["song_id"], []).append(
+            (int(row["canonical_id"]), row["state"]))
+    intervals: list[dict] = []
+    for song_id, rows in by_song.items():
+        for iv in build_intervals(rows):
+            intervals.append({**iv, "song_id": song_id})
+    return intervals
+
+
 def interval_metrics(
     unit_states: list[tuple[int, str]],
     gt_labels: dict[int, int],

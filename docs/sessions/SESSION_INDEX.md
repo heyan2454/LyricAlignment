@@ -8,6 +8,9 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-08-09 | `20260809_second_supplement` (runs/..._20260809_second_supplement) | hot | 二次补充：committed-view binding 修复 + P exact k-best + interval v2 + PR held-out + recovery 分解。**重大发现：评估 GT 用错（synthetic-uniform 非真实 GT），改用 real_gt_pinyin_overlay 重建——真实 GT 下模型对齐 91.7% Safe，R=0.976/H=0.882/P=0.830；H/P evidence window 污染已修复（recollect 185 窗）。** 见 09_reports/EXPERIMENT_RECORD.md。 |
+| 2026-08-09 | `20260809_signal_completion` (runs/..._20260809_signal_completion) | warm | 第一次补充：H/P/PR 真实接入、evidence v3、recovery decomposition。结果部分被 committed-view bug 污染，需以二次补充为准。 |
+| 2026-08-08 | `20260808_corrected` (runs/..._20260808_corrected) | warm | Transition/Detector correction：四角色 source-song split、v2 报告、EPISODES 修正。二次补充的 records-root。 |
 | 2026-08-07 | `20260807_transition_recovery_detector_discussion_record.md` | hot | Reframed next stage into Align/query, Window/Audio, four Transition policies, propagation and Recovery mainline, legacy evidence gap completion, SA60/SA80/R95 Detector research, and a new resumable session contract that must continue through negative or infeasible branches. |
 | 2026-08-06 | `20260806_fullslot_serial_detector_discussion_record.md` | hot | Full review-to-design record: full-slot serial, stable 10+60+10 silence-snap Base, W/L consistent routes, real prefix-carried errors, raw/hidden sequence signals, mandatory SA60/R95, automated Test Demo statistics and B4 shadow control. |
 | 2026-08-04 | `20260804_align_behavior_slot_region_assessor_archive.md` | hot | Reviewed research-v7 evidence and corrections; ≥180s timelines with fixed 60s requests; absolute+percentage mutations; missing/replace evaluation; slot-density fairness; H/R/O cross-domain assessor; human-label audit; 10h target/12h hard limit. |

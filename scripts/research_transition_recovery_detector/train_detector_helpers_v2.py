@@ -30,6 +30,20 @@ GREY_MS = 0.250
 
 
 def load_gt_manifest(timeline_manifest: str | None, session_root: Path) -> dict[str, dict[int, dict]]:
+    """加载 GT manifest。
+
+    优先使用真实 GT（pinyin overlay + 段偏移投影到 canonical 轴）；若真实 GT 不可用，
+    回退 synthetic-uniform LONG_TIMELINE_MANIFEST（仅作对照，明确非人工 GT）。
+    返回 {song_id: {canonical_unit_id: {'start_sec','end_sec','text'}}}。
+    """
+    from lyricalign.research_transition_recovery_detector.real_gt import (
+        load_real_gt,
+        load_uniform_gt,
+    )
+
+    # 真实 GT annotations（pinyin overlay，97% accepted）
+    real_ann = Path("/home/hyan/Data/lyricalign/derived/20260723_m4singer_overlay_slur_time_v1/prepare/m4singer_character_annotations.jsonl")
+
     split = json.loads((session_root / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))
     candidates = [timeline_manifest, split.get("timeline_manifest"),
                   str(session_root.parent / "research_transition_recovery_detector_20260807"
@@ -38,12 +52,12 @@ def load_gt_manifest(timeline_manifest: str | None, session_root: Path) -> dict[
     tl_path = next((c for c in candidates if c and Path(c).is_file()), None)
     if tl_path is None:
         raise FileNotFoundError("LONG_TIMELINE_MANIFEST.jsonl not found; pass --timeline-manifest")
-    manifest: dict[str, dict[int, dict]] = {}
-    for line in Path(tl_path).read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            r = json.loads(line)
-            manifest[r["song_id"]] = {int(u["canonical_unit_id"]): u for u in r["canonical_units"]}
-    return manifest
+
+    if real_ann.is_file():
+        real = load_real_gt(real_ann, tl_path)
+        if real:
+            return real
+    return load_uniform_gt(tl_path)
 
 
 def collect_records(session_root: Path, song_ids: list[str]) -> dict[str, list[dict]]:

@@ -36,6 +36,9 @@ from lyricalign.research_transition_recovery_detector.detector_features import (
     cross_window_features,
     extract_signal_features,
 )
+from lyricalign.research_transition_recovery_detector.detector_observations import (  # noqa: E402
+    committed_observation_index,
+)
 from lyricalign.research_transition_recovery_detector.posterior_paths import unit_p_features  # noqa: E402
 from train_detector_helpers_v2 import (  # noqa: E402
     LABEL_SCHEMA,
@@ -278,12 +281,6 @@ def collect_records_flex(session_root: Path, song_ids: list[str]) -> dict[str, l
     return out
 
 
-def rows_to_rowobjs(records: list[dict], cids: list[int]) -> list[dict]:
-    by_cid = {int(r["global_character_index"]): r
-              for rec in records for r in rec["evidence_summary"]["raw_global_rows"]}
-    return [by_cid[c] for c in cids]
-
-
 def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline_manifest: str,
                      evidence_dir: Path) -> tuple[dict, list[dict], list[int | None], list[int | None], dict]:
     split = json.loads((records_root / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))
@@ -314,6 +311,7 @@ def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline
     labels_raw: list[int | None] = []
     labels_off: list[int | None] = []
     meta_rows: list[dict] = []
+    binding_audit_log: list[dict] = []
     h_missing: list[str] = []
     p_missing: list[str] = []
     n_songs = n_intervals = 0
@@ -326,24 +324,21 @@ def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline
         if gt is None:
             continue
         n_songs += 1
-        observations_by_id: dict[int, list[dict]] = {}
-        for rec in records:
-            for row in rec["evidence_summary"]["raw_global_rows"]:
-                observations_by_id.setdefault(int(row["global_character_index"]), []).append(row)
-        row_req: dict[int, str] = {}
-        for rec in records:
-            before = rec["state_before"]["committed_end_exclusive"]
-            after = rec["decision"]["committed_end_exclusive"]
-            for r in rec["evidence_summary"]["raw_global_rows"]:
-                cid = int(r["global_character_index"])
-                if before <= cid < after:
-                    row_req[cid] = rec["request"]["request_id"]
-        rows = sorted(set(row_req), key=lambda c: c)
-        if not rows:
+        idx = committed_observation_index(records, song_id=song_id)
+        binding_audit_log.extend(idx.mismatch_log)
+        committed_ids = sorted(idx.committed_request, key=lambda c: c)
+        if not committed_ids:
             continue
-        rowobjs = rows_to_rowobjs(records, rows)
-        per_row = extract_signal_features(rowobjs)
+        # committed 主行按 canonical 顺序（R/O/RO/label 的主样本）
+        committed_rowobjs = [idx.primary_row(c) for c in committed_ids]
+        committed_rowobjs = [r for r in committed_rowobjs if r is not None]
+        per_row = extract_signal_features(committed_rowobjs)
+        # V 族跨窗聚合仍用全部 observations（secondary，主样本 identity 保持 committed）
+        observations_by_id: dict[int, list[dict]] = {}
+        for cid, obs in idx.all_observations.items():
+            observations_by_id[cid] = [row for _, row in obs]
         v_feats = cross_window_features(observations_by_id)
+        rows = committed_ids
 
         req_h: dict[str, tuple[list[dict[str, float | None]], dict]] = {}
         req_p: dict[str, tuple[dict[str, float | None], list[dict[str, float | None]], dict]] = {}
@@ -372,8 +367,8 @@ def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline
                                  {"reason": "no evidence_P row for request"})
 
         song_intervals = [_num(traj_by_key.get((song_id, c), {}).get("interval_sec")) for c in rows]
-        for idx, cid in enumerate(rows):
-            req_id = row_req[cid]
+        for idx_i, cid in enumerate(rows):
+            req_id = idx.committed_request[cid]
             qids = req_qids.get(req_id, [])
             try:
                 uidx = qids.index(cid)
@@ -386,16 +381,18 @@ def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline
                 p_missing.append(f"{song_id}:{cid}:not_in_query")
             pu = p_unit[uidx] if (uidx is not None and uidx < len(p_unit)) else {"p_unit_top2_gap": None}
             hu = hf[uidx] if (uidx is not None and uidx < len(hf)) else {n: None for n in H_NAMES}
-            feats = {**per_row[idx], **v_feats.get(cid, {}),
-                     **_s_features(traj_by_key.get((song_id, cid)), song_intervals[:idx + 1]),
+            feats = {**per_row[idx_i], **v_feats.get(cid, {}),
+                     **_s_features(traj_by_key.get((song_id, cid)), song_intervals[:idx_i + 1]),
                      **p_req, **pu, **hu}
             features.append(feats)
-            ro = rowobjs[idx]
+            ro = idx.primary_row(cid)
             g = gt.get(cid)
             gs = float(g["start_sec"]) if g else None
-            labels_raw.append(_label_from_gt(_num(ro.get("original_global_start_sec")), gs))
-            labels_off.append(_label_from_gt(_num(ro.get("fixed_global_start_sec")), gs))
-            meta_rows.append({"song_id": song_id, "cid": cid, "request_id": req_id})
+            labels_raw.append(_label_from_gt(_num(ro.get("original_global_start_sec")) if ro else None, gs))
+            labels_off.append(_label_from_gt(_num(ro.get("fixed_global_start_sec")) if ro else None, gs))
+            meta_rows.append({"song_id": song_id, "cid": cid, "request_id": req_id,
+                              "window_id": None, "view_id": None,
+                              "committed_request_id": req_id, "is_committed_observation": True})
         n_intervals += sum(1 for a, b in zip(rows, rows[1:]) if b != a + 1) + 1
 
     cov = _coverage_v3(features, meta_rows, h_missing, p_missing)
@@ -407,9 +404,10 @@ def build_dataset_v3(session_root: Path, records_root: Path, role: str, timeline
         "n_unsafe_off": sum(1 for l in labels_off if l == 2),
         "n_unlabeled": sum(1 for l in labels_raw if l is None),
         "label_schema": LABEL_SCHEMA,
+        "binding_mismatch": len(binding_audit_log),
         "rows": meta_rows,
     }
-    return meta, features, labels_raw, labels_off, cov
+    return meta, features, labels_raw, labels_off, cov, binding_audit_log
 
 
 def _coverage_v3(features: list[dict], meta_rows: list[dict], h_missing: list[str],
@@ -526,6 +524,7 @@ def _mlp_sequence_eval(train_feats, train_bin, ev_feats, ev_bin, names, meta_tra
     names = tuple(n for n in names if avail.get(n, 0.0) >= 0.9)
     res["input_features"] = list(names)
     m: dict | None = None
+    scaler = None
     try:
         model, scaler, tr = train_mlp(train_feats, train_bin, feature_names=names)
         ev_probs = predict_p_bad({"model": model, "scaler": scaler}, ev_feats, names)
@@ -543,8 +542,13 @@ def _mlp_sequence_eval(train_feats, train_bin, ev_feats, ev_bin, names, meta_tra
             out = []
             for s in sorted({r["song_id"] for r in meta_rows}):
                 idx = [i for i, r in enumerate(meta_rows) if r["song_id"] == s]
-                X = np.asarray([[0.0 if feats[i].get(nm) is None else float(feats[i].get(nm))
-                                 for nm in names] for i in idx], dtype=np.float32)
+                raw = np.asarray([[0.0 if feats[i].get(nm) is None else float(feats[i].get(nm))
+                                   for nm in names] for i in idx], dtype=np.float32)
+                # 与 MLP 共享 train-only scaler（公平比较：归一化只 fit train）
+                if scaler is not None:
+                    X = scaler.transform(raw).astype(np.float32)
+                else:
+                    X = raw
                 out.append((s, idx, X))
             return out
 
@@ -613,16 +617,38 @@ def main() -> None:
 
     print("[v3] building datasets ...")
     datasets = {}
+    binding_all: list[dict] = []
     for role in ("detector_train", "model_selection", "threshold_validation"):
-        meta, feats, lraw, loff, cov = build_dataset_v3(
+        meta, feats, lraw, loff, cov, binding_log = build_dataset_v3(
             session_root, records_root, role, args.timeline_manifest, out_dir)
         datasets[role] = (meta, feats, lraw, loff, cov)
+        binding_all.extend(binding_log)
         print(f"[v3] {role}: role={meta.get('role')} n_songs={meta.get('n_songs')} "
-              f"n_units={meta.get('n_units')} n_intervals={meta.get('n_intervals')}")
+              f"n_units={meta.get('n_units')} n_intervals={meta.get('n_intervals')} "
+              f"binding_mismatch={meta.get('binding_mismatch')}")
 
     tr_meta, tr_feats, tr_lraw, tr_loff, tr_cov = datasets["detector_train"]
     va_meta, va_feats, va_lraw, va_loff, va_cov = datasets["model_selection"]
     th_meta, th_feats, th_lraw, th_loff, th_cov = datasets["threshold_validation"]
+
+    binding_audit = {
+        "schema_version": "committed_observation_binding_audit_v1",
+        "n_mismatch": len(binding_all),
+        "by_reason": {r: sum(1 for m in binding_all if m.get("reason") == r)
+                      for r in sorted({m.get("reason") for m in binding_all})},
+        "mismatches": binding_all,
+        "invariant": "model_selection Safe/Grey/Unsafe must equal authoritative Transition "
+                     "549/804/2021 (blocking)",
+        "model_selection_counts": {"safe": va_meta.get("n_safe_raw"),
+                                   "grey": va_meta.get("n_grey_raw"),
+                                   "unsafe": va_meta.get("n_unsafe_raw"),
+                                   "n_units": va_meta.get("n_units")},
+    }
+    (out_dir / "COMMITTED_OBSERVATION_BINDING_AUDIT.json").write_text(
+        json.dumps(binding_audit, ensure_ascii=False, indent=2))
+    if len(binding_all) > 0:
+        (out_dir / "COMMITTED_OBSERVATION_BINDING_MISMATCH.jsonl").write_text(
+            "\n".join(json.dumps(m, ensure_ascii=False) for m in binding_all) + "\n", "utf-8")
 
     tr_bin, _ = grey_excluded_binary(tr_lraw)
     va_bin, va_grey = grey_excluded_binary(va_lraw)
@@ -709,8 +735,18 @@ def main() -> None:
     best_combo = max(executed, key=lambda c: executed[c]["auc_heldout"] or -1)
     best_r = executed[best_combo]
     names = fam_names(*best_r["families"])
-    _, _, used, tr_probs, th_probs, err = _fit_predict(
+    best_model, best_scaler, used, tr_probs, th_probs, err = _fit_predict(
         tr_feats, tr_bin, th_feats, th_bin, names, best_r["families"])
+    # 持久化 best detector（可追溯：阈值曲线/unit 判定可离线复核）
+    if not err and best_model is not None:
+        import pickle as _pickle
+        pkl_path = out_dir / f"detector_mlp_v3_{best_combo}.pkl"
+        _pickle.dump({"model": best_model, "scaler": best_scaler,
+                      "features_used": list(used), "combo": best_combo,
+                      "train_role": "detector_train",
+                      "auc_heldout": best_r.get("auc_heldout")},
+                     open(pkl_path, "wb"))
+        print(f"[v3] persisted detector -> {pkl_path.name}")
     working_points = _strict_working_points(th_probs, th_lraw) if not err else []
     for wp in working_points:
         wp["model_combo"] = best_combo
@@ -727,9 +763,13 @@ def main() -> None:
     }
     print(f"[v3] best combo: {best_combo} -> working points on threshold_validation")
 
-    eval_json = {"role": "threshold_validation", "p_bad": list(th_probs), "labels": th_lraw,
-                 "n_units": len(th_feats)}
-    eval_path = out_dir / "_eval_v3_threshold.json"
+    eval_json = {
+        "role": "threshold_validation", "p_bad": list(th_probs), "labels": th_lraw,
+        "n_units": len(th_feats),
+        "song_ids": [r.get("song_id") for r in (th_meta.get("rows") or [])],
+        "canonical_ids": [int(r.get("cid")) for r in (th_meta.get("rows") or [])],
+    }
+    eval_path = out_dir / "THRESHOLD_VALIDATION_PBAD.json"
     eval_path.write_text(json.dumps(eval_json, ensure_ascii=False), encoding="utf-8")
     th_json = out_dir / "_frozen_v3_for_intervals.json"
     th_json.write_text(json.dumps(frozen, ensure_ascii=False), encoding="utf-8")
@@ -865,8 +905,7 @@ def main() -> None:
     }
     (out_dir / "SIGNAL_COMPLETION_MATRIX_v3.json").write_text(
         json.dumps(matrix_json, indent=2, ensure_ascii=False), encoding="utf-8")
-    for path in (eval_path, th_json):
-        path.unlink(missing_ok=True)
+    # 保留 THRESHOLD_VALIDATION_PBAD.json 与 _frozen_v3_for_intervals.json 作为可追溯中间产物
     print(f"[v3] done -> {out_dir} ({round(time.time() - t0, 1)}s)")
     print("[v3] matrix: " + ", ".join(f"{r['branch_id']}={r['status']}" for r in matrix_rows))
 

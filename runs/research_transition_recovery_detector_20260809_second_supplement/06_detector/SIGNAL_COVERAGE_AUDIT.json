@@ -1,0 +1,31 @@
+{
+  "schema_version": "signal_coverage_audit_v1",
+  "source": "recollect_evidence_v3 (fixed per-window H/P)",
+  "requests_total": 185,
+  "H": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "P": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "R": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "O": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "S": {
+    "denominator": 185,
+    "covered": 185,
+    "coverage": 1.0
+  },
+  "note": "H/P evidence 已按 records request 重新 forward，每窗独立 npy；H/P 覆盖=1.0（修复 window 污染）"
+}

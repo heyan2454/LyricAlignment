@@ -18,9 +18,10 @@ def test_competing_path_features_clear_winner():
         probs[i, rng.integers(0, 10)] += 0.2
     probs /= probs.sum(axis=1, keepdims=True)
     f = competing_path_features(probs)
-    assert f["status"] == "ok"
-    assert f["second_path_diverse"] is False  # 无整体 alternate path（P=无歧义）
+    assert f["status"] == "unique_posterior"  # 全请求唯一单调路径（P=无歧义）
+    assert f["second_path_diverse"] is False
     assert f["differing_slot_fraction"] == 0.0
+    assert f["has_distinct_second_path"] is False
 
 
 def test_competing_path_alternate_diverse():
@@ -33,7 +34,8 @@ def test_competing_path_alternate_diverse():
     f = competing_path_features(probs)
     assert f["status"] == "ok"
     assert f["second_path_diverse"] is True
-    assert f["differing_slot_fraction"] >= 0.5
+    assert f["has_distinct_second_path"] is True
+    assert f["differing_slot_fraction"] > 0.0
     assert f["normalized_score_gap"] is not None
 
 

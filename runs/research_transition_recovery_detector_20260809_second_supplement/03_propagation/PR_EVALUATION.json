@@ -1,0 +1,12 @@
+{
+  "schema_version": "pr_evaluation_v1",
+  "n_episodes": 252,
+  "n_high": 171,
+  "n_non_high": 81,
+  "high_risk_auroc": 0.5103,
+  "high_risk_auprc": 0.6886,
+  "source_song_macro_auroc": 0.5497,
+  "correctness_proxy_auroc": 0.5102880658436213,
+  "correctness_auroc": 0.5102880658436213,
+  "note": "输入=episode 首窗决策时 committed rows 的 R 族均值特征；label=high vs non-high；correctness=冻结 correctness detector p_bad 聚合（max/mean）"
+}

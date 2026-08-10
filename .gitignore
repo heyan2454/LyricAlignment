@@ -38,6 +38,10 @@ runs/**/evidence_pack/
 runs/**/evidence_pack.tar.gz
 reports/**/evidence_pack/
 reports/**/evidence_pack.tar.gz
+runs/**/06_detector/evidence_*.jsonl
+runs/**/06_detector/THRESHOLD_VALIDATION_PBAD.json
+runs/**/06_detector/_frozen_v3_for_intervals.json
+runs/**/06_detector/detector_mlp_v3_*.pkl
 
 # GT 逐字符评价 / 跨域对照输出（工作目录冒烟产物）
 gt_eval_out/
