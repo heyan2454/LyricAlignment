@@ -125,3 +125,41 @@ def test_audit_historical_gt_lineage(tmp_path):
     assert gt_entry["action"] == "REAGGREGATE"
     assert gt_entry["route"] == "cpu"
     assert gt_entry["priority"] == "P0"
+
+
+def test_scan_error_files_counted_as_provenance_unknown(tmp_path):
+    v7_root = tmp_path / "research_v7_align_behavior"
+    v7_root.mkdir(parents=True)
+    for name in ("GT_EVAL_long_slot.json", "LABEL_SUMMARY_m4.json"):
+        (v7_root / name).write_text("{}")
+    broken = v7_root / "GT_EVAL_corrupt.json"
+    broken.symlink_to(v7_root / "does_not_exist_target")
+
+    out_dir = tmp_path / "out"
+    run_scanner(v7_root, out_dir)
+
+    rows = [
+        json.loads(line)
+        for line in (out_dir / "HISTORICAL_GT_LINEAGE.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    error_rows = [r for r in rows if r["artifact_path"].endswith("GT_EVAL_corrupt.json")]
+    assert len(error_rows) == 1
+    row = error_rows[0]
+    assert row["category"] == "PROVENANCE_UNKNOWN"
+    assert row["gt_axis"] == "PROVENANCE_UNKNOWN"
+    assert row["action"] == "PROVENANCE_UNKNOWN"
+    assert row["note"] == "scan_error"
+    assert row["scan_error"]
+
+    audit = json.loads((out_dir / "PRETRANSITION_GT_AUDIT.json").read_text(encoding="utf-8"))
+    unknown_paths = [r["artifact_path"] for r in audit["provenance_unknown_rows"]]
+    assert any(p.endswith("GT_EVAL_corrupt.json") for p in unknown_paths)
+    err_unknown = [
+        r for r in audit["provenance_unknown_rows"] if r["artifact_path"].endswith("GT_EVAL_corrupt.json")
+    ]
+    assert err_unknown and err_unknown[0]["action"] == "PROVENANCE_UNKNOWN"
+
+    with open(out_dir / "HISTORICAL_GT_LINEAGE.csv", encoding="utf-8") as fh:
+        csv_rows = list(csv.DictReader(fh))
+    csv_err = [r for r in csv_rows if r["artifact_path"].endswith("GT_EVAL_corrupt.json")]
+    assert len(csv_err) == 1 and csv_err[0]["category"] == "PROVENANCE_UNKNOWN"
