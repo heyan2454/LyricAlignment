@@ -599,3 +599,81 @@ def test_builder_segment_offsets_and_source_map(tmp_path):
     # 6) seams 交叉校验：seams[i].timeline_sec == offs[i+1].global_start_sec
     for si, seam in enumerate(tl["seams"]):
         assert abs(seam["timeline_sec"] - offs[si + 1]["global_start_sec"]) < 1e-6
+
+
+def test_builder_song_allowlist_roles_and_source_split(tmp_path):
+    """Doc 19 Stage 2：--song-allowlist 2 首（role 各 validation/test）——
+    只构造 allowlist 内歌曲；request 行 split=allowlist 角色且带 source_split；tl 行带
+    source_split；不在 allowlist 的源歌被拒绝。"""
+    mf, audio_root = _make_m4_manifest(tmp_path, n_songs=3)  # 3 首（测试歌0/1/2）
+    songs = ["测试歌0", "测试歌1", "测试歌2"]
+    al = tmp_path / "allowlist.jsonl"
+    al.write_text("\n".join(json.dumps(r) for r in [
+        {"song_id": songs[0], "role": "validation"},
+        {"song_id": songs[1], "split": "test"},
+    ]) + "\n")
+    out = tmp_path / "fm_allowlist"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "180",
+                        "--windows-per-song", "1", "--limit", "10",
+                        "--song-allowlist", str(al)],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    tls = [json.loads(l) for l in (out / "LONG_TIMELINE_MANIFEST.jsonl").read_text().splitlines() if l.strip()]
+    assert {t["song_id"] for t in tls} == set(songs[:2]), [t["song_id"] for t in tls]
+    by_song = {t["song_id"]: t["source_split"] for t in tls}
+    assert by_song == {songs[0]: "validation", songs[1]: "test"}, by_song
+    reqs = [json.loads(l) for l in (out / "REQUESTS.jsonl").read_text().splitlines() if l.strip()]
+    assert reqs
+    for rrow in reqs:
+        song = rrow["pair_id"].rsplit(":", 1)[0]
+        assert rrow["split"] == by_song[song], rrow["request_id"]
+        assert rrow["source_split"] == by_song[song], rrow["request_id"]
+    wrows = [json.loads(l) for l in (out / "WINDOW_PLAN.jsonl").read_text().splitlines() if l.strip()]
+    assert wrows and all(w["source_split"] == by_song[w["song_id"]] for w in wrows), wrows
+    # 外部歌（测试歌2）不进入时间线/音频
+    assert all("测试歌2" not in t["song_id"] for t in tls)
+    assert not (out / "audio" / f"{songs[2]}.wav").exists()
+    # FREEZE 记录 allowlist 契约
+    fr = json.loads((out / "FREEZE.json").read_text())
+    al_info = fr["song_allowlist"]
+    assert al_info["path"] == str(al)
+    assert al_info["sha256"]
+    assert al_info["roles"] == ["test", "validation"]
+    assert al_info["role_counts"] == {"test": 1, "validation": 1}
+    assert al_info["allowlist_song_count"] == 2
+    assert al_info["rejected_song_count"] == 1  # 测试歌2 被拒
+    assert al_info["allowlist_songs_missing_from_m4"] == []
+    rej = [json.loads(l) for l in (out / "ALLOWLIST_REJECTIONS.jsonl").read_text().splitlines() if l.strip()]
+    assert any(x["song_id"] == songs[2] and x["reason"] == "not_in_allowlist" for x in rej), rej
+    assert fr["files"].get("ALLOWLIST_REJECTIONS.jsonl")
+
+
+def test_builder_song_allowlist_rejects_and_reports_missing(tmp_path):
+    """Doc 19 Stage 2：m4 中不在 allowlist 的歌被拒绝；allowlist 中不在 m4 manifest 的
+    song 以 reason=not_in_m4 上报到 ALLOWLIST_REJECTIONS.jsonl 与 FREEZE。"""
+    mf, audio_root = _make_m4_manifest(tmp_path, n_songs=2)
+    songs = ["测试歌0", "测试歌1"]
+    al = tmp_path / "allowlist_missing.jsonl"
+    al.write_text("\n".join(json.dumps(r) for r in [
+        {"song_id": songs[0], "role": "validation"},
+        {"song_id": "不存在的歌", "split": "test"},
+    ]) + "\n")
+    out = tmp_path / "fm_allowlist_reject"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "180",
+                        "--windows-per-song", "1", "--limit", "10",
+                        "--song-allowlist", str(al)],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    tls = [json.loads(l) for l in (out / "LONG_TIMELINE_MANIFEST.jsonl").read_text().splitlines() if l.strip()]
+    assert {t["song_id"] for t in tls} == {songs[0]}, [t["song_id"] for t in tls]
+    rej = [json.loads(l) for l in (out / "ALLOWLIST_REJECTIONS.jsonl").read_text().splitlines() if l.strip()]
+    reasons = {x["song_id"]: x["reason"] for x in rej}
+    assert reasons.get(songs[1]) == "not_in_allowlist", reasons
+    assert reasons.get("不存在的歌") == "not_in_m4", reasons
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["song_allowlist"]["rejected_song_count"] == 1
+    assert fr["song_allowlist"]["allowlist_songs_missing_from_m4"] == ["不存在的歌"]
