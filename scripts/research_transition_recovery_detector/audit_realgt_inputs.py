@@ -147,11 +147,21 @@ def build_provenance_audit(cohort_path: Path, long_path: Path, real_gt_audit_pat
 
             rg = real_gt_per_song.get(sid) if isinstance(real_gt_per_song, dict) else None
             if isinstance(rg, dict):
-                row["real_gt"] = {
-                    "song_in_audit": True,
-                    "accepted_real_gt": int(rg.get("accepted", 0)),
-                    "unlabeled": int(rg.get("unlabeled", 0)),
-                }
+                accepted_val = rg.get("accepted", rg.get("accepted_gt_units"))
+                unlabeled_val = rg.get("unlabeled", rg.get("unlabeled_units"))
+                if accepted_val is None or unlabeled_val is None:
+                    row["real_gt"] = {
+                        "song_in_audit": True,
+                        "accepted_real_gt": 0,
+                        "unlabeled": 0,
+                        "field_missing": True,
+                    }
+                else:
+                    row["real_gt"] = {
+                        "song_in_audit": True,
+                        "accepted_real_gt": int(accepted_val),
+                        "unlabeled": int(unlabeled_val),
+                    }
             else:
                 row["real_gt"] = {"song_in_audit": False, "accepted_real_gt": 0, "unlabeled": 0}
 
@@ -170,6 +180,8 @@ def build_provenance_audit(cohort_path: Path, long_path: Path, real_gt_audit_pat
                 missing.append("manifest_row_sha256")
             if not row["real_gt"]["song_in_audit"]:
                 missing.append("real_gt_audit_song")
+            elif row["real_gt"].get("field_missing"):
+                missing.append("real_gt_audit_fields")
             row["missing"] = missing
             row["provenance_ok"] = not missing
         except Exception as exc:
@@ -252,9 +264,17 @@ def classify_entry(
     song = entry.get("song_id", "")
     expected_audio = cohort_audio_sha.get(song, "")
     expected_text = song_texts.get(song, "")
+    missing_core = [
+        field for field in ("model_id", "checkpoint_sha", "audio_sha", "request_schema", "text", "mapping")
+        if not entry.get(field)
+    ]
+    if missing_core:
+        return "not_reusable", [f"missing_core_field:{field}" for field in missing_core]
     mismatches = []
     for field in ("model_id", "checkpoint_sha", "revision", "request_schema", "mapping"):
-        if entry.get(field) != current.get(field, ""):
+        if not current.get(field):
+            mismatches.append(f"identity_source_missing:{field}")
+        elif entry.get(field) != current[field]:
             mismatches.append(f"mismatch:{field}")
     if entry.get("audio_sha") != expected_audio:
         mismatches.append("mismatch:audio_sha" if expected_audio else "mismatch:audio_sha(no_cohort_audio)")
@@ -283,6 +303,7 @@ def build_cache_reuse_plan(
         klass, reasons = classify_entry(entry, current, cohort_audio_sha, song_texts)
         counts[klass] += 1
         record = {"request_id": entry["request_id"], "song_id": entry.get("song_id", ""),
+                  "prediction_sha": entry.get("prediction_sha", ""),
                   "classification": klass, "reasons": reasons, "source": entry.get("_source", ""),
                   "identity": {field: entry.get(field, "") for field in CORE_IDENTITY_FIELDS},
                   "code_version": entry.get("code_version", ""),
@@ -312,8 +333,9 @@ def merge_lineage_summary(lineage_csv: Path | None, plan: dict, out: Path) -> No
                 "note": "empty summary",
             })
             return
-        by_pred = {e["request_id"]: e["classification"] for e in plan["entries"]}
-        by_request = dict(by_pred)
+        by_request = {e["request_id"]: e["classification"] for e in plan["entries"]}
+        by_pred_sha = {e.get("prediction_sha") or e["request_id"]: e["classification"]
+                       for e in plan["entries"]}
         with open(lineage_csv, newline="", encoding="utf-8") as lf:
             reader = csv.DictReader(lf)
             rows = list(reader)
@@ -321,8 +343,8 @@ def merge_lineage_summary(lineage_csv: Path | None, plan: dict, out: Path) -> No
             rid = (row.get("request_id") or "").strip()
             pred_sha = (row.get("prediction_sha") or "").strip()
             klass = by_request.get(rid)
-            if klass is None and pred_sha:
-                klass = next((v for k, v in by_pred.items() if k == pred_sha), None)
+            if klass is None:
+                klass = by_pred_sha.get(pred_sha)
             if klass == "reusable":
                 row["action_override"] = "reuse"
                 row["override_reason"] = "cache entry reusable with matching identity"

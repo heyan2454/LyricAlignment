@@ -13,8 +13,10 @@ import pytest
 from scripts.research_transition_recovery_detector.audit_realgt_inputs import (
     build_cache_reuse_plan,
     build_provenance_audit,
+    classify_entry,
     discover_cache_entries,
     main,
+    merge_lineage_summary,
 )
 
 
@@ -210,3 +212,83 @@ def test_not_reusable_on_audio_mismatch(tmp_path: Path) -> None:
     plan = build_cache_reuse_plan([str(cache_dir)], CURRENT_IDENTITY, inputs["audio_sha"], inputs["text"])
     by_rq = {e["request_id"]: e["classification"] for e in plan["entries"]}
     assert by_rq["rq-audio"] == "not_reusable"
+
+
+def _write_real_gt_audit(path: Path, per_song: dict) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"summary": {}, "per_song": per_song}, ensure_ascii=False) + "\n", encoding="utf-8")
+    return path
+
+
+def test_provenance_parses_both_real_gt_key_pairs(tmp_path: Path) -> None:
+    inputs = make_inputs(tmp_path)
+    new_keys = _write_real_gt_audit(tmp_path / "AUDIT_NEW.json", {
+        "S1": {"total": 1, "accepted_gt_units": 1, "unlabeled_units": 0},
+        "S2": {"total": 1, "accepted_gt_units": 0, "unlabeled_units": 1},
+        "S3": {"total": 1, "accepted_gt_units": 0, "unlabeled_units": 1},
+    })
+    audit = build_provenance_audit(inputs["cohort"], inputs["long"], new_keys)
+    by_song = {r["song_id"]: r for r in audit["per_song"]}
+    assert by_song["S1"]["real_gt"] == {"song_in_audit": True, "accepted_real_gt": 1, "unlabeled": 0}
+    assert by_song["S2"]["real_gt"] == {"song_in_audit": True, "accepted_real_gt": 0, "unlabeled": 1}
+    assert audit["provenance_ok"] is True
+
+
+def test_provenance_fails_when_real_gt_keys_absent(tmp_path: Path) -> None:
+    inputs = make_inputs(tmp_path)
+    no_keys = _write_real_gt_audit(tmp_path / "AUDIT_NO_KEYS.json", {"S1": {"total": 1, "coverage": 1.0}})
+    audit = build_provenance_audit(inputs["cohort"], inputs["long"], no_keys)
+    row = audit["per_song"][0]
+    assert row["provenance_ok"] is False
+    assert "real_gt_audit_fields" in row["missing"]
+    assert row["real_gt"]["field_missing"] is True
+
+
+def test_classify_missing_core_field_not_reusable(tmp_path: Path) -> None:
+    inputs = make_inputs(tmp_path)
+    entry = _cache_entry("rq-mcore", "S1", inputs["audio_sha"]["S1"], inputs["text"]["S1"],
+                         model_id="")
+    klass, reasons = classify_entry(entry, CURRENT_IDENTITY, inputs["audio_sha"], inputs["text"])
+    assert klass == "not_reusable"
+    assert any(r == "missing_core_field:model_id" for r in reasons)
+
+
+def test_classify_identity_source_missing_not_reusable(tmp_path: Path) -> None:
+    inputs = make_inputs(tmp_path)
+    entry = _cache_entry("rq-isrc", "S1", inputs["audio_sha"]["S1"], inputs["text"]["S1"])
+    partial_current = {k: v for k, v in CURRENT_IDENTITY.items() if k != "checkpoint_sha"}
+    klass, reasons = classify_entry(entry, partial_current, inputs["audio_sha"], inputs["text"])
+    assert klass == "not_reusable"
+    assert any(r == "identity_source_missing:checkpoint_sha" for r in reasons)
+
+
+def test_classify_only_code_env_missing_diagnostic(tmp_path: Path) -> None:
+    inputs = make_inputs(tmp_path)
+    entry = _cache_entry("rq-diag2", "S1", inputs["audio_sha"]["S1"], inputs["text"]["S1"],
+                         code_version="", environment_identity="")
+    klass, reasons = classify_entry(entry, CURRENT_IDENTITY, inputs["audio_sha"], inputs["text"])
+    assert klass == "reusable_for_diagnostic_only"
+    assert any(r == "missing:code_version" for r in reasons)
+    assert any(r == "missing:environment_identity" for r in reasons)
+
+
+def test_lineage_merge_matches_by_prediction_sha(tmp_path: Path) -> None:
+    inputs = make_inputs(tmp_path)
+    cache_dir = tmp_path / "historical" / "run_predsha"
+    _write_jsonl(cache_dir / "cache_entries.jsonl", [
+        _cache_entry("rq-ps", "S1", inputs["audio_sha"]["S1"], inputs["text"]["S1"],
+                     prediction_sha="sha-pred-xyz"),
+    ])
+    plan = build_cache_reuse_plan([str(cache_dir)], CURRENT_IDENTITY, inputs["audio_sha"], inputs["text"])
+    lineage = tmp_path / "lineage.csv"
+    lineage.write_text(
+        "artifact_path,prediction_sha,request_id,action\n"
+        "art_1,sha-pred-xyz,,\n"
+        "art_2,,rq-ps,\n",
+        encoding="utf-8")
+    out = tmp_path / "lineage_summary.csv"
+    merge_lineage_summary(lineage, plan, out)
+    rows = list(csv.DictReader(out.open(encoding="utf-8")))
+    assert rows[0]["action_override"] == "reuse"
+    assert rows[0]["override_reason"] == "cache entry reusable with matching identity"
+    assert rows[1]["action_override"] == "reuse"
