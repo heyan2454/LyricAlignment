@@ -115,7 +115,7 @@ def _write(tmp: Path) -> dict[str, Path]:
         _requests("songB", "songB:w0:full", [20, 21, 22, 23, 24]),
         _requests("songA", "songA:w2:full", [12, 14]),          # 无 accepted -> metrics None
         _requests("songA", "songA:w1:full", [10, 11, 13]),      # 历史行映射缺失
-        _requests("songA", "songA:w0:nog", [10, 11]),           # 无历史预测
+        _requests("songA", "songA:w0:nog", [10, 11, 99]),       # 历史 rows 空 -> rerun
     ]
     reqs.write_text("".join(json.dumps(r) + "\n" for r in req_rows), encoding="utf-8")
 
@@ -148,6 +148,8 @@ def _write(tmp: Path) -> dict[str, Path]:
              "rows": [
                  {"global_character_index": 99, "pred_start_sec": 0.1, "pred_end_sec": 0.6},
              ]},
+            # rows 空但 queried -> missing_identity_equivalent_prediction
+            {"request_id": "songA:w0:nog", "rows": []},
         ],
     }, ensure_ascii=False), encoding="utf-8")
     return {"cohort": cohort, "timeline": timeline, "annotations": annotations,
@@ -225,6 +227,12 @@ def test_rerun_requests_gpu(tmp_path: Path) -> None:
     summary = json.loads((out / "REAGGREGATION_SUMMARY.json").read_text(encoding="utf-8"))
     assert summary["n_requests_rerun_gpu"] == 2
     assert summary["n_requests_reaggregated"] == 3
+    assert summary["rerun_units"] == 4   # songA {10,11,13} ∪ {10,11,99}
+    assert summary["counts"]["canonical_units"] == 11   # 只含已重聚请求 {10..15}+{20..24}
+    assert summary["counts"]["accepted_real_gt_units"] == 9
+    per_song = {r["song_id"]: r for r in _read_jsonl(out / "PER_SONG.jsonl")}
+    assert per_song["songA"]["rerun_units"] == 4
+    assert per_song["songB"]["rerun_units"] == 0
 
 
 def test_no_historical_all_rerun(tmp_path: Path) -> None:
