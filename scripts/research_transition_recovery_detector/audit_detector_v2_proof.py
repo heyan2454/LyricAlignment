@@ -89,8 +89,10 @@ def _summary_sha(summary: dict) -> str | None:
     return None
 
 
-def _scan_labels(path: Path, max_rows: int = 2000) -> tuple[str, int, set[str], dict[str, bool]]:
-    """Return (sha256 of raw lines, n_rows, start_keys seen, mapping flags)."""
+def _scan_labels(path: Path, max_rows: int = 2000) -> tuple[str, int, set[str], dict[str, bool], bool, dict[str, bool]]:
+    """Return (sha256 of raw lines, n_rows, start_keys seen, mapping flags,
+    truncated, row_status).  Every row is parsed for start-key / status
+    evidence; the max_rows cap is only a fail-closed safeguard flag."""
     digest = hashlib.sha256()
     start_keys: set[str] = set()
     mapping = {
@@ -99,6 +101,7 @@ def _scan_labels(path: Path, max_rows: int = 2000) -> tuple[str, int, set[str], 
         "segment_offsets": False,
         "global_start_sec": False,
     }
+    row_status = {"review_required": False, "uniform_axis": False}
     n_rows = 0
     with open(path, encoding="utf-8") as fh:
         for line in fh:
@@ -107,8 +110,6 @@ def _scan_labels(path: Path, max_rows: int = 2000) -> tuple[str, int, set[str], 
                 continue
             digest.update(line.encode("utf-8"))
             n_rows += 1
-            if n_rows > max_rows:
-                continue
             try:
                 row = json.loads(line)
             except json.JSONDecodeError:
@@ -125,7 +126,11 @@ def _scan_labels(path: Path, max_rows: int = 2000) -> tuple[str, int, set[str], 
                 mapping["source_unit_index"] = True
             if "segment_offsets" in text:
                 mapping["segment_offsets"] = True
-    return digest.hexdigest(), n_rows, start_keys, mapping
+            if "review_required" in text:
+                row_status["review_required"] = True
+            if "uniform" in text and "synthetic_uniform" not in text:
+                row_status["uniform_axis"] = True
+    return digest.hexdigest(), n_rows, start_keys, mapping, n_rows > max_rows, row_status
 
 
 def audit_run(run_root: Path, label_min_commit: str = LABEL_MIN_COMMIT_DEFAULT) -> dict:
@@ -141,6 +146,7 @@ def audit_run(run_root: Path, label_min_commit: str = LABEL_MIN_COMMIT_DEFAULT) 
         "label_commit": None,
         "n_label_rows": None,
     }
+    row_status = {"review_required": False, "uniform_axis": False}
     run_root = Path(run_root)
     summary_path = run_root / "LABEL_SUMMARY.json"
     labels_path = run_root / "LABELS.jsonl"
@@ -176,14 +182,17 @@ def audit_run(run_root: Path, label_min_commit: str = LABEL_MIN_COMMIT_DEFAULT) 
 
     # 2. label rows: post-fix mapping / global clock
     if labels_path.is_file():
-        digest, n_rows, start_keys, mapping = _scan_labels(labels_path)
+        digest, n_rows, start_keys, mapping, truncated, row_status = _scan_labels(labels_path)
         verdict["n_label_rows"] = n_rows
         if not verdict["label_sha"]:
             verdict["label_sha"] = digest
         schema = str(summary.get("schema_version") or "")
         projection_schema = "local_to_global" in schema or "segment_offsets" in schema
 
-        if start_keys and not any("global" in key for key in start_keys):
+        if truncated:
+            verdict["failures"].append("labels_scan_truncated")
+
+        if start_keys and any("global" not in key for key in start_keys):
             verdict["failures"].append("g_defect_local_keys")
 
         mapping_evident = (
@@ -198,34 +207,40 @@ def audit_run(run_root: Path, label_min_commit: str = LABEL_MIN_COMMIT_DEFAULT) 
     elif "missing_labels_file" not in [f.split(":")[0] for f in verdict["failures"]]:
         verdict["failures"].append("missing_labels_file")
 
-    # 3. accepted pinyin statuses
+    # 3. accepted pinyin statuses (summary text + row-level)
     audit_text = json.dumps(summary, ensure_ascii=False)
     if "review_required" in audit_text:
         verdict["failures"].append("pinyin_status_review_required")
     if "uniform" in audit_text and "synthetic_uniform" not in audit_text:
         verdict["failures"].append("pinyin_uniform_axis")
+    if row_status["review_required"] or row_status["uniform_axis"]:
+        verdict["failures"].append("labels_unaccepted_status")
 
-    # 4. explicit query set
+    # 4. explicit query set + label commit from RUN_MANIFEST
+    run_manifest = run_root / "RUN_MANIFEST.json"
     for name in QUERY_MANIFEST_CANDIDATES:
         candidate = manifest_dir / name
         if candidate.is_file():
             verdict["query_set_file"] = str(candidate)
             break
-    if not verdict["query_set_file"]:
-        run_manifest = run_root / "RUN_MANIFEST.json"
-        if run_manifest.is_file():
-            try:
-                manifest = _read_json(run_manifest)
+    if run_manifest.is_file():
+        try:
+            manifest = _read_json(run_manifest)
+            if not verdict["query_set_file"]:
                 path = manifest.get("manifest", {}).get("path")
                 if path and Path(path).is_file():
                     verdict["query_set_file"] = path
-                commit = manifest.get("code_identity", {}).get("git_commit")
-                if commit:
-                    verdict["label_commit"] = str(commit)
-            except (json.JSONDecodeError, OSError):
-                pass
+            commit = manifest.get("label_commit") or manifest.get("code_identity", {}).get("git_commit")
+            if commit:
+                verdict["label_commit"] = str(commit)
+        except (json.JSONDecodeError, OSError):
+            pass
     if not verdict["query_set_file"]:
         verdict["failures"].append("missing_query_set")
+
+    # 5. label commit floor: accepted GT must come from the fixed labeler
+    if verdict["label_commit"] is not None and verdict["label_commit"] < label_min_commit:
+        verdict["failures"].append("label_pre_min_commit")
 
     verdict["pass"] = not verdict["failures"]
     return verdict

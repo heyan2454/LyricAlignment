@@ -142,3 +142,56 @@ def test_aggregate_run_root_and_outputs(tmp_path: Path) -> None:
     assert (out / "DETECTOR_V2_RETIRE_LIST.json").is_file()
     retire = json.loads((out / "DETECTOR_V2_RETIRE_LIST.json").read_text("utf-8"))
     assert [item["run"] for item in retire["retired"]] == ["local", "nolabels"]
+
+
+def _write_run_manifest(root: Path, git_commit: str) -> Path:
+    manifest = {
+        "schema": "run_manifest_v1",
+        "run_id": "run",
+        "code_identity": {"git_commit": git_commit},
+        "manifest": {"path": "manifests/REQUESTS.jsonl"},
+    }
+    (root / "RUN_MANIFEST.json").write_text(json.dumps(manifest), "utf-8")
+    return root
+
+
+def test_local_key_after_max_rows_fails_truncated(tmp_path: Path) -> None:
+    root = _write_good_run(tmp_path / "late_local")
+    rows = [_row("raw_global_start_sec", source_segment_id=3, source_unit_index=5,
+                 segment_offsets={"global_start_sec": 12.0}) for _ in range(2000)]
+    rows.append(_row("raw_local_start_sec"))
+    (root / "LABELS.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    verdict = audit.audit_run(root)
+    assert verdict["pass"] is False
+    assert "labels_scan_truncated" in verdict["failures"]
+    assert "g_defect_local_keys" in verdict["failures"]
+
+
+def test_pre_min_label_commit_fails(tmp_path: Path) -> None:
+    root = _write_good_run(tmp_path / "old_commit")
+    _write_run_manifest(root, "352def4528308ca7906af25b575f7f724e0ee97e")
+    verdict = audit.audit_run(root)
+    assert verdict["pass"] is False
+    assert verdict["label_commit"] == "352def4528308ca7906af25b575f7f724e0ee97e"
+    assert "label_pre_min_commit" in verdict["failures"]
+
+
+def test_label_commit_at_floor_passes(tmp_path: Path) -> None:
+    root = _write_good_run(tmp_path / "floor_commit")
+    _write_run_manifest(root, "42522c39b51f015d7e16b1f62b3b3973e021676a")
+    verdict = audit.audit_run(root)
+    assert verdict["pass"] is True
+    assert "label_pre_min_commit" not in verdict["failures"]
+
+
+def test_review_required_rows_fail(tmp_path: Path) -> None:
+    root = _write_good_run(tmp_path / "review_rows")
+    rows = [
+        _row("raw_global_start_sec", label="review_required_manual", source_segment_id=3,
+             source_unit_index=5, segment_offsets={"global_start_sec": 12.0}),
+        _row("official_global_start_sec"),
+    ]
+    (root / "LABELS.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    verdict = audit.audit_run(root)
+    assert verdict["pass"] is False
+    assert "labels_unaccepted_status" in verdict["failures"]
