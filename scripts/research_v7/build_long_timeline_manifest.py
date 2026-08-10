@@ -19,7 +19,14 @@ stride 档按窗位轮换 phase 起点（offset=window_index % step），每档�
       [--seam-silence-sec 0.5] \
       [--density-strides full,strided2,strided4] \
       [--missing-ratios 0.10,0.25,0.50] [--replace-ratios 0.10,0.25,0.50] \
-      [--extra-ratios 0.10,0.25,0.50]
+      [--extra-ratios 0.10,0.25,0.50] \
+      [--song-allowlist <cohort.jsonl>]
+
+--song-allowlist（Doc 19 Stage 2）：cohort allowlist JSONL，每行必须含 song_id 与角色
+（优先 'role' 键，回退 'split' 键）。提供时：只构造 allowlist 内歌曲的时间线（外部
+源歌被拒绝并写入 ALLOWLIST_REJECTIONS.jsonl）；每行输出都携带 source_split（=
+allowlist 角色），REQUESTS.jsonl 的 split 字段使用该角色替代硬编码 'validation'；
+allowlist 中未出现在 m4 manifest 的 song 被上报。不提供时行为与历史逐字节一致。
 
 --limit 支持 ≥20（13 §3.3 formal gate 每条件 ≥12 首独立 song；默认 10 仅为快速验证，
 正式重建请传 --limit 20，FREEZE 记录 songs）。
@@ -33,6 +40,8 @@ stride 档按窗位轮换 phase 起点（offset=window_index % step），每档�
   WINDOW_PLAN.jsonl             —— 每行：{timeline, window [w0,w1), text_units, canonical_ids,
                                   canonical_to_local, canonical range, slot_plan, request row}
   REQUESTS.jsonl                —— 直接可喂 run_behavior_suite --real 的请求行
+  ALLOWLIST_REJECTIONS.jsonl    —— 仅 --song-allowlist 时输出：被拒源歌（不在 allowlist）+
+                                  在 allowlist 但不在 m4 manifest 的 song
   纯 CPU，不启动模型。
 """
 from __future__ import annotations
@@ -126,8 +135,38 @@ def _atomic_json(path: Path, payload) -> None:
     os.replace(tmp, path)
 
 
-def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | None = None) -> list[dict]:
-    """按 song 聚合段，返回 ≥min_duration 的同歌时间线（段按 item_id 数字序）。"""
+def load_allowlist(path: Path) -> dict[str, str]:
+    """加载 cohort allowlist JSONL → {song_id: role}。
+
+    每行必须含 song_id 与角色（优先 'role' 键，回退 'split' 键）；缺角色抛 ValueError；
+    同一 song_id 角色冲突抛 ValueError。
+    """
+    out: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        r = json.loads(line)
+        song = r.get("song_id")
+        if not song:
+            continue
+        role = r.get("role") or r.get("split")
+        if not role:
+            raise ValueError(f"allowlist row missing 'role'/'split' for song_id={song!r}")
+        prev = out.get(song)
+        if prev is not None and prev != role:
+            raise ValueError(f"allowlist conflict for song_id={song!r}: {prev!r} vs {role!r}")
+        out[song] = role
+    return out
+
+
+def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | None = None,
+            song_allowlist: dict[str, str] | None = None) -> tuple[list[dict], list[dict]]:
+    """按 song 聚合段，返回 ≥min_duration 的同歌时间线（段按 item_id 数字序）。
+
+    提供 song_allowlist 时：只构造 allowlist 内歌曲的时间线并写入 source_split（=allowlist
+    角色）；不在 allowlist 的源歌被拒绝（reason=not_in_allowlist）并随返回值上报。
+    """
     rows = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
     by_song: dict[str, list] = {}
     for r in rows:
@@ -141,8 +180,12 @@ def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | 
             continue  # 音频缺失的段不参与拼接
         by_song.setdefault(song, []).append(r)
     timelines = []
+    rejected: list[dict] = []
     for song, segs in sorted(by_song.items()):
         if not segs:
+            continue
+        if song_allowlist is not None and song not in song_allowlist:
+            rejected.append({"song_id": song, "reason": "not_in_allowlist"})
             continue
         total = sum(float(s.get("duration_sec", 0) or 0) for s in segs)
         if total < min_duration:
@@ -160,14 +203,17 @@ def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | 
         segs_sorted = sorted(segs, key=_num)
         if any(_num(s) < 0 for s in segs_sorted):
             continue
-        timelines.append({
+        tl = {
             "song_id": song, "singer_id": next(iter(singers)), "segments": segs_sorted,
             "total_duration_sec": round(total, 3), "n_segments": len(segs_sorted),
             "audio_root": str(audio_root) if audio_root else "",
-        })
+        }
+        if song_allowlist is not None:
+            tl["source_split"] = song_allowlist[song]
+        timelines.append(tl)
         if len(timelines) >= max_songs:
             break
-    return timelines
+    return timelines, rejected
 
 
 def _canonical_units_for_window(canonical_units, w0: float, w1: float) -> list[dict]:
@@ -187,7 +233,9 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                    missing_ratios: tuple[float, ...] = (0.25,),
                    replace_ratios: tuple[float, ...] = (),
                    extra_ratios: tuple[float, ...] = (),
-                   donor_pool: dict[str, list[str]] | None = None) -> list[dict]:
+                   donor_pool: dict[str, list[str]] | None = None,
+                   source_split: str = "validation",
+                   emit_source_split: bool = False) -> list[dict]:
     """从一条时间线生成 fixed-60s 窗请求（baseline + missing/replace/extra mutation 多档配对）。
 
     slot 密度（13 §S2）：density_tiers 每档生成独立 slot plan（phase 名=档位名，
@@ -281,7 +329,7 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 "timestamp_slot_indices": list(plan.local_indices),
                 "workflow_mode": "long_slot_60s", "mutation_type": "baseline",
                 "mutation_parameters": {"position": "whole", "requested_ratio": 0.0},
-                "language": language, "dataset": "m4singer", "split": "validation",
+                "language": language, "dataset": "m4singer", "split": source_split,
                 "model_id": "Qwen3-ForcedAligner-0.6B-hf", "checkpoint_id": "r2-step-000750",
                 "input_variant": "text_mutation",
                 # canonical lineage（review12：guard/collect/assessor 消费）
@@ -296,6 +344,8 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 "slot_plan_id": plan.plan_id, "comparison_group_id": plan.comparison_group_id,
                 "phase": plan.phase_name,
             }
+            if emit_source_split:
+                base["source_split"] = source_split
             # missing：virtual gap（移除尾部 requested_ratio 比例单位，评价
             # omitted-original）。契约：text_units 截断后，canonical_ids/mapping/
             # range/slot 全部同步到保留单位（缺失单位不得留在请求 canonical 字段里）。
@@ -464,6 +514,10 @@ def main(argv=None) -> int:
     p.add_argument("--extra-ratios", type=str, default="",
                    help="extra 尾部追加核心档（逗号分隔 float，如 0.10,0.25,0.50；"
                         "默认空=不生成 extra 变体）")
+    p.add_argument("--song-allowlist", type=str, default="",
+                   help="cohort allowlist JSONL（每行 song_id + role/split 角色；提供时只构造"
+                        "allowlist 内歌曲，行输出携带 source_split，REQUESTS.split 用该角色；"
+                        "不在 allowlist 的源歌被拒绝并写入 ALLOWLIST_REJECTIONS.jsonl）")
     args = p.parse_args(argv)
 
     if args.seam_silence_sec < 0.0:
@@ -521,7 +575,30 @@ def main(argv=None) -> int:
     out = Path(args.out_root); out.mkdir(parents=True, exist_ok=True)
     manifest_sha = _sha(m4)
     audio_root = Path(args.audio_root) if args.audio_root else None
-    timelines = load_m4(m4, args.min_duration, args.limit, audio_root=audio_root)
+    song_allowlist = None
+    allowlist_path = None
+    allowlist_missing_from_m4: list[str] = []
+    if args.song_allowlist.strip():
+        allowlist_path = Path(args.song_allowlist)
+        if not allowlist_path.is_file():
+            print(json.dumps({"ok": False, "reason": f"song allowlist missing: {allowlist_path}"},
+                             ensure_ascii=False))
+            return 1
+        try:
+            song_allowlist = load_allowlist(allowlist_path)
+        except (ValueError, json.JSONDecodeError) as e:
+            print(json.dumps({"ok": False, "reason": f"bad --song-allowlist: {e}"},
+                             ensure_ascii=False))
+            return 1
+        if not song_allowlist:
+            print(json.dumps({"ok": False, "reason": "song allowlist is empty"},
+                             ensure_ascii=False))
+            return 1
+        m4_song_ids = {r.get("song_id") for r in (
+            json.loads(l) for l in m4.read_text(encoding="utf-8").splitlines() if l.strip())}
+        allowlist_missing_from_m4 = sorted(set(song_allowlist) - set(m4_song_ids))
+    timelines, rejected = load_m4(m4, args.min_duration, args.limit, audio_root=audio_root,
+                                  song_allowlist=song_allowlist)
     if not timelines:
         print(json.dumps({"ok": False, "reason": "no song >= min_duration",
                           "m4_manifest_sha": manifest_sha}, ensure_ascii=False))
@@ -598,6 +675,8 @@ def main(argv=None) -> int:
             "source_audio_paths": [s["audio_path"] for s in segs],
             "concat_audio_path": str(concat_wav),
         }
+        if song_allowlist is not None:
+            tl_row["source_split"] = tl["source_split"]
         tl_rows.append(tl_row)
         timelines_built.append((tl, timeline))
     # 第二遍：request 生成（donor 池必须含全部时间线，replace/extra 的 donor 才能
@@ -614,17 +693,27 @@ def main(argv=None) -> int:
                                    row_sha=row_sha, density_tiers=density_tiers,
                                    missing_ratios=missing_ratios,
                                    replace_ratios=replace_ratios, extra_ratios=extra_ratios,
-                                   donor_pool=donor_pool)
+                                   donor_pool=donor_pool,
+                                   source_split=tl.get("source_split", "validation"),
+                                   emit_source_split=song_allowlist is not None)
         reqs.extend(song_reqs)
         for r in song_reqs:
-            win_rows.append({"song_id": tl["song_id"], "request_id": r["request_id"],
-                             "window": [r["audio_start_sec"], r["audio_end_sec"]],
-                             "canonical_ids": r["canonical_ids"],
-                             "text_units": r["text_units"],
-                             "slot_plan_id": r.get("slot_plan_id")})
+            wrow = {"song_id": tl["song_id"], "request_id": r["request_id"],
+                    "window": [r["audio_start_sec"], r["audio_end_sec"]],
+                    "canonical_ids": r["canonical_ids"],
+                    "text_units": r["text_units"],
+                    "slot_plan_id": r.get("slot_plan_id")}
+            if song_allowlist is not None:
+                wrow["source_split"] = r.get("source_split") or tl.get("source_split")
+            win_rows.append(wrow)
     _atomic_jsonl(out / "LONG_TIMELINE_MANIFEST.jsonl", tl_rows)
     _atomic_jsonl(out / "WINDOW_PLAN.jsonl", win_rows)
     _atomic_jsonl(out / "REQUESTS.jsonl", reqs)
+    if song_allowlist is not None:
+        reject_rows = [dict(x) for x in rejected]
+        reject_rows += [{"song_id": s, "reason": "not_in_m4"}
+                        for s in allowlist_missing_from_m4]
+        _atomic_jsonl(out / "ALLOWLIST_REJECTIONS.jsonl", reject_rows)
     freeze = {
         "schema": "research_v7_long_timeline_manifest_v1",
         "m4_manifest": {"path": str(m4), "sha256": manifest_sha},
@@ -650,6 +739,19 @@ def main(argv=None) -> int:
             "REQUESTS.jsonl": _sha(out / "REQUESTS.jsonl"),
         },
     }
+    if song_allowlist is not None:
+        role_counts: dict[str, int] = {}
+        for role in song_allowlist.values():
+            role_counts[role] = role_counts.get(role, 0) + 1
+        freeze["song_allowlist"] = {
+            "path": str(allowlist_path), "sha256": _sha(allowlist_path),
+            "roles": sorted(set(song_allowlist.values())),
+            "role_counts": {k: role_counts[k] for k in sorted(role_counts)},
+            "allowlist_song_count": len(song_allowlist),
+            "rejected_song_count": len(rejected),
+            "allowlist_songs_missing_from_m4": allowlist_missing_from_m4,
+        }
+        freeze["files"]["ALLOWLIST_REJECTIONS.jsonl"] = _sha(out / "ALLOWLIST_REJECTIONS.jsonl")
     _atomic_json(out / "FREEZE.json", freeze)
     print(json.dumps({"ok": True, "songs": len(tl_rows), "requests": len(reqs),
                       "out_root": str(out), "freeze": freeze["files"]["REQUESTS.jsonl"][:16]},
