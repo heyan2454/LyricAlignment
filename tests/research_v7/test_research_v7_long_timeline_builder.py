@@ -677,3 +677,69 @@ def test_builder_song_allowlist_rejects_and_reports_missing(tmp_path):
     fr = json.loads((out / "FREEZE.json").read_text())
     assert fr["song_allowlist"]["rejected_song_count"] == 1
     assert fr["song_allowlist"]["allowlist_songs_missing_from_m4"] == ["不存在的歌"]
+
+
+def test_builder_song_allowlist_reports_no_audio_and_below_min(tmp_path):
+    """review1#3：allowlist 内歌曲因（a）音频/段不可用（no_audio）或
+    （b）聚合时间线 <min_duration（below_min_duration）被跳过时，必须写入
+    ALLOWLIST_REJECTIONS.jsonl（reason=no_audio / below_min_duration），且不进入
+    LONG_TIMELINE_MANIFEST.jsonl；allowlist 为 None 时行为不变（不产生 rejected 行）。"""
+    audio_root = tmp_path / "audio"
+    lyrics = "春风吹绿江南岸"
+    rows = []
+    # 正常歌：40 段 × 5s = 200s ≥ 180（通过）
+    for i in range(40):
+        rel = f"Soprano-1#正常歌/{i:04d}.wav"
+        _write_wav(audio_root / f"Soprano-1#正常歌" / f"{i:04d}.wav", sec=5.0)
+        rows.append({"item_id": f"Soprano-1#正常歌#{i:04d}", "song_id": "正常歌", "singer_id": "Soprano-1",
+                     "audio_relpath": rel, "duration_sec": 5.0, "language": "zh",
+                     "lyrics_normalized": lyrics, "lyrics_raw": lyrics, "split": "validation",
+                     "status": "ok", "mapping_status": "ok"})
+    # 短歌：5 段 × 5s = 25s < 180 → below_min_duration
+    for i in range(5):
+        rel = f"Soprano-1#短歌/{i:04d}.wav"
+        _write_wav(audio_root / f"Soprano-1#短歌" / f"{i:04d}.wav", sec=5.0)
+        rows.append({"item_id": f"Soprano-1#短歌#{i:04d}", "song_id": "短歌", "singer_id": "Soprano-1",
+                     "audio_relpath": rel, "duration_sec": 5.0, "language": "zh",
+                     "lyrics_normalized": lyrics, "lyrics_raw": lyrics, "split": "validation",
+                     "status": "ok", "mapping_status": "ok"})
+    # 无音频歌：manifest 行存在但音频文件缺失 → 所有段被跳过 → no_audio
+    for i in range(5):
+        rel = f"Soprano-1#无音频歌/{i:04d}.wav"
+        rows.append({"item_id": f"Soprano-1#无音频歌#{i:04d}", "song_id": "无音频歌", "singer_id": "Soprano-1",
+                     "audio_relpath": rel, "duration_sec": 5.0, "language": "zh",
+                     "lyrics_normalized": lyrics, "lyrics_raw": lyrics, "split": "validation",
+                     "status": "ok", "mapping_status": "ok"})
+    mf = tmp_path / "m4_manifest.jsonl"
+    mf.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n")
+    al = tmp_path / "allowlist.jsonl"
+    al.write_text("\n".join(json.dumps({"song_id": s, "role": "validation"})
+                            for s in ("正常歌", "短歌", "无音频歌")) + "\n")
+
+    out = tmp_path / "fm_allowlist_drop"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                        "--m4-manifest", str(mf), "--out-root", str(out),
+                        "--audio-root", str(audio_root), "--min-duration", "180",
+                        "--windows-per-song", "1", "--limit", "10",
+                        "--song-allowlist", str(al)],
+                       capture_output=True, text=True, env=ENV)
+    assert r.returncode == 0, r.stderr
+    tls = [json.loads(l) for l in (out / "LONG_TIMELINE_MANIFEST.jsonl").read_text().splitlines() if l.strip()]
+    assert {t["song_id"] for t in tls} == {"正常歌"}, [t["song_id"] for t in tls]
+    rej = [json.loads(l) for l in (out / "ALLOWLIST_REJECTIONS.jsonl").read_text().splitlines() if l.strip()]
+    reasons = {x["song_id"]: x["reason"] for x in rej}
+    assert reasons.get("短歌") == "below_min_duration", reasons
+    assert reasons.get("无音频歌") == "no_audio", reasons
+    assert "正常歌" not in reasons, reasons
+    fr = json.loads((out / "FREEZE.json").read_text())
+    assert fr["song_allowlist"]["rejected_song_count"] == 2
+
+    # allowlist 为 None：不产生 rejected 行（原行为不变）
+    out2 = tmp_path / "fm_allowlist_drop_no_allowlist"
+    r2 = subprocess.run([sys.executable, str(ROOT / "scripts/research_v7/build_long_timeline_manifest.py"),
+                         "--m4-manifest", str(mf), "--out-root", str(out2),
+                         "--audio-root", str(audio_root), "--min-duration", "180",
+                         "--windows-per-song", "1", "--limit", "10"],
+                        capture_output=True, text=True, env=ENV)
+    assert r2.returncode == 0, r2.stderr
+    assert not (out2 / "ALLOWLIST_REJECTIONS.jsonl").exists()

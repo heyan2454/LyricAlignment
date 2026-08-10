@@ -40,8 +40,10 @@ allowlist 中未出现在 m4 manifest 的 song 被上报。不提供时行为与
   WINDOW_PLAN.jsonl             —— 每行：{timeline, window [w0,w1), text_units, canonical_ids,
                                   canonical_to_local, canonical range, slot_plan, request row}
   REQUESTS.jsonl                —— 直接可喂 run_behavior_suite --real 的请求行
-  ALLOWLIST_REJECTIONS.jsonl    —— 仅 --song-allowlist 时输出：被拒源歌（不在 allowlist）+
-                                  在 allowlist 但不在 m4 manifest 的 song
+   ALLOWLIST_REJECTIONS.jsonl    —— 仅 --song-allowlist 时输出：被拒源歌（不在 allowlist）+
+                                  在 allowlist 但不在 m4 manifest 的 song（not_in_m4）+
+                                  在 allowlist 但被跳过的时间线（no_audio/below_min_duration/
+                                  multi_singer/bad_item_id）
   纯 CPU，不启动模型。
 """
 from __future__ import annotations
@@ -165,14 +167,19 @@ def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | 
     """按 song 聚合段，返回 ≥min_duration 的同歌时间线（段按 item_id 数字序）。
 
     提供 song_allowlist 时：只构造 allowlist 内歌曲的时间线并写入 source_split（=allowlist
-    角色）；不在 allowlist 的源歌被拒绝（reason=not_in_allowlist）并随返回值上报。
+    角色）；不在 allowlist 的源歌被拒绝（reason=not_in_allowlist）并随返回值上报；
+    allowlist 内因音频不可用（no_audio）、聚合 <min_duration（below_min_duration）、
+    多歌手（multi_singer）或 item_id 不可解析（bad_item_id）被跳过的歌曲同样上报，
+    避免静默丢失 cohort 成员（review1#3）。不提供时 rejected 恒为空。
     """
     rows = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
     by_song: dict[str, list] = {}
+    m4_song_ids: set[str] = set()
     for r in rows:
         song = r.get("song_id")
         if not song:
             continue
+        m4_song_ids.add(song)
         audio_path = Path(r.get("audio_relpath", ""))
         if audio_root is not None:
             audio_path = audio_root / audio_path
@@ -181,6 +188,12 @@ def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | 
         by_song.setdefault(song, []).append(r)
     timelines = []
     rejected: list[dict] = []
+    if song_allowlist is not None:
+        # 段级跳过（无可用音频）导致 allowlist 内歌曲完全消失 → 上报 no_audio，
+        # 否则它在 timelines 与 ALLOWLIST_REJECTIONS.jsonl 中都不出现（review1#3）。
+        for song in song_allowlist:
+            if song in m4_song_ids and song not in by_song:
+                rejected.append({"song_id": song, "reason": "no_audio"})
     for song, segs in sorted(by_song.items()):
         if not segs:
             continue
@@ -189,10 +202,14 @@ def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | 
             continue
         total = sum(float(s.get("duration_sec", 0) or 0) for s in segs)
         if total < min_duration:
+            if song_allowlist is not None:
+                rejected.append({"song_id": song, "reason": "below_min_duration"})
             continue
         # 同歌手校验：同歌段必须同一 singer（M4Singer 约定）
         singers = {s.get("singer_id") for s in segs}
         if len(singers) > 1:
+            if song_allowlist is not None:
+                rejected.append({"song_id": song, "reason": "multi_singer"})
             continue
         # 按 item_id 的段序号排序（0000,0001,...），显式排序拒绝文件名乱序
         def _num(s):
@@ -202,6 +219,8 @@ def load_m4(path: Path, min_duration: float, max_songs: int, audio_root: Path | 
                 return -1
         segs_sorted = sorted(segs, key=_num)
         if any(_num(s) < 0 for s in segs_sorted):
+            if song_allowlist is not None:
+                rejected.append({"song_id": song, "reason": "bad_item_id"})
             continue
         tl = {
             "song_id": song, "singer_id": next(iter(singers)), "segments": segs_sorted,
