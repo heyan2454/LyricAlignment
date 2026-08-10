@@ -105,6 +105,9 @@ def load_requests(path: Path) -> list[dict[str, Any]]:
 
 
 def _song_of(req: dict) -> str | None:
+    song = req.get("song_id")
+    if song:
+        return str(song)
     item = req.get("item_id") or req.get("request_id") or ""
     return item.split(":")[0] or None
 
@@ -269,9 +272,10 @@ def _request_reaggregate(req: dict, real_gt_song: dict[int, dict],
             n_mapped += 1
             if geom is not None:
                 pred_by_cid.setdefault(cid, geom)
-    if rows and n_mapped == 0 and queried:
-        return None, {"request_id": rid, "song_id": song,
-                      "reason": "missing_canonical_mapping"}
+    if queried and (not rows or n_mapped == 0):
+        reason = ("missing_identity_equivalent_prediction" if not rows
+                  else "missing_canonical_mapping")
+        return None, {"request_id": rid, "song_id": song, "reason": reason}
 
     errors: list[tuple[int, float, float]] = []
     for cid in denom:
@@ -334,6 +338,8 @@ def reaggregate(
     per_song_lines: dict[str, list[dict[str, Any]]] = {}
     rerun_lines: list[dict[str, Any]] = []
     skipped_out_of_cohort = 0
+    queried_by_song: dict[str, set[int]] = {}
+    rerun_units_by_song: dict[str, set[int]] = {}
 
     for req in sorted(reqs, key=lambda r: (r.get("request_id") or "")):
         song = _song_of(req)
@@ -348,20 +354,17 @@ def reaggregate(
         if line is not None:
             per_request.append(line)
             per_song_lines.setdefault(song, []).append(line)
+            queried_by_song.setdefault(song, set()).update(_queried_ids(req))
         else:
             rerun_lines.append(rerun)
+            rerun_units_by_song.setdefault(song, set()).update(_queried_ids(req))
 
     # ---- per-song：合并 counts 与 unit_errors；context_only 取 timeline 未 query 单位 ----
     per_song_out = []
-    queried_by_song: dict[str, set[int]] = {}
-    for req in reqs:
-        song = _song_of(req)
-        if song is None or song not in cohort:
-            continue
-        queried_by_song.setdefault(song, set()).update(_queried_ids(req))
     for song in sorted(per_song_lines):
         lines = per_song_lines[song]
         queried = queried_by_song.get(song, set())
+        rerun_units = rerun_units_by_song.get(song, set())
         real_gt_song = real_gt.get(song) or {}
         timeline_song = timeline.get(song) or {}
         counts = {
@@ -378,6 +381,7 @@ def reaggregate(
             "n_requests": len(lines),
             "counts": counts,
             "metrics": metrics,
+            "rerun_units": len(rerun_units),
         })
 
     per_request_out = [l for l in per_request if l["request_id"]]
@@ -424,6 +428,7 @@ def reaggregate(
         },
         "cohort": {"n_songs": len(cohort), "song_ids": sorted(cohort)},
         "counts": macro_counts,
+        "rerun_units": sum(len(v) for v in rerun_units_by_song.values()),
         "macro_metrics": macro_metrics,
         "n_requests_reaggregated": len(per_request_out),
         "n_requests_rerun_gpu": len(rerun_lines),
