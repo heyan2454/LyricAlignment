@@ -59,12 +59,29 @@ DEFAULT_SCAN_ROOTS = [
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260809_second_supplement",
     "runs/research_transition_recovery_detector_20260809_signal_completion",
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260809_signal_completion",
+    # 3b. Detector V2 LABELS / LABEL_SUMMARY artifacts (data root only)
+    "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2",
     # 4. 2026-08-10 real-GT binding / rebuild artifacts
     "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff",
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff",
 ]
 
 V7_PREFIXES = ("GT_EVAL", "LABELS", "LABEL_SUMMARY", "ASSESSOR", "BASELINE_QUALITY")
+# Research V7 long-slot timing evidence is written under these generic filenames,
+# not the GT_EVAL/LABEL_* prefixes; the scanner must match both.
+V7_TIMING_EVIDENCE_NAMES = {
+    "analysis.json",
+    "collection.json",
+    "gt_paired.json",
+    "gt_paired_v2.json",
+    "gt_paired_v3.json",
+    "formal_freeze.json",
+    "pilot_freeze.json",
+    "workflow_gt.json",
+    "workflow_gt_v2.json",
+    "source_song_coverage.json",
+    "gt_evidence_diagnostics.json",
+}
 TEXT_EXTENSIONS = {".json", ".jsonl", ".csv", ".txt", ".md", ".yaml", ".yml", ".log"}
 CONTENT_LIMIT = 1 << 20  # bytes of content used for classification heuristics
 CHUNK = 1 << 16
@@ -103,7 +120,7 @@ _P_PROJECT_RE = re.compile(
     r"segment_offsets|accepted_rule_based_pinyin_validated|accepted_rule_validated_held_vowel|overlay projection|global_start_sec",
     re.I,
 )
-_TIMING_RE = re.compile(r"\bMAE\b|unsafe|timing", re.I)
+_TIMING_RE = re.compile(r"\bMAE\b|unsafe|timing|boundary_mae|mae_sec|matched_unit_count|matched_boundary_count|paired_summary", re.I)
 _PRED_SHA_RE = re.compile(r'"(?:prediction|pred|cache)[^":]{0,40}sha(?:256)?"?\s*[:=]\s*"?([0-9a-fA-F]{40,64})')
 _MODEL_RE = re.compile(
     r'"(?:FROZEN_WORKING_POINTS?|frozen_working_point|working_point|threshold|model_id|model_name|'
@@ -144,7 +161,11 @@ def read_content(path: str) -> str:
 
 
 def classify_axis(fname: str, text: str) -> str:
-    if _STRUCTURAL_RE.search(fname) or (_STRUCTURAL_RE.search(text) and not _TIMING_RE.search(text)):
+    if _STRUCTURAL_RE.search(fname) or (
+        _STRUCTURAL_RE.search(text)
+        and not _TIMING_RE.search(text)
+        and fname not in V7_TIMING_EVIDENCE_NAMES
+    ):
         return "none"
     if _UNIFORM_RE.search(text):
         return "U"
@@ -173,13 +194,17 @@ def classify_use(fname: str, text: str, axis: str) -> str:
 
 
 def classify_category(path_str: str, fname: str, text: str, axis: str) -> str:
+    if axis == "G":
+        return "detector_v2_pre_42522c3"
+    if fname in V7_TIMING_EVIDENCE_NAMES:
+        if _TIMING_RE.search(text):
+            return "research_v7_long_slot_timing"
+        return "research_v7_structural"
     if axis == "none" or _STRUCTURAL_RE.search(fname):
         return "research_v7_structural"
     if re.search(r"GT_EVAL|BASELINE_QUALITY|ASSESSOR", fname, re.I) and axis in ("U", "P"):
         return "research_v7_long_slot_timing"
     if re.search(r"LABEL", fname, re.I):
-        if axis == "G":
-            return "detector_v2_pre_42522c3"
         return "detector_v2_post_42522c3"
     low = path_str.lower()
     if "signal_completion" in low or "20260809" in low:
@@ -303,11 +328,19 @@ def scan_file(path: str, skip_hash_large: bool, large_bytes: int) -> dict:
 
 def discover_files(root: Path, is_v7: bool, max_file_bytes: int) -> list:
     found = []
-    for dirpath, _dirnames, filenames in os.walk(root):
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if not (
+                d in ("logs", "__pycache__")
+                or (Path(dirpath).name == "metadata" and d in ("lineage", "plans"))
+            )
+        ]
         for fname in sorted(filenames):
             full = Path(dirpath) / fname
             if is_v7:
-                if not fname.startswith(V7_PREFIXES):
+                if not (fname.startswith(V7_PREFIXES) or fname in V7_TIMING_EVIDENCE_NAMES):
                     continue
             else:
                 if full.suffix.lower() not in TEXT_EXTENSIONS:
