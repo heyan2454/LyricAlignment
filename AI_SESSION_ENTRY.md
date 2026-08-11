@@ -1,5 +1,41 @@
 # AI Session Entry
 
+## 2026-08-12 Realign Recovery — Active Implementation Override
+
+The active planning and implementation handoff is now:
+
+```text
+docs/sessions/20260812_realign_recovery_research/README.md
+docs/sessions/20260812_realign_recovery_research/00_SESSION_DISCUSSION_RECORD.md
+docs/sessions/20260812_realign_recovery_research/01_CURRENT_RESULTS_AND_CONCLUSIONS.md
+docs/sessions/20260812_realign_recovery_research/02_FROZEN_BASELINE_AND_SCOPE.md
+docs/sessions/20260812_realign_recovery_research/03_REALIGN_EXPERIMENT_PLAN.md
+docs/sessions/20260812_realign_recovery_research/04_EXECUTION_CONTRACT.md
+docs/sessions/20260812_realign_recovery_research/05_FREE_EXPLORATION_PROTOCOL.md
+docs/sessions/20260812_realign_recovery_research/06_DEFERRED_CORRECTION_ITEMS.md
+docs/sessions/20260812_realign_recovery_research/07_OPENCODE_IMPLEMENTATION_INDEX.md
+docs/sessions/20260812_realign_recovery_research/08_PHASE0_BASELINE_GT_FIREWALL.md
+docs/sessions/20260812_realign_recovery_research/09_CORE_CONTRACTS_AND_RUNNER_WORKPACKAGES.md
+docs/sessions/20260812_realign_recovery_research/10_EXPERIMENT_EXECUTION_WORKPACKAGES.md
+docs/sessions/20260812_realign_recovery_research/11_VALIDATION_REPORTING_AND_HANDOFF.md
+```
+
+Read 00--06 in order, then use 07 as the OpenCode entrypoint and consume 08--11 one work package at a time.  The only active research axis is Raw-triggered Realign/Recovery: oracle repairability, no-GT request proposal, repair-quality judgement, safe writeback, and serial closed-loop recovery.  All other baseline choices remain frozen.
+
+Hard requirements:
+
+- old synthetic-uniform timing results, including the historical 14--16% recovery values, are diagnostic only and cannot be cited as real-GT/no-GT capability;
+- no-GT control code must neither receive nor read GT; join GT only in a post-run evaluator;
+- create a fresh, resumable OUT_ROOT and freeze implementation/config/provenance before GPU work;
+- run Phase 0 and its tests before any new model forward; do not restart old transition, decoder, planner, or detector feature-selection matrices;
+- use a shared content-addressed candidate cache; analyses of thresholds, ranking and writeback must not repeat forwards;
+- target GPU use is 10 h and hard cap is 12 h; after the cap, continue CPU analysis and the documented free-exploration loop unless the user interrupts.
+
+The 2026-08-10 correction and earlier transition documents below are retained as historical evidence and implementation references.  When they conflict with the active 2026-08-12 session, the active session wins.
+
+---
+
+
 ## 2026-08-07 Transition–Recovery–Detector Reviewed Stage Override
 
 The active planning entry is now the reviewed Transition–Recovery–Detector stage:

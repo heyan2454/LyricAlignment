@@ -9,6 +9,7 @@ import numpy as np
 
 from lyricalign.research_transition_recovery_detector.contracts import TRANSITION_T2_CORE
 from lyricalign.research_transition_recovery_detector.detector_features import FEATURE_NAMES
+from lyricalign.research_transition_recovery_detector import gt_provenance
 
 
 def build_dataset(session_root: Path, role: str, *, tolerance: float = 0.32,
@@ -98,7 +99,8 @@ def build_dataset(session_root: Path, role: str, *, tolerance: float = 0.32,
     meta = {"role": role, "n_songs": n_songs, "n_units": len(features),
             "n_labeled": sum(1 for l in labels if l is not None),
             "n_safe": sum(1 for l in labels if l == 0), "n_unsafe": sum(1 for l in labels if l == 1),
-            "feature_names": list(active_features)}
+            "feature_names": list(active_features),
+            "provenance": gt_provenance.synthetic_uniform_timeline_provenance()}
     return features, labels, meta
 
 

@@ -1,0 +1,2412 @@
+{
+ "schema": "research_v7_long_slot_v1",
+ "run_id": "rl-20260810_224142",
+ "code_identity": {
+  "git_commit": "2f887d6c8ce1b413e9f9d4c8b2787b8f0c4718ff",
+  "source_tree": "125de018eb2a9c2341a6fc1cfd64f84f2412b7bd167952662b88240f4a4ca2e3",
+  "imports_sha256": "aeb54511e782596daf615712ac731d5e791573f4ab59f2f47788bd5485ac66e4",
+  "imports_inventory": [
+   {
+    "path": "/home/hyan/LyricAlignment/scripts/research_v7/run_behavior_suite.py",
+    "sha256": "498ff4ed2e6a44013503722f9d2dbe6c4c506e855572ee2dac1790a4c1230cf5"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/__init__.py",
+    "sha256": "b877a176272f1c34fdd871b8ad9da58ad9019435c14e188615d6d78c9bb531e8"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/attempt.py",
+    "sha256": "67b09b2996b73599dfec5a926227f3bc170b9db93474cc1bf40ca02da3f8cc27"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/c3_text_adapter.py",
+    "sha256": "22c3cd4ce7d729da38e298c78b11c1a26fee41e31505a6151693a16dc630bbf4"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/canonical_mapping.py",
+    "sha256": "38f4550fbcf67d15c68626617f3df4f3fc7beafcec13b6581d23444d926d8895"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_contract.py",
+    "sha256": "471afc2234f5fd6c1a73aa454b736adf6748247c5b84cd55c8931e5bc68ab0bb"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_coverage.py",
+    "sha256": "2ba54d93cc610637226766886f6e9b8360d6b5f241a41e5fe0a7cf4934d73d54"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_evidence.py",
+    "sha256": "687b986e0c1b15e00518df261f621d9cd64991e538a82b5a3c498f82b7382c8a"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_evidence_converter.py",
+    "sha256": "f61cb5841491cfd3f538d86aee17b5d708c3b63496d7d3c54882fbd3db4d16c3"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_features.py",
+    "sha256": "5f0e01fcaaed7421564273b15d46686be7a8a0bfd74ec609cbd9190c020ac248"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_intervals.py",
+    "sha256": "92e215b8564207512dd88b7c41f29ee0075f493a0bd4c52c0386342cf766a9db"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_labels.py",
+    "sha256": "474f1a9475028e2427928a9739bd1bb458dbce2eec598036f2d75aa641f357df"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_metrics.py",
+    "sha256": "916a6114008781afa5b68078a9829a52a0fa701ff934c4fe8570d2f8e6570ea9"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/detector_v2_models.py",
+    "sha256": "50b8e96dc6568b1ddffff5c7a5c972912b1fcd1a0e59662a0726fbacd41a1734"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/evaluation_guard.py",
+    "sha256": "a6ef97c9b548238ef86d2d0749c238ca970e8281515d1b198ce32c3c83ac079a"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/features.py",
+    "sha256": "c3066a80f5bd9ed7a6861c7b40ab2ec629d9a9de8b3471bcb58997b393e784c8"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/mutations.py",
+    "sha256": "c5d61c39639f071287f75d09f7e4da14ce199a783792fd75fa8934e3c398efcb"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/real_executor.py",
+    "sha256": "758a3a4cd94a8841b4a34c66905ee096561f2471e8cfc4a85abd9dfefb72998d"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/region_assessor.py",
+    "sha256": "b6d8b043cd1bda97978b3b37b57b3f54bd459cb28402e34b09bc70f6be190a47"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/region_metrics.py",
+    "sha256": "7a7f5ba5346043ff4e63590f7abece1415e5aea4ca4716e4ef78196afca50b10"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/requests.py",
+    "sha256": "de31adeda6bec85784c3fc7fcfc09b3856b483ef41135083bb1ef1f3a702a216"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/slot_planning.py",
+    "sha256": "8fb3d8bf9e2c03024b4cb568a013d91d5ea9d8b07e194657b18387d419e5586c"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/sparse_slots.py",
+    "sha256": "310dce079fef1f606dbbf91b17cdf792ea52c25d39860fbdb82605067ec89a8c"
+   },
+   {
+    "path": "/home/hyan/LyricAlignment/src/lyricalign/research_v7/timeline.py",
+    "sha256": "b450a9ae11e2b0b33a7cfae7e9b579befca3b49ce8980dbf28eeca47431ab3d1"
+   }
+  ]
+ },
+ "manifest": {
+  "path": "/tmp/opencode/rerun_B_90.jsonl",
+  "sha256": "04078d253afe57a2c4d0bf99b713f7a326c97a295460af91c4b70322316d2338"
+ },
+ "untracked_inputs": [
+  {
+   "path": "/tmp/opencode/rerun_B_90.jsonl",
+   "sha256": "04078d253afe57a2c4d0bf99b713f7a326c97a295460af91c4b70322316d2338"
+  }
+ ],
+ "environment": {
+  "model": "Qwen3-ForcedAligner-0.6B-hf",
+  "revision": "c07281df297b9905d24a508279258cccf987a064",
+  "checkpoint": "r2-step-000750",
+  "device": "cuda",
+  "executor": "real"
+ },
+ "runtime_budget": {
+  "elapsed_sec": 50.48,
+  "forward_count": 90,
+  "cache_hit": 0,
+  "cache_miss": 90,
+  "cache_total": 90
+ },
+ "item_count": {
+  "requests": 90,
+  "written": 90,
+  "cache_hit": 0,
+  "forward": 90,
+  "failed": 0,
+  "role": {
+   "lyrics_aligned": 90
+  }
+ },
+ "train_filter": {
+  "trainable_identity_count": 90,
+  "trainable": [
+   {
+    "request_identity": "sha256:7b8cdddb6b317051a08b2ddf211ac75cc8274a9f29f545f1526e382495cfae68",
+    "item_id": "全世界失眠:w0:full:missing0.25",
+    "request_id": "全世界失眠:w0:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:a25dcce3253883d36b18a3d66e0a963a695085d859d06d931242206c3e9198b8",
+    "item_id": "全世界失眠:w0:full",
+    "request_id": "全世界失眠:w0:full"
+   },
+   {
+    "request_identity": "sha256:d30fab4451c7809b1dd67c7ab6aa25d44fbc8a0e796aca104e230b076f0ff1d9",
+    "item_id": "全世界失眠:w0:s2:missing0.25",
+    "request_id": "全世界失眠:w0:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:1a81a5092503c266f9ff9646bd956f7444e4569dac2a0ca6d0260cce01d76602",
+    "item_id": "全世界失眠:w0:s2",
+    "request_id": "全世界失眠:w0:s2"
+   },
+   {
+    "request_identity": "sha256:0b5fbb3cdb056f4686f181eb694fbfc749d0a61c08f05933c8a316ad7718b7ae",
+    "item_id": "全世界失眠:w0:s4:missing0.25",
+    "request_id": "全世界失眠:w0:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:64e34d6fb5610615dc0fdbf18372eab203e715f03201d2a89d7aa8bd05da2e4a",
+    "item_id": "全世界失眠:w0:s4",
+    "request_id": "全世界失眠:w0:s4"
+   },
+   {
+    "request_identity": "sha256:a789d020cb0f518d15588c1f441786fd22cecadfcccf911f12d951cff5fdea78",
+    "item_id": "全世界失眠:w1:full:missing0.25",
+    "request_id": "全世界失眠:w1:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:331b967f02d3fe041d5dff2a52b8a846192f574c260a9947d3d7666281767a83",
+    "item_id": "全世界失眠:w1:full",
+    "request_id": "全世界失眠:w1:full"
+   },
+   {
+    "request_identity": "sha256:92aca819a396910baa8c02643306c4992127eb78a2c76d5ffc85b0642c52a2f6",
+    "item_id": "全世界失眠:w1:s2:missing0.25",
+    "request_id": "全世界失眠:w1:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:6b073da0e3f2d237e2f35fe1740be4e2e83a426e4921077aa8088c68cfa76cb0",
+    "item_id": "全世界失眠:w1:s2",
+    "request_id": "全世界失眠:w1:s2"
+   },
+   {
+    "request_identity": "sha256:ca5961ccacf392bdf62055741de7d6441046191e23ce0fe26dbe0901c31ff2d4",
+    "item_id": "全世界失眠:w1:s4:missing0.25",
+    "request_id": "全世界失眠:w1:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:902ff59fef285e763553a83431567ae4ccbd28961f7b32aa5160d99c7d1ba7e3",
+    "item_id": "全世界失眠:w1:s4",
+    "request_id": "全世界失眠:w1:s4"
+   },
+   {
+    "request_identity": "sha256:b3f2229f265279db70a7c536004f0d11e0e51ec1ac0a3351b1a4056baef046ad",
+    "item_id": "全世界失眠:w2:full:missing0.25",
+    "request_id": "全世界失眠:w2:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:4a76b74b2d49ca41a4b66a8b9be2ff67a704eb73a738634126279f6e3ce928a7",
+    "item_id": "全世界失眠:w2:full",
+    "request_id": "全世界失眠:w2:full"
+   },
+   {
+    "request_identity": "sha256:6433b8d1ae0692126ba023943180b42724ebd6a56470e3540217f8b5c77a729a",
+    "item_id": "全世界失眠:w2:s2:missing0.25",
+    "request_id": "全世界失眠:w2:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:d6dff79da4fc4c6c44f13c2b458a48658684d1c423f2ecee804f3c2abf791615",
+    "item_id": "全世界失眠:w2:s2",
+    "request_id": "全世界失眠:w2:s2"
+   },
+   {
+    "request_identity": "sha256:0ec05a5169eecde38345e56e5c35eba5bf9791581a0692b1782f2a8124bdfebf",
+    "item_id": "全世界失眠:w2:s4:missing0.25",
+    "request_id": "全世界失眠:w2:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:b88b309f229c75b746978a698991b72d3f088b5e163f79b1cf9df977923c5023",
+    "item_id": "全世界失眠:w2:s4",
+    "request_id": "全世界失眠:w2:s4"
+   },
+   {
+    "request_identity": "sha256:0c7f9f1e8d86ce5d598eb540b174912e6a7c7328ebbd7dd05c6cc504a9cebe11",
+    "item_id": "已是两条路上的人:w0:full:missing0.25",
+    "request_id": "已是两条路上的人:w0:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:86b50befc9ca39cd03f2edd3d7e786b4177ccf83fa8e8395f75f16742dc24733",
+    "item_id": "已是两条路上的人:w0:full",
+    "request_id": "已是两条路上的人:w0:full"
+   },
+   {
+    "request_identity": "sha256:46000752dc3b8be2ca2fae1c19fc99eca45ea58b48c0919684879aa5c5302d81",
+    "item_id": "已是两条路上的人:w0:s2:missing0.25",
+    "request_id": "已是两条路上的人:w0:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:7e00e44dc7191a9d8babdaecf092bdab8e19579cf640b5d43f121ef94bc32f03",
+    "item_id": "已是两条路上的人:w0:s2",
+    "request_id": "已是两条路上的人:w0:s2"
+   },
+   {
+    "request_identity": "sha256:a5f64e5d4e55c763853b2e3c7d21c384e27ba4d59cc54b2f3588c66d40e86a95",
+    "item_id": "已是两条路上的人:w0:s4:missing0.25",
+    "request_id": "已是两条路上的人:w0:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:6929924fe41d8c1c691bed4715b3ac1000148fb288a6a6b82096076dac691e19",
+    "item_id": "已是两条路上的人:w0:s4",
+    "request_id": "已是两条路上的人:w0:s4"
+   },
+   {
+    "request_identity": "sha256:1d8f82b44eb8c17994b9dba5aead4f41c3a7dce3fd99e46ce841fc239c12f6fb",
+    "item_id": "已是两条路上的人:w1:full:missing0.25",
+    "request_id": "已是两条路上的人:w1:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:d302319f876729b2e6c65a26ff40b76fa3eb4f28548262cfe325ea281897c96e",
+    "item_id": "已是两条路上的人:w1:full",
+    "request_id": "已是两条路上的人:w1:full"
+   },
+   {
+    "request_identity": "sha256:c852b6aa9fa4190b26fec83abe92ba669dca3f97728a56193c38780ecaae563e",
+    "item_id": "已是两条路上的人:w1:s2:missing0.25",
+    "request_id": "已是两条路上的人:w1:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:648cc3e1c263344ac40e77966a5c94aa3e782e89654523403d23c1f61e4d26ed",
+    "item_id": "已是两条路上的人:w1:s2",
+    "request_id": "已是两条路上的人:w1:s2"
+   },
+   {
+    "request_identity": "sha256:e44c42f6b7206c7f2acfb58ee7c06faff6eadff2c5f0fff602e63ccc17a07c74",
+    "item_id": "已是两条路上的人:w1:s4:missing0.25",
+    "request_id": "已是两条路上的人:w1:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:0a406343da9f632219d28d659913b064fb3fdb0b688b7b8b37d996fdf76fe633",
+    "item_id": "已是两条路上的人:w1:s4",
+    "request_id": "已是两条路上的人:w1:s4"
+   },
+   {
+    "request_identity": "sha256:68a98d07a156f81971335828f3dd576ff28bc219e4b8c65a420b4d405d957d3e",
+    "item_id": "已是两条路上的人:w2:full:missing0.25",
+    "request_id": "已是两条路上的人:w2:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:4d733953f12d0588c06ee7979247c8046cd846c765124b09c0ad7128c1c5ff12",
+    "item_id": "已是两条路上的人:w2:full",
+    "request_id": "已是两条路上的人:w2:full"
+   },
+   {
+    "request_identity": "sha256:1033a497589e039117d5fe0a435008f754f79b98969739e804d90dac3d031fee",
+    "item_id": "已是两条路上的人:w2:s2:missing0.25",
+    "request_id": "已是两条路上的人:w2:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:2a8594ad05f2b6431e2a928e583d3c2f7bcbc471f16ad689e7f61591548903bb",
+    "item_id": "已是两条路上的人:w2:s2",
+    "request_id": "已是两条路上的人:w2:s2"
+   },
+   {
+    "request_identity": "sha256:a4dc01932a411c140b34f9e9b38a45b2f75a3a3d18432904d0ec3f0541a9e177",
+    "item_id": "已是两条路上的人:w2:s4:missing0.25",
+    "request_id": "已是两条路上的人:w2:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:9a9c6150542f792a1dbe33ec0315b213cf72cd48d711192fcff07711e9c1d58e",
+    "item_id": "已是两条路上的人:w2:s4",
+    "request_id": "已是两条路上的人:w2:s4"
+   },
+   {
+    "request_identity": "sha256:2004477605393021df8e17a86a1236b945d107dde2d3f5cd2836ce27d4a0540c",
+    "item_id": "我爱你中国:w0:full:missing0.25",
+    "request_id": "我爱你中国:w0:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:e859286a7371da9235415571203b5c3a99d091d2b71f90bd1b6dd4a78969bc13",
+    "item_id": "我爱你中国:w0:full",
+    "request_id": "我爱你中国:w0:full"
+   },
+   {
+    "request_identity": "sha256:a897e70782b23051a24cd3dabf1594c4eb198ef8a01b275e2b30b70904a8a47c",
+    "item_id": "我爱你中国:w0:s2:missing0.25",
+    "request_id": "我爱你中国:w0:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:a4dc331bde42d2e95b8710dcf49978565327edfb50c39208d18128e68118ffab",
+    "item_id": "我爱你中国:w0:s2",
+    "request_id": "我爱你中国:w0:s2"
+   },
+   {
+    "request_identity": "sha256:6caf0236797e5a83c2d48e0c1b5b4bc084783066f84dd12c1bb0d2b922628003",
+    "item_id": "我爱你中国:w0:s4:missing0.25",
+    "request_id": "我爱你中国:w0:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:f507aba32bec86cf6d976ba1881de6f30419221cefe5c677741e3d8b48b1bf4d",
+    "item_id": "我爱你中国:w0:s4",
+    "request_id": "我爱你中国:w0:s4"
+   },
+   {
+    "request_identity": "sha256:23d059e454b7be81c5e6e9df59add011a6f35da5aed7757b0d6b6d8b4534ecda",
+    "item_id": "我爱你中国:w1:full:missing0.25",
+    "request_id": "我爱你中国:w1:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:3f0e2df7eb4e62312664fe774d093e0af4f20d4700823228102837cd053c0d87",
+    "item_id": "我爱你中国:w1:full",
+    "request_id": "我爱你中国:w1:full"
+   },
+   {
+    "request_identity": "sha256:c700283d6677f77535a902b4d844bd0f9e5a287ef209d3326b02c42d62ac39c3",
+    "item_id": "我爱你中国:w1:s2:missing0.25",
+    "request_id": "我爱你中国:w1:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:4ac0858e82b2641d94744cddc124d87e504856dbb1f7c655266a5009b34d8f2f",
+    "item_id": "我爱你中国:w1:s2",
+    "request_id": "我爱你中国:w1:s2"
+   },
+   {
+    "request_identity": "sha256:7a94e1ebb64db8f451c1f1cd488bd8ae68eb8b3d57836444aa859016e424fdc2",
+    "item_id": "我爱你中国:w1:s4:missing0.25",
+    "request_id": "我爱你中国:w1:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:a3df51b486b294b2866c7c32861ec58d6859157b238dc56bc2d723a28530dbe9",
+    "item_id": "我爱你中国:w1:s4",
+    "request_id": "我爱你中国:w1:s4"
+   },
+   {
+    "request_identity": "sha256:fd9bdd84dcc739a71b4794652c051f9325a4cc70d82897210aa1605284d59d06",
+    "item_id": "我爱你中国:w2:full:missing0.25",
+    "request_id": "我爱你中国:w2:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:64da3c5d5daf97b011aa2ee10739d81422bfb0eb8ad9db2ad52d89568e0028d2",
+    "item_id": "我爱你中国:w2:full",
+    "request_id": "我爱你中国:w2:full"
+   },
+   {
+    "request_identity": "sha256:ef75113e79371ff9d56b14ee5286828c48d0157dc492f965ff6d8f6a6e540e0d",
+    "item_id": "我爱你中国:w2:s2:missing0.25",
+    "request_id": "我爱你中国:w2:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:e76b15fdff448a1ee0baa008576eaa0a0e5d41c6a232afae3628af647e992cd4",
+    "item_id": "我爱你中国:w2:s2",
+    "request_id": "我爱你中国:w2:s2"
+   },
+   {
+    "request_identity": "sha256:25c4fdc7fc25c09f8449f17b34c22daf8016f364725b029e9fb2211a51389db8",
+    "item_id": "我爱你中国:w2:s4:missing0.25",
+    "request_id": "我爱你中国:w2:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:bc8653d92a4c56c379ae4b89bf5c15271e764925036c1becb49b8688d8f080f4",
+    "item_id": "我爱你中国:w2:s4",
+    "request_id": "我爱你中国:w2:s4"
+   },
+   {
+    "request_identity": "sha256:ff73e140fafc3ab8c52c22652cca7510782744a6bbf4933e11c46a210241ed73",
+    "item_id": "真实:w0:full:missing0.25",
+    "request_id": "真实:w0:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:09cca7e73ca3bbbc7c9e5e26f4dcdfc44fe31c0e9ab8e8bab2ec94d14107fa88",
+    "item_id": "真实:w0:full",
+    "request_id": "真实:w0:full"
+   },
+   {
+    "request_identity": "sha256:2be8335bbba882bb8ae532bc0a060dcd9d7cd1eb4af215405f94822d21748628",
+    "item_id": "真实:w0:s2:missing0.25",
+    "request_id": "真实:w0:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:75e2f60bb6bc4975fc6f5f5b811a5a9197cb6c5a69e2aa0a9d4e4864d4e68e2e",
+    "item_id": "真实:w0:s2",
+    "request_id": "真实:w0:s2"
+   },
+   {
+    "request_identity": "sha256:b32db87627bf807225f9f46e86bd9631b102add6a0ee5c32825d6a1db81a02b2",
+    "item_id": "真实:w0:s4:missing0.25",
+    "request_id": "真实:w0:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:315ca83fed9c7a8b9b91939b495a3d6d4b613f510cde9e6495f8e75bc2660c89",
+    "item_id": "真实:w0:s4",
+    "request_id": "真实:w0:s4"
+   },
+   {
+    "request_identity": "sha256:4117dc5124fe56df43913546dac4c082f461285784d893b845349f4853b27b34",
+    "item_id": "真实:w1:full:missing0.25",
+    "request_id": "真实:w1:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:a3afb33a624fe57ce7b769fc03bde490b4295d268785f63055100929fc8175f5",
+    "item_id": "真实:w1:full",
+    "request_id": "真实:w1:full"
+   },
+   {
+    "request_identity": "sha256:37b1c504ad96975326799ef4f9c31656689c85418d79fadc540b34011c1f8e7a",
+    "item_id": "真实:w1:s2:missing0.25",
+    "request_id": "真实:w1:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:92540f1b3ec5bbd2d9422830f77cf8bedb90288322e18aa65a61abbc928855f1",
+    "item_id": "真实:w1:s2",
+    "request_id": "真实:w1:s2"
+   },
+   {
+    "request_identity": "sha256:b65b433441410c3da6196637de03b157e1ac2c5457054be855230beccfe081f4",
+    "item_id": "真实:w1:s4:missing0.25",
+    "request_id": "真实:w1:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:24b95f397a7b37a049335b55c9cd00c026f93c2e2b2e709aa52256c8e08d8df8",
+    "item_id": "真实:w1:s4",
+    "request_id": "真实:w1:s4"
+   },
+   {
+    "request_identity": "sha256:fe0531f583823ef3b2f880ab3072818a67760f20b330114cb4ac3f9679e9c26d",
+    "item_id": "真实:w2:full:missing0.25",
+    "request_id": "真实:w2:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:1cfc920b083abdc1eae2f17a134d27a9a5726d986d8f189bd21b9528420b968d",
+    "item_id": "真实:w2:full",
+    "request_id": "真实:w2:full"
+   },
+   {
+    "request_identity": "sha256:cdba8e2595d035ce8da80860d4db64992e7a5f6a7365edb8f7a193a8bbb6994e",
+    "item_id": "真实:w2:s2:missing0.25",
+    "request_id": "真实:w2:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:72a7f03b58f710b459fdeca74fb9fea7836ccc69645a2721d9edcf6314bc98e5",
+    "item_id": "真实:w2:s2",
+    "request_id": "真实:w2:s2"
+   },
+   {
+    "request_identity": "sha256:c70615ae4438c6a3bea5518c9be336a7c9fc82051c5a22f30218b98aadb856a6",
+    "item_id": "真实:w2:s4:missing0.25",
+    "request_id": "真实:w2:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:064255af55d0aa9e8f4437d585f777917f54f9b2bc1de1455edb20448cbdffbb",
+    "item_id": "真实:w2:s4",
+    "request_id": "真实:w2:s4"
+   },
+   {
+    "request_identity": "sha256:c8c344b65dc0262412985181298d7a647f6340663bf867e99fe8cea57b86c411",
+    "item_id": "阴天快乐:w0:full:missing0.25",
+    "request_id": "阴天快乐:w0:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:6497c2f8aa4053de089811d7a67698b626a4308f6e5dad3ff82abd60a47b82f0",
+    "item_id": "阴天快乐:w0:full",
+    "request_id": "阴天快乐:w0:full"
+   },
+   {
+    "request_identity": "sha256:7237a9b5d8097ff4e40b60fab4147eacb843e0ebb2bdf48158ee2eb9e92f665a",
+    "item_id": "阴天快乐:w0:s2:missing0.25",
+    "request_id": "阴天快乐:w0:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:e0ead36166248b693815e3acc73807ea9c4605f23d446f469bb4377acc22ed39",
+    "item_id": "阴天快乐:w0:s2",
+    "request_id": "阴天快乐:w0:s2"
+   },
+   {
+    "request_identity": "sha256:7ec9f49fac15dbf58d1d2d254fdb0b9623dedc6ddb1714769fe1063d8518017e",
+    "item_id": "阴天快乐:w0:s4:missing0.25",
+    "request_id": "阴天快乐:w0:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:e222caa563c9ab907b27c1368b5a69bde565cc3c1840962eba839d521a4019e2",
+    "item_id": "阴天快乐:w0:s4",
+    "request_id": "阴天快乐:w0:s4"
+   },
+   {
+    "request_identity": "sha256:e9373ba9737f9e3c54663d96f47fb5fff7e256ca7d3efa3fe67f927488a18899",
+    "item_id": "阴天快乐:w1:full:missing0.25",
+    "request_id": "阴天快乐:w1:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:65ca0c696c2d2054cc88a444dd2b57db54ffb991dd20e6b159a0534faf25c642",
+    "item_id": "阴天快乐:w1:full",
+    "request_id": "阴天快乐:w1:full"
+   },
+   {
+    "request_identity": "sha256:14038c4630506e607bac79e6b300ce62620a7e14ab1532f940d85754d92b5c17",
+    "item_id": "阴天快乐:w1:s2:missing0.25",
+    "request_id": "阴天快乐:w1:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:c5c905f69a39264633f7e3500040b1798be85c61ca0396dbd28d403332570df9",
+    "item_id": "阴天快乐:w1:s2",
+    "request_id": "阴天快乐:w1:s2"
+   },
+   {
+    "request_identity": "sha256:7916746d84e0fa7afa9c7aed7a9a0438c3e1fada803d324273e6f175b9f32e49",
+    "item_id": "阴天快乐:w1:s4:missing0.25",
+    "request_id": "阴天快乐:w1:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:43444e30519a107cf9ccba9b1aff315091336102bedb81846822942f2a03c005",
+    "item_id": "阴天快乐:w1:s4",
+    "request_id": "阴天快乐:w1:s4"
+   },
+   {
+    "request_identity": "sha256:36e9e39483b6fb50cc411deb381e77728fd19a8cae49c97ab709b2344f7d293c",
+    "item_id": "阴天快乐:w2:full:missing0.25",
+    "request_id": "阴天快乐:w2:full:missing0.25"
+   },
+   {
+    "request_identity": "sha256:8baea5bfe0250e92a34da4ef1967451e4c89402775797f69d5c25297b9287c51",
+    "item_id": "阴天快乐:w2:full",
+    "request_id": "阴天快乐:w2:full"
+   },
+   {
+    "request_identity": "sha256:ab3c92947f4acc60b2f55bd7aa458c7b16fad9112cf7c264062ff53d536a370f",
+    "item_id": "阴天快乐:w2:s2:missing0.25",
+    "request_id": "阴天快乐:w2:s2:missing0.25"
+   },
+   {
+    "request_identity": "sha256:f3e3511f0490af5f18e29ca465cafcb38fc6d40227fe3c35317e75dbed6d5e39",
+    "item_id": "阴天快乐:w2:s2",
+    "request_id": "阴天快乐:w2:s2"
+   },
+   {
+    "request_identity": "sha256:464fed24a9a05fad049483860fd0417b9817a6327092c375f16796b4737bf1dd",
+    "item_id": "阴天快乐:w2:s4:missing0.25",
+    "request_id": "阴天快乐:w2:s4:missing0.25"
+   },
+   {
+    "request_identity": "sha256:2ef4339e1d31f5247f5fddeef6bb7ab0ba7fe0c1992c034894d46b4eae748507",
+    "item_id": "阴天快乐:w2:s4",
+    "request_id": "阴天快乐:w2:s4"
+   }
+  ],
+  "rejected_count": 0,
+  "rejected": [],
+  "denominator": {
+   "all_success_or_cache": 90,
+   "trainable": 90,
+   "rejected": 0
+  }
+ },
+ "row_audit": [
+  {
+   "row_index": 0,
+   "source_row_sha256": "38a86f8b0caf4e12440a0fa0db81ce4d0f89f8115c638cc3d2e1101a9c0b9137",
+   "status": "ok"
+  },
+  {
+   "row_index": 1,
+   "source_row_sha256": "7121c324d8c83f0d2393e8ac5589ffa0072adf6e287da3db8cc33af7254d40cf",
+   "status": "ok"
+  },
+  {
+   "row_index": 2,
+   "source_row_sha256": "4cd018cb78ca4027a26cc066bce035dee304f996871fd97fdbcd812569cdb793",
+   "status": "ok"
+  },
+  {
+   "row_index": 3,
+   "source_row_sha256": "28ece48661d2e0c1e7235f5e886421fdd77bffc952f6f069c90eb172498dd72b",
+   "status": "ok"
+  },
+  {
+   "row_index": 4,
+   "source_row_sha256": "c6c9dba07d23ef4c21831ded854b688fdc559a97b8641c48ec08227e0e602787",
+   "status": "ok"
+  },
+  {
+   "row_index": 5,
+   "source_row_sha256": "b1767fc629b5ea852d014162bb92ceed1e33fe2a651e3ececa603638e5cbcf1c",
+   "status": "ok"
+  },
+  {
+   "row_index": 6,
+   "source_row_sha256": "8a36180ab3087a49d2ef6c3c7c5a5f4548542fd3ef735756bf73dbf4ec7bf0f8",
+   "status": "ok"
+  },
+  {
+   "row_index": 7,
+   "source_row_sha256": "fd0a0eeba43fc57ccc3e464be78d19638e503a0e6fbd893cb894a4d147fce739",
+   "status": "ok"
+  },
+  {
+   "row_index": 8,
+   "source_row_sha256": "d3471576ae523ad606ddf2d6847bdf0c3663d248f5c1e2db7602b2369a9e1fe7",
+   "status": "ok"
+  },
+  {
+   "row_index": 9,
+   "source_row_sha256": "5702d1d4fec35517ed6fe2b35904b35b44af9e0478ab1fc8863f3f3d069a46b5",
+   "status": "ok"
+  },
+  {
+   "row_index": 10,
+   "source_row_sha256": "33c36e81d5b626db36d72e4167f731cdf6d17ed6318b214d5e35d7005a3dd2dc",
+   "status": "ok"
+  },
+  {
+   "row_index": 11,
+   "source_row_sha256": "a8522a22417970a033320998676303bb8460c1e7e6083a132031c11554179b3b",
+   "status": "ok"
+  },
+  {
+   "row_index": 12,
+   "source_row_sha256": "d878f21300b1249db850143535e5e0f0c0962dea82f9c52dd963e0518653088c",
+   "status": "ok"
+  },
+  {
+   "row_index": 13,
+   "source_row_sha256": "60a1493bb86a576f920bcbb8c6abafa23ebea1333c02086a398e4c8fb1f9fd02",
+   "status": "ok"
+  },
+  {
+   "row_index": 14,
+   "source_row_sha256": "fa29b686544c49714d9d8eaf0ef6798c1e359cbfb131d5278ff17f939c368893",
+   "status": "ok"
+  },
+  {
+   "row_index": 15,
+   "source_row_sha256": "a0b2aa07a1ef199af8195a9f1a8e637f4497403af07b5a610760ffc4e7e6895c",
+   "status": "ok"
+  },
+  {
+   "row_index": 16,
+   "source_row_sha256": "c8f10cb25f1b9c7f88d6eb024fb0bd7069e8df484648b2bad47e2cee14b79a5c",
+   "status": "ok"
+  },
+  {
+   "row_index": 17,
+   "source_row_sha256": "c5296f9b433a58f600c3060c7aa0c7d15bd876cfdeb4b1f0ddbad1a166f895c2",
+   "status": "ok"
+  },
+  {
+   "row_index": 18,
+   "source_row_sha256": "182670db550d257e966c9ebaa44f48d47e2af234051c430b69d601c37dc64938",
+   "status": "ok"
+  },
+  {
+   "row_index": 19,
+   "source_row_sha256": "ca96f48337dc55a31bad82a7827f35949f84b2757071616ba5ba4153251eb3ae",
+   "status": "ok"
+  },
+  {
+   "row_index": 20,
+   "source_row_sha256": "4e571cc6d8cc6903fe20302b956973a94639cb8bef2a256e2b00f2e89338e598",
+   "status": "ok"
+  },
+  {
+   "row_index": 21,
+   "source_row_sha256": "d8fc9d80e9145eadf6825e466f668ebb690b06a5c903d92729fb070f4a57bc8a",
+   "status": "ok"
+  },
+  {
+   "row_index": 22,
+   "source_row_sha256": "33a228932c6b5d3e9db6bc4b8d815f7f4a5af499309da1bd085906ea0ba6869f",
+   "status": "ok"
+  },
+  {
+   "row_index": 23,
+   "source_row_sha256": "4ad6608ce5aa6b3b6b7a313403eaafcb654199ac221d43c3120564af71ab2902",
+   "status": "ok"
+  },
+  {
+   "row_index": 24,
+   "source_row_sha256": "adef5413098fc73d5966a3ceeae862c1afa3483b52aadea13ba29b0c957d9d5b",
+   "status": "ok"
+  },
+  {
+   "row_index": 25,
+   "source_row_sha256": "0c99e2f7996c42a10c3d7a438bdef0f4dc9228de50d4615f059b690b17b8fd59",
+   "status": "ok"
+  },
+  {
+   "row_index": 26,
+   "source_row_sha256": "76f0c1bdba120fd8db6fc8154033cf086cc35af443c4c4c174cc868f9e983ed5",
+   "status": "ok"
+  },
+  {
+   "row_index": 27,
+   "source_row_sha256": "bbe0505fe704c5a2466f80282c9528908c00125e9b19fb970eef049d1e2b4916",
+   "status": "ok"
+  },
+  {
+   "row_index": 28,
+   "source_row_sha256": "8b1a510aef2dbfa0136cebaed265c082783a59a8f31d0b3f287afd59e4a0816f",
+   "status": "ok"
+  },
+  {
+   "row_index": 29,
+   "source_row_sha256": "066bee004e45f5ec110fc87e956a5ed073b09818de306bdb5f3cbaec6fbd4826",
+   "status": "ok"
+  },
+  {
+   "row_index": 30,
+   "source_row_sha256": "ae1b20df8cb6428e5554914cf02be07388426c37b9cf8f447075b767fb6f8258",
+   "status": "ok"
+  },
+  {
+   "row_index": 31,
+   "source_row_sha256": "afc1b02b250f24486f0c6941d980acde6f218a89a70f903cce51ef652b4bd8c4",
+   "status": "ok"
+  },
+  {
+   "row_index": 32,
+   "source_row_sha256": "1393ad0c73b84dd6a71214d5b3e2b2e1a72c69080de01c2040b9ffbfd2479d2e",
+   "status": "ok"
+  },
+  {
+   "row_index": 33,
+   "source_row_sha256": "496ce83a32e1135ea0feb7c6354335558ebb899a5f4f1f88c8ac0b259b0e9c60",
+   "status": "ok"
+  },
+  {
+   "row_index": 34,
+   "source_row_sha256": "71207db68322cb0231ace2bf54dc1d750c75f14f3b905829d456967e0c7f6bda",
+   "status": "ok"
+  },
+  {
+   "row_index": 35,
+   "source_row_sha256": "e2755f56945381a50e44d8b204baeff54562cfff631600b5b97ebdf58c349de3",
+   "status": "ok"
+  },
+  {
+   "row_index": 36,
+   "source_row_sha256": "b24cf782fb153704f5d182ec3dc3303e8a1e8700cd1e14df786705d292425666",
+   "status": "ok"
+  },
+  {
+   "row_index": 37,
+   "source_row_sha256": "123ab4605eba9f17ed58fe4d13e9bd631593399c371a9dd4b3a86ef5b311b36a",
+   "status": "ok"
+  },
+  {
+   "row_index": 38,
+   "source_row_sha256": "8ae34a6988babe4e4e1d6caea61e1b4a66333ee5d20f58e62dba8756ef8e68de",
+   "status": "ok"
+  },
+  {
+   "row_index": 39,
+   "source_row_sha256": "78fa90bb564611766b9956110ce82520b4b94cfb3a4ef77b099daee7dbde1723",
+   "status": "ok"
+  },
+  {
+   "row_index": 40,
+   "source_row_sha256": "96df74b2aab4c483fa7f6fe7acbdd7c872a5d21d02b280fca8e73b4483aa62f2",
+   "status": "ok"
+  },
+  {
+   "row_index": 41,
+   "source_row_sha256": "bf886761b66b8a300d014058ed6f5945d266b8ad3cfd8742247e88076489f3fc",
+   "status": "ok"
+  },
+  {
+   "row_index": 42,
+   "source_row_sha256": "1a5e39777ddadf735b3d8ab396e196bb43f8a6870a722a2b52d85d450cf0aeda",
+   "status": "ok"
+  },
+  {
+   "row_index": 43,
+   "source_row_sha256": "55a61d4617827365a3978bcad3016d67a83740406cd6bc18b765d17a3ac12103",
+   "status": "ok"
+  },
+  {
+   "row_index": 44,
+   "source_row_sha256": "3c8507e51dd52e527e0cbf2177ea26b31ca8cdd863abd480b8339e60472ccbcf",
+   "status": "ok"
+  },
+  {
+   "row_index": 45,
+   "source_row_sha256": "65835fb96f64ac329e5eb9b39c72c4cca489bbf96b8f8d03815778ecd2fd2889",
+   "status": "ok"
+  },
+  {
+   "row_index": 46,
+   "source_row_sha256": "c4a43b9901650f23656c32a19ce9846eef913aacb2fc89938ddbda36a1cc26c1",
+   "status": "ok"
+  },
+  {
+   "row_index": 47,
+   "source_row_sha256": "a74f5dabcfbbecb4ceac52889e4ba280a0618c8f0fe288b55ed93b33df2d57d2",
+   "status": "ok"
+  },
+  {
+   "row_index": 48,
+   "source_row_sha256": "26a35e67479951be3420adf4abc7796691dfafd1c40a61a1bdb08f6c8da498fc",
+   "status": "ok"
+  },
+  {
+   "row_index": 49,
+   "source_row_sha256": "3cd1b59b16b6dca29e172803d111c17b5fc6c32462befbafe07427cfbb654763",
+   "status": "ok"
+  },
+  {
+   "row_index": 50,
+   "source_row_sha256": "ab39799dea4cf2eb62f105c123f8b7c12113649730ec2fc3b83a92c451ac7e0f",
+   "status": "ok"
+  },
+  {
+   "row_index": 51,
+   "source_row_sha256": "3ad106df8cfaf4a2630b28f4a6aab93198339707370d5f87f826da31d3e77dac",
+   "status": "ok"
+  },
+  {
+   "row_index": 52,
+   "source_row_sha256": "9552a63dc571e4d98d7485fc9e950d94b5fad6baac5fc0e3fb8bb8f196eddbc2",
+   "status": "ok"
+  },
+  {
+   "row_index": 53,
+   "source_row_sha256": "23495533682946a497a88938e3d07509c6dd589d08ee87a99f159506ee467db4",
+   "status": "ok"
+  },
+  {
+   "row_index": 54,
+   "source_row_sha256": "6a148f7ff8c2db805766686c35d1f69e2b699c8a03faa3e93b7530484f77c82d",
+   "status": "ok"
+  },
+  {
+   "row_index": 55,
+   "source_row_sha256": "1309e4428e0040ca368785abc4de4bf64582a66a6b3d59ebac09ba8fc30ba3ea",
+   "status": "ok"
+  },
+  {
+   "row_index": 56,
+   "source_row_sha256": "ee3561161ee5f5a9f8e523bae063d62b3ccd2874982fcc9071cc70d1d8b1dd44",
+   "status": "ok"
+  },
+  {
+   "row_index": 57,
+   "source_row_sha256": "5c61015dc77d96f16ce9daf8e60894cd745b9ce04ef9bf7b0fafdf5aff6186d8",
+   "status": "ok"
+  },
+  {
+   "row_index": 58,
+   "source_row_sha256": "846aa1c04fb98f6f87192b804f6e2e6404ce119a455ceec3ac943695a134b5aa",
+   "status": "ok"
+  },
+  {
+   "row_index": 59,
+   "source_row_sha256": "bb3548c6e0fd986c012fdb5f0b66d76d867415f2c70cf587d6f0f083b300db71",
+   "status": "ok"
+  },
+  {
+   "row_index": 60,
+   "source_row_sha256": "65017872268cf213b61f2dba9f21b39274150ba1e518da2711f2d90d8ab8f087",
+   "status": "ok"
+  },
+  {
+   "row_index": 61,
+   "source_row_sha256": "1f84114c80bcfd653ba783305ea09d4be5d5380652ebe0d8d038613f41bc0c23",
+   "status": "ok"
+  },
+  {
+   "row_index": 62,
+   "source_row_sha256": "22c1cc1af26652c40a93ed7cc2a1cf60c85941ae211eb88dbaec2df1fa731562",
+   "status": "ok"
+  },
+  {
+   "row_index": 63,
+   "source_row_sha256": "6d2a548cf2618f348ce4bd10117e0d7ae49d86c776b9bd1bd707ee79d2e3eb51",
+   "status": "ok"
+  },
+  {
+   "row_index": 64,
+   "source_row_sha256": "4e1d2d820fab30409d8b6cbef85e2b6367bd55f0d96f7de5815dc498ca4b886c",
+   "status": "ok"
+  },
+  {
+   "row_index": 65,
+   "source_row_sha256": "d3b5e4aceecee284ea49d766fb4c57d912c0d134bc2672cd117ed90f6aa71fe8",
+   "status": "ok"
+  },
+  {
+   "row_index": 66,
+   "source_row_sha256": "89277be79b53b581148f9545785de009bb0326b36d010beff3e86c7db3b901a3",
+   "status": "ok"
+  },
+  {
+   "row_index": 67,
+   "source_row_sha256": "041bd22ff824169b4913f20d3c797bec273d69ecb4e2f0f1a2497e8cd80e8d1f",
+   "status": "ok"
+  },
+  {
+   "row_index": 68,
+   "source_row_sha256": "2c19518c864a418cfe58028aadfad918a64c63797226a07934f076cfecc14b78",
+   "status": "ok"
+  },
+  {
+   "row_index": 69,
+   "source_row_sha256": "63fb64f058cd0ade9f053f52ce57ffbaefc7fa4bc28a457d8a8c5dafcaef93d6",
+   "status": "ok"
+  },
+  {
+   "row_index": 70,
+   "source_row_sha256": "2845b7156dcd6075c4bafc5b7f3c3a8be73077270e4755787cbb78c6503ea51f",
+   "status": "ok"
+  },
+  {
+   "row_index": 71,
+   "source_row_sha256": "64f3aaeade616c77b9a1feff96b105ac5d9aefe220e76b5a5cf684bbdd8b8d51",
+   "status": "ok"
+  },
+  {
+   "row_index": 72,
+   "source_row_sha256": "2f06a85d4615ad754e71baa935c723efe63c07249e6909e3e49a98055c8d3c2b",
+   "status": "ok"
+  },
+  {
+   "row_index": 73,
+   "source_row_sha256": "9578a48f13cd965af716cf9b8eae8a6dcc61184e44b4de6bfa3f8a404e9489b0",
+   "status": "ok"
+  },
+  {
+   "row_index": 74,
+   "source_row_sha256": "159dbc543635ec437f91bc7778540ecdba8b2074fcebd13d7bc69959f1b98a9d",
+   "status": "ok"
+  },
+  {
+   "row_index": 75,
+   "source_row_sha256": "187a81438f4ea1ab5aaf61a3e58cd38cce7af626cf1e111f16bc529a1352ad8c",
+   "status": "ok"
+  },
+  {
+   "row_index": 76,
+   "source_row_sha256": "2f7e3b2e1f42361a3909f7df5bfdb2201f05110fe5f407e542dc1d6c33f9c40a",
+   "status": "ok"
+  },
+  {
+   "row_index": 77,
+   "source_row_sha256": "575c6cf63edcd39159ce93ea7ccb11fdb49bdd0d5b7d103e8f683cde7b045d66",
+   "status": "ok"
+  },
+  {
+   "row_index": 78,
+   "source_row_sha256": "c47b290e71b29ead843c9f47916917f82c2e290a67f7d6510c45a595aa8d3c2b",
+   "status": "ok"
+  },
+  {
+   "row_index": 79,
+   "source_row_sha256": "767cda8aa22f0f2e20928b2a4b4bf500628a86344170bc881db44a0aea6774f8",
+   "status": "ok"
+  },
+  {
+   "row_index": 80,
+   "source_row_sha256": "d1a059508d3b4bbd0632e54f995aae170e8c805ae912869bc3f5898a15c0aee1",
+   "status": "ok"
+  },
+  {
+   "row_index": 81,
+   "source_row_sha256": "b1b2a8fcf01078ea37de9c572c59999e5ef1e1801aa99db037fc48f56164f112",
+   "status": "ok"
+  },
+  {
+   "row_index": 82,
+   "source_row_sha256": "90a8b3a502e7324d5f6f30f7925a7a0b295544863b3dd4926b3c5fec49f2fd78",
+   "status": "ok"
+  },
+  {
+   "row_index": 83,
+   "source_row_sha256": "c15cfe21c9fccc91e72fc3ffcc5497db97a799c701edff02e44303a7a5bba7f6",
+   "status": "ok"
+  },
+  {
+   "row_index": 84,
+   "source_row_sha256": "3cabc5bf1a1903ec23cf14e28b8e0d1c4ec3b42798eff2a9924189cddc724c10",
+   "status": "ok"
+  },
+  {
+   "row_index": 85,
+   "source_row_sha256": "7432ac0fa068460ae49fa95ff122f43927f29d9519b1d6d86ba2bb19b3c712d0",
+   "status": "ok"
+  },
+  {
+   "row_index": 86,
+   "source_row_sha256": "660000e6082475a49173c92bcd3009bafb18d4a30773a042bb3200a480cdff38",
+   "status": "ok"
+  },
+  {
+   "row_index": 87,
+   "source_row_sha256": "dae7b31a46194570462cc91b68eda5fc8b61b39e417bae235f6b27ffc261e01a",
+   "status": "ok"
+  },
+  {
+   "row_index": 88,
+   "source_row_sha256": "60470d542b0d8da38b7653cd0a6b6830a40a2937100832d22d58bdaaffbd7bb9",
+   "status": "ok"
+  },
+  {
+   "row_index": 89,
+   "source_row_sha256": "7256bc8d9adae5c61102f220fae9d5874c110604414fb18de0b7a8ea656f0311",
+   "status": "ok"
+  }
+ ],
+ "cache_keys": [
+  "sha256:7b8cdddb6b317051a08b2ddf211ac75cc8274a9f29f545f1526e382495cfae68",
+  "sha256:a25dcce3253883d36b18a3d66e0a963a695085d859d06d931242206c3e9198b8",
+  "sha256:d30fab4451c7809b1dd67c7ab6aa25d44fbc8a0e796aca104e230b076f0ff1d9",
+  "sha256:1a81a5092503c266f9ff9646bd956f7444e4569dac2a0ca6d0260cce01d76602",
+  "sha256:0b5fbb3cdb056f4686f181eb694fbfc749d0a61c08f05933c8a316ad7718b7ae",
+  "sha256:64e34d6fb5610615dc0fdbf18372eab203e715f03201d2a89d7aa8bd05da2e4a",
+  "sha256:a789d020cb0f518d15588c1f441786fd22cecadfcccf911f12d951cff5fdea78",
+  "sha256:331b967f02d3fe041d5dff2a52b8a846192f574c260a9947d3d7666281767a83",
+  "sha256:92aca819a396910baa8c02643306c4992127eb78a2c76d5ffc85b0642c52a2f6",
+  "sha256:6b073da0e3f2d237e2f35fe1740be4e2e83a426e4921077aa8088c68cfa76cb0",
+  "sha256:ca5961ccacf392bdf62055741de7d6441046191e23ce0fe26dbe0901c31ff2d4",
+  "sha256:902ff59fef285e763553a83431567ae4ccbd28961f7b32aa5160d99c7d1ba7e3",
+  "sha256:b3f2229f265279db70a7c536004f0d11e0e51ec1ac0a3351b1a4056baef046ad",
+  "sha256:4a76b74b2d49ca41a4b66a8b9be2ff67a704eb73a738634126279f6e3ce928a7",
+  "sha256:6433b8d1ae0692126ba023943180b42724ebd6a56470e3540217f8b5c77a729a",
+  "sha256:d6dff79da4fc4c6c44f13c2b458a48658684d1c423f2ecee804f3c2abf791615",
+  "sha256:0ec05a5169eecde38345e56e5c35eba5bf9791581a0692b1782f2a8124bdfebf",
+  "sha256:b88b309f229c75b746978a698991b72d3f088b5e163f79b1cf9df977923c5023",
+  "sha256:0c7f9f1e8d86ce5d598eb540b174912e6a7c7328ebbd7dd05c6cc504a9cebe11",
+  "sha256:86b50befc9ca39cd03f2edd3d7e786b4177ccf83fa8e8395f75f16742dc24733",
+  "sha256:46000752dc3b8be2ca2fae1c19fc99eca45ea58b48c0919684879aa5c5302d81",
+  "sha256:7e00e44dc7191a9d8babdaecf092bdab8e19579cf640b5d43f121ef94bc32f03",
+  "sha256:a5f64e5d4e55c763853b2e3c7d21c384e27ba4d59cc54b2f3588c66d40e86a95",
+  "sha256:6929924fe41d8c1c691bed4715b3ac1000148fb288a6a6b82096076dac691e19",
+  "sha256:1d8f82b44eb8c17994b9dba5aead4f41c3a7dce3fd99e46ce841fc239c12f6fb",
+  "sha256:d302319f876729b2e6c65a26ff40b76fa3eb4f28548262cfe325ea281897c96e",
+  "sha256:c852b6aa9fa4190b26fec83abe92ba669dca3f97728a56193c38780ecaae563e",
+  "sha256:648cc3e1c263344ac40e77966a5c94aa3e782e89654523403d23c1f61e4d26ed",
+  "sha256:e44c42f6b7206c7f2acfb58ee7c06faff6eadff2c5f0fff602e63ccc17a07c74",
+  "sha256:0a406343da9f632219d28d659913b064fb3fdb0b688b7b8b37d996fdf76fe633",
+  "sha256:68a98d07a156f81971335828f3dd576ff28bc219e4b8c65a420b4d405d957d3e",
+  "sha256:4d733953f12d0588c06ee7979247c8046cd846c765124b09c0ad7128c1c5ff12",
+  "sha256:1033a497589e039117d5fe0a435008f754f79b98969739e804d90dac3d031fee",
+  "sha256:2a8594ad05f2b6431e2a928e583d3c2f7bcbc471f16ad689e7f61591548903bb",
+  "sha256:a4dc01932a411c140b34f9e9b38a45b2f75a3a3d18432904d0ec3f0541a9e177",
+  "sha256:9a9c6150542f792a1dbe33ec0315b213cf72cd48d711192fcff07711e9c1d58e",
+  "sha256:2004477605393021df8e17a86a1236b945d107dde2d3f5cd2836ce27d4a0540c",
+  "sha256:e859286a7371da9235415571203b5c3a99d091d2b71f90bd1b6dd4a78969bc13",
+  "sha256:a897e70782b23051a24cd3dabf1594c4eb198ef8a01b275e2b30b70904a8a47c",
+  "sha256:a4dc331bde42d2e95b8710dcf49978565327edfb50c39208d18128e68118ffab",
+  "sha256:6caf0236797e5a83c2d48e0c1b5b4bc084783066f84dd12c1bb0d2b922628003",
+  "sha256:f507aba32bec86cf6d976ba1881de6f30419221cefe5c677741e3d8b48b1bf4d",
+  "sha256:23d059e454b7be81c5e6e9df59add011a6f35da5aed7757b0d6b6d8b4534ecda",
+  "sha256:3f0e2df7eb4e62312664fe774d093e0af4f20d4700823228102837cd053c0d87",
+  "sha256:c700283d6677f77535a902b4d844bd0f9e5a287ef209d3326b02c42d62ac39c3",
+  "sha256:4ac0858e82b2641d94744cddc124d87e504856dbb1f7c655266a5009b34d8f2f",
+  "sha256:7a94e1ebb64db8f451c1f1cd488bd8ae68eb8b3d57836444aa859016e424fdc2",
+  "sha256:a3df51b486b294b2866c7c32861ec58d6859157b238dc56bc2d723a28530dbe9",
+  "sha256:fd9bdd84dcc739a71b4794652c051f9325a4cc70d82897210aa1605284d59d06",
+  "sha256:64da3c5d5daf97b011aa2ee10739d81422bfb0eb8ad9db2ad52d89568e0028d2",
+  "sha256:ef75113e79371ff9d56b14ee5286828c48d0157dc492f965ff6d8f6a6e540e0d",
+  "sha256:e76b15fdff448a1ee0baa008576eaa0a0e5d41c6a232afae3628af647e992cd4",
+  "sha256:25c4fdc7fc25c09f8449f17b34c22daf8016f364725b029e9fb2211a51389db8",
+  "sha256:bc8653d92a4c56c379ae4b89bf5c15271e764925036c1becb49b8688d8f080f4",
+  "sha256:ff73e140fafc3ab8c52c22652cca7510782744a6bbf4933e11c46a210241ed73",
+  "sha256:09cca7e73ca3bbbc7c9e5e26f4dcdfc44fe31c0e9ab8e8bab2ec94d14107fa88",
+  "sha256:2be8335bbba882bb8ae532bc0a060dcd9d7cd1eb4af215405f94822d21748628",
+  "sha256:75e2f60bb6bc4975fc6f5f5b811a5a9197cb6c5a69e2aa0a9d4e4864d4e68e2e",
+  "sha256:b32db87627bf807225f9f46e86bd9631b102add6a0ee5c32825d6a1db81a02b2",
+  "sha256:315ca83fed9c7a8b9b91939b495a3d6d4b613f510cde9e6495f8e75bc2660c89",
+  "sha256:4117dc5124fe56df43913546dac4c082f461285784d893b845349f4853b27b34",
+  "sha256:a3afb33a624fe57ce7b769fc03bde490b4295d268785f63055100929fc8175f5",
+  "sha256:37b1c504ad96975326799ef4f9c31656689c85418d79fadc540b34011c1f8e7a",
+  "sha256:92540f1b3ec5bbd2d9422830f77cf8bedb90288322e18aa65a61abbc928855f1",
+  "sha256:b65b433441410c3da6196637de03b157e1ac2c5457054be855230beccfe081f4",
+  "sha256:24b95f397a7b37a049335b55c9cd00c026f93c2e2b2e709aa52256c8e08d8df8",
+  "sha256:fe0531f583823ef3b2f880ab3072818a67760f20b330114cb4ac3f9679e9c26d",
+  "sha256:1cfc920b083abdc1eae2f17a134d27a9a5726d986d8f189bd21b9528420b968d",
+  "sha256:cdba8e2595d035ce8da80860d4db64992e7a5f6a7365edb8f7a193a8bbb6994e",
+  "sha256:72a7f03b58f710b459fdeca74fb9fea7836ccc69645a2721d9edcf6314bc98e5",
+  "sha256:c70615ae4438c6a3bea5518c9be336a7c9fc82051c5a22f30218b98aadb856a6",
+  "sha256:064255af55d0aa9e8f4437d585f777917f54f9b2bc1de1455edb20448cbdffbb",
+  "sha256:c8c344b65dc0262412985181298d7a647f6340663bf867e99fe8cea57b86c411",
+  "sha256:6497c2f8aa4053de089811d7a67698b626a4308f6e5dad3ff82abd60a47b82f0",
+  "sha256:7237a9b5d8097ff4e40b60fab4147eacb843e0ebb2bdf48158ee2eb9e92f665a",
+  "sha256:e0ead36166248b693815e3acc73807ea9c4605f23d446f469bb4377acc22ed39",
+  "sha256:7ec9f49fac15dbf58d1d2d254fdb0b9623dedc6ddb1714769fe1063d8518017e",
+  "sha256:e222caa563c9ab907b27c1368b5a69bde565cc3c1840962eba839d521a4019e2",
+  "sha256:e9373ba9737f9e3c54663d96f47fb5fff7e256ca7d3efa3fe67f927488a18899",
+  "sha256:65ca0c696c2d2054cc88a444dd2b57db54ffb991dd20e6b159a0534faf25c642",
+  "sha256:14038c4630506e607bac79e6b300ce62620a7e14ab1532f940d85754d92b5c17",
+  "sha256:c5c905f69a39264633f7e3500040b1798be85c61ca0396dbd28d403332570df9",
+  "sha256:7916746d84e0fa7afa9c7aed7a9a0438c3e1fada803d324273e6f175b9f32e49",
+  "sha256:43444e30519a107cf9ccba9b1aff315091336102bedb81846822942f2a03c005",
+  "sha256:36e9e39483b6fb50cc411deb381e77728fd19a8cae49c97ab709b2344f7d293c",
+  "sha256:8baea5bfe0250e92a34da4ef1967451e4c89402775797f69d5c25297b9287c51",
+  "sha256:ab3c92947f4acc60b2f55bd7aa458c7b16fad9112cf7c264062ff53d536a370f",
+  "sha256:f3e3511f0490af5f18e29ca465cafcb38fc6d40227fe3c35317e75dbed6d5e39",
+  "sha256:464fed24a9a05fad049483860fd0417b9817a6327092c375f16796b4737bf1dd",
+  "sha256:2ef4339e1d31f5247f5fddeef6bb7ab0ba7fe0c1992c034894d46b4eae748507"
+ ],
+ "evidence_inventory": [
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:064255af55d0aa9e8f4437d585f777917f54f9b2bc1de1455edb20448cbdffbb.json",
+   "sha256": "36e7e82cc8f87f8726756afb026e2338d31e58b6727949970ed4dcc11060fb94",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:09cca7e73ca3bbbc7c9e5e26f4dcdfc44fe31c0e9ab8e8bab2ec94d14107fa88.json",
+   "sha256": "1ac4d1ea61df2e178f5805c70a63c953b9f2dcdfc8c1505d756689fa77ee1a2b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:0a406343da9f632219d28d659913b064fb3fdb0b688b7b8b37d996fdf76fe633.json",
+   "sha256": "f73c6a58f66324380a534783075dadee497318c19f18bd8f0507daababaa7121",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:0b5fbb3cdb056f4686f181eb694fbfc749d0a61c08f05933c8a316ad7718b7ae.json",
+   "sha256": "cf22c2c88cb296b291f20ff817d8294ce7b5645efe2317938319b2b3460f56f3",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:0c7f9f1e8d86ce5d598eb540b174912e6a7c7328ebbd7dd05c6cc504a9cebe11.json",
+   "sha256": "2ec62f40fcbc5e149a0a3f0097a5d08e5321c026b131307e60ef711842e154d0",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:0ec05a5169eecde38345e56e5c35eba5bf9791581a0692b1782f2a8124bdfebf.json",
+   "sha256": "557d31a55125d29085b056f67ab645cefa48218e74579eebb730b2a7f7819047",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:1033a497589e039117d5fe0a435008f754f79b98969739e804d90dac3d031fee.json",
+   "sha256": "8c9acac107645f4674d317d905eb4870adb80709842f5597b07f2e84257ce506",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:14038c4630506e607bac79e6b300ce62620a7e14ab1532f940d85754d92b5c17.json",
+   "sha256": "f686f2aa5b490f841209ab20707e52b8c7785e217884187c85d6dbc23e1902b2",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:1a81a5092503c266f9ff9646bd956f7444e4569dac2a0ca6d0260cce01d76602.json",
+   "sha256": "7a66fb4c5138c2a70b97f0a2790b178a35e021caf0a1c61edb6310c2f6e1de65",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:1cfc920b083abdc1eae2f17a134d27a9a5726d986d8f189bd21b9528420b968d.json",
+   "sha256": "18e56b8d5688415d2c863e726242b76cc59663bddc972c7f457391d1d12bc183",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:1d8f82b44eb8c17994b9dba5aead4f41c3a7dce3fd99e46ce841fc239c12f6fb.json",
+   "sha256": "dd69f92761061e6cd2235d67b44572c45cf52d2720660d095d335aa2528ac665",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:2004477605393021df8e17a86a1236b945d107dde2d3f5cd2836ce27d4a0540c.json",
+   "sha256": "2c4432a8ef7f2161e1554f51fe1bdd73111d6d10808453dd237b6253441f9633",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:23d059e454b7be81c5e6e9df59add011a6f35da5aed7757b0d6b6d8b4534ecda.json",
+   "sha256": "78c900c21180a6a1410b1f0435405f34325feecda08f6c6035f4a641c5803a76",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:24b95f397a7b37a049335b55c9cd00c026f93c2e2b2e709aa52256c8e08d8df8.json",
+   "sha256": "4a60f01e7f7f4458824676fdb0f2ce9ca01b77a5d45559b2326879a1402e4cbf",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:25c4fdc7fc25c09f8449f17b34c22daf8016f364725b029e9fb2211a51389db8.json",
+   "sha256": "193f7c64a9feb472766b116b634c48005e98cbffcfb3db2a3d8203ff22025776",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:2a8594ad05f2b6431e2a928e583d3c2f7bcbc471f16ad689e7f61591548903bb.json",
+   "sha256": "64dc5805b4a90dc5834855f0b562d8296d6c32bc2375baab45b0650284d6a5c8",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:2be8335bbba882bb8ae532bc0a060dcd9d7cd1eb4af215405f94822d21748628.json",
+   "sha256": "3744d33ae40f48836880acddc5e9342cd7386d1966210620f5b9d1fcbffc657b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:2ef4339e1d31f5247f5fddeef6bb7ab0ba7fe0c1992c034894d46b4eae748507.json",
+   "sha256": "280bf74df1611ba08bb3ac6c146a8ee27ee2e3ec3bdfeb77405e4ad68e87fe8b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:315ca83fed9c7a8b9b91939b495a3d6d4b613f510cde9e6495f8e75bc2660c89.json",
+   "sha256": "b13f7a8276a4764f5fa4cd1d6f38f66c3355aca7f160a95c783da660fddd05c4",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:331b967f02d3fe041d5dff2a52b8a846192f574c260a9947d3d7666281767a83.json",
+   "sha256": "0cd6db0f4d8f3cc8a1463e8cf1a1d7fb826c194b2b1386f283526e0b3469ec10",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:36e9e39483b6fb50cc411deb381e77728fd19a8cae49c97ab709b2344f7d293c.json",
+   "sha256": "a1e592a48080fdce08502e57e49a26e7f94b650b4d2678483d50ffc8d3d8a2d0",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:37b1c504ad96975326799ef4f9c31656689c85418d79fadc540b34011c1f8e7a.json",
+   "sha256": "8db1a8690c32ac413aee74cb2fce70c2346c474ebc3eeef8681cb96f318eb64b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:3f0e2df7eb4e62312664fe774d093e0af4f20d4700823228102837cd053c0d87.json",
+   "sha256": "441a026037b8cab9d0dd796ca41ff8f641ba685b032ffa849730f6ebbdb1c05b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:4117dc5124fe56df43913546dac4c082f461285784d893b845349f4853b27b34.json",
+   "sha256": "c04e6eb2f0d48db91ac644eef8dc196c0b4cf81cc1df48d7f13b5560a30cbb6b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:43444e30519a107cf9ccba9b1aff315091336102bedb81846822942f2a03c005.json",
+   "sha256": "0a072f23671365faeebadb27b088e6c407a721753a36303bdd5c2795bfe5c3d1",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:46000752dc3b8be2ca2fae1c19fc99eca45ea58b48c0919684879aa5c5302d81.json",
+   "sha256": "7298c57a6acfce1f56bdf6334a1e5d5385c3b1afd3326e1fd71d1ac7f312be84",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:464fed24a9a05fad049483860fd0417b9817a6327092c375f16796b4737bf1dd.json",
+   "sha256": "6e2a112f3bba7ff0498c86b86fd36021917c3bf66e06fa8fe38f5ff4dcf3ee9a",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:4a76b74b2d49ca41a4b66a8b9be2ff67a704eb73a738634126279f6e3ce928a7.json",
+   "sha256": "98a71e17c70c0cf8333894e923b6c83d165813eabaef012ea515d14d79bec368",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:4ac0858e82b2641d94744cddc124d87e504856dbb1f7c655266a5009b34d8f2f.json",
+   "sha256": "d063ab1e4dbc244a28712544899fbe706984b0689d75eb2314400824563d840b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:4d733953f12d0588c06ee7979247c8046cd846c765124b09c0ad7128c1c5ff12.json",
+   "sha256": "bb07250e90cfbc1c664c1c4c727ba42f1a34d388c47d9d445da1a558d19d6f4e",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:6433b8d1ae0692126ba023943180b42724ebd6a56470e3540217f8b5c77a729a.json",
+   "sha256": "20af8416291dfac7a0ee3389e26036e7f1b014ed1a1b858e46342a1382780ef6",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:648cc3e1c263344ac40e77966a5c94aa3e782e89654523403d23c1f61e4d26ed.json",
+   "sha256": "2586ebde088d7ec7c91f23a579bd0595a0a59807e90f1a31a1607d752f25ca97",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:6497c2f8aa4053de089811d7a67698b626a4308f6e5dad3ff82abd60a47b82f0.json",
+   "sha256": "23fcb2bbb01ab577f7aa77388c74e7e56a753996117da08ec4a55f61b3fb6c77",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:64da3c5d5daf97b011aa2ee10739d81422bfb0eb8ad9db2ad52d89568e0028d2.json",
+   "sha256": "e7124284ef3354ee68228b8257b6c767b2fa7079f8a140f836697f47859e3fbe",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:64e34d6fb5610615dc0fdbf18372eab203e715f03201d2a89d7aa8bd05da2e4a.json",
+   "sha256": "704b533f8de2cf42e837371642f2014e193fc215f83e27c1f476719125cbd44e",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:65ca0c696c2d2054cc88a444dd2b57db54ffb991dd20e6b159a0534faf25c642.json",
+   "sha256": "772a840dfe1947eac240c01648a9ae3c3cf0d5621c1a71812406091663f3fa4a",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:68a98d07a156f81971335828f3dd576ff28bc219e4b8c65a420b4d405d957d3e.json",
+   "sha256": "12c41a50ba2eb2e2cdc4623f6b5bfb698fcb1fdaa31e910f52ae68502b2af59e",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:6929924fe41d8c1c691bed4715b3ac1000148fb288a6a6b82096076dac691e19.json",
+   "sha256": "88751c3b66d485f04c55ce9a26267e3acf9721d8ade9a4b405ff6e9205acf7b3",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:6b073da0e3f2d237e2f35fe1740be4e2e83a426e4921077aa8088c68cfa76cb0.json",
+   "sha256": "d85d0e6bb7e6f98371d9d00a861a640e17690b07478a0e4fbceb8d4fd22f04b0",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:6caf0236797e5a83c2d48e0c1b5b4bc084783066f84dd12c1bb0d2b922628003.json",
+   "sha256": "17dc94de2a61f52906da5ac9916051a93f5776a580337aa17d43b1db39889799",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:7237a9b5d8097ff4e40b60fab4147eacb843e0ebb2bdf48158ee2eb9e92f665a.json",
+   "sha256": "e42bc97f57c52043c4090d38d022e6f9e3f71c9e73256e13cae6cfb5e2ee9a0f",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:72a7f03b58f710b459fdeca74fb9fea7836ccc69645a2721d9edcf6314bc98e5.json",
+   "sha256": "3002692a43f44da5a79aeed70c09c3f43dcb78a3fea4d649938ea8a7be94567d",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:75e2f60bb6bc4975fc6f5f5b811a5a9197cb6c5a69e2aa0a9d4e4864d4e68e2e.json",
+   "sha256": "8919937cba003b816361c2d9a5d45ebdf34747fd4138569f3e7ddb947f67db15",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:7916746d84e0fa7afa9c7aed7a9a0438c3e1fada803d324273e6f175b9f32e49.json",
+   "sha256": "de0aa8c36bfc22d00fda7fba07f7f3d711f709568cdaeb7553e28302c262a8be",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:7a94e1ebb64db8f451c1f1cd488bd8ae68eb8b3d57836444aa859016e424fdc2.json",
+   "sha256": "92cb3067908adb5208759d974d5861f7d9afc1d6123f695a15ba3b3f47352257",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:7b8cdddb6b317051a08b2ddf211ac75cc8274a9f29f545f1526e382495cfae68.json",
+   "sha256": "74728d8c7e090c81894b0b5599504fe4129d5102ee6bd1559d0a8bcca36b9c1b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:7e00e44dc7191a9d8babdaecf092bdab8e19579cf640b5d43f121ef94bc32f03.json",
+   "sha256": "0093f8a71e59e1432501fb2bf9c4a7788f66d33aef79a658c21bf68ae0e70567",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:7ec9f49fac15dbf58d1d2d254fdb0b9623dedc6ddb1714769fe1063d8518017e.json",
+   "sha256": "719a9c00d19915562ba867ec0ef8b631e2646c48c8839922ff0a37dfe8fad793",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:86b50befc9ca39cd03f2edd3d7e786b4177ccf83fa8e8395f75f16742dc24733.json",
+   "sha256": "97be88d56a6dcbf228151cb45ead42be86d1bec9e82bf72f486286dd3b43209d",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:8baea5bfe0250e92a34da4ef1967451e4c89402775797f69d5c25297b9287c51.json",
+   "sha256": "da81e31fa3537f9ca9a2156e43e19c2c52f5df130b73a49078cc2fd897e6556a",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:902ff59fef285e763553a83431567ae4ccbd28961f7b32aa5160d99c7d1ba7e3.json",
+   "sha256": "651f766792c9b59af5f3a3530c3a0cc2ee9801dee4ee4328b7babc3e08fd28ba",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:92540f1b3ec5bbd2d9422830f77cf8bedb90288322e18aa65a61abbc928855f1.json",
+   "sha256": "1c91e5e8b268408b78df729b90842ac5745e970df990bdd4de68ff5b92797a90",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:92aca819a396910baa8c02643306c4992127eb78a2c76d5ffc85b0642c52a2f6.json",
+   "sha256": "423e8ff7cc0395c1dba7b11cd8797f165992e4e48c185e97ef4afddbf136f0c2",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:9a9c6150542f792a1dbe33ec0315b213cf72cd48d711192fcff07711e9c1d58e.json",
+   "sha256": "33775802d6b729c0d97812755b341f3ba260a72468d6543aedf675eb08c85a15",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a25dcce3253883d36b18a3d66e0a963a695085d859d06d931242206c3e9198b8.json",
+   "sha256": "050b1a5cef27b31c154551ac81e629c6e3ef3a1a30e18136f3344c8258a00e9c",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a3afb33a624fe57ce7b769fc03bde490b4295d268785f63055100929fc8175f5.json",
+   "sha256": "35234209dbb9201f44f817ffb39da5d7df820166bdc98918d1a18cbbb66c8621",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a3df51b486b294b2866c7c32861ec58d6859157b238dc56bc2d723a28530dbe9.json",
+   "sha256": "5834ad8a7830aa9f2bfbca52495a7df06d2023e87613fdbe70f408ee36850970",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a4dc01932a411c140b34f9e9b38a45b2f75a3a3d18432904d0ec3f0541a9e177.json",
+   "sha256": "0c969a5f236c3efbe8f8f849af930de8ed64b36d3ba927edff8159227bb9530b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a4dc331bde42d2e95b8710dcf49978565327edfb50c39208d18128e68118ffab.json",
+   "sha256": "d1a7658cdcde4aad3e3e42ef5d2f18a44ba211cbc693900ee84b167e8cc63c41",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a5f64e5d4e55c763853b2e3c7d21c384e27ba4d59cc54b2f3588c66d40e86a95.json",
+   "sha256": "8e68554aeee1d072867db1a50db414d52fc4e83e89221eb9fef04182e0246e68",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a789d020cb0f518d15588c1f441786fd22cecadfcccf911f12d951cff5fdea78.json",
+   "sha256": "ada0e7d8a831c09a11a2c85ff1fccf023b1af2440fd0f6064bd83af8e12868ec",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:a897e70782b23051a24cd3dabf1594c4eb198ef8a01b275e2b30b70904a8a47c.json",
+   "sha256": "2af7cdb61dcc5703c56a7cbb292ed6e9b4a667dc9c50d6041c5f3870b1db7f31",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:ab3c92947f4acc60b2f55bd7aa458c7b16fad9112cf7c264062ff53d536a370f.json",
+   "sha256": "797d757ff68adc238f7e9853febc9eda920826e292af63e0e77d2d5797a3e8c4",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:b32db87627bf807225f9f46e86bd9631b102add6a0ee5c32825d6a1db81a02b2.json",
+   "sha256": "ac168c00ab1a4a375a48aceb4200260a143a3651ceb73bc625a126d6f49c9487",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:b3f2229f265279db70a7c536004f0d11e0e51ec1ac0a3351b1a4056baef046ad.json",
+   "sha256": "7eb07d1a71be4daf33f7d507b9979e33acc02da5a6afa0c8a87a19024bfae9cc",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:b65b433441410c3da6196637de03b157e1ac2c5457054be855230beccfe081f4.json",
+   "sha256": "065ad4461ba7a5afba1fc5e689bb99427eea1d9abb0b4fbd64295bdf2fee9b27",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:b88b309f229c75b746978a698991b72d3f088b5e163f79b1cf9df977923c5023.json",
+   "sha256": "3ae4c7c6213d21a033a8fce3efd92e020d630f6eac0ae24db9322926df3d948b",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:bc8653d92a4c56c379ae4b89bf5c15271e764925036c1becb49b8688d8f080f4.json",
+   "sha256": "afd5f602cfcfa4186192c40f214ba16d0afca96689aa72e6f5f89bce4517f750",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:c5c905f69a39264633f7e3500040b1798be85c61ca0396dbd28d403332570df9.json",
+   "sha256": "87c87410f1e36f2afa775595f3f740da7a4dd9c0bb31fbf838c8b966c84081ac",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:c700283d6677f77535a902b4d844bd0f9e5a287ef209d3326b02c42d62ac39c3.json",
+   "sha256": "e340a4dbed6629c18bac01b86400762d2f32d5a88ee64a6ad3cdf81e5dc1ed66",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:c70615ae4438c6a3bea5518c9be336a7c9fc82051c5a22f30218b98aadb856a6.json",
+   "sha256": "46340acb3da4145f0ec39e8da8d010dac2e8dd9a42c15ae1a5ad43bfcd98a045",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:c852b6aa9fa4190b26fec83abe92ba669dca3f97728a56193c38780ecaae563e.json",
+   "sha256": "d91e2d522826292139dad74fb289f1fca19d55f7b0e256c9bf292feaab7f7d80",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:c8c344b65dc0262412985181298d7a647f6340663bf867e99fe8cea57b86c411.json",
+   "sha256": "c69057f0b77ba4ef18c36b46e9c4563be3abbd7f1be21eda5caf4362ce763809",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:ca5961ccacf392bdf62055741de7d6441046191e23ce0fe26dbe0901c31ff2d4.json",
+   "sha256": "ce2147a20ab2758039997fd85769213252bd73398e14b14987f139660d33c22d",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:cdba8e2595d035ce8da80860d4db64992e7a5f6a7365edb8f7a193a8bbb6994e.json",
+   "sha256": "d5502ab1668b92cc5cef8ff6aacd5f0b2cd8c114d66486f3c30841e6fd2cd5a7",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:d302319f876729b2e6c65a26ff40b76fa3eb4f28548262cfe325ea281897c96e.json",
+   "sha256": "0b43427a36e14183bf62245bd9685a77e3e1b336303bb9cb9b948d6f3ea5c9c0",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:d30fab4451c7809b1dd67c7ab6aa25d44fbc8a0e796aca104e230b076f0ff1d9.json",
+   "sha256": "5c32ddde365b8468cb5ff18d9ba722312d76c5869f9cb406ea4c4e9f010e30f5",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:d6dff79da4fc4c6c44f13c2b458a48658684d1c423f2ecee804f3c2abf791615.json",
+   "sha256": "c79ec81e664d661ce9742c37f183f8d3a36261ac5b1b9a1dc3524c970c239351",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:e0ead36166248b693815e3acc73807ea9c4605f23d446f469bb4377acc22ed39.json",
+   "sha256": "73ec67a6df374686fa0a797e6afc0d89a3780d4364643ea79b715ed99350ede1",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:e222caa563c9ab907b27c1368b5a69bde565cc3c1840962eba839d521a4019e2.json",
+   "sha256": "c63c51dd83f4e3e0cac320fc2c2ced80c2e6cab821eedf9f99e97416f050a978",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:e44c42f6b7206c7f2acfb58ee7c06faff6eadff2c5f0fff602e63ccc17a07c74.json",
+   "sha256": "456ec4f38ec5b0e5ad4e6d842207a477544e8f3e7b6ecd32b84dd0c6192535ae",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:e76b15fdff448a1ee0baa008576eaa0a0e5d41c6a232afae3628af647e992cd4.json",
+   "sha256": "08474b02d01931c9160ec3aeadbc0af4c105e8b17ad2f446636062278fe595df",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:e859286a7371da9235415571203b5c3a99d091d2b71f90bd1b6dd4a78969bc13.json",
+   "sha256": "edd132960d556365c209c8c2f907959baf16a361e6c6edbf06695bae1443ca92",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:e9373ba9737f9e3c54663d96f47fb5fff7e256ca7d3efa3fe67f927488a18899.json",
+   "sha256": "cc6412b5fac924c667b9b3061dfd064cf5999f08659ab522eae6171db6ed9fe0",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:ef75113e79371ff9d56b14ee5286828c48d0157dc492f965ff6d8f6a6e540e0d.json",
+   "sha256": "afa80eada6563518ee9df4e8b2a03c4de2f83185ddb747b780a3aada925ed116",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:f3e3511f0490af5f18e29ca465cafcb38fc6d40227fe3c35317e75dbed6d5e39.json",
+   "sha256": "2ff4942e563f0b1c3887512232c11751baa2522e7d0192e5c525771b25213b10",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:f507aba32bec86cf6d976ba1881de6f30419221cefe5c677741e3d8b48b1bf4d.json",
+   "sha256": "963824275045a5ddbce1156304ae3f53cda4d47d47029a8ffe861b0f6c50bee6",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:fd9bdd84dcc739a71b4794652c051f9325a4cc70d82897210aa1605284d59d06.json",
+   "sha256": "a696e6d15c41919ba24c654edf6de9c3760678d15a6217e4543ff5c38bebf289",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:fe0531f583823ef3b2f880ab3072818a67760f20b330114cb4ac3f9679e9c26d.json",
+   "sha256": "022d08fe324a8916a76fb2974b22466a1b26bb13ec8a6290048de16577ee61c9",
+   "status": "ok"
+  },
+  {
+   "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/cached/sha256:ff73e140fafc3ab8c52c22652cca7510782744a6bbf4933e11c46a210241ed73.json",
+   "sha256": "609053245aba2385473108bca481ee36c343ca8616abfdcd7de6f66999aba31d",
+   "status": "ok"
+  }
+ ],
+ "failures": [],
+ "requests_identity": [
+  {
+   "item_id": "全世界失眠:w0:full:missing0.25",
+   "request_id": "全世界失眠:w0:full:missing0.25",
+   "request_identity": "sha256:7b8cdddb6b317051a08b2ddf211ac75cc8274a9f29f545f1526e382495cfae68",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w0:full",
+   "request_id": "全世界失眠:w0:full",
+   "request_identity": "sha256:a25dcce3253883d36b18a3d66e0a963a695085d859d06d931242206c3e9198b8",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w0:s2:missing0.25",
+   "request_id": "全世界失眠:w0:s2:missing0.25",
+   "request_identity": "sha256:d30fab4451c7809b1dd67c7ab6aa25d44fbc8a0e796aca104e230b076f0ff1d9",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w0:s2",
+   "request_id": "全世界失眠:w0:s2",
+   "request_identity": "sha256:1a81a5092503c266f9ff9646bd956f7444e4569dac2a0ca6d0260cce01d76602",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w0:s4:missing0.25",
+   "request_id": "全世界失眠:w0:s4:missing0.25",
+   "request_identity": "sha256:0b5fbb3cdb056f4686f181eb694fbfc749d0a61c08f05933c8a316ad7718b7ae",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w0:s4",
+   "request_id": "全世界失眠:w0:s4",
+   "request_identity": "sha256:64e34d6fb5610615dc0fdbf18372eab203e715f03201d2a89d7aa8bd05da2e4a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w1:full:missing0.25",
+   "request_id": "全世界失眠:w1:full:missing0.25",
+   "request_identity": "sha256:a789d020cb0f518d15588c1f441786fd22cecadfcccf911f12d951cff5fdea78",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w1:full",
+   "request_id": "全世界失眠:w1:full",
+   "request_identity": "sha256:331b967f02d3fe041d5dff2a52b8a846192f574c260a9947d3d7666281767a83",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w1:s2:missing0.25",
+   "request_id": "全世界失眠:w1:s2:missing0.25",
+   "request_identity": "sha256:92aca819a396910baa8c02643306c4992127eb78a2c76d5ffc85b0642c52a2f6",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w1:s2",
+   "request_id": "全世界失眠:w1:s2",
+   "request_identity": "sha256:6b073da0e3f2d237e2f35fe1740be4e2e83a426e4921077aa8088c68cfa76cb0",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w1:s4:missing0.25",
+   "request_id": "全世界失眠:w1:s4:missing0.25",
+   "request_identity": "sha256:ca5961ccacf392bdf62055741de7d6441046191e23ce0fe26dbe0901c31ff2d4",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w1:s4",
+   "request_id": "全世界失眠:w1:s4",
+   "request_identity": "sha256:902ff59fef285e763553a83431567ae4ccbd28961f7b32aa5160d99c7d1ba7e3",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w2:full:missing0.25",
+   "request_id": "全世界失眠:w2:full:missing0.25",
+   "request_identity": "sha256:b3f2229f265279db70a7c536004f0d11e0e51ec1ac0a3351b1a4056baef046ad",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w2:full",
+   "request_id": "全世界失眠:w2:full",
+   "request_identity": "sha256:4a76b74b2d49ca41a4b66a8b9be2ff67a704eb73a738634126279f6e3ce928a7",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w2:s2:missing0.25",
+   "request_id": "全世界失眠:w2:s2:missing0.25",
+   "request_identity": "sha256:6433b8d1ae0692126ba023943180b42724ebd6a56470e3540217f8b5c77a729a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w2:s2",
+   "request_id": "全世界失眠:w2:s2",
+   "request_identity": "sha256:d6dff79da4fc4c6c44f13c2b458a48658684d1c423f2ecee804f3c2abf791615",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w2:s4:missing0.25",
+   "request_id": "全世界失眠:w2:s4:missing0.25",
+   "request_identity": "sha256:0ec05a5169eecde38345e56e5c35eba5bf9791581a0692b1782f2a8124bdfebf",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "全世界失眠:w2:s4",
+   "request_id": "全世界失眠:w2:s4",
+   "request_identity": "sha256:b88b309f229c75b746978a698991b72d3f088b5e163f79b1cf9df977923c5023",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w0:full:missing0.25",
+   "request_id": "已是两条路上的人:w0:full:missing0.25",
+   "request_identity": "sha256:0c7f9f1e8d86ce5d598eb540b174912e6a7c7328ebbd7dd05c6cc504a9cebe11",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w0:full",
+   "request_id": "已是两条路上的人:w0:full",
+   "request_identity": "sha256:86b50befc9ca39cd03f2edd3d7e786b4177ccf83fa8e8395f75f16742dc24733",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w0:s2:missing0.25",
+   "request_id": "已是两条路上的人:w0:s2:missing0.25",
+   "request_identity": "sha256:46000752dc3b8be2ca2fae1c19fc99eca45ea58b48c0919684879aa5c5302d81",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w0:s2",
+   "request_id": "已是两条路上的人:w0:s2",
+   "request_identity": "sha256:7e00e44dc7191a9d8babdaecf092bdab8e19579cf640b5d43f121ef94bc32f03",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w0:s4:missing0.25",
+   "request_id": "已是两条路上的人:w0:s4:missing0.25",
+   "request_identity": "sha256:a5f64e5d4e55c763853b2e3c7d21c384e27ba4d59cc54b2f3588c66d40e86a95",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w0:s4",
+   "request_id": "已是两条路上的人:w0:s4",
+   "request_identity": "sha256:6929924fe41d8c1c691bed4715b3ac1000148fb288a6a6b82096076dac691e19",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w1:full:missing0.25",
+   "request_id": "已是两条路上的人:w1:full:missing0.25",
+   "request_identity": "sha256:1d8f82b44eb8c17994b9dba5aead4f41c3a7dce3fd99e46ce841fc239c12f6fb",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w1:full",
+   "request_id": "已是两条路上的人:w1:full",
+   "request_identity": "sha256:d302319f876729b2e6c65a26ff40b76fa3eb4f28548262cfe325ea281897c96e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w1:s2:missing0.25",
+   "request_id": "已是两条路上的人:w1:s2:missing0.25",
+   "request_identity": "sha256:c852b6aa9fa4190b26fec83abe92ba669dca3f97728a56193c38780ecaae563e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w1:s2",
+   "request_id": "已是两条路上的人:w1:s2",
+   "request_identity": "sha256:648cc3e1c263344ac40e77966a5c94aa3e782e89654523403d23c1f61e4d26ed",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w1:s4:missing0.25",
+   "request_id": "已是两条路上的人:w1:s4:missing0.25",
+   "request_identity": "sha256:e44c42f6b7206c7f2acfb58ee7c06faff6eadff2c5f0fff602e63ccc17a07c74",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w1:s4",
+   "request_id": "已是两条路上的人:w1:s4",
+   "request_identity": "sha256:0a406343da9f632219d28d659913b064fb3fdb0b688b7b8b37d996fdf76fe633",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w2:full:missing0.25",
+   "request_id": "已是两条路上的人:w2:full:missing0.25",
+   "request_identity": "sha256:68a98d07a156f81971335828f3dd576ff28bc219e4b8c65a420b4d405d957d3e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w2:full",
+   "request_id": "已是两条路上的人:w2:full",
+   "request_identity": "sha256:4d733953f12d0588c06ee7979247c8046cd846c765124b09c0ad7128c1c5ff12",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w2:s2:missing0.25",
+   "request_id": "已是两条路上的人:w2:s2:missing0.25",
+   "request_identity": "sha256:1033a497589e039117d5fe0a435008f754f79b98969739e804d90dac3d031fee",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w2:s2",
+   "request_id": "已是两条路上的人:w2:s2",
+   "request_identity": "sha256:2a8594ad05f2b6431e2a928e583d3c2f7bcbc471f16ad689e7f61591548903bb",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w2:s4:missing0.25",
+   "request_id": "已是两条路上的人:w2:s4:missing0.25",
+   "request_identity": "sha256:a4dc01932a411c140b34f9e9b38a45b2f75a3a3d18432904d0ec3f0541a9e177",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "已是两条路上的人:w2:s4",
+   "request_id": "已是两条路上的人:w2:s4",
+   "request_identity": "sha256:9a9c6150542f792a1dbe33ec0315b213cf72cd48d711192fcff07711e9c1d58e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w0:full:missing0.25",
+   "request_id": "我爱你中国:w0:full:missing0.25",
+   "request_identity": "sha256:2004477605393021df8e17a86a1236b945d107dde2d3f5cd2836ce27d4a0540c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w0:full",
+   "request_id": "我爱你中国:w0:full",
+   "request_identity": "sha256:e859286a7371da9235415571203b5c3a99d091d2b71f90bd1b6dd4a78969bc13",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w0:s2:missing0.25",
+   "request_id": "我爱你中国:w0:s2:missing0.25",
+   "request_identity": "sha256:a897e70782b23051a24cd3dabf1594c4eb198ef8a01b275e2b30b70904a8a47c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w0:s2",
+   "request_id": "我爱你中国:w0:s2",
+   "request_identity": "sha256:a4dc331bde42d2e95b8710dcf49978565327edfb50c39208d18128e68118ffab",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w0:s4:missing0.25",
+   "request_id": "我爱你中国:w0:s4:missing0.25",
+   "request_identity": "sha256:6caf0236797e5a83c2d48e0c1b5b4bc084783066f84dd12c1bb0d2b922628003",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w0:s4",
+   "request_id": "我爱你中国:w0:s4",
+   "request_identity": "sha256:f507aba32bec86cf6d976ba1881de6f30419221cefe5c677741e3d8b48b1bf4d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w1:full:missing0.25",
+   "request_id": "我爱你中国:w1:full:missing0.25",
+   "request_identity": "sha256:23d059e454b7be81c5e6e9df59add011a6f35da5aed7757b0d6b6d8b4534ecda",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w1:full",
+   "request_id": "我爱你中国:w1:full",
+   "request_identity": "sha256:3f0e2df7eb4e62312664fe774d093e0af4f20d4700823228102837cd053c0d87",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w1:s2:missing0.25",
+   "request_id": "我爱你中国:w1:s2:missing0.25",
+   "request_identity": "sha256:c700283d6677f77535a902b4d844bd0f9e5a287ef209d3326b02c42d62ac39c3",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w1:s2",
+   "request_id": "我爱你中国:w1:s2",
+   "request_identity": "sha256:4ac0858e82b2641d94744cddc124d87e504856dbb1f7c655266a5009b34d8f2f",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w1:s4:missing0.25",
+   "request_id": "我爱你中国:w1:s4:missing0.25",
+   "request_identity": "sha256:7a94e1ebb64db8f451c1f1cd488bd8ae68eb8b3d57836444aa859016e424fdc2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w1:s4",
+   "request_id": "我爱你中国:w1:s4",
+   "request_identity": "sha256:a3df51b486b294b2866c7c32861ec58d6859157b238dc56bc2d723a28530dbe9",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w2:full:missing0.25",
+   "request_id": "我爱你中国:w2:full:missing0.25",
+   "request_identity": "sha256:fd9bdd84dcc739a71b4794652c051f9325a4cc70d82897210aa1605284d59d06",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w2:full",
+   "request_id": "我爱你中国:w2:full",
+   "request_identity": "sha256:64da3c5d5daf97b011aa2ee10739d81422bfb0eb8ad9db2ad52d89568e0028d2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w2:s2:missing0.25",
+   "request_id": "我爱你中国:w2:s2:missing0.25",
+   "request_identity": "sha256:ef75113e79371ff9d56b14ee5286828c48d0157dc492f965ff6d8f6a6e540e0d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w2:s2",
+   "request_id": "我爱你中国:w2:s2",
+   "request_identity": "sha256:e76b15fdff448a1ee0baa008576eaa0a0e5d41c6a232afae3628af647e992cd4",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w2:s4:missing0.25",
+   "request_id": "我爱你中国:w2:s4:missing0.25",
+   "request_identity": "sha256:25c4fdc7fc25c09f8449f17b34c22daf8016f364725b029e9fb2211a51389db8",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "我爱你中国:w2:s4",
+   "request_id": "我爱你中国:w2:s4",
+   "request_identity": "sha256:bc8653d92a4c56c379ae4b89bf5c15271e764925036c1becb49b8688d8f080f4",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w0:full:missing0.25",
+   "request_id": "真实:w0:full:missing0.25",
+   "request_identity": "sha256:ff73e140fafc3ab8c52c22652cca7510782744a6bbf4933e11c46a210241ed73",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w0:full",
+   "request_id": "真实:w0:full",
+   "request_identity": "sha256:09cca7e73ca3bbbc7c9e5e26f4dcdfc44fe31c0e9ab8e8bab2ec94d14107fa88",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w0:s2:missing0.25",
+   "request_id": "真实:w0:s2:missing0.25",
+   "request_identity": "sha256:2be8335bbba882bb8ae532bc0a060dcd9d7cd1eb4af215405f94822d21748628",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w0:s2",
+   "request_id": "真实:w0:s2",
+   "request_identity": "sha256:75e2f60bb6bc4975fc6f5f5b811a5a9197cb6c5a69e2aa0a9d4e4864d4e68e2e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w0:s4:missing0.25",
+   "request_id": "真实:w0:s4:missing0.25",
+   "request_identity": "sha256:b32db87627bf807225f9f46e86bd9631b102add6a0ee5c32825d6a1db81a02b2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w0:s4",
+   "request_id": "真实:w0:s4",
+   "request_identity": "sha256:315ca83fed9c7a8b9b91939b495a3d6d4b613f510cde9e6495f8e75bc2660c89",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w1:full:missing0.25",
+   "request_id": "真实:w1:full:missing0.25",
+   "request_identity": "sha256:4117dc5124fe56df43913546dac4c082f461285784d893b845349f4853b27b34",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w1:full",
+   "request_id": "真实:w1:full",
+   "request_identity": "sha256:a3afb33a624fe57ce7b769fc03bde490b4295d268785f63055100929fc8175f5",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w1:s2:missing0.25",
+   "request_id": "真实:w1:s2:missing0.25",
+   "request_identity": "sha256:37b1c504ad96975326799ef4f9c31656689c85418d79fadc540b34011c1f8e7a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w1:s2",
+   "request_id": "真实:w1:s2",
+   "request_identity": "sha256:92540f1b3ec5bbd2d9422830f77cf8bedb90288322e18aa65a61abbc928855f1",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w1:s4:missing0.25",
+   "request_id": "真实:w1:s4:missing0.25",
+   "request_identity": "sha256:b65b433441410c3da6196637de03b157e1ac2c5457054be855230beccfe081f4",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w1:s4",
+   "request_id": "真实:w1:s4",
+   "request_identity": "sha256:24b95f397a7b37a049335b55c9cd00c026f93c2e2b2e709aa52256c8e08d8df8",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w2:full:missing0.25",
+   "request_id": "真实:w2:full:missing0.25",
+   "request_identity": "sha256:fe0531f583823ef3b2f880ab3072818a67760f20b330114cb4ac3f9679e9c26d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w2:full",
+   "request_id": "真实:w2:full",
+   "request_identity": "sha256:1cfc920b083abdc1eae2f17a134d27a9a5726d986d8f189bd21b9528420b968d",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w2:s2:missing0.25",
+   "request_id": "真实:w2:s2:missing0.25",
+   "request_identity": "sha256:cdba8e2595d035ce8da80860d4db64992e7a5f6a7365edb8f7a193a8bbb6994e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w2:s2",
+   "request_id": "真实:w2:s2",
+   "request_identity": "sha256:72a7f03b58f710b459fdeca74fb9fea7836ccc69645a2721d9edcf6314bc98e5",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w2:s4:missing0.25",
+   "request_id": "真实:w2:s4:missing0.25",
+   "request_identity": "sha256:c70615ae4438c6a3bea5518c9be336a7c9fc82051c5a22f30218b98aadb856a6",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "真实:w2:s4",
+   "request_id": "真实:w2:s4",
+   "request_identity": "sha256:064255af55d0aa9e8f4437d585f777917f54f9b2bc1de1455edb20448cbdffbb",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w0:full:missing0.25",
+   "request_id": "阴天快乐:w0:full:missing0.25",
+   "request_identity": "sha256:c8c344b65dc0262412985181298d7a647f6340663bf867e99fe8cea57b86c411",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w0:full",
+   "request_id": "阴天快乐:w0:full",
+   "request_identity": "sha256:6497c2f8aa4053de089811d7a67698b626a4308f6e5dad3ff82abd60a47b82f0",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w0:s2:missing0.25",
+   "request_id": "阴天快乐:w0:s2:missing0.25",
+   "request_identity": "sha256:7237a9b5d8097ff4e40b60fab4147eacb843e0ebb2bdf48158ee2eb9e92f665a",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w0:s2",
+   "request_id": "阴天快乐:w0:s2",
+   "request_identity": "sha256:e0ead36166248b693815e3acc73807ea9c4605f23d446f469bb4377acc22ed39",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w0:s4:missing0.25",
+   "request_id": "阴天快乐:w0:s4:missing0.25",
+   "request_identity": "sha256:7ec9f49fac15dbf58d1d2d254fdb0b9623dedc6ddb1714769fe1063d8518017e",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w0:s4",
+   "request_id": "阴天快乐:w0:s4",
+   "request_identity": "sha256:e222caa563c9ab907b27c1368b5a69bde565cc3c1840962eba839d521a4019e2",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w1:full:missing0.25",
+   "request_id": "阴天快乐:w1:full:missing0.25",
+   "request_identity": "sha256:e9373ba9737f9e3c54663d96f47fb5fff7e256ca7d3efa3fe67f927488a18899",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w1:full",
+   "request_id": "阴天快乐:w1:full",
+   "request_identity": "sha256:65ca0c696c2d2054cc88a444dd2b57db54ffb991dd20e6b159a0534faf25c642",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w1:s2:missing0.25",
+   "request_id": "阴天快乐:w1:s2:missing0.25",
+   "request_identity": "sha256:14038c4630506e607bac79e6b300ce62620a7e14ab1532f940d85754d92b5c17",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w1:s2",
+   "request_id": "阴天快乐:w1:s2",
+   "request_identity": "sha256:c5c905f69a39264633f7e3500040b1798be85c61ca0396dbd28d403332570df9",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w1:s4:missing0.25",
+   "request_id": "阴天快乐:w1:s4:missing0.25",
+   "request_identity": "sha256:7916746d84e0fa7afa9c7aed7a9a0438c3e1fada803d324273e6f175b9f32e49",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w1:s4",
+   "request_id": "阴天快乐:w1:s4",
+   "request_identity": "sha256:43444e30519a107cf9ccba9b1aff315091336102bedb81846822942f2a03c005",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w2:full:missing0.25",
+   "request_id": "阴天快乐:w2:full:missing0.25",
+   "request_identity": "sha256:36e9e39483b6fb50cc411deb381e77728fd19a8cae49c97ab709b2344f7d293c",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w2:full",
+   "request_id": "阴天快乐:w2:full",
+   "request_identity": "sha256:8baea5bfe0250e92a34da4ef1967451e4c89402775797f69d5c25297b9287c51",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w2:s2:missing0.25",
+   "request_id": "阴天快乐:w2:s2:missing0.25",
+   "request_identity": "sha256:ab3c92947f4acc60b2f55bd7aa458c7b16fad9112cf7c264062ff53d536a370f",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w2:s2",
+   "request_id": "阴天快乐:w2:s2",
+   "request_identity": "sha256:f3e3511f0490af5f18e29ca465cafcb38fc6d40227fe3c35317e75dbed6d5e39",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w2:s4:missing0.25",
+   "request_id": "阴天快乐:w2:s4:missing0.25",
+   "request_identity": "sha256:464fed24a9a05fad049483860fd0417b9817a6327092c375f16796b4737bf1dd",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  },
+  {
+   "item_id": "阴天快乐:w2:s4",
+   "request_id": "阴天快乐:w2:s4",
+   "request_identity": "sha256:2ef4339e1d31f5247f5fddeef6bb7ab0ba7fe0c1992c034894d46b4eae748507",
+   "cache": "miss",
+   "status": "ok",
+   "evaluation_role": "lyrics_aligned",
+   "text_window_aligned": true
+  }
+ ]
+}

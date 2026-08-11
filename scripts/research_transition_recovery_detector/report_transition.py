@@ -23,6 +23,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
+
 
 def load(path: Path) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -144,12 +146,15 @@ def main() -> int:
             "T0_oracle_independent": "依赖 GT 不可部署，仅诊断上界",
         },
         "tie_break": "product: pooled correct 覆盖率与成本；mechanism: wrong committed 量 + 语义清晰度",
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
+    gt_provenance.warn_synthetic_gt()
     (out_dir / "CANDIDATE_SELECTION.json").write_text(
         json.dumps(selection, ensure_ascii=False, indent=2), "utf-8"
     )
     (out_dir / "TRANSITION_REPORT.json").write_text(
-        json.dumps({"scope": "development_selection", "report": report, "selection": selection},
+        json.dumps({"scope": "development_selection", "report": report, "selection": selection,
+                    "provenance": gt_provenance.synthetic_uniform_timeline_provenance()},
                    ensure_ascii=False, indent=2), "utf-8"
     )
     lines = ["# Transition Formal Report (development_selection)", ""]

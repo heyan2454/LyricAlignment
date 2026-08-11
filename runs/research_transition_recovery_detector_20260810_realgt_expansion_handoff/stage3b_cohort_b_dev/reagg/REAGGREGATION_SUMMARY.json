@@ -1,0 +1,597 @@
+{
+  "schema": "research_v7_reaggregation_long_slot_real_gt_v1",
+  "generated_at_utc": "2026-08-10T14:45:18+00:00",
+  "inputs": {
+    "cohort_manifest": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/COHORT_B_DEVELOPMENT.jsonl",
+    "long_manifest": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/manifest_cohort_b/LONG_TIMELINE_MANIFEST.jsonl",
+    "annotations": "/root/autodl-tmp/AST_storage/Data/lyricalign/derived/20260723_m4singer_overlay_slur_time_v1/prepare/m4singer_character_annotations.jsonl",
+    "requests": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/manifest_cohort_b/REQUESTS.jsonl",
+    "historical_predictions": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/ROWS_GPU.jsonl"
+  },
+  "cohort": {
+    "n_songs": 5,
+    "song_ids": [
+      "全世界失眠",
+      "已是两条路上的人",
+      "我爱你中国",
+      "真实",
+      "阴天快乐"
+    ]
+  },
+  "counts": {
+    "canonical_units": 1698,
+    "accepted_real_gt_units": 1652,
+    "unlabeled_units": 46,
+    "context_only_not_queried": 304
+  },
+  "rerun_units": 0,
+  "macro_metrics": {
+    "n_evaluated": 5093,
+    "start_mae_sec": 0.30866,
+    "end_mae_sec": 0.386443,
+    "tolerance_hit_rates_ms": {
+      "100": 0.912625,
+      "250": 0.964461,
+      "500": 0.968388,
+      "1000": 0.973297
+    }
+  },
+  "n_requests_reaggregated": 90,
+  "n_requests_rerun_gpu": 0,
+  "n_requests_skipped_out_of_cohort": 0,
+  "rerun_reasons": {},
+  "metric_tolerances_ms": [
+    100,
+    250,
+    500,
+    1000
+  ],
+  "gt_axis_note": "accepted real GT (load_real_gt_with_audit); synthetic-uniform timeline NOT used as denominator",
+  "structural_appendix": {
+    "dir": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_b_dev/reagg/structural_appendix",
+    "entries": [],
+    "note": "virtual-gap/ownership outputs are stored in the structural appendix only and never merged into timing aggregation or accepted as timing labels"
+  },
+  "per_request_counts": {
+    "全世界失眠:w0:full": {
+      "canonical_units": 87,
+      "accepted_real_gt_units": 87,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w0:full:missing0.25": {
+      "canonical_units": 65,
+      "accepted_real_gt_units": 65,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w0:s2": {
+      "canonical_units": 87,
+      "accepted_real_gt_units": 87,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w0:s2:missing0.25": {
+      "canonical_units": 65,
+      "accepted_real_gt_units": 65,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w0:s4": {
+      "canonical_units": 87,
+      "accepted_real_gt_units": 87,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w0:s4:missing0.25": {
+      "canonical_units": 65,
+      "accepted_real_gt_units": 65,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w1:full": {
+      "canonical_units": 86,
+      "accepted_real_gt_units": 86,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w1:full:missing0.25": {
+      "canonical_units": 64,
+      "accepted_real_gt_units": 64,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w1:s2": {
+      "canonical_units": 86,
+      "accepted_real_gt_units": 86,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w1:s2:missing0.25": {
+      "canonical_units": 64,
+      "accepted_real_gt_units": 64,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w1:s4": {
+      "canonical_units": 86,
+      "accepted_real_gt_units": 86,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w1:s4:missing0.25": {
+      "canonical_units": 64,
+      "accepted_real_gt_units": 64,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w2:full": {
+      "canonical_units": 78,
+      "accepted_real_gt_units": 76,
+      "unlabeled_units": 2,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w2:full:missing0.25": {
+      "canonical_units": 58,
+      "accepted_real_gt_units": 56,
+      "unlabeled_units": 2,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w2:s2": {
+      "canonical_units": 78,
+      "accepted_real_gt_units": 76,
+      "unlabeled_units": 2,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w2:s2:missing0.25": {
+      "canonical_units": 58,
+      "accepted_real_gt_units": 56,
+      "unlabeled_units": 2,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w2:s4": {
+      "canonical_units": 78,
+      "accepted_real_gt_units": 76,
+      "unlabeled_units": 2,
+      "context_only_not_queried": 0
+    },
+    "全世界失眠:w2:s4:missing0.25": {
+      "canonical_units": 58,
+      "accepted_real_gt_units": 56,
+      "unlabeled_units": 2,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w0:full": {
+      "canonical_units": 143,
+      "accepted_real_gt_units": 143,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w0:full:missing0.25": {
+      "canonical_units": 107,
+      "accepted_real_gt_units": 107,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w0:s2": {
+      "canonical_units": 143,
+      "accepted_real_gt_units": 143,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w0:s2:missing0.25": {
+      "canonical_units": 107,
+      "accepted_real_gt_units": 107,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w0:s4": {
+      "canonical_units": 143,
+      "accepted_real_gt_units": 143,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w0:s4:missing0.25": {
+      "canonical_units": 107,
+      "accepted_real_gt_units": 107,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w1:full": {
+      "canonical_units": 154,
+      "accepted_real_gt_units": 154,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w1:full:missing0.25": {
+      "canonical_units": 116,
+      "accepted_real_gt_units": 116,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w1:s2": {
+      "canonical_units": 154,
+      "accepted_real_gt_units": 154,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w1:s2:missing0.25": {
+      "canonical_units": 116,
+      "accepted_real_gt_units": 116,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w1:s4": {
+      "canonical_units": 154,
+      "accepted_real_gt_units": 154,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w1:s4:missing0.25": {
+      "canonical_units": 116,
+      "accepted_real_gt_units": 116,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w2:full": {
+      "canonical_units": 155,
+      "accepted_real_gt_units": 155,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w2:full:missing0.25": {
+      "canonical_units": 116,
+      "accepted_real_gt_units": 116,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w2:s2": {
+      "canonical_units": 155,
+      "accepted_real_gt_units": 155,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w2:s2:missing0.25": {
+      "canonical_units": 116,
+      "accepted_real_gt_units": 116,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w2:s4": {
+      "canonical_units": 155,
+      "accepted_real_gt_units": 155,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "已是两条路上的人:w2:s4:missing0.25": {
+      "canonical_units": 116,
+      "accepted_real_gt_units": 116,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w0:full": {
+      "canonical_units": 126,
+      "accepted_real_gt_units": 126,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w0:full:missing0.25": {
+      "canonical_units": 94,
+      "accepted_real_gt_units": 94,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w0:s2": {
+      "canonical_units": 126,
+      "accepted_real_gt_units": 126,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w0:s2:missing0.25": {
+      "canonical_units": 94,
+      "accepted_real_gt_units": 94,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w0:s4": {
+      "canonical_units": 126,
+      "accepted_real_gt_units": 126,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w0:s4:missing0.25": {
+      "canonical_units": 94,
+      "accepted_real_gt_units": 94,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w1:full": {
+      "canonical_units": 129,
+      "accepted_real_gt_units": 119,
+      "unlabeled_units": 10,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w1:full:missing0.25": {
+      "canonical_units": 97,
+      "accepted_real_gt_units": 97,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w1:s2": {
+      "canonical_units": 129,
+      "accepted_real_gt_units": 119,
+      "unlabeled_units": 10,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w1:s2:missing0.25": {
+      "canonical_units": 97,
+      "accepted_real_gt_units": 97,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w1:s4": {
+      "canonical_units": 129,
+      "accepted_real_gt_units": 119,
+      "unlabeled_units": 10,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w1:s4:missing0.25": {
+      "canonical_units": 97,
+      "accepted_real_gt_units": 97,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w2:full": {
+      "canonical_units": 97,
+      "accepted_real_gt_units": 97,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w2:full:missing0.25": {
+      "canonical_units": 73,
+      "accepted_real_gt_units": 73,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w2:s2": {
+      "canonical_units": 97,
+      "accepted_real_gt_units": 97,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w2:s2:missing0.25": {
+      "canonical_units": 73,
+      "accepted_real_gt_units": 73,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w2:s4": {
+      "canonical_units": 97,
+      "accepted_real_gt_units": 97,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "我爱你中国:w2:s4:missing0.25": {
+      "canonical_units": 73,
+      "accepted_real_gt_units": 73,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "真实:w0:full": {
+      "canonical_units": 85,
+      "accepted_real_gt_units": 81,
+      "unlabeled_units": 4,
+      "context_only_not_queried": 0
+    },
+    "真实:w0:full:missing0.25": {
+      "canonical_units": 64,
+      "accepted_real_gt_units": 60,
+      "unlabeled_units": 4,
+      "context_only_not_queried": 0
+    },
+    "真实:w0:s2": {
+      "canonical_units": 85,
+      "accepted_real_gt_units": 81,
+      "unlabeled_units": 4,
+      "context_only_not_queried": 0
+    },
+    "真实:w0:s2:missing0.25": {
+      "canonical_units": 64,
+      "accepted_real_gt_units": 60,
+      "unlabeled_units": 4,
+      "context_only_not_queried": 0
+    },
+    "真实:w0:s4": {
+      "canonical_units": 85,
+      "accepted_real_gt_units": 81,
+      "unlabeled_units": 4,
+      "context_only_not_queried": 0
+    },
+    "真实:w0:s4:missing0.25": {
+      "canonical_units": 64,
+      "accepted_real_gt_units": 60,
+      "unlabeled_units": 4,
+      "context_only_not_queried": 0
+    },
+    "真实:w1:full": {
+      "canonical_units": 107,
+      "accepted_real_gt_units": 77,
+      "unlabeled_units": 30,
+      "context_only_not_queried": 0
+    },
+    "真实:w1:full:missing0.25": {
+      "canonical_units": 80,
+      "accepted_real_gt_units": 68,
+      "unlabeled_units": 12,
+      "context_only_not_queried": 0
+    },
+    "真实:w1:s2": {
+      "canonical_units": 107,
+      "accepted_real_gt_units": 77,
+      "unlabeled_units": 30,
+      "context_only_not_queried": 0
+    },
+    "真实:w1:s2:missing0.25": {
+      "canonical_units": 80,
+      "accepted_real_gt_units": 68,
+      "unlabeled_units": 12,
+      "context_only_not_queried": 0
+    },
+    "真实:w1:s4": {
+      "canonical_units": 107,
+      "accepted_real_gt_units": 77,
+      "unlabeled_units": 30,
+      "context_only_not_queried": 0
+    },
+    "真实:w1:s4:missing0.25": {
+      "canonical_units": 80,
+      "accepted_real_gt_units": 68,
+      "unlabeled_units": 12,
+      "context_only_not_queried": 0
+    },
+    "真实:w2:full": {
+      "canonical_units": 119,
+      "accepted_real_gt_units": 119,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "真实:w2:full:missing0.25": {
+      "canonical_units": 89,
+      "accepted_real_gt_units": 89,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "真实:w2:s2": {
+      "canonical_units": 119,
+      "accepted_real_gt_units": 119,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "真实:w2:s2:missing0.25": {
+      "canonical_units": 89,
+      "accepted_real_gt_units": 89,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "真实:w2:s4": {
+      "canonical_units": 119,
+      "accepted_real_gt_units": 119,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "真实:w2:s4:missing0.25": {
+      "canonical_units": 89,
+      "accepted_real_gt_units": 89,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w0:full": {
+      "canonical_units": 110,
+      "accepted_real_gt_units": 110,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w0:full:missing0.25": {
+      "canonical_units": 82,
+      "accepted_real_gt_units": 82,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w0:s2": {
+      "canonical_units": 110,
+      "accepted_real_gt_units": 110,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w0:s2:missing0.25": {
+      "canonical_units": 82,
+      "accepted_real_gt_units": 82,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w0:s4": {
+      "canonical_units": 110,
+      "accepted_real_gt_units": 110,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w0:s4:missing0.25": {
+      "canonical_units": 82,
+      "accepted_real_gt_units": 82,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w1:full": {
+      "canonical_units": 111,
+      "accepted_real_gt_units": 111,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w1:full:missing0.25": {
+      "canonical_units": 83,
+      "accepted_real_gt_units": 83,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w1:s2": {
+      "canonical_units": 111,
+      "accepted_real_gt_units": 111,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w1:s2:missing0.25": {
+      "canonical_units": 83,
+      "accepted_real_gt_units": 83,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w1:s4": {
+      "canonical_units": 111,
+      "accepted_real_gt_units": 111,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w1:s4:missing0.25": {
+      "canonical_units": 83,
+      "accepted_real_gt_units": 83,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w2:full": {
+      "canonical_units": 111,
+      "accepted_real_gt_units": 111,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w2:full:missing0.25": {
+      "canonical_units": 83,
+      "accepted_real_gt_units": 83,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w2:s2": {
+      "canonical_units": 111,
+      "accepted_real_gt_units": 111,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w2:s2:missing0.25": {
+      "canonical_units": 83,
+      "accepted_real_gt_units": 83,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w2:s4": {
+      "canonical_units": 111,
+      "accepted_real_gt_units": 111,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    },
+    "阴天快乐:w2:s4:missing0.25": {
+      "canonical_units": 83,
+      "accepted_real_gt_units": 83,
+      "unlabeled_units": 0,
+      "context_only_not_queried": 0
+    }
+  }
+}

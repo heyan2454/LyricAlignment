@@ -12,6 +12,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
+
 TOLERANCES_MS = (100, 250, 500, 1000)
 SERIAL_PATTERN = __import__("re").compile(
     r"^(?P<song>.+)__(?P<transition>T[123]_direct_serial|T[123]_core_boundary_serial|T[123]_stable_boundary_serial)\.jsonl$")
@@ -99,9 +101,11 @@ def main() -> int:
             },
         },
         "per_song": per_song,
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    gt_provenance.warn_synthetic_gt()
     out_path.write_text(json.dumps(out, ensure_ascii=False, indent=2))
     print(json.dumps({"pooled_raw_r250": out["pooled"]["raw"]["r250"],
                       "pooled_off_r250": out["pooled"]["official"]["r250"],

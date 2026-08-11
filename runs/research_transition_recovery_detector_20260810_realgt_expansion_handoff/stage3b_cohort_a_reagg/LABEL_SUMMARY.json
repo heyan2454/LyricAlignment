@@ -1,0 +1,55 @@
+{
+  "schema_version": "research_v7_detector_v2_labels_v1",
+  "created_at_utc": "2026-08-10T17:01:07+00:00",
+  "pooled": {
+    "n_units": 8800,
+    "n_safe": 7627,
+    "n_unsafe": 672,
+    "n_grey": 501,
+    "n_ambiguous": 0,
+    "unsafe_rate": 0.076364,
+    "safe_rate": 0.866705,
+    "by_target": {
+      "official": {
+        "unsafe": 349,
+        "safe": 3800,
+        "grey": 251
+      },
+      "raw": {
+        "unsafe": 323,
+        "safe": 3827,
+        "grey": 250
+      }
+    },
+    "n_gt_unavailable": 222
+  },
+  "by_family_split_target": {
+    "None|test|official": {
+      "n_units": 4511,
+      "unsafe": 349,
+      "safe": 3800,
+      "grey": 251,
+      "gt_unavailable": 111
+    },
+    "None|test|raw": {
+      "n_units": 4511,
+      "unsafe": 323,
+      "safe": 3827,
+      "grey": 250,
+      "gt_unavailable": 111
+    }
+  },
+  "by_family": {
+    "None": {
+      "n_units": 9022,
+      "unsafe": 672,
+      "safe": 7627,
+      "grey": 501,
+      "gt_unavailable": 222
+    }
+  },
+  "n_requests_labeled": 90,
+  "skipped": {},
+  "gt_label_audit": null,
+  "source_song_split_used": true
+}

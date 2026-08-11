@@ -1,6 +1,7 @@
 """semantic_window_planning —— 含重复元音 run 的语义窗口切分规则 v2。
 
-对应 EXPLORATION_NOTES §12 验证的规则 v2（GPU 实测 hit100 ≈ 人工切分）：
+对应 EXPLORATION_NOTES §12 验证的规则 v2（GPU 实测 start_hit_1s（start-only 1s MAE 命中，
+即 legacy `hit100`）≈ 人工切分；该指标仅 start 边界，勿与 100ms 双边界命中混淆）：
 - 重复 run = maximal 相同字符段：len >= RUN_MIN(3) 且字符 ∈ VOWELS，或 len >= ANY_CHAR_RUN_MIN(4) 任意字符；
 - run 段按“与窗口索引区间相交”判定（跨窗 run 不丢）；
 - 含 run 窗口时长上限 RUN_WIN_CAP=20s，无 run 窗口上限 MAX_DUR=30s；
@@ -10,6 +11,7 @@
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
@@ -20,6 +22,44 @@ ANY_CHAR_RUN_MIN = 4
 MAX_DUR = 30.0
 RUN_WIN_CAP = 20.0
 GAP_RUN_SPLIT = 0.5
+
+
+def serialize_window(start: float, end: float, exact_duration: float) -> tuple[float, float]:
+    """把窗口边界序列化为 4 位小数，保证不越出 exact_duration（WP2 边界 clamp）。
+
+    语义：先按 exact duration clamp（0 <= start < end <= exact_duration），再
+    round 到 4 位小数，round 后再 clamp 一次——防止 round(x, 4) 把合法精确端点
+    推出音频时长之外（如 end=181.34975 -> round=181.35 > duration）。
+
+    若 round 让合法极短窗塌缩（start >= end），扩到包含原窗 [start, end] 的最小
+    4dp 网格窗（floor(start), ceil(end) 再 clamp），保留一个合法可表示端点；网格
+    不可行（exact_duration 小于一个 4dp 步长）时保留 (0, min(end, exact_duration))；
+    仍不可能才抛 ValueError（结构化失败原因），绝不产出非法请求。
+
+    参数全为有限数且须满足 0 <= start < end <= exact_duration，否则抛 ValueError。
+    """
+    for name, v in (("start", start), ("end", end), ("exact_duration", exact_duration)):
+        if not math.isfinite(v):
+            raise ValueError(f"serialize_window: {name} must be finite, got {v!r}")
+    if not (0.0 <= start < end <= exact_duration):
+        raise ValueError(
+            f"serialize_window: requires 0 <= start < end <= exact_duration, "
+            f"got start={start!r}, end={end!r}, exact_duration={exact_duration!r}")
+    start4 = min(max(round(start, 4), 0.0), exact_duration)
+    end4 = min(max(round(end, 4), start4), exact_duration)
+    if start4 < end4:
+        return (start4, end4)
+    # round 让合法极短窗塌缩：扩到包含原窗的最小 4dp 网格窗
+    lo = max(0.0, math.floor(start * 1e4) / 1e4)
+    hi = min(math.ceil(end * 1e4) / 1e4, exact_duration)
+    if lo < hi:
+        return (lo, hi)
+    # 网格不可行：保留原始 end 端点（start=0 收拢），仍满足 start < end <= exact
+    if 0.0 < end <= exact_duration:
+        return (0.0, end)
+    raise ValueError(
+        f"serialize_window: window ({start!r}, {end!r}) cannot be represented as "
+        f"a non-empty boundary within exact_duration={exact_duration!r}")
 
 
 @dataclass(frozen=True)
@@ -52,19 +92,30 @@ class PlannedWindow:
     has_run: bool                    # 窗口时间区间是否含重复 run 段
     text: str
 
-    def to_dict(self) -> dict:
+    def to_dict(self, exact_duration: float | None = None) -> dict:
         """与 requests.py 的 AlignmentRequest 字段对齐：canonical_text_start/end 为不含端点。
 
         canonical_ids 可直接填入 AlignmentRequest.canonical_ids；
         canonical_text_start/end（不含端点，end = ids[-1]+1）可直接填 canonical_text_start/end。
+
+        exact_duration：可选精确音频时长。提供时 start_sec/end_sec 经 serialize_window
+        clamp（防 round(,4) 把合法端点推出音频时长之外）；缺省时行为与历史一致
+        （round 4dp，不改变 planner 分割策略）。
         """
+        if exact_duration is None:
+            start_sec = round(self.start_sec, 4)
+            end_sec = round(self.end_sec, 4)
+            duration_sec = round(self.duration_sec, 4)
+        else:
+            start_sec, end_sec = serialize_window(self.start_sec, self.end_sec, exact_duration)
+            duration_sec = round(end_sec - start_sec, 4)
         return {
             "canonical_ids": list(self.canonical_ids),
             "canonical_text_start": self.canonical_ids[0] if self.canonical_ids else None,
             "canonical_text_end": (self.canonical_ids[-1] + 1) if self.canonical_ids else None,
-            "start_sec": round(self.start_sec, 4),
-            "end_sec": round(self.end_sec, 4),
-            "duration_sec": round(self.duration_sec, 4),
+            "start_sec": start_sec,
+            "end_sec": end_sec,
+            "duration_sec": duration_sec,
             "has_run": self.has_run,
             "text": self.text,
         }
@@ -302,6 +353,7 @@ def plan_request_windows(
     run_min: int = RUN_MIN,
     vowels: set[str] = DEFAULT_VOWELS,
     any_char_run_min: int = ANY_CHAR_RUN_MIN,
+    exact_duration: float | None = None,
 ) -> list[dict]:
     """纯函数接线入口：把候选超长窗口切为 requests.py 对齐的子窗口 dict 列表。
 
@@ -313,6 +365,9 @@ def plan_request_windows(
     - source_window_sec = (首个 unit start_sec, 末个 unit end_sec)（与 unit 时间一致）
     - 辅助字段 start_sec/end_sec/duration_sec/has_run/text
 
+    exact_duration：可选精确音频时长，透传给 PlannedWindow.to_dict 做序列化边界
+    clamp（不改变分割策略）；缺省 None 时行为与历史一致。
+
     纯函数、纯 CPU、无 I/O；不触碰 slot_planning/requests 现有合同。
     """
     wins = plan_semantic_windows(
@@ -320,4 +375,5 @@ def plan_request_windows(
         gap_run_split=gap_run_split, run_min=run_min, vowels=vowels,
         any_char_run_min=any_char_run_min,
     )
-    return [w.to_dict() | {"source_window_sec": (w.start_sec, w.end_sec)} for w in wins]
+    return [w.to_dict(exact_duration=exact_duration)
+            | {"source_window_sec": (w.start_sec, w.end_sec)} for w in wins]

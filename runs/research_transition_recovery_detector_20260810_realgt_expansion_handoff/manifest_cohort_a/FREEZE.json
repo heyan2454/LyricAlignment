@@ -1,0 +1,43 @@
+{
+ "built_at_utc": "2026-08-05T00:00:00Z",
+ "canonical_timeline_file_sha_note": "M4 builder 的 canonical_timeline_file_sha 为源 m4 manifest sha（与 MIR builder 的 timeline 文件 sha 语义不同）；此为决策记录，不改 identity（改会作废 formal evidence 需重跑）。",
+ "density_strides": [
+  "full",
+  "strided2",
+  "strided4"
+ ],
+ "extra_ratios": [],
+ "files": {
+  "ALLOWLIST_REJECTIONS.jsonl": "6e2d2f56c753e38f166700e06725011e6b56ae5ad3391e2dfacaa5f8fa0896f3",
+  "LONG_TIMELINE_MANIFEST.jsonl": "237c503f219862a94fc9794c562ad96418b23c62ed6d4733feced964b9a746ca",
+  "REQUESTS.jsonl": "fe2056571f6207c138224512e2a5f8b59ecd80c7fa9477deec932d9151d38c87",
+  "WINDOW_PLAN.jsonl": "be3ada8f481f7a79e49fe554f830c6f714ff1ece17040643154215bde751214a"
+ },
+ "m4_manifest": {
+  "path": "/home/hyan/Data/lyricalign/derived/20260723_m4singer_overlay_slur_time_v1/prepare/m4singer_manifest.jsonl",
+  "sha256": "f11034c6678fecc3c21c5817b718fec9706526657bcb55ec88593a23bce77728"
+ },
+ "min_duration_sec": 180.0,
+ "missing_ratios": [
+  0.25
+ ],
+ "replace_ratios": [],
+ "requests": 144,
+ "schema": "research_v7_long_timeline_manifest_v1",
+ "seam_silence_sec": 0.0,
+ "song_allowlist": {
+  "allowlist_song_count": 14,
+  "allowlist_songs_missing_from_m4": [],
+  "path": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/allowlist_cohort_a.jsonl",
+  "rejected_song_count": 411,
+  "role_counts": {
+   "test": 14
+  },
+  "roles": [
+   "test"
+  ],
+  "sha256": "0d42a417e50cfc8cafa3856d48edc69bc725cc009449b74c6c680318a1788396"
+ },
+ "songs": 8,
+ "windows_per_song": 3
+}

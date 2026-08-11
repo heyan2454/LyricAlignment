@@ -22,6 +22,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
+
 R2_CHECKPOINT_DEFAULT = "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
 MODEL_REVISION_DEFAULT = "c07281df297b9905d24a508279258cccf987a064"
 TOLERANCE = 0.32
@@ -188,6 +190,7 @@ def main() -> int:
     summary = {
         "schema_version": "oracle_recovery_v2",
         "mode": args.mode,
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(gt_used_for_routing=True, mode=args.mode),
         "scope": "development_selection",
         "songs": len(results),
         "segments": sum(len(s["segments"]) for s in results),
@@ -197,6 +200,7 @@ def main() -> int:
         "interval_at75_fixed_rows": at75,
         "per_song": results,
     }
+    gt_provenance.warn_synthetic_gt()
     out_name = f"ORACLE_{args.mode}{args.out_suffix}.json"
     (out_dir / out_name).write_text(json.dumps(summary, ensure_ascii=False, indent=2), "utf-8")
     (out_dir / "ORACLE_SUMMARY.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), "utf-8")

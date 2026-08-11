@@ -1,0 +1,12 @@
+WARNING: scan root does not exist, skipping: /home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260807
+WARNING: scan root does not exist, skipping: /home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected
+WARNING: scan root does not exist, skipping: /home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260809_second_supplement
+WARNING: scan root does not exist, skipping: /home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260809_signal_completion
+WARNING: scan root does not exist, skipping: /home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff
+Scanned 7780 artifacts across 10 roots.
+Output written to runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/metadata/lineage
+  KEEP only after TRACE: 4275
+  KEEP structural only: 107
+  REAGGREGATE: 1877
+  RERUN: 1514
+  RETIRE: 7

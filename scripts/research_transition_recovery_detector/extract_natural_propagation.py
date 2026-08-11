@@ -14,6 +14,7 @@ import os
 import sys
 
 from lyricalign.research_transition_recovery_detector.contracts import TRANSITION_T2_CORE
+from lyricalign.research_transition_recovery_detector import gt_provenance
 
 EPISODE_FAMILY = "natural"
 FAMILY_BUDGET = 64
@@ -210,6 +211,7 @@ def main() -> int:
     out_dir = os.path.join(args.session_root, "03_propagation")
     os.makedirs(out_dir, exist_ok=True)
     episodes_path = os.path.join(out_dir, "EPISODES.jsonl")
+    gt_provenance.warn_synthetic_gt()
     with open(episodes_path, "a", encoding="utf-8") as f:
         for ep in episodes:
             f.write(json.dumps(ep, ensure_ascii=False) + "\n")
@@ -220,6 +222,7 @@ def main() -> int:
         "family_budget": FAMILY_BUDGET,
         "note": "natural 不足时由 forced/corruption 补充",
         "count_rejected_before_commit_as_propagated": False,
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
     denom_path = os.path.join(out_dir, "ATTEMPT_DENOMINATORS.json")
     with open(denom_path, "w", encoding="utf-8") as f:

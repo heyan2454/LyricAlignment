@@ -1,0 +1,14 @@
+{
+  "schema": "research_v7_reaggregation_long_slot_real_gt_v1",
+  "generated_at_utc": "2026-08-10T10:02:01+00:00",
+  "deterministic": true,
+  "git": {
+    "head": "09235d1154dc43eb58aaa24aaea16698fabdf56e"
+  },
+  "input_sha256": {
+    "cohort_manifest": "198f85e16954c34d7cf6bcff7f4a5b5b7b7457b12e3f3ed56d17951c0943c290",
+    "long_manifest": "237c503f219862a94fc9794c562ad96418b23c62ed6d4733feced964b9a746ca",
+    "annotations": "d57046e078829afce97c702ecc27f83167282f93201e6df858f974ab0623e416",
+    "requests": "fe2056571f6207c138224512e2a5f8b59ecd80c7fa9477deec932d9151d38c87"
+  }
+}

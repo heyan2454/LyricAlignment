@@ -17,6 +17,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
+
 TOLERANCES_MS = (100, 250, 500, 1000)
 TRANSITIONS = ("T1_direct_serial", "T2_core_boundary_serial", "T3_stable_boundary_serial")
 SERIAL_PATTERN = __import__("re").compile(
@@ -211,6 +213,7 @@ def main() -> int:
             "product": f"highest 250ms correct coverage: {product['primary_250ms_correct_coverage']:.4f}",
             "mechanism": f"largest wrong-committed at 250ms: {mechanism['wrong_committed_250ms']}",
         },
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
 
     # paired comparison（T2−T1、serial−full_song）250ms correct coverage per-song bootstrap CI
@@ -235,14 +238,19 @@ def main() -> int:
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
+    gt_provenance.warn_synthetic_gt()
+    paired_with_pv = dict(paired)
+    paired_with_pv["provenance"] = gt_provenance.synthetic_uniform_timeline_provenance()
     (out_dir / "REAGGREGATE_v3_model_selection.json").write_text(json.dumps({
         "schema_version": "reaggregate_v3", "per_song": per_song, "pooled": [
             {k: v for k, v in e.items() if k != "row_level"} for e in pooled],
-        "paired_by_song": paired}, ensure_ascii=False, indent=2))
+        "paired_by_song": paired,
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
+    }, ensure_ascii=False, indent=2))
     (out_dir / "AUTHORITATIVE_TRANSITION_SELECTION_v3.json").write_text(
         json.dumps(selection, ensure_ascii=False, indent=2))
     (out_dir / "TRANSITION_PAIRED_BY_SONG.json").write_text(
-        json.dumps(paired, ensure_ascii=False, indent=2))
+        json.dumps(paired_with_pv, ensure_ascii=False, indent=2))
     print(json.dumps({
         "selection_v3": {"product": selection["product_candidate"],
                          "mechanism": selection["mechanism_candidate"]},

@@ -51,6 +51,7 @@ from lyricalign.research_transition_recovery_detector.contracts import (  # noqa
     TransitionState,
     WindowRequest,
 )
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
 from lyricalign.research_transition_recovery_detector.identity import state_hash  # noqa: E402
 from lyricalign.research_transition_recovery_detector.query_estimator import (  # noqa: E402
     QueryEstimator,
@@ -542,6 +543,7 @@ def run_closed_loop_v3_song(
             "n_passed": len(records) - len(gate_c_failures),
             "failures": gate_c_failures,
         },
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
 
 
@@ -815,7 +817,9 @@ def main() -> int:
             "n_songs_passed": sum(1 for ok in all_gate_c if ok),
             "n_songs_failed": sum(1 for ok in all_gate_c if not ok),
         },
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
+    gt_provenance.warn_synthetic_gt()
     (out_dir / "CLOSED_LOOP_V3_SUMMARY.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), "utf-8")
     print(json.dumps({"gate_c": summary["gate_c"],

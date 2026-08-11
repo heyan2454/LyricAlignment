@@ -16,6 +16,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
+
 TOLERANCE = 0.32
 
 
@@ -168,10 +170,12 @@ def extract_natural(transition_dir: Path, song_ids: list[str], gt_by_song: dict,
             "first_wrong_commit": first_wrong,
             "followup_windows": followup[:5],
             "recovery_class": classify_recovery(followup[:5]),
-            "provenance": {"corrected_formal": True, "query_estimator_version": "units_per_sec_v2"},
+            "provenance": {**{"corrected_formal": True, "query_estimator_version": "units_per_sec_v2"},
+                           **gt_provenance.synthetic_uniform_timeline_provenance()},
             "no_effect_attempt": False,
         }
         new_nat.append(ep)
+    gt_provenance.warn_synthetic_gt()
     with open(episodes_path, "a", encoding="utf-8") as f:
         for ep in new_nat:
             f.write(json.dumps(ep, ensure_ascii=False) + "\n")

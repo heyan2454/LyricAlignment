@@ -1,0 +1,25 @@
+{
+  "schema": "session_manifest_v1",
+  "session": "research_transition_recovery_detector_20260810_realgt_expansion_handoff",
+  "state": "prepared_for_opencode",
+  "git_head": "09235d1154dc43eb58aaa24aaea16698fabdf56e",
+  "dirty_diff_sha256": "28fb944032adde06a8f9748f4070f4fa35450690",
+  "environment": {
+    "python": "3.12.3",
+    "conda_env": "lyricalign-qwen"
+  },
+  "source_paths": {
+    "overlay_manifest": "/home/hyan/Data/lyricalign/derived/20260723_m4singer_overlay_slur_time_v1/prepare/m4singer_manifest.jsonl",
+    "annotations": "/home/hyan/Data/lyricalign/derived/20260723_m4singer_overlay_slur_time_v1/prepare/m4singer_character_annotations.jsonl",
+    "split_manifest": "/home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/split/m4singer_accepted_split_manifest.jsonl",
+    "audio_root": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer"
+  },
+  "docs_copied_to": "metadata/plans/source_documents/",
+  "inputs_verified": [
+    "overlay_manifest",
+    "annotations",
+    "split_manifest",
+    "audio_root",
+    "r2_checkpoint"
+  ]
+}

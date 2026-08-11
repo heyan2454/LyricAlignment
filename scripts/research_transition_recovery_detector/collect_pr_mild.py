@@ -20,6 +20,7 @@ from lyricalign.research_transition_recovery_detector.runner import (  # noqa: E
     RealAlignerBackend,
     TransitionRunner,
 )
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
 
 R2_CHECKPOINT_DEFAULT = "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
 MODEL_REVISION_DEFAULT = "c07281df297b9905d24a508279258cccf987a064"
@@ -168,8 +169,10 @@ def main() -> int:
                 "continue_from_window_index": 1, "followup_windows": followup,
                 "recovery_class": recovery, "risk": risk_class(recovery),
                 "no_effect_attempt": all(w == 0 for w in followup),
+                "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
             })
         print(json.dumps({"song": song_id, "mild_episodes": sum(1 for e in out_eps if e["source_song_id"] == song_id)}))
+    gt_provenance.warn_synthetic_gt()
     with open(session_root / "03_propagation" / "PR_EPISODES.jsonl", "w", encoding="utf-8") as f:
         for e in out_eps:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")

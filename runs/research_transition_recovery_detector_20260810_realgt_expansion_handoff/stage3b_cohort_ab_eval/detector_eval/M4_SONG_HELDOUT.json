@@ -1,0 +1,212 @@
+{
+ "schema": "research_v7_m4_song_heldout_v1",
+ "model_kind": "standardized_logistic",
+ "targets": {
+  "raw": {
+   "n_train": 3955,
+   "n_test": 4150,
+   "combo": "R",
+   "model_kind": "standardized_logistic",
+   "T_accept": 0.16546343952822562,
+   "T_reject": 0.16837782471409926,
+   "tri_unit_metrics": {
+    "n_unsafe_units": 323,
+    "n_safe_units": 3827,
+    "n_grey_units": 0,
+    "unsafe_false_accept_rate": 0.09597523219814241,
+    "reject_recall": 0.8947368421052632,
+    "protected_recall": 0.9040247678018576,
+    "safe_accept_rate": 0.9004442121766396,
+    "safe_reject_rate": 0.06062189704729553,
+    "safe_uncertain_rate": 0.0389338907760648,
+    "counts": {
+     "unsafe_accept": 31,
+     "unsafe_reject": 289,
+     "unsafe_uncertain": 3,
+     "safe_accept": 3446,
+     "safe_reject": 232,
+     "safe_uncertain": 149
+    }
+   },
+   "interval_metrics": {
+    "n_unsafe_intervals": 109,
+    "reject_interval_recall_at_75": 0.6972477064220184,
+    "protected_interval_recall_at_75": 0.7155963302752294,
+    "reject_interval_recall_at_100": 0.6880733944954128,
+    "protected_interval_recall_at_100": 0.7155963302752294,
+    "n_long_unsafe_intervals": 23,
+    "long_unsafe_interval_fully_accepted_rate": 0.0,
+    "longest_consecutive_unsafe_accept_run": 1
+   },
+   "by_family": {
+    "baseline": {
+     "n_units": 2371,
+     "tri_unit_metrics": {
+      "n_unsafe_units": 186,
+      "n_safe_units": 2185,
+      "n_grey_units": 0,
+      "unsafe_false_accept_rate": 0.0967741935483871,
+      "reject_recall": 0.8870967741935484,
+      "protected_recall": 0.9032258064516129,
+      "safe_accept_rate": 0.9025171624713959,
+      "safe_reject_rate": 0.059038901601830666,
+      "safe_uncertain_rate": 0.038443935926773455,
+      "counts": {
+       "unsafe_accept": 18,
+       "unsafe_reject": 165,
+       "unsafe_uncertain": 3,
+       "safe_accept": 1972,
+       "safe_reject": 129,
+       "safe_uncertain": 84
+      }
+     },
+     "interval_metrics": {
+      "n_unsafe_intervals": 61,
+      "reject_interval_recall_at_75": 0.6721311475409836,
+      "protected_interval_recall_at_75": 0.7049180327868853,
+      "reject_interval_recall_at_100": 0.6557377049180327,
+      "protected_interval_recall_at_100": 0.7049180327868853,
+      "n_long_unsafe_intervals": 14,
+      "long_unsafe_interval_fully_accepted_rate": 0.0,
+      "longest_consecutive_unsafe_accept_run": 1
+     }
+    },
+    "missing": {
+     "n_units": 1779,
+     "tri_unit_metrics": {
+      "n_unsafe_units": 137,
+      "n_safe_units": 1642,
+      "n_grey_units": 0,
+      "unsafe_false_accept_rate": 0.10948905109489052,
+      "reject_recall": 0.8905109489051095,
+      "protected_recall": 0.8905109489051095,
+      "safe_accept_rate": 0.902557856272838,
+      "safe_reject_rate": 0.06029232643118149,
+      "safe_uncertain_rate": 0.03714981729598051,
+      "counts": {
+       "unsafe_accept": 15,
+       "unsafe_reject": 122,
+       "unsafe_uncertain": 0,
+       "safe_accept": 1482,
+       "safe_reject": 99,
+       "safe_uncertain": 61
+      }
+     },
+     "interval_metrics": {
+      "n_unsafe_intervals": 46,
+      "reject_interval_recall_at_75": 0.6739130434782609,
+      "protected_interval_recall_at_75": 0.6739130434782609,
+      "reject_interval_recall_at_100": 0.6739130434782609,
+      "protected_interval_recall_at_100": 0.6739130434782609,
+      "n_long_unsafe_intervals": 9,
+      "long_unsafe_interval_fully_accepted_rate": 0.0,
+      "longest_consecutive_unsafe_accept_run": 1
+     }
+    }
+   }
+  },
+  "official": {
+   "n_train": 3957,
+   "n_test": 4149,
+   "combo": "R",
+   "model_kind": "standardized_logistic",
+   "T_accept": 0.1518956215491477,
+   "T_reject": 0.15219528798163717,
+   "tri_unit_metrics": {
+    "n_unsafe_units": 349,
+    "n_safe_units": 3800,
+    "n_grey_units": 0,
+    "unsafe_false_accept_rate": 0.08595988538681948,
+    "reject_recall": 0.9025787965616046,
+    "protected_recall": 0.9140401146131805,
+    "safe_accept_rate": 0.8394736842105263,
+    "safe_reject_rate": 0.10973684210526316,
+    "safe_uncertain_rate": 0.05078947368421052,
+    "counts": {
+     "unsafe_accept": 30,
+     "unsafe_reject": 315,
+     "unsafe_uncertain": 4,
+     "safe_accept": 3190,
+     "safe_reject": 417,
+     "safe_uncertain": 193
+    }
+   },
+   "interval_metrics": {
+    "n_unsafe_intervals": 107,
+    "reject_interval_recall_at_75": 0.7289719626168224,
+    "protected_interval_recall_at_75": 0.7570093457943925,
+    "reject_interval_recall_at_100": 0.719626168224299,
+    "protected_interval_recall_at_100": 0.7570093457943925,
+    "n_long_unsafe_intervals": 24,
+    "long_unsafe_interval_fully_accepted_rate": 0.0,
+    "longest_consecutive_unsafe_accept_run": 2
+   },
+   "by_family": {
+    "baseline": {
+     "n_units": 2373,
+     "tri_unit_metrics": {
+      "n_unsafe_units": 204,
+      "n_safe_units": 2169,
+      "n_grey_units": 0,
+      "unsafe_false_accept_rate": 0.0784313725490196,
+      "reject_recall": 0.9068627450980392,
+      "protected_recall": 0.9215686274509803,
+      "safe_accept_rate": 0.8460119870908253,
+      "safe_reject_rate": 0.10650069156293222,
+      "safe_uncertain_rate": 0.047487321346242506,
+      "counts": {
+       "unsafe_accept": 16,
+       "unsafe_reject": 185,
+       "unsafe_uncertain": 3,
+       "safe_accept": 1835,
+       "safe_reject": 231,
+       "safe_uncertain": 103
+      }
+     },
+     "interval_metrics": {
+      "n_unsafe_intervals": 60,
+      "reject_interval_recall_at_75": 0.7333333333333333,
+      "protected_interval_recall_at_75": 0.7666666666666667,
+      "reject_interval_recall_at_100": 0.7166666666666667,
+      "protected_interval_recall_at_100": 0.7666666666666667,
+      "n_long_unsafe_intervals": 14,
+      "long_unsafe_interval_fully_accepted_rate": 0.0,
+      "longest_consecutive_unsafe_accept_run": 2
+     }
+    },
+    "missing": {
+     "n_units": 1776,
+     "tri_unit_metrics": {
+      "n_unsafe_units": 145,
+      "n_safe_units": 1631,
+      "n_grey_units": 0,
+      "unsafe_false_accept_rate": 0.0896551724137931,
+      "reject_recall": 0.896551724137931,
+      "protected_recall": 0.9103448275862069,
+      "safe_accept_rate": 0.8350705088902514,
+      "safe_reject_rate": 0.11220110361741263,
+      "safe_uncertain_rate": 0.05272838749233599,
+      "counts": {
+       "unsafe_accept": 13,
+       "unsafe_reject": 130,
+       "unsafe_uncertain": 2,
+       "safe_accept": 1362,
+       "safe_reject": 183,
+       "safe_uncertain": 86
+      }
+     },
+     "interval_metrics": {
+      "n_unsafe_intervals": 47,
+      "reject_interval_recall_at_75": 0.7021276595744681,
+      "protected_interval_recall_at_75": 0.7446808510638298,
+      "reject_interval_recall_at_100": 0.7021276595744681,
+      "protected_interval_recall_at_100": 0.7446808510638298,
+      "n_long_unsafe_intervals": 10,
+      "long_unsafe_interval_fully_accepted_rate": 0.0,
+      "longest_consecutive_unsafe_accept_run": 2
+     }
+    }
+   }
+  }
+ }
+}

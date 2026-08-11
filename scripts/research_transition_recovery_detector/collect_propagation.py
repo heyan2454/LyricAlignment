@@ -28,6 +28,7 @@ from lyricalign.research_transition_recovery_detector.runner import (  # noqa: E
     RealAlignerBackend,
     TransitionRunner,
 )
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
 
 R2_CHECKPOINT_DEFAULT = "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
 MODEL_REVISION_DEFAULT = "c07281df297b9905d24a508279258cccf987a064"
@@ -245,6 +246,7 @@ def run(args: argparse.Namespace) -> int:
                 "followup_windows": followup[:5],
                 "recovery_class": recovery_class(followup[:5], first_new_wrong),
                 "no_effect_attempt": all(w["new_committed"] == 0 for w in followup[:2]),
+                "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
             }
             tmp = episodes_path.with_suffix(".jsonl.tmp")
             with open(tmp, "w", encoding="utf-8") as f:
@@ -265,7 +267,9 @@ def run(args: argparse.Namespace) -> int:
         "note": "corruption episodes（continuation 语义，09 P2）；单歌占比上限 25%，source-song 下限 8",
         "gate_p": "pending_corrected_transition",
         "count_rejected_before_commit_as_propagated": False,
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
+    gt_provenance.warn_synthetic_gt()
     (session_root / "03_propagation" / "ATTEMPT_DENOMINATORS.json").write_text(
         json.dumps(denom, ensure_ascii=False, indent=2), "utf-8",
     )

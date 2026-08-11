@@ -64,7 +64,10 @@ from lyricalign.research_v7.mutations import (  # noqa: E402
     extra_ratio,
     replace_ratio,
 )
-from lyricalign.research_v7.semantic_window_planning import plan_request_windows  # noqa: E402
+from lyricalign.research_v7.semantic_window_planning import (  # noqa: E402
+    plan_request_windows,
+    serialize_window,
+)
 from lyricalign.research_v7.slot_planning import (  # noqa: E402
     build_density_plans,
     id_at_stride,
@@ -329,7 +332,8 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
             continue
         cids0 = int(cand[0]["canonical_unit_id"])
         cids1 = int(cand[-1]["canonical_unit_id"]) + 1
-        for si, sw in enumerate(plan_request_windows(units, (cids0, cids1))):
+        for si, sw in enumerate(plan_request_windows(units, (cids0, cids1),
+                                                     exact_duration=duration)):
             ids = set(sw["canonical_ids"])
             sub = [u for u in units if int(u["canonical_unit_id"]) in ids]
             if len(sub) < 4:
@@ -337,6 +341,10 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
             win_items.append((wi, si, float(sw["start_sec"]), float(sw["end_sec"]), sub))
     reqs = []
     for wi, si, aw0, aw1, in_win in win_items:
+        # WP2 边界 clamp：round(,4) 可能把合法精确端点推出 exact duration 之外
+        # （如 end=181.34975 -> 181.35 > duration）。serialize_window 先 clamp 再
+        # round 再 clamp，保证 0 <= start < end <= duration；fixed 与 semantic 共用。
+        s0, s1 = serialize_window(aw0, aw1, duration)
         cids = [int(u["canonical_unit_id"]) for u in in_win]
         texts = [u["text"] for u in in_win]
         canonical_to_local = {cid: i for i, cid in enumerate(cids)}
@@ -371,8 +379,8 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 "request_id": f"{tl['song_id']}:w{wi}{sw_sfx}:{plan.phase_name}",
                 "parent_request_id": None,
                 "audio_path": (tl.get("segs_audio") or [None])[0],
-                "audio_start_sec": round(aw0, 4), "audio_end_sec": round(aw1, 4),
-                "duration_sec": round(aw1 - aw0, 4), "audio_source": "m4singer_segment_concat",
+                "audio_start_sec": s0, "audio_end_sec": s1,
+                "duration_sec": round(s1 - s0, 4), "audio_source": "m4singer_segment_concat",
                 "text_source": "m4singer_meta_v1", "has_gt": True,
                 "evaluation_role": "lyrics_aligned", "text_window_aligned": True,
                 "text_units": texts, "text_start_index": 0, "text_end_index": len(texts),
@@ -389,7 +397,7 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 "canonical_timeline_file_sha": tl_sha,
                 "canonical_timeline_row_sha": row_sha,
                 "canonical_adapter_version": "long_timeline_v1",
-                "source_window_start_sec": round(aw0, 4), "source_window_end_sec": round(aw1, 4),
+                "source_window_start_sec": s0, "source_window_end_sec": s1,
                 "condition": "baseline", "pair_id": f"{tl['song_id']}:w{wi}{sw_sfx}",
                 "slot_plan_id": plan.plan_id, "comparison_group_id": plan.comparison_group_id,
                 "phase": plan.phase_name,

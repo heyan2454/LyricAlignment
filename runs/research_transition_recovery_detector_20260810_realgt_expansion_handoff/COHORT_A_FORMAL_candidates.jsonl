@@ -1,0 +1,14 @@
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Soprano-1#绒花/0000.wav", "n_segments": 36, "natural_duration_sec": 181.35, "song_id": "绒花", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Tenor-2#孤勇者/0000.wav", "n_segments": 28, "natural_duration_sec": 184.756, "song_id": "孤勇者", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Tenor-4#但愿人长久/0000.wav", "n_segments": 33, "natural_duration_sec": 187.501, "song_id": "但愿人长久", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Bass-2#春天里/0000.wav", "n_segments": 55, "natural_duration_sec": 189.036, "song_id": "春天里", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Tenor-4#月满西楼/0000.wav", "n_segments": 34, "natural_duration_sec": 191.047, "song_id": "月满西楼", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Bass-1#老男孩2/0000.wav", "n_segments": 31, "natural_duration_sec": 200.075, "song_id": "老男孩2", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-6#稻香/0000.wav", "n_segments": 36, "natural_duration_sec": 215.34, "song_id": "稻香", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-7#会长大的幸福/0000.wav", "n_segments": 45, "natural_duration_sec": 223.876, "song_id": "会长大的幸福", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Tenor-4#葬花吟/0000.wav", "n_segments": 36, "natural_duration_sec": 229.571, "song_id": "葬花吟", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-5#明明就/0000.wav", "n_segments": 52, "natural_duration_sec": 267.772, "song_id": "明明就", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-2#爱/0000.wav", "n_segments": 55, "natural_duration_sec": 274.813, "song_id": "爱", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Bass-1#香格里拉/0000.wav", "n_segments": 55, "natural_duration_sec": 339.443, "song_id": "香格里拉", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Bass-1#寻人启事/0000.wav", "n_segments": 96, "natural_duration_sec": 488.451, "song_id": "寻人启事", "split": "test"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-7#老男孩/0000.wav", "n_segments": 189, "natural_duration_sec": 1099.135, "song_id": "老男孩", "split": "test"}

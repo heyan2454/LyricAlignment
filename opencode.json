@@ -12,6 +12,14 @@
   },
   "provider": {
     "opencode-go": {
+      "models": {
+        "deepseek-v4-flash": {
+          "limit": {
+            "context": 131072,
+            "output": 65536
+          }
+        }
+      },
       "options": {
         "timeout": 300000,
         "chunkTimeout": 60000,

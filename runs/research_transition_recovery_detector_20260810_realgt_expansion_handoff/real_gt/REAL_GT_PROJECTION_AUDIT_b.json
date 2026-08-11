@@ -1,0 +1,86 @@
+{
+ "cohort": "b",
+ "per_song": {
+  "全世界失眠": {
+   "accepted_gt_units": 271,
+   "coverage": 0.992674,
+   "song_id": "全世界失眠",
+   "total_units": 273,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 2,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 2
+  },
+  "已是两条路上的人": {
+   "accepted_gt_units": 639,
+   "coverage": 0.986111,
+   "song_id": "已是两条路上的人",
+   "total_units": 648,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 9,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 9
+  },
+  "我爱你中国": {
+   "accepted_gt_units": 375,
+   "coverage": 0.966495,
+   "song_id": "我爱你中国",
+   "total_units": 388,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 13,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 13
+  },
+  "真实": {
+   "accepted_gt_units": 323,
+   "coverage": 0.904762,
+   "song_id": "真实",
+   "total_units": 357,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 34,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 34
+  },
+  "阴天快乐": {
+   "accepted_gt_units": 336,
+   "coverage": 1.0,
+   "song_id": "阴天快乐",
+   "total_units": 336,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 0,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 0
+  }
+ },
+ "schema": "real_gt_projection_audit_v1",
+ "summary": {
+  "accepted_gt_units": 1944,
+  "songs": 5,
+  "unlabeled_units": 58
+ }
+}

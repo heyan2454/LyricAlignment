@@ -1,0 +1,16 @@
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Tenor-3#阴天快乐/0000.wav", "n_segments": 32, "natural_duration_sec": 183.533, "song_id": "阴天快乐", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Tenor-2#全世界失眠/0000.wav", "n_segments": 39, "natural_duration_sec": 195.279, "song_id": "全世界失眠", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Bass-2#我爱你中国/0000.wav", "n_segments": 54, "natural_duration_sec": 199.214, "song_id": "我爱你中国", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-2#真实/0000.wav", "n_segments": 36, "natural_duration_sec": 216.77, "song_id": "真实", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Tenor-7#已是两条路上的人/0000.wav", "n_segments": 46, "natural_duration_sec": 257.115, "song_id": "已是两条路上的人", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-5#流着泪说分手/0000.wav", "n_segments": 62, "natural_duration_sec": 290.118, "song_id": "流着泪说分手", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-5#最初的梦想/0000.wav", "n_segments": 53, "natural_duration_sec": 297.778, "song_id": "最初的梦想", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-5#贝加尔湖畔/0000.wav", "n_segments": 78, "natural_duration_sec": 327.881, "song_id": "贝加尔湖畔", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Bass-3#落叶归根/0000.wav", "n_segments": 111, "natural_duration_sec": 551.998, "song_id": "落叶归根", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-5#最长的电影/0000.wav", "n_segments": 128, "natural_duration_sec": 569.945, "song_id": "最长的电影", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-5#慢慢喜欢你/0000.wav", "n_segments": 114, "natural_duration_sec": 593.194, "song_id": "慢慢喜欢你", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-3#晚婚/0000.wav", "n_segments": 129, "natural_duration_sec": 608.341, "song_id": "晚婚", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-6#残酷月光/0000.wav", "n_segments": 138, "natural_duration_sec": 676.25, "song_id": "残酷月光", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-5#平凡之路/0000.wav", "n_segments": 130, "natural_duration_sec": 682.86, "song_id": "平凡之路", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Bass-1#老街/0000.wav", "n_segments": 141, "natural_duration_sec": 744.523, "song_id": "老街", "split": "validation"}
+{"audio_path": "/home/hyan/Data/datasets/m4singer/raw/extracted/m4singer/Alto-3#修炼爱情/0000.wav", "n_segments": 141, "natural_duration_sec": 752.739, "song_id": "修炼爱情", "split": "validation"}

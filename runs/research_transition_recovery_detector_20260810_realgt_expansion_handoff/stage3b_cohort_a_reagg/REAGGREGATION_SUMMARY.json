@@ -1,0 +1,58 @@
+{
+  "schema": "research_v7_reaggregation_long_slot_real_gt_v1",
+  "generated_at_utc": "2026-08-10T10:02:01+00:00",
+  "inputs": {
+    "cohort_manifest": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/COHORT_A_FORMAL.jsonl",
+    "long_manifest": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/manifest_cohort_a/LONG_TIMELINE_MANIFEST.jsonl",
+    "annotations": "/root/autodl-tmp/AST_storage/Data/lyricalign/derived/20260723_m4singer_overlay_slur_time_v1/prepare/m4singer_character_annotations.jsonl",
+    "requests": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/manifest_cohort_a/REQUESTS.jsonl",
+    "historical_predictions": "None"
+  },
+  "cohort": {
+    "n_songs": 5,
+    "song_ids": [
+      "孤勇者",
+      "春天里",
+      "月满西楼",
+      "绒花",
+      "老男孩2"
+    ]
+  },
+  "counts": {
+    "canonical_units": 0,
+    "accepted_real_gt_units": 0,
+    "unlabeled_units": 0,
+    "context_only_not_queried": 0
+  },
+  "rerun_units": 1471,
+  "macro_metrics": {
+    "n_evaluated": 0,
+    "start_mae_sec": null,
+    "end_mae_sec": null,
+    "tolerance_hit_rates_ms": {
+      "100": null,
+      "250": null,
+      "500": null,
+      "1000": null
+    }
+  },
+  "n_requests_reaggregated": 0,
+  "n_requests_rerun_gpu": 90,
+  "n_requests_skipped_out_of_cohort": 54,
+  "rerun_reasons": {
+    "missing_identity_equivalent_prediction": 90
+  },
+  "metric_tolerances_ms": [
+    100,
+    250,
+    500,
+    1000
+  ],
+  "gt_axis_note": "accepted real GT (load_real_gt_with_audit); synthetic-uniform timeline NOT used as denominator",
+  "structural_appendix": {
+    "dir": "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/stage3b_cohort_a_reagg/structural_appendix",
+    "entries": [],
+    "note": "virtual-gap/ownership outputs are stored in the structural appendix only and never merged into timing aggregation or accepted as timing labels"
+  },
+  "per_request_counts": {}
+}

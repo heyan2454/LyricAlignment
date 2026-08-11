@@ -15,6 +15,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
+
 R2_CHECKPOINT_DEFAULT = "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750"
 MODEL_REVISION_DEFAULT = "c07281df297b9905d24a508279258cccf987a064"
 
@@ -102,9 +104,11 @@ def main() -> int:
             },
             "max_diff_sec": max(diffs) if diffs else None,
             "median_diff_sec": sorted(diffs)[len(diffs) // 2] if diffs else None,
+            "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
         }
         results.append(out)
         print(json.dumps({k: out[k] for k in ("song_id", "rows", "accuracy")}, ensure_ascii=False))
+    gt_provenance.warn_synthetic_gt()
     out_path = session_root / "02_transition" / f"FULL_SONG_{args.role}.json"
     out_path.write_text(json.dumps(results, ensure_ascii=False, indent=2), "utf-8")
     print(f"FULL_SONG {args.role}: {len(results)} songs -> {out_path}")

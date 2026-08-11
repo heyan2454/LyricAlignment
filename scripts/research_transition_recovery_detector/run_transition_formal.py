@@ -21,6 +21,7 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from lyricalign.research_transition_recovery_detector.contracts import TRANSITIONS  # noqa: E402
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
 from lyricalign.research_transition_recovery_detector.runner import (  # noqa: E402
     RealAlignerBackend,
     TransitionRunner,
@@ -178,13 +179,16 @@ def run_formal(args: argparse.Namespace) -> int:
                 "missing_duplicate": md,
                 "occurrence": occ,
                 "cost": cost,
+                "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
             }
             out_rows.append(summary)
             detail_lines.append({
                 "song_id": song_id, "transition": transition,
                 "records": [{k: r.get(k) for k in ("window_index", "decision", "request")} for r in records],
+                "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
             })
             print(json.dumps({k: summary[k] for k in ("song_id", "transition", "committed", "accuracy", "coverage", "first_error_window")}, ensure_ascii=False))
+    gt_provenance.warn_synthetic_gt()
     formal_path = session_root / "02_transition" / f"FORMAL_{args.role}.json"
     existing = []
     if formal_path.is_file():

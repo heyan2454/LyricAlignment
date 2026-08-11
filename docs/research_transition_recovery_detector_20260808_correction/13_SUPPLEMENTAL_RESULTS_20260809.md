@@ -12,6 +12,12 @@
 
 ## 关键结论
 
+> **校正注记（2026-08-12 quick-correction，WP5）：** 本文 Detector / Recovery 数字均基于当时使用的
+> **synthetic-uniform timeline GT**（segmented-uniform 字符时间轴），不是 real-GT 字符时序；后来发现的
+> `light_merge` postprocess bug（2026-08-11 确认）也早于本文。因此本文各结论按下列标注解读，不能作为
+> formal real-GT correctness 结论；real-GT 修正后的权威口径见 `15_CURRENT_RESULTS_REALGT_AND_RISK_REASSESSMENT_20260810.md`
+> 与 `results/corrected_detector_summary.md`（修复后 Raw/Official protected recall ≈95.7%/96.3%，以更低 safe-accept 为代价）。
+
 ### Transition（v3 权威口径）
 - product candidate：T2_core_boundary_serial，250ms correct coverage 0.401（1337/3374）。
 - T2−T1 song-level paired CI [-0.0015, +0.0113]（跨 0）→ T2 仅 nominal，不宣称机制优势。
@@ -35,6 +41,11 @@
 - H/P evidence 均真实采集并消费（SIGNAL_COVERAGE_AUDIT 185 requests coverage 1.0）。
 - O/RO/P unit 级 feature coverage 0.0（records 缺 official end / path 全请求缺失），但模型实际消费 features_used 可用子集并产生真实 AUC。
 
+> **Enhanced-features 状态：** 上表 H/O/RO/V/P/S 的 negative 结论基于 synthetic-uniform GT 且
+> **predates** 已确认的 `light_merge` postprocess fix（2026-08-11），当前状态为
+> `unresolved_after_bugfix`，**不能据此称 enhanced features 被证伪/无收益**；修复后需在 real-GT
+> 口径下重新评估。
+
 ### PR（propagation-risk）
 - corpus：171 high + 81 mild（low 18 / medium 63）。
 - PR 特征修复前（错误取 recs[0]）pooled AUC 0.5；修复为 episode 首窗后 pooled AUC 0.608、source-song macro 0.436。
@@ -43,6 +54,9 @@
 ### Recovery
 - 36 retry windows 分解：worsened 4 / not_improved 27 / improved_detector_accept 3 / improved_detector_block 2。
 - 0 writeback 主因：retry 无改善（31/36）+ detector 拒绝全部改善（5/5）双瓶颈。
+
+> **Recovery 状态：** 上表为 **historical synthetic-GT oracle diagnostic**，不是 real-GT/no-GT
+> recovery capability 的可信估计；real-GT recovery capability 当前仍未知（见 15 号 §8）。
 
 ## 数据治理说明
 

@@ -12,10 +12,12 @@
   后 `conda activate lyricalign-qwen`；env 实际位于 `/root/autodl-tmp/AST_storage/conda/envs/lyricalign-qwen`，
   含 transformers 5.15.0.dev0、torch、nagisa、soundfile、numpy、pytest 等全部相关依赖）。
   项目包尚未 `pip install -e .`，当前以 `PYTHONPATH=src` 运行即可（`src/` 为 setuptools package root）。
-- 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 stage override 指向
-  `docs/research_transition_recovery_detector_20260807/`。实现前依次阅读 `00`–`06`，再以
-  `07_REVIEWED_IMPLEMENTATION_PLAN.md` 作为勘误与执行入口；有冲突时 `07` 优先。上游
-  `research_fullslot_serial_detector` 与 `research_v7_align_behavior` 只作实现和证据追溯。
+- 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 active override 指向
+  `docs/sessions/20260812_realign_recovery_research/`。实现前依次阅读 `00`–`06`，再以
+  `07_OPENCODE_IMPLEMENTATION_INDEX.md` 作为分批执行入口，并按其指向读取 `08`–`11`；有冲突时
+  当前 session 的 `04_EXECUTION_CONTRACT.md` 与 `07`–`11` 优先。上游
+  `research_transition_recovery_detector`、`research_fullslot_serial_detector` 与
+  `research_v7_align_behavior` 只作实现和证据追溯。
 
 ## Commands
 ```bash
@@ -42,10 +44,14 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
 
 ## Agent 运行约定（多子 agent 并发 / review / 步数限制）
 
-- **多用子 agent 并尽量并行**：主 agent 需要等待所有子 agent 结束后才能继续，因此派发任务时
-  一次启动尽可能多的独立子 agent（每任务一个 git worktree 隔离，避免文件冲突）；不同 phase
-  或相互独立的模块可并发开发。子 agent 完成任务后返回结构化报告（改动/测试/产物/下一步），
-  由主 agent 合并与验收。
+- **语言约定**：思考与回复统一使用中文（代码、标识符、命令、专有名词除外）。
+- **多用子 agent 并尽量并行**：主 agent 只负责调度、派发与合并验收，具体开发/review/探索
+  交由子 agent 执行。注意：`task` 工具是**同步阻塞**的——同一消息内多个 task 并行启动，但
+  主 agent 必须等全部返回后才能继续；这是 opencode 平台机制，不是可配置策略，等待期间主
+  agent 不产生新思考。因此真正要控制的是两个成本：① 子 agent 结果注入导致的主上下文膨胀；
+  ② 同步等待的墙钟时间。手段：一次派发尽可能多的独立子 agent（每任务一个 git worktree
+  隔离，避免文件冲突），不同 phase 或相互独立的模块并发开发；子 agent 只返回结构化短报告
+  （改动/测试/产物/下一步），由主 agent 合并与验收。
 - **每阶段/每批完成后启用 review 子 agent**（通常 2 个并行：一个查代码正确性与契约、一个查
   数据一致性与跨模块接线/文档对照）。**review 只关注 P0/P1（CRITICAL/MAJOR）问题**：bug、
   口径不一致、契约违反、会污染结论的数据问题；不纠结信任/防伪类问题（manifest、登记、SHA
@@ -53,6 +59,11 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
 - **子 agent 限制步数**：opencode 配置层已设 `agent.general/explore.steps=8`（见 `opencode.json`），
   达到 8 次工具调用后强制转 text-only。派发 prompt 中同时写明 `STEP BUDGET=8`，并要求到步数
   后整理输出：已完成/未完成与原因/关键产物路径/上下文摘要/下一步建议，不得无限循环重试。
+- **任务 prompt 硬性约定**（派发子 agent 时必须写入 prompt，主 agent 自己也遵守）：
+  - 未全部完成禁止收尾：所有子步骤完成前不得输出总结/最终报告；
+  - 精简回复：大段代码/长结果写文件，回复只放路径+摘要（避免单步输出截断）；
+  - 单次操作要小：一个工具调用里不塞超长命令/大循环，拆多次小操作（避免单请求超时）；
+  - 步数精打细算：先读最小必要上下文，禁止重复探索/重复读文件，浪费步数视为未完成。
 - **子 agent 失败自动重启**：子 agent 返回 blocked/空转/异常/步数耗尽但未完成时，默认
   **自动重启**（优先 `task_id` resume 续跑，其次拆小任务重派），同一任务最多重试 2 次；
   仅当失败明确不可重试（依赖/数据/环境缺失、任务不可能）才记录 blocked 并降级为
@@ -67,14 +78,15 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
   - L3 全量 `tests/`：仅 merge agent 与阶段收尾跑。
   子 agent 验收默认 L1 + `compileall -q src scripts` + `git diff --check`。
 
-## Current mainline: Transition–Recovery–Detector（实现前阶段）
+## Current mainline: Realign Recovery（实现阶段）
 
-当前规划入口为 `docs/research_transition_recovery_detector_20260807/07_REVIEWED_IMPLEMENTATION_PLAN.md`。
-overlay 当前只包含设计、合同与声明式配置，尚未接线，也没有新的实验结果。后续代码应放在独立的
-`src/lyricalign/research_transition_recovery_detector/`、`scripts/research_transition_recovery_detector/`
-与 `tests/research_transition_recovery_detector/`，复用 `research_v7` 和 demo 的纯函数/模型封装，避免继续
-向旧阶段堆叠新状态语义。正式 GPU 运行前必须完成 implementation map、四角色 source-song split、
-resolved config、CPU/small-GPU smoke 和预算投影。
+当前规划/实现入口为 `docs/sessions/20260812_realign_recovery_research/07_OPENCODE_IMPLEMENTATION_INDEX.md`。
+本轮研究 Raw-triggered realign/recovery：oracle repairability、no-GT proposal、repair-quality gate、
+selective writeback 与 serial closed loop。新能力应优先置于独立的
+`src/lyricalign/realign_recovery/`、`scripts/realign_recovery/` 与 `tests/realign_recovery/`，通过明确
+adapter 复用已有 `research_transition_recovery_detector`、`research_v7` 和 demo 的纯函数/模型封装，避免把
+新状态语义继续堆进旧阶段。正式 GPU 运行前必须完成 implementation map、source-song/real-GT provenance、
+GT firewall、resolved config、CPU/small-GPU smoke 和预算投影。
 
 ## Upstream implemented baseline: research_v7 Detector V2
 

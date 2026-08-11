@@ -1,0 +1,131 @@
+{
+ "cohort": "a",
+ "per_song": {
+  "会长大的幸福": {
+   "accepted_gt_units": 339,
+   "coverage": 0.899204,
+   "song_id": "会长大的幸福",
+   "total_units": 377,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 38,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 38
+  },
+  "但愿人长久": {
+   "accepted_gt_units": 157,
+   "coverage": 0.877095,
+   "song_id": "但愿人长久",
+   "total_units": 179,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 22,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 22
+  },
+  "孤勇者": {
+   "accepted_gt_units": 438,
+   "coverage": 1.0,
+   "song_id": "孤勇者",
+   "total_units": 438,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 0,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 0
+  },
+  "春天里": {
+   "accepted_gt_units": 374,
+   "coverage": 1.0,
+   "song_id": "春天里",
+   "total_units": 374,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 0,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 0
+  },
+  "月满西楼": {
+   "accepted_gt_units": 171,
+   "coverage": 0.919355,
+   "song_id": "月满西楼",
+   "total_units": 186,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 15,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 15
+  },
+  "绒花": {
+   "accepted_gt_units": 128,
+   "coverage": 0.941176,
+   "song_id": "绒花",
+   "total_units": 136,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 8,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 8
+  },
+  "老男孩2": {
+   "accepted_gt_units": 404,
+   "coverage": 0.9642,
+   "song_id": "老男孩2",
+   "total_units": 419,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 15,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 15
+  },
+  "葬花吟": {
+   "accepted_gt_units": 143,
+   "coverage": 0.846154,
+   "song_id": "葬花吟",
+   "total_units": 169,
+   "unlabeled_by_reason": {
+    "bad_interval": 0,
+    "missing_overlay": 0,
+    "missing_segment_offset": 0,
+    "missing_time": 0,
+    "review_status": 26,
+    "text_or_index_mismatch": 0
+   },
+   "unlabeled_units": 26
+  }
+ },
+ "schema": "real_gt_projection_audit_v1",
+ "summary": {
+  "accepted_gt_units": 2154,
+  "songs": 8,
+  "unlabeled_units": 124
+ }
+}

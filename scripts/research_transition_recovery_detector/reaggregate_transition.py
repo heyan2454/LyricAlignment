@@ -25,6 +25,12 @@ import re
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from lyricalign.research_transition_recovery_detector import gt_provenance  # noqa: E402
+
 TOLERANCES_MS = (100, 250, 500, 1000)
 SERIAL_PATTERN = re.compile(r"^(?P<song>.+)__(?P<transition>T[123]_direct_serial|T[123]_core_boundary_serial|T[123]_stable_boundary_serial)\.jsonl$")
 OUTPUT_DIR_NAME = "10_followup"
@@ -292,9 +298,11 @@ def main() -> int:
             "mechanism": f"largest wrong-committed count at 250ms: "
                          f"{mechanism_candidate['wrong_committed_250ms']}",
         },
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
 
     # ---- write outputs ----
+    gt_provenance.warn_synthetic_gt()
     out_dir = out_path.parent
     out_dir.mkdir(parents=True, exist_ok=True)
     report = {
@@ -308,6 +316,7 @@ def main() -> int:
         "transitions_pooled": pooled,
         "crosscheck_vs_formal": crosscheck,
         "full_song_matches": {s: f"{len(load_gt(manifest_rows[s]))} units" for s in full_rows},
+        "provenance": gt_provenance.synthetic_uniform_timeline_provenance(),
     }
     out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), "utf-8")
     selection_path = out_dir / SELECTION_FILENAME
