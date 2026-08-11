@@ -40,9 +40,10 @@ def _runs(states: Mapping[int, TriState]) -> list[tuple[int, int, TriState]]:
 def light_merge(unit_states: Mapping[int, TriState | str]) -> dict[int, TriState]:
     """Apply the only two allowed merging operations.
 
-    a) Fill length-1 ACCEPT/REJECT islands that are surrounded on both sides
-       by the same state (merged into that state); iterated to fixpoint so
-       cascades are resolved.
+    a) Fill length-1 ACCEPT islands that are surrounded on both sides by the
+       same state (merged into that state); iterated to fixpoint so cascades
+       are resolved. REJECT islands are never flipped to ACCEPT (protection
+       recall takes precedence over continuity).
     b) Each remaining REJECT run extends at most 1 unit on each side, turning
        that neighbor into UNCERTAIN (if the neighbor exists).
     c) No other expansion is ever performed.
@@ -52,7 +53,7 @@ def light_merge(unit_states: Mapping[int, TriState | str]) -> dict[int, TriState
     while changed:
         changed = False
         for start, end, state in _runs(states):
-            if end - start != 1 or state not in (TriState.ACCEPT, TriState.REJECT):
+            if end - start != 1 or state != TriState.ACCEPT:
                 continue
             left = states.get(start - 1)
             right = states.get(end)

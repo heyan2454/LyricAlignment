@@ -12,16 +12,19 @@ def _states(values: dict[int, str]) -> dict[int, TriState]:
     return {unit: TriState(state) for unit, state in values.items()}
 
 
-def test_light_merge_fills_single_unit_holes():
-    merged = light_merge({0: "accept", 1: "accept", 2: "reject", 3: "accept", 4: "accept"})
-    assert merged == _states({0: "accept", 1: "accept", 2: "accept", 3: "accept", 4: "accept"})
+def test_light_merge_fills_single_accept_holes():
     merged = light_merge({0: "reject", 1: "reject", 2: "accept", 3: "reject", 4: "reject"})
     assert merged == _states({0: "reject", 1: "reject", 2: "reject", 3: "reject", 4: "reject"})
 
 
-def test_light_merge_fills_cascaded_holes():
+def test_light_merge_does_not_flip_single_reject_island():
+    merged = light_merge({0: "accept", 1: "accept", 2: "reject", 3: "accept", 4: "accept"})
+    assert merged == _states({0: "accept", 1: "uncertain", 2: "reject", 3: "uncertain", 4: "accept"})
+
+
+def test_light_merge_does_not_flip_cascaded_reject_islands():
     merged = light_merge({0: "accept", 1: "reject", 2: "accept", 3: "reject", 4: "accept"})
-    assert merged == _states({0: "accept", 1: "accept", 2: "accept", 3: "accept", 4: "accept"})
+    assert merged == _states({0: "uncertain", 1: "reject", 2: "reject", 3: "reject", 4: "uncertain"})
 
 
 def test_light_merge_expands_reject_one_unit_each_side():
@@ -52,12 +55,12 @@ def test_light_merge_accept_hole_between_uncertain_fills():
     assert merged == _states({0: "accept", 1: "uncertain", 2: "uncertain", 3: "uncertain", 4: "accept"})
 
 
-def test_tristate_from_p_bad_fills_hole():
+def test_tristate_from_p_bad_keeps_single_reject_point():
     output = tristate_from_p_bad({0: 0.1, 1: 0.9, 2: 0.1}, accept_threshold=0.2, reject_threshold=0.8)
     result = output.to_dict()
-    assert result["accept_intervals"] == [[0, 3]]
-    assert result["reject_intervals"] == []
-    assert result["uncertain_intervals"] == []
+    assert result["accept_intervals"] == []
+    assert result["reject_intervals"] == [[1, 2]]
+    assert result["uncertain_intervals"] == [[0, 1], [2, 3]]
 
 
 def test_tristate_from_p_bad_expands_reject():
