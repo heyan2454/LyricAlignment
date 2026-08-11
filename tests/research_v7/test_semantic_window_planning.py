@@ -9,6 +9,7 @@ from lyricalign.research_v7.semantic_window_planning import (
     GAP_RUN_SPLIT,
     MAX_DUR,
     RUN_WIN_CAP,
+    _window_bounds,
     clip_runs_to_window,
     detect_repeat_runs,
     plan_semantic_windows,
@@ -212,3 +213,16 @@ def test_top_level_plan_semantic_windows_dicts():
     assert len(wins2) == len(wins)
     for w in wins:
         assert w.duration_sec <= RUN_WIN_CAP + 1e-6
+
+
+def test_to_dict_contract_alignment_with_requests():
+    # to_dict 必须与 requests.py 的 AlignmentRequest 字段对齐（canonical_text_start/end 不含端点）
+    units = build_units([("啊", 0.5, 0.0)] * 8 + [(t, 0.6, 0.2) for t in _filler(10)])
+    wins = plan_semantic_windows(units, [(0, 18)])
+    assert wins
+    d = wins[0].to_dict()
+    ids = d["canonical_ids"]
+    assert d["canonical_text_start"] == ids[0]
+    assert d["canonical_text_end"] == ids[-1] + 1
+    lo, hi = _window_bounds(d)
+    assert (lo, hi) == (ids[0], ids[-1] + 1)

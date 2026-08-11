@@ -53,10 +53,15 @@ class PlannedWindow:
     text: str
 
     def to_dict(self) -> dict:
+        """与 requests.py 的 AlignmentRequest 字段对齐：canonical_text_start/end 为不含端点。
+
+        canonical_ids 可直接填入 AlignmentRequest.canonical_ids；
+        canonical_text_start/end（不含端点，end = ids[-1]+1）可直接填 canonical_text_start/end。
+        """
         return {
             "canonical_ids": list(self.canonical_ids),
-            "canonical_start": self.canonical_ids[0] if self.canonical_ids else None,
-            "canonical_end": self.canonical_ids[-1] if self.canonical_ids else None,
+            "canonical_text_start": self.canonical_ids[0] if self.canonical_ids else None,
+            "canonical_text_end": (self.canonical_ids[-1] + 1) if self.canonical_ids else None,
             "start_sec": round(self.start_sec, 4),
             "end_sec": round(self.end_sec, 4),
             "duration_sec": round(self.duration_sec, 4),
@@ -165,7 +170,7 @@ def plan_window(
 
     lo/hi 是 units 列表的位置索引（含 lo、不含 hi）。runs 缺省时对窗口内文本自动检测。
     贪心：run 段整体成窗（不跨窗）；run 段后 gap>gap_run_split 即关窗；
-    新 run 开始时若当前窗已含 run 则先关窗；其余按 cap（含 run 20s / 无 run 30s）关窗。
+     run 段整体成窗（不跨窗）；run 起点处无条件关当前窗；其余按 cap（含 run 20s / 无 run 30s）关窗。
     """
     lo = max(0, lo)
     hi = min(len(units), hi)
@@ -233,10 +238,13 @@ def plan_window(
 def _window_bounds(window) -> tuple[int, int]:
     """解析单个窗口描述为 (lo, hi) 位置索引（含 lo、不含 hi）。
 
-    接受 (lo, hi) 二元组；或 dict 含 canonical_start/canonical_end（含端点）、
-    canonical_range（含端点）、canonical_ids（含端点，取首尾）。
+    接受 (lo, hi) 二元组；或 dict 含 canonical_text_start/canonical_text_end（不含端点，与
+    requests.py 一致）、canonical_start/canonical_end（含端点）、canonical_range（含端点）、
+    canonical_ids（含端点，取首尾）。
     """
     if isinstance(window, Mapping):
+        if "canonical_text_start" in window and "canonical_text_end" in window:
+            return window["canonical_text_start"], window["canonical_text_end"]
         if "canonical_start" in window and "canonical_end" in window:
             return window["canonical_start"], window["canonical_end"] + 1
         if "canonical_range" in window:
