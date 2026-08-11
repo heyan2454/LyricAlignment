@@ -290,3 +290,34 @@ def plan_semantic_windows(
             any_char_run_min=any_char_run_min,
         ))
     return out
+
+
+def plan_request_windows(
+    units: Sequence[Mapping],
+    windows,
+    *,
+    max_dur: float = MAX_DUR,
+    run_window_cap: float = RUN_WIN_CAP,
+    gap_run_split: float = GAP_RUN_SPLIT,
+    run_min: int = RUN_MIN,
+    vowels: set[str] = DEFAULT_VOWELS,
+    any_char_run_min: int = ANY_CHAR_RUN_MIN,
+) -> list[dict]:
+    """纯函数接线入口：把候选超长窗口切为 requests.py 对齐的子窗口 dict 列表。
+
+    输入：units = canonical units（含 text/start_sec/end_sec/canonical_unit_id，
+    与 _canonical_units_for_window 同语义）；windows = 候选窗口（(lo,hi) 位置索引
+    或 dict：canonical_text_start/end、canonical_start/end、canonical_range、
+    canonical_ids，见 _window_bounds）。输出 dict 可直接填充 AlignmentRequest：
+    - canonical_ids / canonical_text_start / canonical_text_end（不含端点）
+    - source_window_sec = (首个 unit start_sec, 末个 unit end_sec)（与 unit 时间一致）
+    - 辅助字段 start_sec/end_sec/duration_sec/has_run/text
+
+    纯函数、纯 CPU、无 I/O；不触碰 slot_planning/requests 现有合同。
+    """
+    wins = plan_semantic_windows(
+        units, windows, max_dur=max_dur, run_window_cap=run_window_cap,
+        gap_run_split=gap_run_split, run_min=run_min, vowels=vowels,
+        any_char_run_min=any_char_run_min,
+    )
+    return [w.to_dict() | {"source_window_sec": (w.start_sec, w.end_sec)} for w in wins]

@@ -64,6 +64,7 @@ from lyricalign.research_v7.mutations import (  # noqa: E402
     extra_ratio,
     replace_ratio,
 )
+from lyricalign.research_v7.semantic_window_planning import plan_request_windows  # noqa: E402
 from lyricalign.research_v7.slot_planning import (  # noqa: E402
     build_density_plans,
     id_at_stride,
@@ -254,8 +255,15 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                    extra_ratios: tuple[float, ...] = (),
                    donor_pool: dict[str, list[str]] | None = None,
                    source_split: str = "validation",
-                   emit_source_split: bool = False) -> list[dict]:
-    """从一条时间线生成 fixed-60s 窗请求（baseline + missing/replace/extra mutation 多档配对）。
+                   emit_source_split: bool = False,
+                   use_semantic_windows: bool = False) -> list[dict]:
+    """从一条时间线生成窗请求（baseline + missing/replace/extra mutation 多档配对）。
+
+    use_semantic_windows=False（默认）：fixed-60s 切窗（冻结 formal 口径，逐字节不变）。
+    use_semantic_windows=True：候选窗口仍按 fixed-60s 时间窗取 canonical 区间，但用
+    语义规则 v2（semantic_window_planning.plan_request_windows）切成 ≤20s（含 run）/
+    ≤30s（无 run）子窗，每个子窗单独成请求；request 携带 window_mode="semantic"
+    供溯源，不影响 frozen fixed 模式输出。
 
     slot 密度（13 §S2）：density_tiers 每档生成独立 slot plan（phase 名=档位名，
     request_id 后缀 :full/:s2/:s4）；stride 档等距取样且起点按窗位轮换
@@ -301,14 +309,34 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 donor_song_id = other
                 donor_units = tuple(donor_pool[other])
                 break
-    reqs = []
+    # 候选窗 → (wi, audio_start, audio_end, in_win)：
+    # fixed 模式 = 原 fixed-60s 时间窗（冻结口径不变）；
+    # semantic 模式 = 对每个 fixed-60s 候选窗取 canonical 区间喂语义规则 v2，
+    # 切成 ≤20s（含 run）/≤30s（无 run）子窗，每子窗单独成请求（音频界=子窗 unit 时间）。
+    win_items: list[tuple[int, int | None, float, float, list[dict]]] = []
     for wi, w0 in enumerate(starts):
         w1 = min(w0 + WINDOW_SEC, duration)
         if w1 - w0 < 30.0:
             continue  # 尾窗太短不算正式请求
-        in_win = _canonical_units_for_window(units, w0, w1)
-        if len(in_win) < 4:
-            continue  # 窗内歌词太少（可能是长间奏）→ 跳过，避免空对齐
+        if not use_semantic_windows:
+            in_win = _canonical_units_for_window(units, w0, w1)
+            if len(in_win) < 4:
+                continue  # 窗内歌词太少（可能是长间奏）→ 跳过，避免空对齐
+            win_items.append((wi, None, w0, w1, in_win))
+            continue
+        cand = _canonical_units_for_window(units, w0, w1)
+        if len(cand) < 4:
+            continue
+        cids0 = int(cand[0]["canonical_unit_id"])
+        cids1 = int(cand[-1]["canonical_unit_id"]) + 1
+        for si, sw in enumerate(plan_request_windows(units, (cids0, cids1))):
+            ids = set(sw["canonical_ids"])
+            sub = [u for u in units if int(u["canonical_unit_id"]) in ids]
+            if len(sub) < 4:
+                continue
+            win_items.append((wi, si, float(sw["start_sec"]), float(sw["end_sec"]), sub))
+    reqs = []
+    for wi, si, aw0, aw1, in_win in win_items:
         cids = [int(u["canonical_unit_id"]) for u in in_win]
         texts = [u["text"] for u in in_win]
         canonical_to_local = {cid: i for i, cid in enumerate(cids)}
@@ -332,16 +360,19 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
         # canonical lineage（review12：guard/collect/assessor 消费）
         # canonical_timeline_row_sha 由 main 对实际写入行求值后传入（可从文件复验）
         tl_sha = tl.get("manifest_sha")
+        # semantic 模式：同一 fixed 候选窗切出的子窗用子窗序号区分 identity/group
+        # （fixed 模式 si=None → 不带后缀，保持冻结口径字符串不变）
+        sw_sfx = f":s{si}" if use_semantic_windows and si is not None else ""
         for plan in plans:
             base = {
                 "schema_version": "research_v7_long_slot_v1",
                 "request_type": "long_timeline_60s",
-                "item_id": f"{tl['song_id']}:w{wi}:{plan.phase_name}",
-                "request_id": f"{tl['song_id']}:w{wi}:{plan.phase_name}",
+                "item_id": f"{tl['song_id']}:w{wi}{sw_sfx}:{plan.phase_name}",
+                "request_id": f"{tl['song_id']}:w{wi}{sw_sfx}:{plan.phase_name}",
                 "parent_request_id": None,
                 "audio_path": (tl.get("segs_audio") or [None])[0],
-                "audio_start_sec": round(w0, 4), "audio_end_sec": round(w1, 4),
-                "duration_sec": round(w1 - w0, 4), "audio_source": "m4singer_segment_concat",
+                "audio_start_sec": round(aw0, 4), "audio_end_sec": round(aw1, 4),
+                "duration_sec": round(aw1 - aw0, 4), "audio_source": "m4singer_segment_concat",
                 "text_source": "m4singer_meta_v1", "has_gt": True,
                 "evaluation_role": "lyrics_aligned", "text_window_aligned": True,
                 "text_units": texts, "text_start_index": 0, "text_end_index": len(texts),
@@ -358,11 +389,13 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 "canonical_timeline_file_sha": tl_sha,
                 "canonical_timeline_row_sha": row_sha,
                 "canonical_adapter_version": "long_timeline_v1",
-                "source_window_start_sec": round(w0, 4), "source_window_end_sec": round(w1, 4),
-                "condition": "baseline", "pair_id": f"{tl['song_id']}:w{wi}",
+                "source_window_start_sec": round(aw0, 4), "source_window_end_sec": round(aw1, 4),
+                "condition": "baseline", "pair_id": f"{tl['song_id']}:w{wi}{sw_sfx}",
                 "slot_plan_id": plan.plan_id, "comparison_group_id": plan.comparison_group_id,
                 "phase": plan.phase_name,
             }
+            if use_semantic_windows:
+                base["window_mode"] = "semantic"
             if emit_source_split:
                 base["source_split"] = source_split
             # missing：virtual gap（移除尾部 requested_ratio 比例单位，评价
@@ -537,6 +570,10 @@ def main(argv=None) -> int:
                    help="cohort allowlist JSONL（每行 song_id + role/split 角色；提供时只构造"
                         "allowlist 内歌曲，行输出携带 source_split，REQUESTS.split 用该角色；"
                         "不在 allowlist 的源歌被拒绝并写入 ALLOWLIST_REJECTIONS.jsonl）")
+    p.add_argument("--window-mode", choices=("fixed", "semantic"), default="fixed",
+                   help="请求切窗模式：fixed=原 fixed-60s 时间窗（默认，冻结 formal 口径）；"
+                        "semantic=在 fixed-60s 候选窗 canonical 区间上按语义规则 v2 切成"
+                        "≤20s（含 run）/≤30s（无 run）子窗，每子窗单独成请求")
     args = p.parse_args(argv)
 
     if args.seam_silence_sec < 0.0:
@@ -714,7 +751,8 @@ def main(argv=None) -> int:
                                    replace_ratios=replace_ratios, extra_ratios=extra_ratios,
                                    donor_pool=donor_pool,
                                    source_split=tl.get("source_split", "validation"),
-                                   emit_source_split=song_allowlist is not None)
+                                   emit_source_split=song_allowlist is not None,
+                                   use_semantic_windows=(args.window_mode == "semantic"))
         reqs.extend(song_reqs)
         for r in song_reqs:
             wrow = {"song_id": tl["song_id"], "request_id": r["request_id"],
@@ -746,6 +784,7 @@ def main(argv=None) -> int:
         ),
         "built_at_utc": "2026-08-05T00:00:00Z",
         "min_duration_sec": args.min_duration, "windows_per_song": args.windows_per_song,
+        "window_mode": args.window_mode,
         "seam_silence_sec": args.seam_silence_sec,
         "density_strides": [p if s == 1 else f"strided{s}" for p, s in density_tiers],
         "missing_ratios": list(missing_ratios),
