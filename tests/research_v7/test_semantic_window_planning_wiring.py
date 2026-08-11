@@ -161,6 +161,13 @@ def test_build_requests_fixed_matches_frozen_semantics():
         assert r["audio_end_sec"] <= r["audio_start_sec"] + 30.0 + 1e-6
     # semantic 请求仍可序列化（request_id 唯一）
     assert len({r["request_id"] for r in sem}) == len(sem)
+    # baseline 的 slot_plan_id 跨子窗唯一；comparison_group_id 按子窗一个（3 phase 共享，同 fixed 设计）
+    base_reqs = [r for r in sem if r["condition"] == "baseline"]
+    assert len({r["slot_plan_id"] for r in base_reqs}) == len(base_reqs)
+    n_subwin = len({r["pair_id"] for r in sem})
+    assert len({r["comparison_group_id"] for r in base_reqs}) == n_subwin
+    for r in sem:
+        assert r["pair_id"] == r["comparison_group_id"]
 
 
 class _Timeline:

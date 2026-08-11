@@ -347,6 +347,9 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
         # phase 名=档位名（request_id 后缀 :full/:s2/:s4）；common anchors 由
         # build_density_plans 求全档交集（汇总只评共同 queried 单位）。
         selected_by_stride_phase: dict[str, dict[str, list[int]]] = {}
+        # semantic 模式：同一 fixed 候选窗切出的子窗用子窗序号区分 identity/group
+        # （fixed 模式 si=None → 不带后缀，保持冻结口径字符串不变）
+        sw_sfx = f":s{si}" if use_semantic_windows and si is not None else ""
         for phase_name, step in density_tiers:
             if step == 1:
                 selected = list(cids)
@@ -354,15 +357,12 @@ def build_requests(tl: dict, timeline: object, *, windows_per_song: int,
                 selected = [cids[i] for i in id_at_stride(len(cids), step, wi % step)]
             selected_by_stride_phase[str(step)] = {phase_name: selected}
         plans, _common_anchors = build_density_plans(
-            plan_group=f"{tl['song_id']}:w{wi}", canonical_unit_count=n,
+            plan_group=f"{tl['song_id']}:w{wi}{sw_sfx}", canonical_unit_count=n,
             selected_by_stride_phase=selected_by_stride_phase,
             canonical_to_local=canonical_to_local, request_local_count=len(texts))
         # canonical lineage（review12：guard/collect/assessor 消费）
         # canonical_timeline_row_sha 由 main 对实际写入行求值后传入（可从文件复验）
         tl_sha = tl.get("manifest_sha")
-        # semantic 模式：同一 fixed 候选窗切出的子窗用子窗序号区分 identity/group
-        # （fixed 模式 si=None → 不带后缀，保持冻结口径字符串不变）
-        sw_sfx = f":s{si}" if use_semantic_windows and si is not None else ""
         for plan in plans:
             base = {
                 "schema_version": "research_v7_long_slot_v1",
