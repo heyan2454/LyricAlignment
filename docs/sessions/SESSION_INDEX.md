@@ -8,6 +8,7 @@
 
 | Date | Session | Temperature | Summary |
 |---|---|---|---|
+| 2026-08-12 | `20260812_detector_production_realign_gate/` | hot | Post-realign evidence audit and next focused round: re-check Raw detector production prevalence versus the biased recovery subset, dynamically use broader M4Singer + all Test Demo, collect 60–100 cross-song realign behavior cases with emphasis on correct-but-detector-bad hard negatives, and explore no-GT writeback-gate signals such as change breadth/locality, safe-context corruption and candidate consistency. Corrects residual-error, E8 net, and shadow-E9 interpretation. |
 | 2026-08-09 | `20260809_second_supplement` (runs/..._20260809_second_supplement) | hot | 二次补充：committed-view binding 修复 + P exact k-best + interval v2 + PR held-out + recovery 分解。**重大发现：评估 GT 用错（synthetic-uniform 非真实 GT），改用 real_gt_pinyin_overlay 重建——真实 GT 下模型对齐 91.7% Safe，R=0.976/H=0.882/P=0.830；H/P evidence window 污染已修复（recollect 185 窗）。** 见 09_reports/EXPERIMENT_RECORD.md。 |
 | 2026-08-09 | `20260809_signal_completion` (runs/..._20260809_signal_completion) | warm | 第一次补充：H/P/PR 真实接入、evidence v3、recovery decomposition。结果部分被 committed-view bug 污染，需以二次补充为准。 |
 | 2026-08-08 | `20260808_corrected` (runs/..._20260808_corrected) | warm | Transition/Detector correction：四角色 source-song split、v2 报告、EPISODES 修正。二次补充的 records-root。 |
