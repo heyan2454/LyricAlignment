@@ -1,8 +1,0 @@
-{"accepted": 339, "coverage": 0.899204, "diagnostic_only_note": "coverage in [diagnostic_floor, primary_coverage_gate) kept as diagnostic-only", "gate_status": "diagnostic_only", "song_id": "会长大的幸福", "split": "test", "total_units": 377, "unlabeled": 38}
-{"accepted": 157, "coverage": 0.877095, "diagnostic_only_note": "coverage in [diagnostic_floor, primary_coverage_gate) kept as diagnostic-only", "gate_status": "diagnostic_only", "song_id": "但愿人长久", "split": "test", "total_units": 179, "unlabeled": 22}
-{"accepted": 438, "coverage": 1.0, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "孤勇者", "split": "test", "total_units": 438, "unlabeled": 0}
-{"accepted": 374, "coverage": 1.0, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "春天里", "split": "test", "total_units": 374, "unlabeled": 0}
-{"accepted": 171, "coverage": 0.919355, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "月满西楼", "split": "test", "total_units": 186, "unlabeled": 15}
-{"accepted": 128, "coverage": 0.941176, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "绒花", "split": "test", "total_units": 136, "unlabeled": 8}
-{"accepted": 404, "coverage": 0.9642, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "老男孩2", "split": "test", "total_units": 419, "unlabeled": 15}
-{"accepted": 143, "coverage": 0.846154, "diagnostic_only_note": null, "gate_status": "below_floor", "song_id": "葬花吟", "split": "test", "total_units": 169, "unlabeled": 26}

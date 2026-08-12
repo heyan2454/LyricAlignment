@@ -918,7 +918,7 @@ def main():
                     help="FROZEN_OPERATING_POINTS.json")
     ap.add_argument("--labels", required=True,
                     help="LABELS.jsonl")
-    handoff = ("/home/hyan/LyricAlignment/runs/"
+    handoff = ("/home/hyan/Data/lyricalign/runs/"
                "research_transition_recovery_detector_"
                "20260810_realgt_expansion_handoff")
     ap.add_argument("--cohort-a-formal",
@@ -934,12 +934,12 @@ def main():
                     default="/tmp/opencode/window_gate_report.json")
     ap.add_argument("--rerun-90", default="/tmp/opencode/rerun_90.jsonl")
     ap.add_argument("--scores-dir",
-                    default=("/home/hyan/LyricAlignment/runs/"
+                    default=("/home/hyan/Data/lyricalign/runs/"
                              "research_transition_recovery_detector_"
                              "20260810_realgt_expansion_handoff/"
                              "stage3b_cohort_a_reagg/rerun_gpu/evidence"))
     ap.add_argument("--scores-jsonl",
-                    default=("/home/hyan/LyricAlignment/runs/"
+                    default=("/home/hyan/Data/lyricalign/runs/"
                              "research_transition_recovery_detector_"
                              "20260810_realgt_expansion_handoff/"
                              "stage3b_cohort_a_reagg/rerun_gpu/reagg/"

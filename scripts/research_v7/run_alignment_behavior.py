@@ -5,7 +5,7 @@
   # fake/smoke executor —— 不依赖模型/GPU，验证契约与流水线
   PYTHONPATH=src python scripts/research_v7/run_alignment_behavior.py \
       --item fake_001 --audio 0.0 60.0 --text-units a b c d e \
-      --mutation-type extra --ratio 0.5 --out-root runs/research_v7_align_behavior/smoke \
+      --mutation-type extra --ratio 0.5 --out-root /home/hyan/Data/lyricalign/runs/research_v7_align_behavior/smoke \
       --smoke
 
   # real executor（pilot 阶段由 pilot 注册/注入；此处骨架不内置 GPU 推理）

@@ -58,7 +58,7 @@ def main() -> int:
     # RO atlas：从 model_selection records 计算 RO 交互特征分布
     import statistics
 
-    corrected = Path("runs/research_transition_recovery_detector_20260808_corrected")
+    corrected = Path("/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected")
     split = json.loads((corrected / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))
     ro_rows = []
     for song in split["roles"]["model_selection"]:

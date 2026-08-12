@@ -34,7 +34,7 @@ find data runs docs -iname '*review*' -o -iname '*human*' -o -iname '*C10*'
 
 ## 3. 固定目录、版本和公共 JSON 契约
 
-新增的运行根目录固定为 `runs/research_v7_long_slot_region/<run_id>/`；`run_id` 必须由 UTC 开始时间、短 code hash 和冻结 manifest hash 组成。不得复用或覆盖既有 `runs/research_v7_align_behavior/` 的 evidence。目录如下：
+新增的运行根目录固定为 `/home/hyan/Data/lyricalign/runs/research_v7_long_slot_region/<run_id>/`；`run_id` 必须由 UTC 开始时间、短 code hash 和冻结 manifest hash 组成。不得复用或覆盖既有 `/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/` 的 evidence。目录如下：
 
 ```text
 <run>/

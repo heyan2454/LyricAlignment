@@ -142,6 +142,15 @@ PYTHONPATH=src python scripts/research_v7/report_long_slot_region.py --run-root 
 
 ## Conventions
 - 命令入口只在 `scripts/`；核心逻辑进 `src/lyricalign/`。
+- **runs 管理（参考 AST 模式）**：工作目录 `runs/` 只登记轻量 README.md 与 `.gitkeep`
+  （`.gitignore` 对 `runs/**/*` 全 ignore + 白名单），**具体 run 数据严禁放在工作目录**，
+  统一存放于数据目录 `/home/hyan/Data/lyricalign/runs/`。代码/脚本/文档中的 run 路径一律用
+  该数据目录绝对路径；新 run 也写入数据目录。
+- **results/reports 管理（参考 AST 模式）**：`results/` 保存从 run 抽取的轻量结构化
+  指标与比较表（by_run/comparisons/recomputed），是 canonical metric source，全部进 git；
+  大型 per-item/checkpoint/cache 外置数据目录。`reports/` 保存人类可读 md/json 源文件
+  （进 git），生成资产（`.pdf/.pptx/.docx`）与大型 evidence pack 不进 git，外置到
+  数据目录对应 run 下；reports 只登记路径与索引，不反向成为 canonical metric source。
 - 强约束：checkpoint 只许 validation 选择；不得依据 test/OOD 改 checkpoint；
   不静默覆盖原始 aggregate JSON；metric 修正必须从逐字符 reference/prediction 重算。
 - `rule_validated` 是 weak supervision，不等于人工 GT。

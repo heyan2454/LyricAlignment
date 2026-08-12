@@ -1,5 +1,0 @@
-{"accepted": 271, "coverage": 0.992674, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "全世界失眠", "split": "validation", "total_units": 273, "unlabeled": 2}
-{"accepted": 639, "coverage": 0.986111, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "已是两条路上的人", "split": "validation", "total_units": 648, "unlabeled": 9}
-{"accepted": 375, "coverage": 0.966495, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "我爱你中国", "split": "validation", "total_units": 388, "unlabeled": 13}
-{"accepted": 323, "coverage": 0.904762, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "真实", "split": "validation", "total_units": 357, "unlabeled": 34}
-{"accepted": 336, "coverage": 1.0, "diagnostic_only_note": null, "gate_status": "formal", "song_id": "阴天快乐", "split": "validation", "total_units": 336, "unlabeled": 0}

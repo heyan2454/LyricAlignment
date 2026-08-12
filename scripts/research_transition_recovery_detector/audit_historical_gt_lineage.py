@@ -44,25 +44,19 @@ ROW_FIELDS = [
 ]
 
 DEFAULT_SCAN_ROOTS = [
-    # 1. Research V7 long-slot artifacts (pattern-filtered), repo + big-data root
-    "runs/research_v7_align_behavior",
+    # 1. Research V7 long-slot artifacts (data root)
     "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior",
     # 2. Transition / propagation / detector / oracle / closed-loop artifacts
-    "runs/research_transition_recovery_detector_20260807",
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260807",
-    "runs/research_transition_recovery_detector_20260808_corrected",
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected",
     "/root/autodl-tmp/lyricalign_sessions/20260808_corrected",
     "/root/autodl-tmp/lyricalign_sessions/20260809_signal_completion",
     # 3. The two 2026-08-09 supplement run roots
-    "runs/research_transition_recovery_detector_20260809_second_supplement",
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260809_second_supplement",
-    "runs/research_transition_recovery_detector_20260809_signal_completion",
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260809_signal_completion",
     # 3b. Detector V2 LABELS / LABEL_SUMMARY artifacts (data root only)
     "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2",
     # 4. 2026-08-10 real-GT binding / rebuild artifacts
-    "runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff",
     "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff",
 ]
 

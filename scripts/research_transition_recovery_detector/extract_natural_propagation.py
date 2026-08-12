@@ -178,19 +178,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--session-root",
-        default="/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260807/session_20260807T000000Z",
+        default="/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260807/session_20260807T000000Z",
     )
     parser.add_argument(
         "--formal-jsonl",
         default=(
-            "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260807"
+            "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260807"
             "/session_20260807T000000Z/02_transition/FORMAL_model_selection.jsonl"
         ),
     )
     parser.add_argument(
         "--timeline-manifest",
         default=(
-            "/home/hyan/LyricAlignment/runs/research_transition_recovery_detector_20260807"
+            "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260807"
             "/long_manifest_60/LONG_TIMELINE_MANIFEST.jsonl"
         ),
     )

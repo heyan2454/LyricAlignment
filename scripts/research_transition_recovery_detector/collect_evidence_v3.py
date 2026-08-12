@@ -50,7 +50,7 @@ def main() -> int:
     (session_root / "06_detector").mkdir(parents=True, exist_ok=True)
     split = json.loads((session_root / "00_meta" / "RESOLVED_CONTRACT.json").read_text(encoding="utf-8"))
     # split 数据来自 corrected session
-    corrected = Path("runs/research_transition_recovery_detector_20260808_corrected")
+    corrected = Path("/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected")
     data_split = json.loads((corrected / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))
     song_ids = data_split["roles"][args.role]
     if args.song_ids:

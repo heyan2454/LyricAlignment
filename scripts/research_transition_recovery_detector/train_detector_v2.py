@@ -42,7 +42,7 @@ EXTENDED = ("legacy8", "V", "S")
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--session-root", default="runs/research_transition_recovery_detector_20260808_corrected")
+    ap.add_argument("--session-root", default="/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected")
     ap.add_argument("--timeline-manifest", default=None)
     ap.add_argument("--train-role", default="detector_train")
     ap.add_argument("--heldout-role", default="model_selection")

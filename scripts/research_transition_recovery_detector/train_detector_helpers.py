@@ -24,7 +24,7 @@ def build_dataset(session_root: Path, role: str, *, tolerance: float = 0.32,
     song_ids = split["roles"][role]
     manifest = {}
     candidates = [timeline_manifest, split.get("timeline_manifest"),
-                  str(session_root.parent.parent / "runs/research_transition_recovery_detector_20260807/long_manifest_60/LONG_TIMELINE_MANIFEST.jsonl"),
+                  "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260807/long_manifest_60/LONG_TIMELINE_MANIFEST.jsonl",
                   str(session_root.parent / "long_manifest_60" / "LONG_TIMELINE_MANIFEST.jsonl")]
     tl_path = next((c for c in candidates if c and Path(c).is_file()), None)
     if tl_path is None:

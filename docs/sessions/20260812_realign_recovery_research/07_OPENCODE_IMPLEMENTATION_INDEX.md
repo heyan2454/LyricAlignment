@@ -1,6 +1,8 @@
 # OpenCode 实现总入口：Realign Recovery
 
-**状态：** 可执行 handoff。先完成本文件的 preflight，再按 08--11 分批读取和实现；不要把全部上下文一次塞入一个 Agent 回合。
+**状态：** 批次 A--E（正式实验）已完成，六轮自由探索（FE-01..FE-17）已按用户指示于 2026-08-12 收尾。
+本文件以下各节为已执行的计划/契约，供证据追溯；继续工作请从 run 的 `00_meta/NEXT_RESUME.md`
+与 `FREE_EXPLORATION_*.md` 进入。
 
 ## 1. 目标与边界
 
@@ -27,8 +29,11 @@ cd /home/hyan/LyricAlignment
 source /root/miniconda3/etc/profile.d/conda.sh
 conda activate lyricalign-qwen
 export PYTHONPATH=src
-SESSION_ROOT=runs/realign_recovery_20260812_<utc-or-run-id>
+SESSION_ROOT=/home/hyan/Data/lyricalign/runs/realign_recovery_20260812_<utc-or-run-id>
 ```
+
+> 注意：`runs/` 工作目录不再存放任何 run 数据（参考 AST 模式）。所有 session evidence
+> 一律写入数据目录 `/home/hyan/Data/lyricalign/runs/`（代码默认值已指向该绝对路径）。
 
 不得复用或覆盖既有 `runs/research_transition_*` evidence。创建 `SESSION_ROOT` 后立刻写 `00_meta/REPO_STATE_START.json`、环境、dirty diff、引用的 00--11 文件 SHA 与初始 TODO。
 
@@ -38,7 +43,7 @@ SESSION_ROOT=runs/realign_recovery_20260812_<utc-or-run-id>
 src/lyricalign/realign_recovery/       # 纯函数：identity、proposal、candidate、judge、writeback、metrics
 scripts/realign_recovery/              # CLI：preflight、run、evaluate、report；不得把逻辑堆进 CLI
 tests/realign_recovery/                # 无模型 CPU 合同/回归测试
-runs/realign_recovery_.../             # session evidence，不进 Git
+runs/realign_recovery_.../             # session evidence，不进 Git（位于 /home/hyan/Data/lyricalign/runs/）
 ```
 
 可以复用 `research_transition_recovery_detector` 的 real-GT、Raw detector、serial state 与已有 retry 封装，但必须通过 adapter 明确版本/输入，不得隐式复制旧的 synthetic-GT routing。

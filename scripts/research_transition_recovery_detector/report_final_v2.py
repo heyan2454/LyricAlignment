@@ -79,7 +79,7 @@ def main() -> int:
             or "retry 无改善（v2 detector 保守）→ 无 retry-derived 写回 → Gate C 诚实失败，不虚报 recovery",
         },
         "superseded": {
-            "old_final_report": "runs/research_transition_recovery_detector_20260808_corrected/09_reports/FINAL_SESSION_REPORT.json",
+            "old_final_report": "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected/09_reports/FINAL_SESSION_REPORT.json",
             "mark": "superseded_for_formal_interpretation by FINAL_SESSION_REPORT_v2.json",
             "reason": "旧报告以 320ms/0.32s 为 primary、无 Safe/Grey/Unsafe 标签、closed loop 无 retry writeback 语义",
         },

@@ -27,31 +27,21 @@ configs/assets/smoke_samples.local.yaml
 /.cache/
 
 # Run-local large outputs
-runs/**/raw_audio/
-runs/**/large_outputs/
-runs/research_v7_align_behavior/
-
-# 具体 evidence：forward/serial 缓存与逐窗 records（可重建，只跟踪 manifest/结论）
-runs/**/cache/
-runs/**/02_transition/*.jsonl
-runs/**/evidence_pack/
-runs/**/evidence_pack.tar.gz
-reports/**/evidence_pack/
-reports/**/evidence_pack.tar.gz
-runs/**/06_detector/evidence_*.jsonl
-runs/**/06_detector/THRESHOLD_VALIDATION_PBAD.json
-runs/**/06_detector/_frozen_v3_for_intervals.json
-runs/**/06_detector/detector_mlp_v3_*.pkl
-
-# GT 逐字符评价 / 跨域对照输出（工作目录冒烟产物）
 gt_eval_out/
 out/
-runs/**/GT_EVAL.json
-runs/**/MIR_CROSS_DOMAIN_EVAL.json
-runs/**/BASELINE_QUALITY_ANALYSIS.json
-runs/**/MISSING_RATIO_CURVE.json
-runs/**/MIR_GT_EVAL.json
 *.bak.json
+
+# runs 目录只登记轻量 README/.gitkeep（参考 AST 模式），具体 run 数据放
+# /home/hyan/Data/lyricalign/runs/，禁止进入工作目录与 git。
+runs/**/*
+!runs/**/
+!runs/**/.gitkeep
+!runs/README.md
+
+# reports 生成资产不进 git（AST 模式）；md/json 源文件保留。
+reports/**/*.pdf
+reports/**/*.pptx
+reports/**/*.docx
 
 # Audio/video and model artifacts
 *.wav

@@ -40,7 +40,7 @@ def main() -> int:
     p.add_argument("--role", default="model_selection")
     p.add_argument("--out", required=True)
     args = p.parse_args()
-    corrected = Path("runs/research_transition_recovery_detector_20260808_corrected")
+    corrected = Path("/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected")
     manifest = {json.loads(l)["song_id"]: json.loads(l)
                 for l in Path(args.timeline_manifest).read_text(encoding="utf-8").splitlines() if l.strip()}
     split = json.loads((corrected / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))

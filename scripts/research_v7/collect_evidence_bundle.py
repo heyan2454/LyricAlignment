@@ -32,7 +32,7 @@ INCLUDE_PATHS = [
 ]
 # 单独携带的关键结果（若存在）
 EXTRA_FILES = [
-    "runs/research_v7_align_behavior/behavior_manifest_smoke.jsonl",
+    "/home/hyan/Data/lyricalign/runs/research_v7_align_behavior/behavior_manifest_smoke.jsonl",
 ]
 
 

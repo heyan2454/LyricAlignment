@@ -65,7 +65,7 @@ def main() -> int:
     from scripts.research_transition_recovery_detector.run_transition_smoke import load_song_from_timeline  # noqa: E402
 
     session_root = Path(args.session_root)
-    corrected = Path("runs/research_transition_recovery_detector_20260808_corrected")
+    corrected = Path("/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260808_corrected")
     (session_root / "03_propagation").mkdir(parents=True, exist_ok=True)
     split = json.loads((corrected / "00_meta" / "DATASET_SPLIT.json").read_text(encoding="utf-8"))
     song_ids = split["roles"][args.role]

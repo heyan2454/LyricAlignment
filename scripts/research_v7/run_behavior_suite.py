@@ -6,7 +6,7 @@
 
 用法：
   PYTHONPATH=src python scripts/research_v7/run_behavior_suite.py \
-      --manifest <behavior_manifest.jsonl> --out-root runs/research_v7_align_behavior/run \
+      --manifest <behavior_manifest.jsonl> --out-root /home/hyan/Data/lyricalign/runs/research_v7_align_behavior/run \
       --smoke                      # fake executor，纯 CPU 验证
   # 真模型：manifest 的 audio_path 必须指向存在的 vocal 文件。
 
