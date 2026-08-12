@@ -9,6 +9,7 @@ GT firewall. Forward execution is delegated to
 from __future__ import annotations
 
 import json
+import os
 import random
 import re
 import subprocess
@@ -366,8 +367,18 @@ def _suite_argv(
 
 
 def _invoke_suite(argv: list[str], env: dict | None = None) -> dict:
-    """Injected subprocess seam; tests monkeypatch this to avoid real runs."""
-    proc = subprocess.run(argv, capture_output=True, text=True, env=env)
+    """Injected subprocess seam; tests monkeypatch this to avoid real runs.
+
+    REQUESTS carry relative ``audio_path``/``raw_output_path`` resolved against the
+    data directory (see realign_recovery run notes), so the suite must run with
+    ``cwd=DATA_ROOT``. ``env`` is enriched with the subprocess environment.
+    """
+    cwd = str(identity.DATA_ROOT)
+    if env is None:
+        env = os.environ.copy()
+    else:
+        env = {**os.environ.copy(), **env}
+    proc = subprocess.run(argv, capture_output=True, text=True, env=env, cwd=cwd)
     return {"returncode": proc.returncode, "stdout": proc.stdout, "stderr": proc.stderr}
 
 

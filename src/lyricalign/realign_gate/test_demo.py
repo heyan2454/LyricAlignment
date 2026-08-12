@@ -614,7 +614,10 @@ def run_stage(run_root, cfg_path, *, top_k: int = 20, limit: int | None = None) 
         adapter = _mock_detector_adapter(cfg)
     else:
         adapter = _default_detector_adapter(cfg)
-    items = discover_items(list(cfg.get("demo_roots", [])) + list(cfg.get("extra_roots", [])))
+    roots = list(cfg.get("demo_roots", [])) + list(cfg.get("extra_roots", []))
+    if not roots:
+        roots = list((cfg.get("inputs") or {}).get("test_demo_roots", []))
+    items = discover_items(roots)
     if limit:
         items = items[: int(limit)]
     summary = detector_summary(items, adapter)
