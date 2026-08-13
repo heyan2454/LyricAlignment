@@ -8,8 +8,8 @@
 | Session review (00-06) | completed | 已读全部 7 份文档 |
 | Provenance 核实 (Codex facts 1-10) | completed | 4 subagent 并行，notes B/C/D/E 落盘 |
 | 07_CODEX_IMPLEMENTATION_PLAN | completed | 生成 + F/G 两路 review，全部 P0/P1 已修订回 07 |
-| WP1 E0 freeze/smoke | pending | Plan §9 WP1 |
-| WP2 可视化 adapter + 三路 smoke | pending | Plan §9 WP2 |
+| WP1 E0 freeze/smoke | completed | commit 94fa0bf + e2729fa; H/I review P1s fixed; 243 tests pass |
+| WP2 可视化 adapter + 三路 smoke | in_progress | track_view.py + transcode helper done; controller delegated (subagent) |
 | WP3 E1 multi-realign screening | pending | Plan §9 WP3 |
 | WP4 E2 fine-split screening | pending | Plan §9 WP4 |
 | WP5 E3 k1/k3 + recrop | pending | Plan §9 WP5 |
