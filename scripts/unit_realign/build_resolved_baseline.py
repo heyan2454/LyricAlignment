@@ -30,11 +30,13 @@ from lyricalign.realign_recovery.frozen_baseline import FROZEN_BASELINE_IDENTITY
 
 # Window/silence resolved values — taken from demo/window_planning.py
 # build_silence_aware_window_plan parameter defaults (these match the B4 freeze).
+# ``skip_silent_windows`` differs between the two runners, so it is NOT shared:
+#   - Current: run_inline_realign_experiment.py hard-codes True (authoritative).
+#   - B4 (serial runner): align_qwen_fa_serial_demo.py --skip-silent-windows default False.
 WINDOW_SILENCE_RESOLVED = {
     "silence_aware_window_plan": True,
     "strict_silence_boundary_plan": False,
     "compress_silence_audio": False,
-    "skip_silent_windows": True,
     "surround_context_sec": (10.0, 10.0),  # left, right
     # silence-aware parameters (window_planning defaults)
     "silence_boundary_min_sec": 0.8,
@@ -49,6 +51,8 @@ WINDOW_SILENCE_RESOLVED = {
 def _current_baseline() -> dict:
     identity = dict(FROZEN_BASELINE_IDENTITY)  # request_mode=full_slot, decoder_view=raw
     cascade = dict(WINDOW_SILENCE_RESOLVED)
+    # Current runner (run_inline_realign_experiment.py) hard-codes skip_silent_windows=True.
+    cascade["skip_silent_windows"] = True
     # Current cascade core/context come from the frozen identity fields.
     cascade["core_sec"] = identity["core_sec"]
     cascade["left_context_sec"] = identity["left_context_sec"]
@@ -56,7 +60,8 @@ def _current_baseline() -> dict:
     resolved = {
         "role": "current_baseline",
         "stage": "01_generate_resolved_baseline",
-        "source": "realign_recovery.frozen_baseline.FROZEN_BASELINE_IDENTITY + demo.window_planning",
+        "source": ("realign_recovery.frozen_baseline.FROZEN_BASELINE_IDENTITY + "
+                   "demo.window_planning + run_inline_realign_experiment.py(skip_silent=True)"),
         "identity": identity,
         "cascade": cascade,
         "actual_writeback": 0,
@@ -88,11 +93,17 @@ def _b4_baseline() -> dict:
     resolved = {
         "role": "b4_historical_pre_slot_serial",
         "stage": "01_generate_resolved_baseline",
-        "source": "03_VISUALIZATION_DESIGN V1 B4 freeze + serial runner semantics",
+        "source": ("03_VISUALIZATION_DESIGN V1 B4 freeze + serial runner "
+                   "align_qwen_fa_serial_demo.py defaults (skip_silent_windows=False)"),
         "identity": identity,
         "cascade": dict(WINDOW_SILENCE_RESOLVED, **{
             "core_sec": 60, "left_context_sec": 10, "right_context_sec": 10,
+            # serial runner --skip-silent-windows default is False (align_qwen_fa_serial_demo.py).
+            # 03 V1 lists true; the P1-1 contrast run confirms the historical flag before use.
+            "skip_silent_windows": False,
+            "skip_silent_windows_note": "serial runner default False; confirm vs historical B4 in P1-1 contrast run",
         }),
+        "unresolved_contracts": ["skip_silent_windows historical flag to be confirmed by B4 contrast run"],
         "actual_writeback": 0,
         "schema_version": "resolved_baseline_v1",
     }

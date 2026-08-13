@@ -35,7 +35,6 @@ def test_resolved_baseline_has_required_fields_and_writeback_zero(tmp_path):
         assert doc["cascade"]["silence_aware_window_plan"] is True
         assert doc["cascade"]["strict_silence_boundary_plan"] is False
         assert doc["cascade"]["compress_silence_audio"] is False
-        assert doc["cascade"]["skip_silent_windows"] is True
         assert set(doc["cascade"]) >= {
             "silence_boundary_min_sec", "strong_silence_anchor_sec",
             "silence_boundary_search_sec", "leading_silence_min_sec",
@@ -49,6 +48,11 @@ def test_resolved_baseline_has_required_fields_and_writeback_zero(tmp_path):
     assert cur["identity"]["decoder_view"] == "raw"
     assert b4["identity"]["request_mode"] == "pre_slot_serial_non_slot"
     assert b4["identity"]["decoder_kind"] == "official"
+    # Current runner hard-codes skip_silent=True; the serial B4 runner defaults to False
+    # (align_qwen_fa_serial_demo.py --skip-silent-windows default=False). Split cascades
+    # must not hide this difference (07 plan WP1 review).
+    assert cur["cascade"]["skip_silent_windows"] is True
+    assert b4["cascade"]["skip_silent_windows"] is False
 
 
 def test_resolved_baseline_hashes_are_deterministic(tmp_path):

@@ -180,3 +180,23 @@ def test_multi_realign_family_context_is_reproducible():
     rb = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
                               units=_units(), target_unit_ids=[2], identity_context=ctx_b)
     assert ra["request_identity"] == rb["request_identity"]
+
+
+def test_chained_request_with_parent_requires_all_family_keys():
+    """A request that links to a parent must carry every family identity key (WP1)."""
+    # parent present but iteration/recrop/split omitted -> identity is None (fail closed).
+    partial = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                                   units=_units(), target_unit_ids=[2],
+                                   identity_context=_id_context(parent_request_identity="sha256:" + "d" * 64))
+    assert partial["request_identity"] is None
+
+
+def test_non_whitelisted_mechanism_key_changes_identity():
+    """Future mechanism/direction keys folded via chain_context must change identity (P1-2)."""
+    base = _id_context()
+    with_dir = _id_context(direction="right_to_left")
+    ra = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                              units=_units(), target_unit_ids=[2], identity_context=base)
+    rb = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                              units=_units(), target_unit_ids=[2], identity_context=with_dir)
+    assert ra["request_identity"] != rb["request_identity"]
