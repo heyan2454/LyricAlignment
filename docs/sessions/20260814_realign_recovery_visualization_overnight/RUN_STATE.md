@@ -8,8 +8,9 @@
 | Session review (00-06) | completed | 已读全部 7 份文档 |
 | Provenance 核实 (Codex facts 1-10) | completed | 4 subagent 并行，notes B/C/D/E 落盘 |
 | 07_CODEX_IMPLEMENTATION_PLAN | completed | 生成 + F/G 两路 review，全部 P0/P1 已修订回 07 |
-| WP1 E0 freeze/smoke | completed | commit 94fa0bf + e2729fa; H/I review P1s fixed; 243 tests pass |
-| WP2 可视化 adapter + 三路 smoke | in_progress | track_view.py + transcode helper done; controller delegated (subagent) |
+| WP1 E0 freeze/smoke | completed | commit 94fa0bf + e2729fa + 4785170; H/I review P1s fixed; 243→351 tests |
+| WP2 可视化 adapter + 三路 smoke | completed | commit 714d514 + 44cc51d; K/L review P0+P1s fixed (doc-global index restore, batch namespacing, rerender hash, B4 stand-in labeled); 6 track_view tests |
+| 待 formal 补齐 | open | ① 正式 B4 alignment 替换 raw stand-in；② `<out>/scientific/` 在 collection 前从上游落盘并纳入 rerender hash 断言；③ R-U->sparse 第四路（WP6） |
 | WP3 E1 multi-realign screening | pending | Plan §9 WP3 |
 | WP4 E2 fine-split screening | pending | Plan §9 WP4 |
 | WP5 E3 k1/k3 + recrop | pending | Plan §9 WP5 |
