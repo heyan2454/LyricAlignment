@@ -97,6 +97,12 @@ def two_way_tracks(entry, item):
     return [b4, cur]
 
 
+def item_slug(item: str) -> str:
+    """Derive a filesystem-safe slug from an item id to namespace batch outputs."""
+    base = Path(item).stem.replace(" ", "_").replace("/", "_").replace("\\", "_")
+    return "".join(ch for ch in base if ch.isalnum() or ch in "_-") or "item"
+
+
 def render_group(out, *, group, item, tracks, windows, args, mode, audio=None):
     rows = next((t.get("rows") for t in tracks if t.get("rows")), [])
     if not rows:
@@ -160,7 +166,7 @@ def main() -> int:
                 print(f"[warn] {item}: no ok evidence for two-way; skipping")
             else:
                 tracks = two_way_tracks(evidence_index[request_ids[0]], item)
-                res = render_group(out, group="b4_vs_current", item=item,
+                res = render_group(out, group=f"b4_vs_current/{item_slug(item)}", item=item,
                                    tracks=tracks, windows=[], args=args, mode="twoway", audio=audio)
                 if res:
                     groups.append(res["meta"]); videos.append(res["video"])
@@ -176,7 +182,7 @@ def main() -> int:
                         key = (w.get("core_start_sec"), w.get("core_end_sec"))
                         if key not in seen:
                             seen.add(key); windows.append(w)
-                res = render_group(out, group="current_realign_4way", item=item,
+                res = render_group(out, group=f"current_realign_4way/{item_slug(item)}", item=item,
                                    tracks=fourway_tracks, windows=windows, args=args, mode="fourway", audio=audio)
                 if res:
                     groups.append(res["meta"]); videos.append(res["video"])

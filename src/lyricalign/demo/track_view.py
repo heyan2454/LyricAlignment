@@ -44,18 +44,36 @@ def _canonical_index_and_text(
 def rows_from_forward_evidence(
     request: Mapping[str, Any], evidence: Iterable[Mapping[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Project ``{canonical_unit_id, start_sec, end_sec}`` rows to visual rows.
+    """Project forward/decoder rows to visual rows.
 
-    Each output row is safe for ``visual_diagnostics.canonical_visual_row`` /
+    Two input forms are supported:
+    - v2-forward-evidence form: each row is ``{canonical_unit_id, start_sec,
+      end_sec}``; ``global_character_index``/``display_text`` are reverse-mapped
+      via the request's ``canonical_to_local`` + ``text_units``.
+    - decoder-row form: each row already carries ``global_character_index``
+      and ``display_text`` (plus ``canonical_unit_id`` when available); these
+      are used directly (no canonical reverse-map), so text/index are never
+      lost when the source already has them.
+
+    Every output row is safe for ``visual_diagnostics.canonical_visual_row`` /
     ``ordered_rows``: it carries a complete ``(start_sec, end_sec)`` pair plus
     ``global_character_index`` and ``display_text``.
     """
     out: list[dict[str, Any]] = []
     for row in evidence:
-        cid = int(row["canonical_unit_id"])
-        gci, text = _canonical_index_and_text(request, cid)
+        cid = row.get("canonical_unit_id")
+        gci = row.get("global_character_index")
+        text = row.get("display_text")
+        if cid is not None and gci is None and text is None:
+            # v2-forward-evidence form: must reverse-map index + text.
+            mapped_cid = int(cid)
+            gci, text = _canonical_index_and_text(request, mapped_cid)
+        else:
+            # decoder-row form with index/text available (or degenerate).
+            gci = int(gci) if gci is not None else (int(cid) if cid is not None else -1)
+            text = str(text) if text is not None else ""
         out.append({
-            "canonical_unit_id": cid,
+            "canonical_unit_id": int(cid) if cid is not None else gci,
             "global_character_index": gci,
             "display_text": text,
             "start_sec": float(row["start_sec"]),

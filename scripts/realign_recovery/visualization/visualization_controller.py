@@ -99,16 +99,24 @@ def load_evidence_index(evidence_dir: Path | str) -> dict[str, dict[str, Any]]:
 
 
 def rows_from_decoder(payload: Mapping[str, Any], decoder_kind: str = "official") -> list[dict[str, Any]]:
-    """Pull ``{canonical_unit_id, start_sec, end_sec}`` rows from an evidence payload.
+    """Pull visual rows straight from a stored decoder block into doc-global coords.
 
-    The stored decoder rows already carry full timing and index fields, so we
-    derive the compact canonical form and let ``track_view.rows_from_forward_evidence``
-    re-project it (exercising the official adapter path end to end).
+    The stored decoder rows carry a **window-local** ``global_character_index``
+    (0..len(canonical_ids)-1); the document-global character index/canonical id
+    is ``request.canonical_ids[local_idx]`` and the character text comes from
+    ``request.text_units`` / ``canonical_to_local``.  We restore those document-global
+    values *here* (rows_from_decoder), so every emitted row is already in global
+    coordinates for ``track_view.rows_from_forward_evidence``'s pass-through path.
+
+    ``start_sec/end_sec`` resolve from the stage-specific global fields, falling
+    back to ``start_sec/end_sec``.
     """
     attempt = payload.get("attempt") or {}
+    request = attempt.get("request") or {}
     decoder_outputs = attempt.get("decoder_outputs") or {}
     block = decoder_outputs.get(decoder_kind) or {}
-    request = attempt.get("request") or {}
+    canonical_ids = [int(x) for x in request.get("canonical_ids") or ()]
+    text_units = [str(x) for x in request.get("text_units") or ()]
     rows: list[dict[str, Any]] = []
     for row in block.get("rows") or []:
         start = row.get("official_fixed_global_start_sec") if decoder_kind == "official" else row.get("raw_global_start_sec")
@@ -117,16 +125,27 @@ def rows_from_decoder(payload: Mapping[str, Any], decoder_kind: str = "official"
         end = end if end is not None else row.get("end_sec")
         if start is None or end is None:
             continue
-        gci = row.get("global_character_index")
-        if gci is None:
-            gci = row.get("character_index")
-        if gci is None:
+        local_idx = row.get("global_character_index")
+        if local_idx is None:
+            local_idx = row.get("character_index")
+        if local_idx is None:
             continue
+        local_idx = int(local_idx)
+        # Restore the document-global identity from the request.
+        if 0 <= local_idx < len(canonical_ids):
+            gci = canonical_ids[local_idx]
+            text = text_units[local_idx] if local_idx < len(text_units) else ""
+        else:
+            # Degenerate request (no canonical_ids): keep the local index.
+            gci = local_idx
+            text = ""
         rows.append({
-            "canonical_unit_id": int(gci),
+            "global_character_index": gci,
+            "display_text": text,
             "start_sec": float(start),
             "end_sec": float(end),
         })
+    rows.sort(key=lambda r: r["global_character_index"])
     return rows
 
 
@@ -420,6 +439,10 @@ def render_video(
     (out / "renders").mkdir(parents=True, exist_ok=True)
     output_path = out / "renders" / f"{group}.mp4"
     work_root = out / "renders" / f"{group}_work"
+    # A nested group (e.g. "b4_vs_current/<item>") needs its sub-directory created
+    # so multi-item batches never overwrite each other.
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    work_root.mkdir(parents=True, exist_ok=True)
     if not pages_meta:
         raise ValueError(f"group {group!r} has no pages to encode")
     return render_page_video(
