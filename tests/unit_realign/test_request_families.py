@@ -134,3 +134,49 @@ def test_ra_context_and_audio_margin():
     assert r["canonical_ids"] == [1, 2, 3]
     assert r["audio_start_sec"] == 1.75
     assert r["audio_end_sec"] == 2.75
+
+
+def _id_context(**extra):
+    return {"audio_sha256": "a" * 64, "baseline_digest": "sha256:b", "model_identity": "m",
+            "checkpoint_identity": "c", "decoder_identity": "d", "code_identity": "g",
+            "text_adapter_identity": "t", **extra}
+
+
+def test_multi_realign_family_context_changes_identity():
+    """parent/iteration/recrop/split must be part of cache identity (07 plan WP1)."""
+    base = _id_context()
+    r0 = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                              units=_units(), target_unit_ids=[2], identity_context=base)
+    # Same request, same identity (cache hit when nothing extra changed).
+    r0b = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                               units=_units(), target_unit_ids=[2], identity_context=base)
+    assert r0["request_identity"] == r0b["request_identity"]
+
+    # Each of the four family-context dimensions must change the identity.
+    for key, val in (("iteration", 2), ("recrop_view_id", "left"), ("split_slot_id", "s1")):
+        rv = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                                  units=_units(), target_unit_ids=[2],
+                                  identity_context=_id_context(**{key: val}))
+        assert rv["request_identity"] != r0["request_identity"], key
+
+    # parent_request_identity needs a valid sha256 string to pass the required check.
+    parent = build_family_request(family="R-A", song_id="s", region_id="r", audio_path="a",
+                                  units=_units(), target_unit_ids=[2], identity_context=base)
+    parent_id = parent["request_identity"]
+    r_child = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                                   units=_units(), target_unit_ids=[2],
+                                   identity_context=_id_context(parent_request_identity=parent_id))
+    assert r_child["request_identity"] != r0["request_identity"]
+
+
+def test_multi_realign_family_context_is_reproducible():
+    """Identical parent/iteration context yields identical identity (cache reuse)."""
+    ctx_a = _id_context(iteration=3, recrop_view_id="wider", split_slot_id="a0",
+                        parent_request_identity="sha256:" + "d" * 64)
+    ctx_b = _id_context(iteration=3, recrop_view_id="wider", split_slot_id="a0",
+                        parent_request_identity="sha256:" + "d" * 64)
+    ra = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                              units=_units(), target_unit_ids=[2], identity_context=ctx_a)
+    rb = build_family_request(family="R-U", song_id="s", region_id="r", audio_path="a",
+                              units=_units(), target_unit_ids=[2], identity_context=ctx_b)
+    assert ra["request_identity"] == rb["request_identity"]

@@ -47,6 +47,15 @@ def build_request_identity(request: Mapping[str, Any]) -> str:
     missing = [key for key in required if not request.get(key)]
     if missing:
         raise ValueError("request identity missing " + ", ".join(missing))
+    # Iteration/recrop/split family context: included in the identity whenever set so
+    # a parent-candidate / re-crop / split change never reuses a stale forward.  These
+    # are forwarded by the caller through ``identity_context`` (see multi-iteration/split
+    # builders); absent for plain single-shot requests (no digest change).
+    family_context = {
+        key: request.get(key)
+        for key in ("parent_request_identity", "iteration", "recrop_view_id", "split_slot_id")
+        if request.get(key) is not None
+    }
     return _digest({
         "schema": UNIT_REQUEST_SCHEMA,
         "family": request.get("family"), "family_version": request.get("family_version", "v1"),
@@ -59,6 +68,7 @@ def build_request_identity(request: Mapping[str, Any]) -> str:
         "text_adapter_identity": request.get("text_adapter_identity"),
         "audio_preprocess_identity": request.get("audio_preprocess_identity"),
         "determinism_identity": request.get("determinism_identity"),
+        "family_context": family_context,
     })
 
 
