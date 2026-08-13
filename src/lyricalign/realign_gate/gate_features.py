@@ -28,7 +28,7 @@ from lyricalign.realign_recovery.candidate_scores import (
 from lyricalign.research_transition_recovery_detector.real_gt import load_real_gt_with_audit
 from lyricalign.research_v7.detector_v2_evidence import assert_no_label_leak
 
-NEUTRAL_EPS_MS = 10.0
+NEUTRAL_EPS_MS = 200.0
 CHANGED_EPS_MS = 10.0
 CATAS_MS = 200.0
 DEV_RATIO = 0.67
@@ -68,7 +68,9 @@ def _unit_err_ms(pred: Mapping[str, Any] | None, gt: Mapping[str, Any]) -> float
     return max(start_err, end_err) * 1000.0
 
 
-def _label_for(delta_ms: float | None) -> str | None:
+def _label_for(delta_ms: float | None, *, covered_to_missing: bool = False) -> str | None:
+    if covered_to_missing:
+        return "harm"
     if delta_ms is None:
         return None
     if delta_ms <= -NEUTRAL_EPS_MS:
@@ -78,6 +80,32 @@ def _label_for(delta_ms: float | None) -> str | None:
     return "neutral"
 
 
+def _catastrophic_reason(
+    delta_ms: float | None,
+    old_err_ms: float | None,
+    new_err_ms: float | None,
+    covered_to_missing: bool,
+) -> str | None:
+    """B13 catastrophic_harm reasons:
+    paired delta >200ms, covered-to-missing, or absolute-threshold transition
+    from <=100/200ms to >500ms/>1s. Highest-severity reason wins.
+    """
+    if covered_to_missing:
+        return "covered_to_missing"
+    if new_err_ms is not None and old_err_ms is not None:
+        if old_err_ms <= 100.0 and new_err_ms > 1000.0:
+            return "correct_to_gt_1s"
+        if old_err_ms <= 200.0 and new_err_ms > 1000.0:
+            return "correct_to_gt_1s"
+        if old_err_ms <= 100.0 and new_err_ms > 500.0:
+            return "correct_to_gt_500"
+        if old_err_ms <= 200.0 and new_err_ms > 500.0:
+            return "correct_to_gt_500"
+    if delta_ms is not None and delta_ms > CATAS_MS:
+        return "paired_delta_gt_200"
+    return None
+
+
 def pair_gt(
     new_rows: list[dict],
     real_gt: dict,
@@ -85,6 +113,7 @@ def pair_gt(
     song_id: str | None,
     old_rows: list[dict] | None = None,
     target_cids: list[int] | None = None,
+    expected_variants: list[Mapping[str, Any]] | None = None,
 ) -> list[dict]:
     """Pair candidate rows against real GT by (song_id, canonical_unit_id) only.
 
@@ -133,6 +162,7 @@ def pair_gt(
             "delta_error_ms": None,
             "label": None,
             "catastrophic_harm": False,
+            "catastrophic_reason": None,
             "boundaries_100": False,
             "boundaries_200": False,
             "boundaries_500": False,
@@ -176,9 +206,11 @@ def pair_gt(
         record["new_missing"] = new_err_ms is None
         if old_err_ms is not None and new_err_ms is not None:
             record["delta_error_ms"] = round(new_err_ms - old_err_ms, 4)
-        record["label"] = _label_for(record["delta_error_ms"])
-        if record["delta_error_ms"] is not None:
-            record["catastrophic_harm"] = bool(record["delta_error_ms"] > CATAS_MS)
+        covered_to_missing = old_err_ms is not None and new_err_ms is None
+        record["label"] = _label_for(record["delta_error_ms"], covered_to_missing=covered_to_missing)
+        record["catastrophic_reason"] = _catastrophic_reason(
+            record["delta_error_ms"], old_err_ms, new_err_ms, covered_to_missing)
+        record["catastrophic_harm"] = record["catastrophic_reason"] is not None
         if new_err_ms is not None:
             record["boundaries_100"] = new_err_ms <= 100.0
             record["boundaries_200"] = new_err_ms <= 200.0
@@ -186,15 +218,27 @@ def pair_gt(
         out.append(record)
 
     if target_cids is not None:
-        variants = sorted({r.get("variant") for r in new_rows})
+        # The candidate manifest, not the rows that happened to decode, is the
+        # denominator.  Otherwise a zero-row forward silently disappears and
+        # cannot be counted as covered->missing / invalid evidence.
+        variants_by_key: dict[tuple[Any, Any], dict[str, Any]] = {}
+        for spec in expected_variants or []:
+            case_id, variant = spec.get("case_id"), spec.get("variant")
+            if variant is not None:
+                variants_by_key[(case_id, variant)] = {"case_id": case_id, "variant": variant}
+        for row in new_rows:
+            case_id, variant = row.get("case_id"), row.get("variant")
+            if variant is not None:
+                variants_by_key.setdefault((case_id, variant), {"case_id": case_id, "variant": variant})
+        variants = list(variants_by_key.values())
         for cid in target_cids:
             cid = int(cid)
             if cid not in gt_units:
                 continue
-            for variant in variants:
+            for spec in variants:
+                case_id, variant = spec["case_id"], spec["variant"]
                 if cid in covered_by_variant.get(variant, set()):
                     continue
-                case_id = next((r.get("case_id") for r in new_rows if r.get("variant") == variant), None)
                 old_pred = old_by_key.get((case_id, cid))
                 old_err_ms = _unit_err_ms(old_pred, gt_units[cid]) if old_pred is not None else None
                 record = {
@@ -221,13 +265,87 @@ def pair_gt(
                     "duplicate_prediction": None,
                     "extra_prediction": False,
                     "delta_error_ms": None,
-                    "label": None,
-                    "catastrophic_harm": False,
+                    "label": "harm" if old_err_ms is not None else None,
+                    "catastrophic_harm": old_err_ms is not None,
+                    "catastrophic_reason": "covered_to_missing" if old_err_ms is not None else None,
                     "boundaries_100": False,
                     "boundaries_200": False,
                     "boundaries_500": False,
                 }
                 out.append(record)
+    return out
+
+
+def _active_target_ids(request: Mapping[str, Any] | None, case: Mapping[str, Any]) -> list[int]:
+    """Resolve the request's actual responsibility range, never a legacy window target."""
+    request = request or {}
+    provenance = request.get("provenance") if isinstance(request.get("provenance"), Mapping) else {}
+    raw = (request.get("active_target_unit_ids") or request.get("target_unit_ids")
+           or provenance.get("active_target_unit_ids") or provenance.get("target_unit_ids")
+           or case.get("active_target_unit_ids") or case.get("target_unit_ids") or [])
+    ids: list[int] = []
+    for value in raw:
+        try:
+            ids.append(int(value))
+        except (TypeError, ValueError):
+            continue
+    return sorted(set(ids))
+
+
+def _ensure_no_gt_target_spine(
+    no_gt_rows: list[dict],
+    candidates: list[dict],
+    requests_by_id: Mapping[Any, Mapping[str, Any]],
+    case_by_id: Mapping[Any, Mapping[str, Any]],
+) -> list[dict]:
+    """Left-join spine for requested targets that produced no evidence row.
+
+    This is constructed solely from the no-GT request/candidate manifests.  It
+    records that an expected output is absent, but deliberately has no GT
+    outcome fields.  Evaluation joins labels only later by the stable key.
+    """
+    existing = {
+        (row.get("case_id"), row.get("variant"), row.get("canonical_unit_id"))
+        for row in no_gt_rows if isinstance(row, Mapping)
+    }
+    out = list(no_gt_rows)
+    for candidate in candidates:
+        case_id, variant = candidate.get("case_id"), candidate.get("variant")
+        request = requests_by_id.get(candidate.get("request_id")) or {}
+        case = case_by_id.get(case_id) or {}
+        for cid in _active_target_ids(request, case):
+            key = (case_id, variant, cid)
+            if key in existing:
+                continue
+            row = {
+                "schema": NO_GT_SCHEMA,
+                "request_identity": candidate.get("content_idn") or candidate.get("request_identity"),
+                "case_id": case_id,
+                "variant": variant,
+                "canonical_unit_id": cid,
+                "song_id": case.get("song_id"),
+                "candidate_output_present": False,
+                "feature_source": "expected_target_without_evidence",
+                "feature_valid": True,
+                "n_big": None,
+                "changed_ratio": None,
+                "sum_displacement_ms": None,
+                "max_displacement_ms": None,
+                "unsafe_inside_disp_ms": None,
+                "safe_outside_disp_ms": None,
+                "safe_context_changed_count": None,
+                "p_bad_delta": None,
+                "abs_p_bad_delta": None,
+                "entropy_delta": None,
+                "margin_delta": None,
+                "pile_up": None,
+                "inversion": None,
+                "compression": None,
+                "ra_rb_agreement": None,
+            }
+            assert_no_label_leak(row)
+            out.append(row)
+            existing.add(key)
     return out
 
 
@@ -309,16 +427,23 @@ def extract_no_gt_features(evidence_rows: list[dict], old_shadow: Any = None) ->
     """Build NO_GT_FEATURES rows; each row must pass assert_no_label_leak.
 
     Works on flat fake rows (tests) or nested raw/official evidence (production).
-    ``n_big`` is candidate-level: count(|p_bad_after - p_bad_before| > N_BIG_DELTA)
-    over the candidate's per-unit rows, written identically to every row of that
-    (case_id, variant) group (B7). Baseline/shadow units and unsafe intervals
-    resolve per (song_id, case_id, canonical_unit_id) (B8).
+    Aggregates are candidate-level over the (song_id, case_id, variant) group:
+    ``changed_ratio``, ``sum|max_displacement_ms``, ``unsafe_inside_disp_ms``,
+    ``safe_outside_disp_ms``, ``safe_context_changed_count``, ``pile_up`` and
+    ``n_big`` (count(|p_bad_after - p_bad_before| > N_BIG_DELTA)) are computed
+    per group and written identically to every row of that group (B7/B12).
+    Baseline/shadow units and unsafe intervals resolve per
+    (song_id, case_id, canonical_unit_id) (B8); ``ra_rb_agreement`` is looked up
+    per (song_id, case_id) from the dict (never pooled across cases).
     """
     shadow_units, shadow_intervals = _shadow_lookup(old_shadow or {})
     out: list[dict] = []
-    changed_flags: list[bool] = []
-    disp_values: list[tuple[float, str, bool]] = []  # (ms, in_unsafe, changed)
-    big_flags: list[tuple] = []  # (case_id, variant, is_big)
+    group_rows: dict[tuple, list[dict]] = defaultdict(list)
+    group_recs: dict[tuple, list[dict]] = defaultdict(list)
+    grp_changed: dict[tuple, list[bool]] = defaultdict(list)
+    grp_disp: dict[tuple, list[tuple[float, str, bool]]] = defaultdict(list)  # (ms, unsafe|safe, changed)
+    grp_big: dict[tuple, list[bool | None]] = defaultdict(list)
+    ra_rb = _ra_rb_agreement(evidence_rows)
 
     for row in evidence_rows:
         norm = dict(row)
@@ -365,6 +490,10 @@ def extract_no_gt_features(evidence_rows: list[dict], old_shadow: Any = None) ->
             continue
         rec["feature_valid"] = True
 
+        gkey = (str(row.get("song_id")), str(row.get("case_id")), str(row.get("variant")))
+        group_rows[gkey].append(row)
+        group_recs[gkey].append(rec)
+
         cid = row.get("canonical_unit_id")
         old = _old_unit_for(shadow_units, row)
 
@@ -381,7 +510,7 @@ def extract_no_gt_features(evidence_rows: list[dict], old_shadow: Any = None) ->
         if None not in (new_s, new_e, old_s, old_e):
             disp_ms = (abs(float(new_s) - float(old_s)) + abs(float(new_e) - float(old_e))) / 2.0 * 1000.0
             changed = disp_ms > CHANGED_EPS_MS
-        changed_flags.append(changed)
+        grp_changed[gkey].append(changed)
 
         p_before = norm.get("p_bad_before")
         p_after = norm.get("p_bad_after")
@@ -395,9 +524,9 @@ def extract_no_gt_features(evidence_rows: list[dict], old_shadow: Any = None) ->
             delta = float(p_after) - float(p_before)
             rec["p_bad_delta"] = round(delta, 6)
             rec["abs_p_bad_delta"] = round(abs(delta), 6)
-            big_flags.append((row.get("case_id"), row.get("variant"), abs(delta) > N_BIG_DELTA))
+            grp_big[gkey].append(abs(delta) > N_BIG_DELTA)
         else:
-            big_flags.append((row.get("case_id"), row.get("variant"), None))
+            grp_big[gkey].append(None)
 
         rec["entropy_delta"] = _delta_pair(norm, "start_entropy", "entropy_before", "entropy_after")
         rec["margin_delta"] = _delta_pair(norm, "start_margin", "margin_before", "margin_after")
@@ -409,7 +538,7 @@ def extract_no_gt_features(evidence_rows: list[dict], old_shadow: Any = None) ->
             a <= center <= b for a, b in _unsafe_intervals_for(shadow_intervals, row)
         )
         if disp_ms is not None:
-            disp_values.append((disp_ms, "unsafe" if in_unsafe else "safe", changed))
+            grp_disp[gkey].append((disp_ms, "unsafe" if in_unsafe else "safe", changed))
 
         if isinstance(norm.get("in_request"), bool):
             rec["outside_request_changes"] = int(changed and not norm["in_request"])
@@ -430,50 +559,58 @@ def extract_no_gt_features(evidence_rows: list[dict], old_shadow: Any = None) ->
             rec["text_identity"] = int(norm["text"] == (old.get("text") if isinstance(old, Mapping) else None))
         out.append(rec)
 
-    n_changed = sum(1 for c in changed_flags if c)
-    if n_changed:
-        total = max(1, len(changed_flags))
-        for rec in out:
-            if rec["feature_valid"] and rec["changed_ratio"] is None:
-                rec["changed_ratio"] = round(n_changed / total, 6)
-    if disp_values:
-        vals = np.array([d for d, _, _ in disp_values], dtype=float)
-        inside = [d for d, grp, _ in disp_values if grp == "unsafe"]
-        outside = [d for d, grp, _ in disp_values if grp == "safe"]
-        for rec in out:
-            if not rec["feature_valid"]:
-                continue
-            rec["sum_displacement_ms"] = round(float(vals.sum()), 4)
-            rec["max_displacement_ms"] = round(float(vals.max()), 4)
-            rec["unsafe_inside_disp_ms"] = round(float(np.mean(inside)), 4) if inside else None
-            rec["safe_outside_disp_ms"] = round(float(np.mean(outside)), 4) if outside else None
-            rec["safe_context_changed_count"] = sum(1 for _, grp, ch in disp_values if grp == "safe" and ch)
-            break
-    rec_pile = _pile_up(evidence_rows)
-    rec_ra_rb = _ra_rb_agreement(evidence_rows)
-    for rec in out:
-        if not rec["feature_valid"]:
-            continue
-        if rec["pile_up"] is None:
-            rec["pile_up"] = rec_pile
-        if rec["ra_rb_agreement"] is None:
-            rec["ra_rb_agreement"] = rec_ra_rb
-
-    n_big_by_key: dict[tuple, int] = defaultdict(int)
-    n_big_uncomputed_by_key: dict[tuple, int] = defaultdict(int)
-    for case_id, variant, is_big in big_flags:
-        if is_big is None:
-            n_big_uncomputed_by_key[(case_id, variant)] += 1
+    for gkey, rows in group_rows.items():
+        recs = group_recs[gkey]
+        changed_flags = grp_changed[gkey]
+        n_changed = sum(1 for c in changed_flags if c)
+        if n_changed:
+            ratio = round(n_changed / max(1, len(changed_flags)), 6)
         else:
-            n_big_by_key[(case_id, variant)] += int(is_big)
-    for rec in out:
-        if not rec["feature_valid"]:
-            continue
-        key = (rec["case_id"], rec["variant"])
-        if key in n_big_by_key:
-            rec["n_big"] = n_big_by_key[key]
-        if key in n_big_uncomputed_by_key:
-            rec["n_big_uncomputed"] = n_big_uncomputed_by_key[key]
+            ratio = None
+        disps = grp_disp[gkey]
+        if disps:
+            vals = np.array([d for d, _, _ in disps], dtype=float)
+            inside = [d for d, grp, _ in disps if grp == "unsafe"]
+            outside = [d for d, grp, _ in disps if grp == "safe"]
+            sum_disp = round(float(vals.sum()), 4)
+            max_disp = round(float(vals.max()), 4)
+            unsafe_inside = round(float(np.mean(inside)), 4) if inside else None
+            safe_outside = round(float(np.mean(outside)), 4) if outside else None
+            safe_ctx = sum(1 for _, grp, ch in disps if grp == "safe" and ch)
+        else:
+            sum_disp = None
+            max_disp = None
+            unsafe_inside = None
+            safe_outside = None
+            safe_ctx = None
+        pile = _pile_up(rows)
+        agree = ra_rb.get((gkey[0], gkey[1]))
+
+        n_big = 0
+        n_big_uncomputed = 0
+        for is_big in grp_big[gkey]:
+            if is_big is None:
+                n_big_uncomputed += 1
+            else:
+                n_big += int(is_big)
+        has_computed = any(is_big is not None for is_big in grp_big[gkey])
+
+        for rec in recs:
+            if rec["changed_ratio"] is None:
+                rec["changed_ratio"] = ratio
+            rec["sum_displacement_ms"] = sum_disp
+            rec["max_displacement_ms"] = max_disp
+            rec["unsafe_inside_disp_ms"] = unsafe_inside
+            rec["safe_outside_disp_ms"] = safe_outside
+            rec["safe_context_changed_count"] = safe_ctx
+            if rec["pile_up"] is None:
+                rec["pile_up"] = pile
+            if rec["ra_rb_agreement"] is None:
+                rec["ra_rb_agreement"] = agree
+            if has_computed:
+                rec["n_big"] = n_big
+            if n_big_uncomputed:
+                rec["n_big_uncomputed"] = n_big_uncomputed
     return out
 
 
@@ -496,25 +633,35 @@ def _pile_up(evidence_rows: list[dict]) -> int:
     return sum(n - 1 for n in counts.values() if n > 1)
 
 
-def _ra_rb_agreement(evidence_rows: list[dict]) -> float | None:
-    per_case: dict[str, dict[str, dict[int, float]]] = {}
+def _ra_rb_agreement(evidence_rows: list[dict]) -> dict[tuple, float | None]:
+    """Per-(song_id, case_id) R-A/R-B agreement (B12).
+
+    For each unit covered by >=2 variants of the same (song_id, case_id) case,
+    agree if the variant displacement difference <= 50ms. Returns
+    {(song_id, case_id): agreement}; a case absent from every row is not in the
+    dict (callers fall back to None). Never pooled across cases or songs.
+    """
+    per_sc: dict[tuple, dict[str, dict[int, float]]] = defaultdict(dict)
     for r in evidence_rows:
         s, e = _row_times(r)
         if s is None or r.get("old_start_sec") is None:
             continue
         disp = (abs(float(s) - float(r["old_start_sec"]))
                 + abs(float(e or s) - float(r.get("old_end_sec") or r["old_start_sec"]))) / 2.0 * 1000.0
-        per_case.setdefault(str(r.get("case_id")), {}).setdefault(str(r.get("variant")), {})[int(r.get("canonical_unit_id"))] = disp
-    agrees = 0
-    total = 0
-    for groups in per_case.values():
+        key = (str(r.get("song_id")), str(r.get("case_id")))
+        per_sc[key].setdefault(str(r.get("variant")), {})[int(r.get("canonical_unit_id"))] = disp
+    out: dict[tuple, float | None] = {}
+    for sc_key, groups in per_sc.items():
+        agrees = 0
+        total = 0
         for cid in set().union(*[set(g.keys()) for g in groups.values()]):
             ds = [g[cid] for g in groups.values() if cid in g]
             if len(ds) >= 2:
                 total += 1
                 if max(ds) - min(ds) <= 50.0:
                     agrees += 1
-    return round(agrees / total, 4) if total else None
+        out[sc_key] = round(agrees / total, 4) if total else None
+    return out
 
 
 def _rankdata(x: np.ndarray) -> np.ndarray:
@@ -622,7 +769,50 @@ def analyze(
             "n_big": n.get("n_big"),
             "unsafe_inside_disp_ms": n.get("unsafe_inside_disp_ms"),
             "changed_ratio": n.get("changed_ratio"),
+            "sum_displacement_ms": n.get("sum_displacement_ms"),
+            "max_displacement_ms": n.get("max_displacement_ms"),
+            "safe_outside_disp_ms": n.get("safe_outside_disp_ms"),
+            "safe_context_changed_count": n.get("safe_context_changed_count"),
+            "p_bad_delta": n.get("p_bad_delta"),
+            "abs_p_bad_delta": n.get("abs_p_bad_delta"),
+            "entropy_delta": n.get("entropy_delta"),
+            "margin_delta": n.get("margin_delta"),
+            "pile_up": n.get("pile_up"), "inversion": n.get("inversion"),
+            "compression": n.get("compression"), "ra_rb_agreement": n.get("ra_rb_agreement"),
         })
+
+    # A candidate, not its constituent character rows, is the independent
+    # experiment unit.  Candidate harm is conservative (any harmed target);
+    # the diagnostic delta is the worst target delta, so safety failures cannot
+    # be averaged away by a long otherwise-neutral region.
+    candidate_groups: dict[tuple, list[dict]] = defaultdict(list)
+    for row in merged:
+        candidate_groups[(row["song_id"], row["case_id"], row["variant"])].append(row)
+    candidate_merged: list[dict] = []
+    for (song_id, case_id, variant), rows in candidate_groups.items():
+        deltas = [float(r["delta_error_ms"]) for r in rows if r["delta_error_ms"] is not None]
+        labels = {r["label"] for r in rows}
+        label = "harm" if "harm" in labels else ("improve" if "improve" in labels else "neutral")
+        item = {
+            "song_id": song_id, "case_id": case_id, "variant": variant,
+            "canonical_unit_id": None, "label": label,
+            "delta_error_ms": max(deltas) if deltas else None,
+            "n_big": max((r["n_big"] for r in rows if r["n_big"] is not None), default=None),
+            "unsafe_inside_disp_ms": max((r["unsafe_inside_disp_ms"] for r in rows
+                                           if r["unsafe_inside_disp_ms"] is not None), default=None),
+            "changed_ratio": max((r["changed_ratio"] for r in rows
+                                  if r["changed_ratio"] is not None), default=None),
+            "n_unit_rows": len(rows),
+        }
+        for field in ("sum_displacement_ms", "max_displacement_ms", "safe_outside_disp_ms",
+                      "safe_context_changed_count", "abs_p_bad_delta", "pile_up", "inversion", "compression"):
+            vals = [r[field] for r in rows if isinstance(r.get(field), (int, float))]
+            item[field] = max(vals) if vals else None
+        for field in ("p_bad_delta", "entropy_delta", "margin_delta", "ra_rb_agreement"):
+            vals = [r[field] for r in rows if isinstance(r.get(field), (int, float))]
+            item[field] = float(np.median(vals)) if vals else None
+        candidate_merged.append(item)
+    merged = candidate_merged
 
     song_ids = sorted({m["song_id"] for m in merged if m["song_id"]})
     rng = np.random.default_rng(seed)
@@ -654,14 +844,44 @@ def analyze(
     dev_metrics = metrics(dev)
     hold_metrics = metrics(holdout)
 
+    # Single-signal screen. Orientation is selected only on dev songs, then
+    # frozen for holdout. It is explicitly exploratory, never a writeback rule.
+    screen_fields = ("n_big", "changed_ratio", "sum_displacement_ms", "max_displacement_ms",
+                     "unsafe_inside_disp_ms", "safe_outside_disp_ms", "safe_context_changed_count",
+                     "abs_p_bad_delta", "entropy_delta", "margin_delta", "pile_up", "inversion",
+                     "compression", "ra_rb_agreement")
+    feature_screen = []
+    for field in screen_fields:
+        def score(rows):
+            values = []
+            labels = []
+            for row in rows:
+                value = row.get(field)
+                if not isinstance(value, (int, float)):
+                    continue
+                # Agreement is protective: lower agreement is riskier.
+                values.append(1.0 - value if field == "ra_rb_agreement" else float(value))
+                labels.append(1 if row["label"] == "harm" else 0)
+            return labels, values
+        d_y, d_x = score(dev)
+        h_y, h_x = score(holdout)
+        dev_auc = roc_auc(d_y, d_x)
+        sign = 1
+        if dev_auc is not None and dev_auc < 0.5:
+            sign, dev_auc = -1, 1.0 - dev_auc
+        hold_auc = roc_auc(h_y, [sign * x for x in h_x])
+        feature_screen.append({"feature": field, "direction": "higher_is_harm" if sign == 1 else "lower_is_harm",
+                               "n_dev": len(d_x), "dev_auroc": dev_auc,
+                               "n_holdout": len(h_x), "holdout_auroc": hold_auc})
+    feature_screen.sort(key=lambda r: (-1 if r["holdout_auroc"] is None else -r["holdout_auroc"], r["feature"]))
+
     sweep = _threshold_sweep(dev)
     combo = _nbig_locality_combo(dev)
     risk_curve = _risk_coverage_curve(dev)
-    writeback_set = [m for m in holdout if m["delta_error_ms"] is not None and m["delta_error_ms"] < -50.0]
-    hold_risk = (sum(1 for m in writeback_set if m["label"] == "harm") / len(writeback_set)
-                 if writeback_set else None)
-
-    suggestion = _suggestion(hold_metrics["auroc_delta"], hold_metrics["n"], hold_risk)
+    # GT is outcome-only.  Never use it to select a candidate or recommend a
+    # writeback; offline metrics may describe observability, not a policy.
+    hold_risk = None
+    suggestion = "DIAGNOSTIC_ONLY_NO_WRITEBACK"
 
     counterexamples = _counterexamples(merged)
     result: dict[str, Any] = {
@@ -673,8 +893,8 @@ def analyze(
             "seed": seed,
             "n_dev_songs": len(dev_songs),
             "n_holdout_songs": len(song_ids) - len(dev_songs),
-            "n_dev_rows": len(dev),
-            "n_holdout_rows": len(holdout),
+            "n_dev_candidates": len(dev),
+            "n_holdout_candidates": len(holdout),
         },
         "metrics": {"dev": dev_metrics, "holdout": hold_metrics},
         "duplicate_keys": {
@@ -685,6 +905,7 @@ def analyze(
         "threshold_sweep": sweep,
         "nbig_locality_combo": combo,
         "risk_coverage_curve": risk_curve,
+        "feature_screen_candidate_song_holdout": feature_screen,
         "n_counterexamples": len([c for c in counterexamples if c["reason"] == "counterexample"]),
         "n_ambiguous": len([c for c in counterexamples if c["reason"] == "ambiguous"]),
         "result_status": "ok",
@@ -705,20 +926,13 @@ def analyze(
 
 
 def _suggestion(auc_hold: float | None, n_hold: int, risk: float | None) -> str:
-    if n_hold < 8 or auc_hold is None:
-        return "UNCERTAIN_KEEP_OR_RETRY"
-    if auc_hold < 0.55:
-        return "REJECT_KEEP_ORIGINAL"
-    if risk is not None and risk >= 0.5:
-        return "REJECT_KEEP_ORIGINAL"
-    if auc_hold >= 0.7:
-        return "ACCEPT_WRITEBACK"
-    return "UNCERTAIN_KEEP_OR_RETRY"
+    del auc_hold, n_hold, risk
+    return "DIAGNOSTIC_ONLY_NO_WRITEBACK"
 
 
 def _suggestion_note(suggestion: str, hold: dict, risk: float | None) -> str:
-    if suggestion == "ACCEPT_WRITEBACK":
-        return f"holdout AUROC={hold['auroc_delta']:.3f} risk={risk}; offline gate recommends ACCEPT_WRITEBACK (no actual writeback here)"
+    if suggestion == "DIAGNOSTIC_ONLY_NO_WRITEBACK":
+        return "GT outcomes are evaluation-only; no gate recommendation or writeback is emitted."
     if suggestion == "REJECT_KEEP_ORIGINAL":
         return f"holdout AUROC={hold['auroc_delta']} risk={risk}; gate not reliable, keep original alignment"
     return "insufficient holdout signal or ambiguous; keep original and retry more cases"
@@ -836,6 +1050,9 @@ def run_stage(run_root: str | Path, cfg_path: str | Path | None = None) -> dict:
             "(not_executed_dependency)")
     case_by_id = {c.get("case_id"): c for c in cases}
     cands = _read_jsonl(run_root / "02_behavior/CANDIDATE_INDEX.jsonl")
+    candidates_by_case: dict[Any, list[dict]] = defaultdict(list)
+    for candidate in cands:
+        candidates_by_case[candidate.get("case_id")].append(candidate)
 
     requests_by_id: dict[str, dict] = {}
     requests_path = run_root / "02_behavior/REQUESTS.jsonl"
@@ -923,17 +1140,20 @@ def run_stage(run_root: str | Path, cfg_path: str | Path | None = None) -> dict:
         by_case.setdefault(str(r.get("case_id")), []).append(r)
     for case in cases:
         case_rows = by_case.get(str(case.get("case_id")), [])
-        if not case_rows:
-            continue
+        expected = candidates_by_case.get(case.get("case_id"), [])
+        request = next((requests_by_id.get(row.get("request_id")) for row in expected
+                        if requests_by_id.get(row.get("request_id")) is not None), None)
         gt_rows.extend(pair_gt(
             case_rows, real_gt,
             song_id=case.get("song_id"),
             old_rows=old_rows,
-            target_cids=[int(c) for c in (case.get("target_unit_ids") or [])],
+            target_cids=_active_target_ids(request, case),
+            expected_variants=expected,
         ))
 
     no_gt = extract_no_gt_features(
         evidence_rows, {"units": shadow_units, "unsafe_intervals": shadow_intervals})
+    no_gt = _ensure_no_gt_target_spine(no_gt, cands, requests_by_id, case_by_id)
 
     if not cands:
         result_status, status_reason = "blocked", "no_candidates"

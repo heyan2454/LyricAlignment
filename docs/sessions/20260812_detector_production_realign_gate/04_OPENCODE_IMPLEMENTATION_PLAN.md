@@ -163,3 +163,61 @@
 现状：修正后 audit 成功复用 20/20 evidence，证明 B1 adapter 可工作；该运行由 `--limit 20` 产生，不能代表 988 request 的完整 production-style population。
 
 修复：在 `RAW_UNIT_METRICS.json`、`RAW_WINDOW_METRICS.json`、`05_report` 中持久化 `requested_limit`、`full_population_size`、`evaluated_count` 与 `is_smoke`。只有 `limit=0` 且所有 inventory-eligible windows 均成功或明确记录缺失原因时，才允许 `production_audit_complete=true`。任何 limited run 的报告标题和结论必须标为 smoke/partial，不得用于解释历史 safe-accept 与 recovery subset 的差异。
+
+### B10 — `01` 审计的是 E5 多变体 proposal bank，不是 production baseline population（阻断）
+
+现状：`detector_audit.run_stage()` 默认输入仍是 `realign_recovery/.../e5_proposals/raw/REQUESTS.jsonl`（`detector_audit.py:488-489`）。本次实际 run 的该文件有 988 条，包含 `original_full`、4 个 oracle、R-A、R-B、2 个 R-C 变体；`RAW_UNIT_METRICS.json` 也记录 `n_requests=988`。它不是“生产 Raw baseline 的 eligible 60s/10s 窗口”总体，故 `safe_accept_rate=0.1550`、unsafe window rate 都不能解释为 production detector audit。
+
+修复：`01` 的人口必须改为冻结的 production serial baseline（每个可构造窗口仅一条 Raw baseline），或由 inventory 显式构造并落盘该 baseline requests/evidence；不得把 oracle 和 realign proposal 混入分母。输出 `population_kind=production_raw_baseline`、去重 window key 与排除原因。
+
+验收：输入只包含 baseline/original Raw；同一 `(song_id, window_id)` 仅一次。没有可复用 evidence 时应按冻结配置补跑该 population，而不是仅以状态终止；production rate 只在该 population 完成后产生。
+
+### B11 — `02` 未生成 R-A，且把整首歌 unit 列表当成窗口文本（阻断）
+
+现状：本次 `02_behavior/REQUESTS.jsonl` 和 `CANDIDATE_INDEX.jsonl` 都是 60 条、全部 `R-B_safe_anchor_bounded`，R-A 为零。`case_selection.run_stage()` 又把 E5 `old_run_requests` 直接作为 `baseline_rows` 传给 `build_proposals`（`case_selection.py:452-459`），该输入不是带 detector shadow 的 production baseline，R-A 无法由 unsafe span 构造。另 `_window_text_unit_ids()` 返回 `timeline[song_id]["units"]` 的所有 unit（`case_selection.py:189-194`），未按 `window_index` 截取 source window。
+
+修复：由 `01` 输出的 per-case baseline detector intervals/units 构造 R-A；每 case 按实际 60s window 的 text ids 构造 source window，不能使用整首歌。R-A/R-B request 与 candidate 必须可追溯至同一 case/window。
+
+验收：每个可构造 case 同时有一条 R-A 和一条 R-B；缺一种时逐 case 写入 `SKIPPED_CASES`，并以该 case 的 baseline interval、window text 与可用 anchors 重新构造，而不是让单变体样本进入 gate 学习。
+
+### B12 — no-GT feature 聚合跨 case/variant 污染，displacement 只写第一行（阻断）
+
+现状：`extract_no_gt_features()` 对整批 evidence 共用 `changed_flags`/`disp_values`（`gate_features.py:319-320,384,412`），再把全局 changed ratio 写入 records（433-438）；写 displacement 的循环在首个有效 record 后 `break`（439-451）。`_pile_up(evidence_rows)`、`_ra_rb_agreement(evidence_rows)` 也以整批 rows 计算（452-453）。本次 `03` 对 60 个候选产生 5,648 行 feature/GT pair，当前 holdout AUROC 和 `ACCEPT_WRITEBACK` 因此不可采信。
+
+修复：先按完整 candidate identity（至少 `(song_id, case_id, variant)`，必要时 request id）分组；changed ratio、displacement、unsafe/safe locality、pile-up 均在组内计算并写给该组每行，R-A/R-B agreement 只在同 case 两组之间算。删除首行赋值的 `break`。
+
+验收：两 case、两 variant fixture 证明任一组特征不会随另一组 rows 改变；每个有效组均有自身 displacement/locality；分析前对 feature identity 做唯一性和完整性检查。
+
+### B13 — paired-GT 标签与 catastrophic 定义未按既定口径实现（阻断）
+
+现状：本文档第 4 节规定 improve/harm 至少 200ms，但实现 `NEUTRAL_EPS_MS=10.0` 并以 ±10ms 贴标签（`gate_features.py:31,71-78`）。`catastrophic_harm` 只判断 paired `delta_error_ms > 200`（180-181），未实现 `<=100/200ms -> >500ms/>1s` 和 covered-to-missing。
+
+修复：改善/伤害阈值改为 200ms；coverage transition 正确参与标签；按计划的绝对阈值 transition 与 covered-to-missing 实现 catastrophic，并在 metrics/report 单报原因。
+
+验收：覆盖 10ms 抖动、±200ms 边界、correct-to->500ms/1s、covered-to-missing 的测试；label/catastrophic reason 与第 4 节一致。
+
+### B14 — 报告必须执行实验分阶段准入，而非将缺口简单标为状态（阻断）
+
+现状：当前 `05_report/FINAL_SUMMARY.json` 对仅 R-B 的结果仍给出 `suggestion=ACCEPT_WRITEBACK`、`writeback_gate=eligible_for_review`，绕过了完整 production population、R-A/R-B 双变体和 feature 完整性。
+
+修复：`05` 增加必要条件：`01.population_kind` 合格、`02` 每 case required variants 完整、`03` 无 feature/GT completeness 或 duplicate failure、paired 定义版本匹配。条件未满足时，报告必须给出对应的下一轮重建输入、样本数和执行命令/产物路径；只允许形成该阶段的诊断结论，不得把不完整样本的模型分数升级为 writeback 建议。
+
+验收：用本次仅 R-B 的 run 回归，报告列出“重建 baseline shadow → 补齐 R-A → 重跑 paired/gate”的行动清单与预计样本规模；B10--B13 均满足后才可计算正式 recommendation。
+
+### B15 — 以实验设计重建本轮，而非用状态掩盖缺口（执行方案）
+
+目标不是直接得到一个全局 writeback 分类器，而是回答两个可证伪的问题：
+
+1. 冻结 detector 在**生产式 baseline 窗口**上能否把真实坏窗口集中到可恢复子集，同时保留足够的正确窗口；
+2. 在 detector 已指向的窗口内，R-A 与 R-B 哪一种干预能在 real-GT 上稳定改善、且 no-GT 信号能否区分“可接受改善”与“有害改动”。
+
+因此按下面的四个实验单元执行，前一单元的产物是后一单元的输入，而不是把 E5 proposal bank 直接串成一个总体：
+
+1. **P0：生产 baseline population。** inventory 按 cohort manifest 的 60s stride/10s overlap 构造唯一 `(song_id, window_id)` 表；对每行生成 `original_raw_baseline` request，并复用或补跑其 Raw evidence。输出 `BASELINE_WINDOW_INDEX.jsonl`、`BASELINE_UNITS.jsonl`、`BASELINE_DETECTOR_SHADOW.jsonl`。这里仅评估 detector，不生成 proposal。
+2. **P1：GT 分层 case sampling。** 将 P0 baseline 以 canonical GT 分成 S1--S4；主试验抽 60--100 case，优先 song coverage，S2 25--35%，S4 自然稀少则如实保留。每个 case 保存固定的 `window_start/end`、target ids、unsafe intervals 和相邻 safe anchors。先做 2 case smoke，确认双变体均可构造后再跑正式矩阵。
+3. **P2：配对的 R-A/R-B intervention。** 对同一 P1 case 必跑 R-A（以 P0 unsafe interval 为中心的窄局部文本/音频范围）和 R-B（由同一 window 内相邻 ACCEPT anchors 限定的上下文范围）。两者共享 baseline、model、window 和 target ids，只改变 intervention；以 `(song, case, variant, cid)` 记录 request、evidence、original/candidate pair。不可构造 R-A 的 case 不替换成只有 R-B，而是回到 P1 补抽可构造 case。
+4. **P3：按 candidate 聚合的评估与 gate。** 先在每个 candidate 内计算 no-GT features，再将 GT pair labels 留在独立表中。以 source-song 划分 dev/holdout，比较：(a) original→R-A，(b) original→R-B，(c) R-A 与 R-B 的同-case difference；首要指标为 harmful/catastrophic rate、coverage transition 与 paired error delta，AUROC/AUPRC 仅是 gate 可行性证据，不是 writeback 决策本身。
+
+正式 recommendation 应是分层策略而非单个分数：若某 detector state × intervention 组合在 holdout 上具有足够的 paired 改善、零/预设上限内 catastrophic harm、且 coverage 不退化，则列为“候选重试策略”；否则保留 original。随后只在候选策略覆盖的 top counterexample/ambiguous windows 做最多一次 stability probe。Test Demo 始终是独立压力测试，不参与阈值学习或总体 rate。
+
+每次报告应展示 P0→P3 的 cohort flow（eligible → baseline evidence → GT strata → 双变体 pairs → valid paired units），以及每一步的自然流失原因。这让实验能定位是 detector、proposal 构造、模型行为，还是 gate 特征失效，而不是用 `blocked/incomplete` 代替设计上的修复。

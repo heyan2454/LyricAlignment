@@ -1,0 +1,41 @@
+{
+  "run_root": "/home/hyan/Data/lyricalign/runs/unit_realign_formal_20260813",
+  "unit_realign_v2_aggregate": {
+    "schema": "unit_realign_classification_aggregate_v2",
+    "source": "06_evaluator_only/UNIT_OUTCOMES.jsonl -> CLASSIFICATION_AGGREGATE_V2.json (recomputed 2026-08-13 after P0-3 fix)",
+    "n_unit_rows": 718,
+    "n_regions": 78,
+    "n_candidates": 78,
+    "unit_level": {
+      "n_finite_delta": 639,
+      "improved_any_delta": 255,
+      "unchanged_zero_delta": 173,
+      "regressed_any_delta": 211
+    },
+    "region_level": {
+      "target_rows": 501,
+      "fixed_context_rows": 217,
+      "classification_counts": {
+        "beneficial": 4,
+        "neutral": 5,
+        "harmful": 2,
+        "catastrophic_harmful": 51,
+        "mixed": 16
+      }
+    },
+    "candidate_level": {
+      "classification_counts": {
+        "beneficial": 4,
+        "neutral": 5,
+        "harmful": 2,
+        "catastrophic_harmful": 51,
+        "mixed": 16
+      }
+    },
+    "extra_and_unpairable": {
+      "n_extra": 0,
+      "n_invalid_unpairable": 0
+    }
+  },
+  "v1_vs_v2_note": "v1 had beneficial=20, harmful=0, mixed=0; v2 (context/extra included) -> beneficial=4, harmful=2, mixed=16. catastrophic_harmful unchanged 51."
+}

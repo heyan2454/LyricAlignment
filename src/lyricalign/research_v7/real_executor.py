@@ -14,10 +14,87 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Sequence
 
+import numpy as np
+
 from .attempt import AlignmentAttempt
 from .requests import AlignmentRequest
 
 _REPO = str(Path(__file__).resolve().parents[3])  # /home/hyan/LyricAlignment
+
+
+def remerge_fixed_slots(
+    active_rows: Sequence[dict],
+    fixed_slot_rows: Sequence[dict],
+    *,
+    total_units: int,
+) -> list[dict]:
+    """Restore frozen baseline slots after a sparse timestamp forward.
+
+    The decoder receives the complete text; it produces timestamps for only
+    active slots.  This function restores the complementary baseline geometry
+    and rejects incomplete/overlapping coverage.
+    """
+    active_by_local: dict[int, dict] = {}
+    for row in active_rows:
+        local = row.get("global_character_index")
+        if not isinstance(local, int) or local in active_by_local:
+            raise ValueError("active sparse output requires unique local global_character_index")
+        active_by_local[local] = dict(row)
+    fixed_by_local: dict[int, dict] = {}
+    for raw in fixed_slot_rows:
+        local = raw.get("local_index")
+        if not isinstance(local, int) or local in fixed_by_local:
+            raise ValueError("fixed sparse rows require unique local_index")
+        row = {k: v for k, v in raw.items() if k != "local_index"}
+        start = row.get("fixed_global_start_sec", row.get("start_sec"))
+        end = row.get("fixed_global_end_sec", row.get("end_sec"))
+        if not isinstance(start, (int, float)) or not isinstance(end, (int, float)) or end < start:
+            raise ValueError("fixed sparse rows require valid baseline geometry")
+        row.setdefault("fixed_global_start_sec", float(start))
+        row.setdefault("fixed_global_end_sec", float(end))
+        row["global_character_index"] = local
+        fixed_by_local[local] = row
+    if set(active_by_local) & set(fixed_by_local):
+        raise ValueError("sparse active output overlaps frozen slot")
+    if set(active_by_local) | set(fixed_by_local) != set(range(total_units)):
+        raise ValueError("sparse output plus frozen slots does not cover all text units")
+    out = []
+    for local in range(total_units):
+        row = dict(active_by_local.get(local, fixed_by_local.get(local)))
+        row["slot_origin"] = "active_forward" if local in active_by_local else "fixed_baseline"
+        out.append(row)
+    return out
+
+
+def validate_active_sparse_rows(active_rows: Sequence[dict], fixed_slot_rows: Sequence[dict], *, total_units: int) -> None:
+    """Validate the observable sparse contract before baseline remerge.
+
+    An active-only decoder cannot report fixed-slot drift: fixed slots are not
+    emitted.  What is observable (and therefore enforced) is complete active
+    coverage, valid active geometry, and no crossing/non-monotonic timeline
+    when active geometry is merged with frozen baseline rows.
+    """
+    active = {int(row.get("global_character_index", -1)): row for row in active_rows}
+    expected = {int(row["local_index"]) for row in fixed_slot_rows}
+    active_expected = set(range(total_units)) - expected
+    if set(active) != active_expected:
+        raise ValueError("SAFE_SLOT_INVARIANT_VIOLATION: active sparse output coverage mismatch")
+    combined: dict[int, tuple[float, float]] = {}
+    for local, row in active.items():
+        start, end = row.get("fixed_global_start_sec"), row.get("fixed_global_end_sec")
+        if not isinstance(start, (int, float)) or not isinstance(end, (int, float)) or end < start:
+            raise ValueError("SAFE_SLOT_INVARIANT_VIOLATION: invalid active geometry")
+        combined[local] = (float(start), float(end))
+    for row in fixed_slot_rows:
+        local = int(row["local_index"])
+        start = row.get("fixed_global_start_sec", row.get("start_sec"))
+        end = row.get("fixed_global_end_sec", row.get("end_sec"))
+        if not isinstance(start, (int, float)) or not isinstance(end, (int, float)) or end < start:
+            raise ValueError("SAFE_SLOT_INVARIANT_VIOLATION: invalid fixed baseline geometry")
+        combined[local] = (float(start), float(end))
+    ordered = [combined[index] for index in range(total_units)]
+    if any(b[0] < a[0] or b[1] < a[1] for a, b in zip(ordered, ordered[1:])):
+        raise ValueError("SAFE_SLOT_INVARIANT_VIOLATION: active geometry crosses frozen timeline")
 
 
 def _load_serial_demo():
@@ -163,8 +240,14 @@ class RealAligner:
         end = int(round(request.audio_end_sec * 16000))
         # M2（review12）：manifest 中 3~4 位小数时长与解码长度可有 ±1 sample 偏差，
         # 给 2 sample 容差并 clamp，避免合法窗口因舍入被整条拒绝。
+        # P0/P1（realign gate）：audio_end == manifest duration 的窗口，解码样本可能
+        # 比 round(end*16000) 少数个样本（+200ms 内）。这类是 manifest 时长 vs 解码
+        # 样本的系统偏差，零填充补齐而非整条拒绝，与 P0-C 影子音频行为等价。
         if start < 0 or end <= start:
             raise ValueError("request audio range is outside decoded audio")
+        pad_needed = end - len(audio)
+        if pad_needed > 0 and pad_needed <= int(0.2 * 16000):
+            audio = np.concatenate([audio, np.zeros(pad_needed, dtype=audio.dtype)])
         if end > len(audio) + 2:
             raise ValueError("request audio range is outside decoded audio")
         end = min(end, len(audio))
@@ -189,6 +272,10 @@ class RealAligner:
                 if key.endswith("_global_start_sec") or key.endswith("_global_end_sec"):
                     if row[key] is not None:
                         row[key] = float(row[key]) + request.audio_start_sec
+        if request.slot_constraint_schema == "realign_sparse_fixed_v1":
+            validate_active_sparse_rows(rows, request.fixed_slot_rows or (), total_units=len(request.text_units))
+            rows = remerge_fixed_slots(
+                rows, request.fixed_slot_rows or (), total_units=len(request.text_units))
         return rows
 
 
@@ -243,6 +330,16 @@ def make_real_executor(aligner: RealAligner):
                 weighted["fixed_global_end_sec"] = float(weighted.pop("end_sec"))
                 weighted["decoder_kind"] = "weighted_isotonic"
             weighted_availability = "posthoc_from_raw_geometry"
+        sparse_constraint = None
+        if request.slot_constraint_schema == "realign_sparse_fixed_v1":
+            sparse_constraint = {
+                "schema": request.slot_constraint_schema,
+                "active_slot_indices": list(request.active_slot_indices or ()),
+                "fixed_slot_count": len(request.fixed_slot_rows or ()),
+                "full_text_unit_count": len(request.text_units),
+                "validation_mode": "active_geometry_against_frozen_baseline",
+                "remerge_status": "exact_baseline_rows_restored",
+            }
         decoder_outputs = {
             "raw": {"rows": raw_rows, "availability": "derived_from_official_decoder_raw_geometry"},
             "official": {"rows": rows},
@@ -252,6 +349,8 @@ def make_real_executor(aligner: RealAligner):
             "_repair_trace": {"decoder": "official", "changed_boundary_count": len(repair_moves),
                                "boundary_moves": repair_moves},
         }
+        if sparse_constraint is not None:
+            decoder_outputs["_sparse_constraint"] = sparse_constraint
         return AlignmentAttempt(
             request=request,
             attempt_id=f"R-{request.item_id}-{request.mutation_type}",

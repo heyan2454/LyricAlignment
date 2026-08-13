@@ -193,6 +193,11 @@ def main(argv=None) -> int:
                 model_id=args.model,
                 checkpoint_id=args.checkpoint,
                 input_variant=r.get("input_variant", "text_mutation"),
+                active_slot_indices=tuple(r["active_slot_indices"])
+                if r.get("active_slot_indices") is not None else None,
+                fixed_slot_rows=tuple(dict(x) for x in (r.get("fixed_slot_rows") or []))
+                if r.get("fixed_slot_rows") is not None else None,
+                slot_constraint_schema=r.get("slot_constraint_schema"),
                 # review9-1/9-2 / review10-1/10-3：C3 canonical lineage 正规 content 字段（进 identity + evidence）
                 canonical_text_start=r.get("canonical_text_start"),
                 canonical_text_end=r.get("canonical_text_end"),
@@ -418,9 +423,12 @@ def _atomic_write_text(target, payload) -> None:
 
 
 def _git_head() -> str:
+    import os
     import subprocess
+    repo = os.environ.get("LYRICALIGN_REPO_DIR")
+    argv = ["git"] + (["-C", repo] if repo else []) + ["rev-parse", "HEAD"]
     try:
-        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        return subprocess.run(argv, capture_output=True, text=True).stdout.strip()
     except Exception:  # noqa
         return ""
 
@@ -429,20 +437,27 @@ def _git_dirty() -> str:
     """source-tree identity：HEAD commit + staged diff + unstaged 工作树 diff 的内容 hash。
 
     review4/5：git write-tree 只代表 index，不覆盖未暂存工作树改动 → 需三条分别哈希。
+    reviewP1：runner 可能以非仓库 cwd 运行（如 realign gate 以 DATA_ROOT 为 cwd 解析
+    相对 audio_path），必须用 LYRICALIGN_REPO_DIR 指向代码仓库，否则 code_identity 会
+    退化为 DATA_ROOT 仓库（或空 diff），改动代码也不会让旧 evidence 失效。
     """
     import hashlib
+    import os
     import subprocess
+
+    repo = os.environ.get("LYRICALIGN_REPO_DIR")
+    _git = ["git"] + (["-C", repo] if repo else [])
 
     def _h(*parts):
         return hashlib.sha256(b":".join((p if isinstance(p, bytes) else p.encode()) for p in parts)).hexdigest()
 
     def _diff_tree(_base="_git_dirty"):
         # staged diff: index vs HEAD (write-tree vs HEAD^tree)，即 git diff --cached 的内容
-        return subprocess.run(["git", "diff", "--cached"], capture_output=True, text=True).stdout or ""
+        return subprocess.run(_git + ["diff", "--cached"], capture_output=True, text=True).stdout or ""
     def _diff_work():
-        return subprocess.run(["git", "diff"], capture_output=True, text=True).stdout or ""
+        return subprocess.run(_git + ["diff"], capture_output=True, text=True).stdout or ""
     try:
-        head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        head = subprocess.run(_git + ["rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
         staged = _diff_tree()
         unstaged = _diff_work()
     except Exception:  # noqa

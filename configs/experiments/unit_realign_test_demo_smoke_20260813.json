@@ -1,0 +1,15 @@
+{
+  "purpose": "Unit-level realign Test Demo GPU smoke; no GT, shadow-only",
+  "adapter": "default",
+  "formal": false,
+  "demo_roots": [
+    "/home/hyan/Data/lyricalign/test",
+    "/home/hyan/LyricAlignment/夜苏打"
+  ],
+  "min_per_lang": 2,
+  "detector_state": {
+    "kind": "standardized_logistic",
+    "combo": "R",
+    "merge": "light_merge"
+  }
+}

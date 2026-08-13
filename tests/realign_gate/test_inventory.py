@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from lyricalign.realign_gate.inventory import (
     build_baseline_identity,
+    build_baseline_population,
     build_data_inventory,
     discover_test_demo_items,
     load_real_gt_with_audit_map,
+    plan_baseline_windows,
     run_stage,
 )
 
@@ -57,6 +61,148 @@ def _write_fixtures(tmp_path):
     mb = tmp_path / "manifest_b.jsonl"
     _write_jsonl(mb, MANIFEST_B_ROWS)
     return ann, [ma, mb]
+
+
+def _write_long_manifest(path, song_id="long1", duration=200.0, n_units=40):
+    _write_jsonl(path, [{
+        "song_id": song_id,
+        "duration_sec": duration,
+        "concat_audio_path": "long.wav",
+        "segment_offsets": [],
+        "canonical_units": [
+            {"canonical_unit_id": i, "start_sec": i * 5.0, "end_sec": i * 5.0 + 5.0, "text": f"u{i}"}
+            for i in range(n_units)
+        ],
+    }])
+
+
+def test_plan_baseline_windows():
+    assert plan_baseline_windows(30.0) == []
+    assert plan_baseline_windows(59.99) == []
+    w = plan_baseline_windows(200.0)
+    assert [(i, cs, ws, we) for i, cs, ws, we in w] == [
+        (0, 0.0, 0.0, 70.0),
+        (1, 60.0, 50.0, 130.0),
+        (2, 120.0, 110.0, 190.0),
+    ]
+    assert len(plan_baseline_windows(120.0)) == 2
+    assert plan_baseline_windows(119.0)[0][1:] == (0.0, 0.0, 70.0)
+
+
+def test_build_baseline_population_long(tmp_path):
+    manifest = tmp_path / "long_manifest.jsonl"
+    _write_long_manifest(manifest)
+
+    cfg = {"inputs": {"cohort_manifests": [str(manifest)]}}
+    run_root = tmp_path / "run"
+    summary = build_baseline_population(run_root, cfg)
+
+    assert summary["population_kind"] == "production_raw_baseline"
+    assert summary["n_baseline_windows"] == 3
+    assert summary["warnings"] == []
+
+    inv = run_root / "00_inventory"
+    assert (inv / "BASELINE_WINDOW_INDEX.jsonl").is_file()
+    assert (inv / "BASELINE_UNITS.jsonl").is_file()
+    assert (inv / "BASELINE_DETECTOR_SHADOW.jsonl").is_file()
+    pop = json.loads((inv / "DETECTOR_BASELINE_POPULATION.json").read_text(encoding="utf-8"))
+    assert pop["population_kind"] == "production_raw_baseline"
+    assert pop["n_baseline_windows"] == 3
+
+    idx_rows = [json.loads(l) for l in (inv / "BASELINE_WINDOW_INDEX.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    assert len(idx_rows) == 3
+    assert len(idx_rows) == len({(r["song_id"], r["window_id"]) for r in idx_rows})
+    assert {r["window_index"] for r in idx_rows} == {0, 1, 2}
+    assert all(r["song_id"] == "long1" for r in idx_rows)
+
+    by_index = {r["window_index"]: r for r in idx_rows}
+    assert by_index[0]["window_start_sec"] == 0.0
+    assert by_index[0]["window_end_sec"] == 70.0
+    assert by_index[2]["window_start_sec"] == 110.0
+    assert by_index[2]["window_end_sec"] == 190.0
+    assert by_index[2]["audio_start_sec"] == 110.0
+    assert by_index[2]["audio_end_sec"] == 190.0
+    assert by_index[0]["audio_path"] == "long.wav"
+
+    assert by_index[0]["target_unit_ids"] == list(range(0, 12))
+    assert by_index[0]["canonical_unit_ids"] == list(range(0, 14))
+    assert by_index[0]["text_unit_start"] == 0
+    assert by_index[0]["text_unit_end"] == 13
+    assert by_index[1]["target_unit_ids"] == list(range(11, 24))
+    assert by_index[2]["target_unit_ids"] == list(range(23, 36))
+
+    unit_rows = [json.loads(l) for l in (inv / "BASELINE_UNITS.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    w0_units = [r for r in unit_rows if r["window_id"] == "long1:0"]
+    assert len(w0_units) == 14
+    assert w0_units[0]["canonical_unit_id"] == 0 and w0_units[0]["start_sec"] == 0.0
+    assert all(r["song_id"] == "long1" for r in unit_rows)
+
+    shadow_rows = [json.loads(l) for l in (inv / "BASELINE_DETECTOR_SHADOW.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    assert len(shadow_rows) == 3
+    assert all(s["detector_shadow"] == {"decision": None, "unsafe_intervals": [], "units": {}} for s in shadow_rows)
+
+
+def test_build_baseline_population_dedupe_timeline_id(tmp_path):
+    ma = tmp_path / "m_a.jsonl"
+    mb = tmp_path / "m_b.jsonl"
+    _write_long_manifest(ma, song_id="dup", duration=200.0, n_units=40)
+    _write_long_manifest(mb, song_id="dup", duration=200.0, n_units=40)
+    rows = [json.loads(l) for l in mb.read_text(encoding="utf-8").splitlines() if l.strip()]
+    rows[0]["timeline_id"] = "tlB"
+    _write_jsonl(mb, rows)
+
+    summary = build_baseline_population(tmp_path / "run", {"inputs": {"cohort_manifests": [str(ma), str(mb)]}})
+    assert summary["n_baseline_windows"] == 6
+    assert summary["warnings"]
+
+    inv = tmp_path / "run" / "00_inventory"
+    idx_rows = [json.loads(l) for l in (inv / "BASELINE_WINDOW_INDEX.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    assert len(idx_rows) == len({(r["song_id"], r["window_id"]) for r in idx_rows})
+    assert "dup:0#tlB" in {r["window_id"] for r in idx_rows}
+
+
+def test_build_baseline_population_duplicate_without_timeline_fails(tmp_path):
+    """P0 fail-fast: duplicate (song_id, window_id) without timeline_id must raise."""
+    ma = tmp_path / "m_a.jsonl"
+    mb = tmp_path / "m_b.jsonl"
+    _write_long_manifest(ma, song_id="dup", duration=200.0, n_units=40)
+    _write_long_manifest(mb, song_id="dup", duration=200.0, n_units=40)
+    with pytest.raises(ValueError):
+        build_baseline_population(tmp_path / "run", {"inputs": {"cohort_manifests": [str(ma), str(mb)]}})
+
+
+def test_run_stage_reports_baseline_windows(tmp_path):
+    ann, manifests = _write_fixtures(tmp_path)
+    old_requests = tmp_path / "old_requests.jsonl"
+    _write_jsonl(old_requests, [{"request_id": 0}])
+    frozen_op = tmp_path / "FROZEN_OPERATING_POINTS.json"
+    frozen_op.write_text("{}", encoding="utf-8")
+
+    demo_root = tmp_path / "demo"
+    (demo_root / "chinese").mkdir(parents=True)
+    (demo_root / "chinese" / "y.wav").write_bytes(b"a")
+    (demo_root / "chinese" / "y.txt").write_text("x", encoding="utf-8")
+
+    run_root = tmp_path / "run"
+    cfg_path = run_root / "00_meta" / "CONFIG.json"
+    cfg_path.parent.mkdir(parents=True)
+    cfg_path.write_text(json.dumps({
+        "inputs": {
+            "real_gt_annotations": str(ann),
+            "cohort_manifests": [str(m) for m in manifests],
+            "frozen_op": str(frozen_op),
+            "old_run_requests": str(old_requests),
+            "test_demo_roots": [str(demo_root)],
+        }
+    }, ensure_ascii=False), encoding="utf-8")
+
+    summary = run_stage(run_root, cfg_path)
+    assert summary["result_status"] == "ok"
+    assert summary["n_baseline_windows"] == 3
+    for name in ("BASELINE_WINDOW_INDEX.jsonl", "BASELINE_UNITS.jsonl",
+                 "BASELINE_DETECTOR_SHADOW.jsonl", "DETECTOR_BASELINE_POPULATION.json"):
+        assert (run_root / "00_inventory" / name).is_file(), name
+    assert summary["outputs"]["BASELINE_WINDOW_INDEX.jsonl"].endswith("BASELINE_WINDOW_INDEX.jsonl")
 
 
 def test_load_real_gt_with_audit_map_merge_and_audit(tmp_path):

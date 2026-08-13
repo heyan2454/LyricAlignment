@@ -1,0 +1,54 @@
+{
+  "run_root": "/home/hyan/Data/lyricalign/runs/unit_realign_confirmation_no_gt_20260813",
+  "unit_realign_v2_aggregate": {
+    "schema": "unit_realign_classification_aggregate_v2",
+    "source": "06_evaluator_only/UNIT_OUTCOMES.jsonl -> CLASSIFICATION_AGGREGATE_V2.json (recomputed 2026-08-13 after P0-3 fix)",
+    "n_unit_rows": 1500,
+    "n_regions": 225,
+    "n_candidates": 225,
+    "unit_level": {
+      "n_finite_delta": 1452,
+      "improved_any_delta": 543,
+      "unchanged_zero_delta": 314,
+      "regressed_any_delta": 595
+    },
+    "region_level": {
+      "target_rows": 753,
+      "fixed_context_rows": 747,
+      "classification_counts": {
+        "beneficial": 10,
+        "neutral": 55,
+        "harmful": 55,
+        "catastrophic_harmful": 76,
+        "mixed": 29
+      }
+    },
+    "candidate_level": {
+      "classification_counts": {
+        "beneficial": 10,
+        "neutral": 55,
+        "harmful": 55,
+        "catastrophic_harmful": 76,
+        "mixed": 29
+      }
+    },
+    "extra_and_unpairable": {
+      "n_extra": 0,
+      "n_invalid_unpairable": 0
+    }
+  },
+  "confirmation_pool_v2": {
+    "case_pool": "01_detector_audit/CASE_POOL_V2.jsonl (60 cases: unsafe 45 / accept 15)",
+    "audit": "01_detector_audit/CONFIRMATION_POOL_AUDIT_V2.json",
+    "population_rows": 8694,
+    "eligible_total": 7603,
+    "excluded_by_reason": {
+      "ineligible_invalid_baseline_interval": 1091,
+      "duplicate_target_unit": 5,
+      "time_overlap": 2,
+      "per_song_cap": 5,
+      "not_selected": 7531
+    }
+  },
+  "v1_vs_v2_note": "v1 had beneficial=31, harmful=7, mixed=2; v2 (context/extra included) -> beneficial=10, harmful=55, mixed=29. catastrophic_harmful unchanged 76."
+}

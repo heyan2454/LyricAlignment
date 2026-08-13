@@ -27,6 +27,7 @@ LANG_KEYWORDS = ("Chinese", "English", "Japanese", "Cantonese")
 
 COMPRESSED_SEC = 0.05
 RAW_OFF_DIVERGE_SEC = 0.3
+MAX_LOCAL_REGION_UNITS = 8
 
 ANOMALY_WEIGHT = {
     "detector_reject": 3.0,
@@ -81,6 +82,25 @@ def discover_items(demo_roots) -> list[dict]:
                     break
             items.append({"audio": audio, "txt": txt, "lang": lang, "root": root})
     return items
+
+
+def _limit_items_cross_language(items: list[dict], limit: int) -> list[dict]:
+    """Round-robin languages for small smoke limits; never take sorted prefix."""
+    by_lang: dict[str, list[dict]] = {}
+    for item in items:
+        by_lang.setdefault(str(item["lang"]), []).append(item)
+    selected: list[dict] = []
+    while len(selected) < limit:
+        progressed = False
+        for lang in sorted(by_lang):
+            if len(selected) >= limit:
+                break
+            if by_lang[lang]:
+                selected.append(by_lang[lang].pop(0))
+                progressed = True
+        if not progressed:
+            break
+    return selected
 
 
 def _tristate(p_bad: float) -> str:
@@ -261,28 +281,28 @@ def _windows_from_record(record: dict) -> list[dict]:
     song_score = float(record.get("suspicious_score", 0.0))
     item = record["item"]
     lang = record["lang"]
+    def add_local(kind: str, start: int, end: int, *, score: float, segment, detail) -> None:
+        for lo in range(int(start), int(end), MAX_LOCAL_REGION_UNITS):
+            hi = min(lo + MAX_LOCAL_REGION_UNITS, int(end))
+            windows.append({
+                "item": item, "lang": lang, "anomaly_kind": kind,
+                "unit_start": lo, "unit_end": hi, "score": score,
+                "song_suspicious_score": song_score, "segment": segment,
+                "detail": detail, "song_record": record,
+            })
+
     for a in record.get("anomalies", []):
         kind = a["kind"]
-        windows.append({
-            "item": item, "lang": lang, "anomaly_kind": kind,
-            "unit_start": a["unit_start"], "unit_end": a["unit_end"],
-            "score": round(song_score + ANOMALY_WEIGHT.get(kind, 1.0), 4),
-            "song_suspicious_score": song_score,
-            "segment": None, "detail": a.get("detail"),
-            "song_record": record,
-        })
+        add_local(kind, a["unit_start"], a["unit_end"],
+                  score=round(song_score + ANOMALY_WEIGHT.get(kind, 1.0), 4),
+                  segment=None, detail=a.get("detail"))
     for seg in record.get("detector_segments", []):
         if seg["state"] not in ("reject", "uncertain"):
             continue
         kind = "detector_reject" if seg["state"] == "reject" else "detector_uncertain"
-        windows.append({
-            "item": item, "lang": lang, "anomaly_kind": kind,
-            "unit_start": seg["unit_start"], "unit_end": seg["unit_end"],
-            "score": round(song_score + ANOMALY_WEIGHT[kind], 4),
-            "song_suspicious_score": song_score,
-            "segment": dict(seg), "detail": None,
-            "song_record": record,
-        })
+        add_local(kind, seg["unit_start"], seg["unit_end"],
+                  score=round(song_score + ANOMALY_WEIGHT[kind], 4),
+                  segment=dict(seg), detail=None)
     return windows
 
 
@@ -298,16 +318,20 @@ def select_suspicious(detector_summary_data: dict, *, top_k: int = 20,
     selected: list[dict] = []
     seen: set[tuple] = set()
     per_lang: dict[str, int] = {}
+    by_lang: dict[str, list[dict]] = {}
     for w in windows:
-        if len(selected) >= top_k:
-            break
-        key = _window_key(w)
-        if key in seen:
-            continue
-        if per_lang.get(w["lang"], 0) < min_per_lang:
-            per_lang[w["lang"]] = per_lang.get(w["lang"], 0) + 1
-            seen.add(key)
-            selected.append(w)
+        by_lang.setdefault(w["lang"], []).append(w)
+    for _round in range(min_per_lang):
+        for lang in sorted(by_lang):
+            if len(selected) >= top_k:
+                break
+            for w in by_lang[lang]:
+                key = _window_key(w)
+                if key not in seen:
+                    per_lang[lang] = per_lang.get(lang, 0) + 1
+                    seen.add(key)
+                    selected.append(w)
+                    break
     for w in windows:
         if len(selected) >= top_k:
             break
@@ -316,6 +340,7 @@ def select_suspicious(detector_summary_data: dict, *, top_k: int = 20,
             continue
         seen.add(key)
         selected.append(w)
+    selected.sort(key=lambda w: -w["score"])
     return selected[:top_k]
 
 
@@ -457,6 +482,169 @@ def build_demo_requests(suspicious: list[dict], items: list[dict], *, detector_s
     return requests
 
 
+def to_behavior_suite_manifest(plans: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Convert no-GT Demo plans into executable R-U/R-B suite requests.
+
+    A context plan is R-B only when it has bilateral ACCEPT anchors.  Otherwise
+    it remains an explicit R-NULL diagnostic and is not sent to the model.
+    """
+    manifest, nulls = [], []
+    for plan in plans:
+        span = plan["span"]
+        start, end = int(span["unit_start"]), int(span["unit_end"])
+        chars = plan["character_index"]
+        if not (0 <= start < end <= len(chars)):
+            nulls.append({"request_id": plan["request_id"], "reason": "invalid_unit_span"})
+            continue
+        if plan["kind"] == "context":
+            anchors = plan.get("anchor") or []
+            if len(anchors) != 2:
+                nulls.append({"request_id": plan["request_id"], "reason": "R-NULL_missing_bilateral_anchor"})
+                continue
+            a0, a1 = span.get("context_start_sec"), span.get("context_end_sec")
+            variant, method = "R-B_safe_anchor_bounded", "R-B"
+            # R-B must forward the anchor-bounded text, not merely tag a
+            # target-only request as anchored.  The target itself remains a
+            # document-global subrange inside this local text slice.
+            text_start = int(anchors[0]["unit_start"])
+            text_end = int(anchors[-1]["unit_end"])
+        else:
+            a0, a1 = span["core_start_sec"] - .75, span["core_end_sec"] + .75
+            variant, method = "R-U_unit_local", "R-U"
+            text_start, text_end = start, end
+        if a1 <= a0:
+            nulls.append({"request_id": plan["request_id"], "reason": "nonpositive_audio_span"})
+            continue
+        if not (0 <= text_start <= start < end <= text_end <= len(chars)):
+            nulls.append({"request_id": plan["request_id"], "reason": "invalid_local_text_mapping"})
+            continue
+        # A whole-document request cannot be described as a local
+        # intervention.  Do not allow the target list's local index space to
+        # disguise this no-op as R-U/R-B.
+        if text_start == 0 and text_end == len(chars):
+            nulls.append({"request_id": plan["request_id"], "reason": "whole_item_pseudo_local_request"})
+            continue
+        local_chars = chars[text_start:text_end]
+        canonical_ids = [int(c["global_index"]) for c in local_chars]
+        canonical_to_local = {str(cid): i for i, cid in enumerate(canonical_ids)}
+        target_canonical_ids = [int(c["global_index"]) for c in chars[start:end]]
+        target_local_start = start - text_start
+        target_local_end = end - text_start
+        units = [str(c["text"]) for c in local_chars]
+        anchor_provenance = [
+            {
+                "unit_start": int(a["unit_start"]),
+                "unit_end": int(a["unit_end"]),
+                "state": str(a["state"]),
+                "max_p_bad": a.get("max_p_bad"),
+            }
+            for a in (plan.get("anchor") or [])
+        ]
+        manifest.append({
+            "request_id": plan["request_id"], "item_id": plan["item"],
+            "audio_path": plan["audio_path"], "audio_start_sec": round(max(0., a0), 3),
+            "audio_end_sec": round(a1, 3), "text_source": "demo_txt",
+            # text_* is request-local; canonical_* makes its document-global
+            # meaning explicit and is consumed as an identity-bearing binding
+            # by run_behavior_suite/AlignmentRequest.
+            "text_start_index": 0, "text_end_index": len(units), "text_units": units,
+            "source_text_start_index": text_start, "source_text_end_index": text_end,
+            "canonical_text_start": canonical_ids[0],
+            "canonical_text_end": canonical_ids[-1] + 1,
+            "canonical_ids": canonical_ids, "canonical_to_local": canonical_to_local,
+            "canonical_adapter_version": "test_demo_local_mapping_v1",
+            "workflow_mode": "realign_gate_demo", "mutation_type": "demo_local_realign",
+            "mutation_parameters": {
+                "proposal_method": method,
+                "target_unit_start": target_canonical_ids[0],
+                "target_unit_end": target_canonical_ids[-1] + 1,
+                "target_local_start": target_local_start,
+                "target_local_end": target_local_end,
+                "anchor_provenance": anchor_provenance,
+            },
+            "input_variant": variant, "language": plan["lang"].title(),
+            "source_song_id": plan["item"],
+            "provenance": {"no_gt": True, "demo_item": plan["item"],
+                           "index_space": "document_global",
+                           "target_unit_ids": target_canonical_ids,
+                           "local_text_range": [text_start, text_end],
+                           "anchor_provenance": anchor_provenance},
+        })
+        # R-S is a second request, never a target-only text deletion: expand
+        # the local document context and restore its non-target units from the
+        # baseline detector geometry.  Edge-only regions with no context stay
+        # R-U only because they cannot satisfy the active/fixed partition.
+        if plan["kind"] == "narrow":
+            sparse_lo = max(0, start - 2)
+            sparse_hi = min(len(chars), end + 2)
+            if sparse_lo < start or sparse_hi > end:
+                sparse_chars = chars[sparse_lo:sparse_hi]
+                sparse_ids = [int(c["global_index"]) for c in sparse_chars]
+                sparse_active = list(range(start - sparse_lo, end - sparse_lo))
+                raw_by_index = {int(r["index"]): r for r in plan.get("raw_rows", [])
+                                if isinstance(r.get("index"), int)}
+                sparse_fixed = []
+                for i, cid in enumerate(sparse_ids):
+                    if i in sparse_active:
+                        continue
+                    baseline = raw_by_index.get(cid)
+                    if baseline is None:
+                        sparse_fixed = []
+                        break
+                    bs = baseline.get("fixed_global_start_sec")
+                    be = baseline.get("fixed_global_end_sec")
+                    if not isinstance(bs, (int, float)) or not isinstance(be, (int, float)):
+                        sparse_fixed = []
+                        break
+                    source = "test_demo_detector_baseline"
+                    # Detector output occasionally contains a tiny inverted
+                    # interval.  Keep the same baseline onset and repair only
+                    # the impossible end to one decoder tick; this is a
+                    # no-GT structural repair and is explicitly auditable.
+                    if float(be) < float(bs):
+                        be = float(bs) + 0.08
+                        source = "test_demo_detector_baseline_repaired_inversion"
+                    sparse_fixed.append({
+                        "local_index": i, "canonical_unit_id": cid,
+                        "fixed_global_start_sec": float(bs),
+                        "fixed_global_end_sec": float(be),
+                        "baseline_source": source,
+                    })
+                if sparse_fixed and len(sparse_active) + len(sparse_fixed) == len(sparse_ids):
+                    sparse = dict(manifest[-1])
+                    sparse["request_id"] = f"{plan['request_id']}-sparse"
+                    sparse["input_variant"] = "R-S_sparse_fixed"
+                    sparse["text_units"] = [str(c["text"]) for c in sparse_chars]
+                    sparse["text_end_index"] = len(sparse_chars)
+                    sparse["source_text_start_index"] = sparse_lo
+                    sparse["source_text_end_index"] = sparse_hi
+                    sparse["canonical_text_start"] = sparse_ids[0]
+                    sparse["canonical_text_end"] = sparse_ids[-1] + 1
+                    sparse["canonical_ids"] = sparse_ids
+                    sparse["canonical_to_local"] = {str(cid): i for i, cid in enumerate(sparse_ids)}
+                    sparse["timestamp_slot_indices"] = sparse_active
+                    sparse["active_slot_indices"] = sparse_active
+                    sparse["fixed_slot_rows"] = sparse_fixed
+                    sparse["slot_constraint_schema"] = "realign_sparse_fixed_v1"
+                    sparse["mutation_parameters"] = {
+                        "proposal_method": "R-S",
+                        "target_unit_start": target_canonical_ids[0],
+                        "target_unit_end": target_canonical_ids[-1] + 1,
+                        "target_local_start": sparse_active[0],
+                        "target_local_end": sparse_active[-1] + 1,
+                        "sparse_semantics": "full_text_active_timestamp_fixed_remerge",
+                    }
+                    sparse["provenance"] = {
+                        **sparse["provenance"],
+                        "target_unit_ids": target_canonical_ids,
+                        "local_text_range": [sparse_lo, sparse_hi],
+                        "sparse_active_slots": sparse_active,
+                        "sparse_fixed_slot_count": len(sparse_fixed),
+                    }
+                    manifest.append(sparse)
+    return manifest, nulls
+
+
 def _write_json(path: Path, obj: dict) -> None:
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -519,7 +707,7 @@ def _load_pipeline(cfg: dict) -> dict:
         FEATURE_NAMES,
         extract_unit_features,
     )
-    from lyricalign.research_transition_recovery_detector.train_detector_helpers import (  # noqa: E402
+    from scripts.research_transition_recovery_detector.train_detector_helpers import (  # noqa: E402
         predict_p_bad,
     )
 
@@ -610,6 +798,11 @@ def run_stage(run_root, cfg_path, *, top_k: int = 20, limit: int | None = None) 
     if limit is None:
         limit = cfg.get("limit")
     adapter_mode = cfg.get("adapter", "default")
+    formal = bool(cfg.get("formal", False))
+    if formal and adapter_mode == "mock":
+        raise ValueError("formal Test Demo forbids adapter=mock")
+    if formal and limit:
+        raise ValueError("formal Test Demo forbids an item limit; use dynamic full discovery")
     if adapter_mode == "mock":
         adapter = _mock_detector_adapter(cfg)
     else:
@@ -619,7 +812,7 @@ def run_stage(run_root, cfg_path, *, top_k: int = 20, limit: int | None = None) 
         roots = list((cfg.get("inputs") or {}).get("test_demo_roots", []))
     items = discover_items(roots)
     if limit:
-        items = items[: int(limit)]
+        items = _limit_items_cross_language(items, int(limit))
     summary = detector_summary(items, adapter)
     suspicious = select_suspicious(summary, top_k=top_k, min_per_lang=cfg.get("min_per_lang", 2))
     detector_state = cfg.get("detector_state") or {
@@ -638,5 +831,17 @@ def run_stage(run_root, cfg_path, *, top_k: int = 20, limit: int | None = None) 
     _write_json(out / "TEST_DEMO_DETECTOR_SUMMARY.json", summary)
     rows_out = [{k: v for k, v in w.items() if k != "song_record"} for w in suspicious]
     _write_jsonl(out / "TEST_DEMO_SUSPICIOUS_WINDOWS.jsonl", rows_out)
-    _write_jsonl(out / "TEST_DEMO_REALIGN_BEHAVIOR.jsonl", requests)
+    # These are request plans, never falsely presented as realign behaviour.
+    for row in requests:
+        row["execution_status"] = "not_executed"
+    _write_jsonl(out / "TEST_DEMO_REALIGN_REQUEST_PLAN.jsonl", requests)
+    suite_manifest, nulls = to_behavior_suite_manifest(requests)
+    _write_jsonl(out / "TEST_DEMO_EXECUTOR_MANIFEST.jsonl", suite_manifest)
+    _write_jsonl(out / "TEST_DEMO_R_NULL.jsonl", nulls)
+    _write_jsonl(out / "TEST_DEMO_REALIGN_BEHAVIOR.jsonl", [])
+    summary["realign_execution_status"] = "not_executed"
+    summary["n_executable_realign_requests"] = len(suite_manifest)
+    summary["n_r_null"] = len(nulls)
+    summary["formal"] = formal
+    _write_json(out / "TEST_DEMO_DETECTOR_SUMMARY.json", summary)
     return summary

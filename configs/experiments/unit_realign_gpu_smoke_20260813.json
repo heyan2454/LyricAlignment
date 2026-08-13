@@ -1,0 +1,20 @@
+{
+  "purpose": "Unit-level realign GPU smoke; shadow-only, actual_writeback=0",
+  "timeline_manifests": [
+    "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/manifest_cohort_a/LONG_TIMELINE_MANIFEST.jsonl",
+    "/home/hyan/Data/lyricalign/runs/research_transition_recovery_detector_20260810_realgt_expansion_handoff/manifest_cohort_b/LONG_TIMELINE_MANIFEST.jsonl"
+  ],
+  "window_index_rows": "/home/hyan/Data/lyricalign/runs/detector_production_realign_gate_20260812_20260812T195343Z/00_inventory/BASELINE_WINDOW_INDEX.jsonl",
+  "detector_shadow_rows": "/home/hyan/Data/lyricalign/runs/detector_production_realign_gate_20260812_20260812T195343Z/00_inventory/BASELINE_DETECTOR_SHADOW.jsonl",
+  "n_target": 60,
+  "seed": 0,
+  "max_per_song": 4,
+  "include_sparse": true,
+  "require_paired_rb": false,
+  "adapter": "default",
+  "formal": false,
+  "constraints": {
+    "actual_writeback": 0,
+    "no_gt_control": true
+  }
+}

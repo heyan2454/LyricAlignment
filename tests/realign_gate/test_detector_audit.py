@@ -294,12 +294,12 @@ def test_build_case_pool_fields():
         ]
     }
     pool = detector_audit.build_case_pool(audit)
-    assert pool[0]["case_id"] == "s1:s1:w1:0"
+    assert pool[0]["case_id"] == "s1:s1:w1:r0:0"
     assert pool[0]["song_id"] == "s1"
     assert pool[0]["window_id"] == "s1:w1"
     assert pool[0]["target_unit_ids"] == [1]
     assert pool[0]["stratum_placeholder"] is None
-    assert pool[0]["old_detector_state"] == "reject"
+    assert pool[0]["old_detector_state"] == "REJECT"
     assert pool[0]["old_error_ms"] is None
     assert pool[0]["source"] == "01_detector_audit"
 
@@ -363,7 +363,7 @@ def test_run_stage_missing_evidence_no_crash(tmp_path, patch_gpu_deps):
     }), encoding="utf-8")
     (tmp_path / "REQUESTS.jsonl").write_text(
         json.dumps(_make_fake_request()) + "\n", encoding="utf-8")
-    summary = detector_audit.run_stage(run_root)
+    summary = detector_audit.run_stage(run_root, audit_source="raw_requests")
     assert summary["result_status"] == "blocked"
     assert summary["status_reason"] == "no_evidence_hits"
     assert summary["n_missing"] == 1
@@ -403,7 +403,7 @@ def test_run_stage_production_audit_complete_gate(tmp_path, patch_gpu_deps):
         return run_root
 
     smoke_root = write_cfg()
-    smoke = detector_audit.run_stage(smoke_root, limit=1)
+    smoke = detector_audit.run_stage(smoke_root, limit=1, audit_source="raw_requests")
     assert smoke["is_smoke"] is True
     assert smoke["production_audit_complete"] is False
     smoke_json = json.loads((smoke_root / "01_detector_audit" / "RAW_UNIT_METRICS.json").read_text())
@@ -414,7 +414,7 @@ def test_run_stage_production_audit_complete_gate(tmp_path, patch_gpu_deps):
     assert smoke_json["evaluated_count"] == 1
 
     full_root = write_cfg()
-    full = detector_audit.run_stage(full_root)
+    full = detector_audit.run_stage(full_root, audit_source="raw_requests")
     assert full["is_smoke"] is False
     assert full["production_audit_complete"] is True
     full_json = json.loads((full_root / "01_detector_audit" / "RAW_UNIT_METRICS.json").read_text())

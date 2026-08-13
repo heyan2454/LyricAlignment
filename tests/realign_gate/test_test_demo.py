@@ -82,6 +82,14 @@ def test_select_suspicious_cross_lang_quota_and_topk(tmp_path):
     assert scores == sorted(scores, reverse=True)
     keys = [(w["item"], w["unit_start"], w["unit_end"], w["anomaly_kind"]) for w in sel]
     assert len(set(keys)) == len(keys)
+    assert all(w["unit_end"] - w["unit_start"] <= 8 for w in sel)
+
+
+def test_smoke_item_limit_is_cross_language(tmp_path):
+    root = _make_demo_root(tmp_path)
+    items = td.discover_items([root])
+    picked = td._limit_items_cross_language(items, 2)
+    assert {x["lang"] for x in picked} == {"chinese", "english"}
 
 
 def test_build_demo_requests_narrow_and_context_no_gt(tmp_path):
@@ -122,6 +130,76 @@ def test_build_demo_requests_narrow_and_context_no_gt(tmp_path):
     assert all(r["kind"] == "narrow" and r["anchor"] == [] for r in narrow)
 
 
+def test_demo_executor_manifest_requires_bilateral_anchor(tmp_path):
+    root = _make_demo_root(tmp_path)
+    items = td.discover_items([root])
+    summary = td.detector_summary(items, td._mock_detector_adapter({}))
+    plans = td.build_demo_requests(td.select_suspicious(summary, top_k=4, min_per_lang=2), items,
+                                   detector_state={"kind": "frozen"})
+    manifest, nulls = td.to_behavior_suite_manifest(plans)
+    assert manifest
+    assert all(r["provenance"]["no_gt"] is True for r in manifest)
+    assert all(r["input_variant"] in {
+        "R-U_unit_local", "R-B_safe_anchor_bounded", "R-S_sparse_fixed"} for r in manifest)
+    assert all("R-NULL" in r["reason"] for r in nulls)
+    for row in manifest:
+        assert row["provenance"]["index_space"] == "document_global"
+        assert row["canonical_ids"] == sorted(row["canonical_ids"])
+        assert {int(k): v for k, v in row["canonical_to_local"].items()} == {
+            cid: i for i, cid in enumerate(row["canonical_ids"])
+        }
+        targets = row["provenance"]["target_unit_ids"]
+        assert set(targets) <= set(row["canonical_ids"])
+        local_start = row["mutation_parameters"]["target_local_start"]
+        local_end = row["mutation_parameters"]["target_local_end"]
+        assert row["canonical_ids"][local_start:local_end] == targets
+        if row["input_variant"] == "R-B_safe_anchor_bounded":
+            anchors = row["provenance"]["anchor_provenance"]
+            assert len(anchors) == 2
+            assert anchors[0]["unit_end"] <= targets[0]
+            assert anchors[1]["unit_start"] > targets[-1]
+        if row["input_variant"] == "R-S_sparse_fixed":
+            active = set(row["active_slot_indices"])
+            fixed = {x["local_index"] for x in row["fixed_slot_rows"]}
+            assert active.isdisjoint(fixed)
+            assert active | fixed == set(range(len(row["text_units"])))
+
+
+def test_demo_executor_manifest_rejects_whole_item_pseudo_local_request():
+    chars = [{"global_index": i, "text": ch} for i, ch in enumerate("abcd")]
+    plan = {
+        "request_id": "whole", "item": "song", "lang": "english",
+        "audio_path": "/tmp/song.wav", "kind": "narrow",
+        "span": {"unit_start": 0, "unit_end": 4, "core_start_sec": 1.0, "core_end_sec": 2.0},
+        "character_index": chars, "anchor": [],
+    }
+    manifest, nulls = td.to_behavior_suite_manifest([plan])
+    assert manifest == []
+    assert nulls == [{"request_id": "whole", "reason": "whole_item_pseudo_local_request"}]
+
+
+def test_demo_sparse_repairs_inverted_baseline_geometry(tmp_path):
+    root = _make_demo_root(tmp_path)
+    item = td.discover_items([root])[0]
+    plan = {
+        "request_id": "x", "item": "Chinese/song.wav", "lang": "chinese",
+        "audio_path": str(item["audio"]), "kind": "narrow",
+        "span": {"unit_start": 2, "unit_end": 3, "core_start_sec": 1., "core_end_sec": 1.2},
+        "character_index": [{"global_index": i, "text": "字"} for i in range(6)],
+        "raw_rows": [
+            {"index": i, "fixed_global_start_sec": float(i), "fixed_global_end_sec": float(i) + .4}
+            for i in range(6)
+        ],
+        "anchor": [],
+    }
+    plan["raw_rows"][0]["fixed_global_end_sec"] = -.1
+    manifest, _ = td.to_behavior_suite_manifest([plan])
+    sparse = next(r for r in manifest if r["input_variant"] == "R-S_sparse_fixed")
+    repaired = next(r for r in sparse["fixed_slot_rows"] if r["canonical_unit_id"] == 0)
+    assert repaired["fixed_global_end_sec"] > repaired["fixed_global_start_sec"]
+    assert repaired["baseline_source"] == "test_demo_detector_baseline_repaired_inversion"
+
+
 def test_module_does_not_import_e5_proposals():
     source = Path(td.__file__).read_text(encoding="utf-8")
     assert "e5_proposals" not in source
@@ -150,10 +228,44 @@ def test_run_stage_outputs_schema(tmp_path):
                   if line.strip()]
     assert 0 < len(suspicious) <= 6
     assert all("song_record" not in w for w in suspicious)
-    behavior = [json.loads(line) for line in
-                (out / "TEST_DEMO_REALIGN_BEHAVIOR.jsonl").read_text(encoding="utf-8").splitlines()
-                if line.strip()]
-    assert len(behavior) == len(suspicious) * 2
-    assert {r["kind"] for r in behavior} == {"narrow", "context"}
-    assert all(r["no_gt"] is True for r in behavior)
+    assert s["realign_execution_status"] == "not_executed"
+    plan = [json.loads(line) for line in
+            (out / "TEST_DEMO_REALIGN_REQUEST_PLAN.jsonl").read_text(encoding="utf-8").splitlines()
+            if line.strip()]
+    assert len(plan) == len(suspicious) * 2
+    assert all(r["execution_status"] == "not_executed" for r in plan)
+    assert {r["kind"] for r in plan} == {"narrow", "context"}
+    assert all(r["no_gt"] is True for r in plan)
     assert summary["n_items"] == 2
+
+
+def test_formal_demo_rejects_mock(tmp_path):
+    root = _make_demo_root(tmp_path)
+    cfg = tmp_path / "formal.json"
+    cfg.write_text(json.dumps({"adapter": "mock", "formal": True, "demo_roots": [str(root)]}))
+    with pytest.raises(ValueError, match="forbids adapter=mock"):
+        td.run_stage(tmp_path / "run", cfg)
+
+
+def test_cli_limit_is_forwarded_to_stage(tmp_path, monkeypatch):
+    import runpy
+    import sys
+    root = _make_demo_root(tmp_path)
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text(json.dumps({"adapter": "mock", "demo_roots": [str(root)]}))
+    seen = {}
+    from lyricalign.realign_gate import test_demo
+    original = test_demo.run_stage
+
+    def wrapped(*args, **kwargs):
+        seen["limit"] = kwargs.get("limit")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(test_demo, "run_stage", wrapped)
+    script = Path(__file__).parents[2] / "scripts/realign_gate/04_test_demo_behavior.py"
+    monkeypatch.setattr(sys, "argv", [str(script), "--run-root", str(tmp_path / "run"),
+                                      "--cfg", str(cfg), "--limit", "1"])
+    with pytest.raises(SystemExit) as exit_info:
+        runpy.run_path(str(script), run_name="__main__")
+    assert exit_info.value.code == 0
+    assert seen["limit"] == 1

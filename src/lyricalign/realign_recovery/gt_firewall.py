@@ -43,8 +43,27 @@ _ORACLE_ALLOWED_KEYS = ("audio_span", "text_span", "unit_ids", "text", "units", 
 
 
 def validate_no_gt_request(spec: dict) -> list[str]:
-    """Return forbidden GT field names present in a control request spec."""
-    return [k for k in spec if _key_matches_no_gt(k)]
+    """Return forbidden GT-bearing paths anywhere in a control request spec.
+
+    Metadata is part of a forward request too: a shallow top-level scan allowed
+    GT strata to be smuggled through ``provenance``.  Keep this deliberately
+    structural rather than value-based so ordinary lyric text is unaffected.
+    """
+    found: list[str] = []
+
+    def visit(value, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                child_path = f"{path}.{key}" if path else str(key)
+                if _key_matches_no_gt(str(key)):
+                    found.append(child_path)
+                visit(child, child_path)
+        elif isinstance(value, (list, tuple)):
+            for i, child in enumerate(value):
+                visit(child, f"{path}[{i}]")
+
+    visit(spec, "")
+    return found
 
 
 def validate_oracle_spec(spec: dict) -> list[str]:

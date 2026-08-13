@@ -33,6 +33,12 @@ def main(argv=None) -> int:
     p.add_argument("--gpu", action="store_true", help="real frozen Qwen executor")
     p.add_argument("--checkpoint-path", help="local LoRA checkpoint dir (required with --gpu)")
     p.add_argument("--resume", action="store_true", help="reuse identity-identical evidence")
+    p.add_argument("--include-sparse", action="store_true",
+                   help="construct true R-S full-text/active-slot/fixed-row requests")
+    p.add_argument("--allow-unpaired-rb", action="store_true",
+                   help="retain valid R-U/R-A/R-S requests when R-B anchors are unavailable")
+    p.add_argument("--r-a-text-k", type=int,
+                   help="R-A/R-S context units per side for no-GT padding experiments")
     args = p.parse_args(argv)
 
     run_root = Path(args.run_root)
@@ -54,6 +60,9 @@ def main(argv=None) -> int:
         gpu=args.gpu,
         checkpoint_path=checkpoint_path,
         resume=resume,
+        include_sparse=args.include_sparse,
+        require_paired_rb=not args.allow_unpaired_rb,
+        r_a_text_k=args.r_a_text_k,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0 if summary.get("result_status") == "ok" else 1

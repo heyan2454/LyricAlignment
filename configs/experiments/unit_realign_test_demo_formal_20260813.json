@@ -1,0 +1,20 @@
+{
+  "purpose": "Unit-level realign Test Demo formal; dynamic discovery, no GT",
+  "adapter": "default",
+  "formal": true,
+  "demo_roots": [
+    "/home/hyan/Data/lyricalign/test",
+    "/home/hyan/LyricAlignment/夜苏打"
+  ],
+  "min_per_lang": 2,
+  "detector_state": {
+    "kind": "standardized_logistic",
+    "combo": "R",
+    "merge": "light_merge"
+  },
+  "constraints": {
+    "actual_writeback": 0,
+    "no_gt_control": true,
+    "shadow_only": true
+  }
+}

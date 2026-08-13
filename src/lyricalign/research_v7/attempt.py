@@ -90,5 +90,9 @@ def run_request(
         slot_mask=request.timestamp_slot_indices,
         posterior=attempt.decoder_outputs.get("_posterior"),
         repair_trace=attempt.decoder_outputs.get("_repair_trace"),
-        metadata={"request_id": request.request_id, "mutation": request.mutation_type},
+        metadata={
+            "request_id": request.request_id,
+            "mutation": request.mutation_type,
+            "sparse_constraint": attempt.decoder_outputs.get("_sparse_constraint"),
+        },
     )

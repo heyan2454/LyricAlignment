@@ -8,15 +8,49 @@ from 01_detector_audit/RAW_UNIT_METRICS.json historical_bridge only.
 from __future__ import annotations
 
 import json
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 SCHEMA = "realign_gate_05_final_summary_v1"
 
+PRODUCTION_POPULATION_KIND = "production_raw_baseline"
+REQUIRED_VARIANTS = ("R-A", "R-B")
+
+
+def _variant_kind(variant: str | None) -> str:
+    """Map a concrete variant name to its R-A/R-B kind for pairing checks.
+
+    Candidate index stores full names (``R-A_unsafe_old_range`` /
+    ``R-B_safe_anchor_bounded``); pairing completeness only cares about the
+    family prefix so report can validate both legacy short names and long ones.
+    """
+    if not variant:
+        return ""
+    v = str(variant)
+    for kind in ("R-A", "R-B"):
+        if v.startswith(kind):
+            return kind
+    return v
+PAIRED_DEFINITION = {
+    "gt_pair_schema": "realign_gate_gt_pair_metrics_v1",
+    "no_gt_schema": "realign_gate_no_gt_features_v1",
+    "neutral_eps_ms": 200.0,
+}
+
+BASELINE_FILES = {
+    "BASELINE_WINDOW_INDEX": "00_inventory/BASELINE_WINDOW_INDEX.jsonl",
+    "BASELINE_UNITS": "00_inventory/BASELINE_UNITS.jsonl",
+    "BASELINE_DETECTOR_SHADOW": "00_inventory/BASELINE_DETECTOR_SHADOW.jsonl",
+}
+
 STAGE_FILES: dict[str, dict[str, str]] = {
     "00_inventory": {
         "DATA_INVENTORY": "00_inventory/DATA_INVENTORY.json",
+        "BASELINE_WINDOW_INDEX": "00_inventory/BASELINE_WINDOW_INDEX.jsonl",
+        "BASELINE_UNITS": "00_inventory/BASELINE_UNITS.jsonl",
+        "BASELINE_DETECTOR_SHADOW": "00_inventory/BASELINE_DETECTOR_SHADOW.jsonl",
     },
     "01_detector_audit": {
         "RAW_UNIT_METRICS": "01_detector_audit/RAW_UNIT_METRICS.json",
@@ -26,6 +60,7 @@ STAGE_FILES: dict[str, dict[str, str]] = {
         "CASES": "02_behavior/CASES.jsonl",
         "REQUESTS": "02_behavior/REQUESTS.jsonl",
         "CANDIDATE_INDEX": "02_behavior/CANDIDATE_INDEX.jsonl",
+        "SKIPPED_CASES": "02_behavior/SKIPPED_CASES.jsonl",
     },
     "03_gate": {
         "ANALYSIS": "03_gate/ANALYSIS.json",
@@ -69,7 +104,7 @@ _RAW_UNIT_FIELDS = [
     ("n_hits", "n_hits"),
     ("n_missing", "n_missing"),
     ("n_units", "tri_unit_metrics.pooled.n_units"),
-    ("safe_accept_rate", "tri_unit_metrics.pooled.accept_ratio"),
+    ("accept_ratio", "tri_unit_metrics.pooled.accept_ratio"),
     ("uncertain_ratio", "tri_unit_metrics.pooled.uncertain_ratio"),
     ("reject_ratio", "tri_unit_metrics.pooled.reject_ratio"),
     ("hist_safe_accept", "historical_bridge.frozen_val.safe_accept_rate"),
@@ -242,6 +277,15 @@ def _render_markdown(run_root: str | Path, sections: dict[str, dict], cfg: dict)
     lines.append(f"writeback gate: {conclusion.get('writeback_gate', 'incomplete')}")
     if conclusion.get("reason"):
         lines.append(f"reason: {conclusion['reason']}")
+    if conclusion.get("writeback_gate") == "stage_ineligible":
+        lines.append("")
+        lines.append("**diagnostic-only — staged admission failed. Next-round rebuild inputs:**")
+        for item in conclusion.get("rebuild_inputs", []):
+            lines.append(
+                f"- [{item.get('stage')}::{item.get('artifact')}] "
+                f"required: {item.get('required')} — {item.get('action')}"
+            )
+        lines.append("")
     if smoke:
         lines.append(
             "note: smoke/partial run — conclusion is preliminary only, "
@@ -253,6 +297,13 @@ def _render_markdown(run_root: str | Path, sections: dict[str, dict], cfg: dict)
 
 
 def _conclusion(audit: dict, analysis: dict, cfg: dict) -> dict:
+    # This research branch is shadow-only.  A report can never graduate an
+    # offline GT evaluation into a production writeback decision.
+    if analysis.get("suggestion") == "DIAGNOSTIC_ONLY_NO_WRITEBACK":
+        return {
+            "writeback_gate": "NOT_FROZEN",
+            "reason": "candidate gate is diagnostic-only; actual_writeback remains 0",
+        }
     holdout_weak = analysis.get("holdout_weak")
     harmful_risk = analysis.get("harmful_risk")
     decision = analysis.get("decision")
@@ -273,15 +324,250 @@ def _conclusion(audit: dict, analysis: dict, cfg: dict) -> dict:
             "writeback_gate": "NOT_FROZEN",
             "reason": "holdout 弱或 harmful risk 不可接受: " + "; ".join(reasons),
         }
-    if decision and decision != "ACCEPT_WRITEBACK":
-        return {
-            "writeback_gate": "NOT_FROZEN",
-            "reason": f"three-state decision is {decision}, not ACCEPT_WRITEBACK",
-        }
     return {
-        "writeback_gate": "eligible_for_review",
-        "reason": "holdout 不弱且无 harmful risk；仍需人工确认后再冻结",
+        "writeback_gate": "NOT_FROZEN",
+        "reason": "legacy gate result is not an authorization for writeback",
     }
+
+
+def _check_stage_eligibility(
+    run_root: str | Path, loaded: dict[str, dict[str, Any]]
+) -> tuple[dict[str, dict], list[dict]]:
+    """B14 staged admission: P0/P2/P3 + paired-definition version checks.
+
+    Returns (stage_checks, rebuild_inputs). Each check dict has
+    ``eligible`` / ``blockers``; p2 also carries ``warning``. Any blocker or
+    p2-warning degrades the corresponding stage to ineligible (diagnostic-only).
+    """
+    checks: dict[str, dict] = {
+        "p0": {"eligible": True, "blockers": []},
+        "p2": {"eligible": True, "blockers": [], "warning": []},
+        "p3": {"eligible": True, "blockers": []},
+        "paired_definition": {"eligible": True, "blockers": []},
+    }
+    rebuild: list[dict] = []
+
+    def _add_rebuild(stage: str, artifact: str, required: str, action: str) -> None:
+        rebuild.append(
+            {
+                "stage": stage,
+                "artifact": artifact,
+                "required": required,
+                "action": action,
+            }
+        )
+
+    data00 = loaded["00_inventory"]["DATA_INVENTORY"]
+    raw_unit = loaded["01_detector_audit"]["RAW_UNIT_METRICS"]
+
+    # ---- P0: production raw-baseline population + unique baseline window ----
+    pop_kind = _get(raw_unit, "population_kind") if isinstance(raw_unit, dict) else None
+    if pop_kind != PRODUCTION_POPULATION_KIND:
+        checks["p0"]["blockers"].append(
+            f"01 RAW_UNIT_METRICS population_kind={pop_kind!r} != "
+            f"{PRODUCTION_POPULATION_KIND!r} (E5 proposal bank / non-baseline 输入被拒)"
+        )
+        checks["p0"]["eligible"] = False
+        _add_rebuild(
+            "01_detector_audit",
+            "RAW_UNIT_METRICS.json",
+            "population_kind == production_raw_baseline",
+            "以 BASELINE_WINDOW_INDEX 重建 raw baseline shadow；禁止把 E5 proposal bank 当作 population",
+        )
+    for key, rel in BASELINE_FILES.items():
+        content = loaded["00_inventory"].get(key)
+        if content is None:
+            checks["p0"]["blockers"].append(f"00_inventory {rel} 缺失/不可解析")
+            checks["p0"]["eligible"] = False
+            _add_rebuild(
+                "00_inventory",
+                rel,
+                f"{key} 齐全",
+                "补跑 P0：按 cohort manifest 的 60s stride/10s overlap 构造唯一 (song_id, window_id) 表并产出 shadow",
+            )
+        elif key == "BASELINE_WINDOW_INDEX":
+            seen = set()
+            dups = []
+            for row in content:
+                if not isinstance(row, dict):
+                    continue
+                key_pair = (str(row.get("song_id")), str(row.get("window_id")))
+                if key_pair in seen:
+                    dups.append(key_pair)
+                seen.add(key_pair)
+            if dups:
+                checks["p0"]["blockers"].append(
+                    f"BASELINE_WINDOW_INDEX (song_id, window_id) 重复: {dups[:5]}"
+                )
+                checks["p0"]["eligible"] = False
+                _add_rebuild(
+                    "00_inventory",
+                    "BASELINE_WINDOW_INDEX.jsonl",
+                    "(song_id, window_id) 唯一",
+                    "去重后重建 BASELINE_WINDOW_INDEX",
+                )
+
+    # ---- P2: per-case R-A/R-B pairing + no skipped + unique (case_id, variant) ----
+    cand_index = loaded["02_behavior"]["CANDIDATE_INDEX"]
+    cases = loaded["02_behavior"]["CASES"]
+    if cand_index is None:
+        checks["p2"]["blockers"].append("02_behavior/CANDIDATE_INDEX.jsonl 缺失/不可解析")
+        checks["p2"]["eligible"] = False
+        _add_rebuild(
+            "02_behavior",
+            "CANDIDATE_INDEX.jsonl",
+            "candidate index 齐全",
+            "重跑 02 并生成 CANDIDATE_INDEX（含 case_id/variant/content_idn）",
+        )
+    else:
+        pairs: list[tuple[str, str]] = []
+        for row in cand_index:
+            if not isinstance(row, dict):
+                continue
+            case_id = row.get("case_id")
+            variant = row.get("variant")
+            if case_id is None or variant is None:
+                continue
+            pairs.append((str(case_id), str(variant)))
+        dup_pairs = [k for k, c in Counter(pairs).items() if c > 1]
+        if dup_pairs:
+            checks["p2"]["blockers"].append(f"CANDIDATE_INDEX 重复 (case_id, variant): {dup_pairs[:5]}")
+            checks["p2"]["eligible"] = False
+            _add_rebuild(
+                "02_behavior",
+                "CANDIDATE_INDEX.jsonl",
+                "(case_id, variant) 唯一",
+                "修正 candidate 配对后重建 index",
+            )
+        case_ids: set[str] = set()
+        if isinstance(cases, list):
+            case_ids = {str(c.get("case_id")) for c in cases if isinstance(c, dict) and c.get("case_id") is not None}
+        if not case_ids:
+            case_ids = {c for c, _ in pairs}
+        skipped_ids: set[str] = set()
+        skipped_rows = loaded["02_behavior"].get("SKIPPED_CASES")
+        if isinstance(skipped_rows, list):
+            skipped_ids = {
+                str(r.get("case_id"))
+                for r in skipped_rows
+                if isinstance(r, dict) and r.get("case_id") is not None
+            }
+        if skipped_ids:
+            checks["p2"]["warning"].append(
+                f"SKIPPED_CASES={len(skipped_ids)}（设计内安全窗/不可构造 case，不要求配对）"
+            )
+        variants_by_case: dict[str, set[str]] = {}
+        for c, v in pairs:
+            variants_by_case.setdefault(c, set()).add(_variant_kind(v))
+        missing = []
+        for cid in sorted(case_ids - skipped_ids):
+            for req in REQUIRED_VARIANTS:
+                if req not in variants_by_case.get(cid, set()):
+                    missing.append((cid, req))
+        if missing:
+            checks["p2"]["blockers"].append(
+                f"每 case 需 R-A/R-B 配对完整，缺失: {missing[:5]}"
+            )
+            checks["p2"]["eligible"] = False
+            _add_rebuild(
+                "02_behavior",
+                "CASES.jsonl / CANDIDATE_INDEX.jsonl",
+                "每 case R-A 与 R-B 均完整",
+                "补齐缺失 variant 的 request/evidence；不可构造 R-A 的 case 回 P1 补抽，不得只跑 R-B",
+            )
+
+    # ---- P3: feature/GT completeness + duplicates + label gap + real-GT coverage ----
+    no_gt = loaded["03_gate"]["NO_GT_FEATURES"]
+    gt_pairs = loaded["03_gate"]["GT_PAIR_METRICS"]
+    if isinstance(no_gt, list):
+        invalid = [
+            r for r in no_gt if isinstance(r, dict) and r.get("feature_valid") is False
+        ]
+        if invalid:
+            checks["p3"]["blockers"].append(
+                f"NO_GT_FEATURES 有 {len(invalid)} 行 feature_valid=False"
+            )
+            checks["p3"]["eligible"] = False
+            _add_rebuild(
+                "03_gate",
+                "NO_GT_FEATURES.jsonl",
+                "无 feature_valid=False 行",
+                "修复特征计算/输入对齐后重跑 03 no-GT features",
+            )
+    if isinstance(gt_pairs, list):
+        seen = set()
+        dups = []
+        no_label = []
+        for r in gt_pairs:
+            if not isinstance(r, dict):
+                continue
+            key = (str(r.get("case_id")), str(r.get("variant")), str(r.get("canonical_unit_id")))
+            if key in seen:
+                dups.append(key)
+            seen.add(key)
+            if r.get("label") in (None, "", "missing"):
+                # extra_prediction 行是 GT annotations 中不存在的 unit（GT 缺口），
+                # 无法配对评价，非"缺标签"；new_missing 行是 design 内"本轮未覆盖"。
+                # 两者都不应作为 p3 的 label 缺口。
+                if not r.get("new_missing") and not r.get("extra_prediction"):
+                    no_label.append(key)
+        if dups:
+            checks["p3"]["blockers"].append(f"GT_PAIR_METRICS 重复 key (case_id, variant, cid): {dups[:5]}")
+            checks["p3"]["eligible"] = False
+            _add_rebuild(
+                "03_gate",
+                "GT_PAIR_METRICS.jsonl",
+                "无 duplicate key",
+                "去重后重算 GT pair 指标",
+            )
+        if no_label:
+            checks["p3"]["blockers"].append(f"GT_PAIR_METRICS 标签缺口 {len(no_label)} 行: {no_label[:5]}")
+            checks["p3"]["eligible"] = False
+            _add_rebuild(
+                "03_gate",
+                "GT_PAIR_METRICS.jsonl",
+                "无 missing label",
+                "补齐 GT label 或排除无标签样本后重跑 paired",
+            )
+    if isinstance(data00, dict):
+        summary = _summary_of(data00)
+        missing_gt_songs = _get(summary, "real_gt_summary.songs_missing_gt")
+        if isinstance(missing_gt_songs, list) and missing_gt_songs:
+            checks["p3"]["blockers"].append(
+                f"real-GT 缺失 song: {missing_gt_songs}"
+            )
+            checks["p3"]["eligible"] = False
+            _add_rebuild(
+                "00_inventory",
+                "DATA_INVENTORY.json",
+                "GT 覆盖完整",
+                "补充缺失 song 的 real-GT 或将其明确移出生产评价",
+            )
+
+    # ---- paired definition version match ----
+    for key, rows, expected in (
+        ("GT_PAIR_METRICS", gt_pairs, PAIRED_DEFINITION["gt_pair_schema"]),
+        ("NO_GT_FEATURES", no_gt, PAIRED_DEFINITION["no_gt_schema"]),
+    ):
+        if not isinstance(rows, list):
+            continue
+        declared = {r.get("schema") for r in rows if isinstance(r, dict) and r.get("schema") is not None}
+        if declared and declared != {expected}:
+            checks["paired_definition"]["blockers"].append(
+                f"{key} schema={sorted(declared)} != 认可版本 {expected!r}"
+            )
+            checks["paired_definition"]["eligible"] = False
+            _add_rebuild(
+                "03_gate",
+                f"{key}.jsonl",
+                "schema 版本与 report 认可一致",
+                "用匹配 NEUTRAL_EPS_MS 的 paired 定义版本重跑 03",
+            )
+
+    for name, chk in checks.items():
+        if chk.get("blockers"):
+            chk["eligible"] = False
+    return checks, rebuild
 
 
 def build_final_report(run_root: str | Path, *, cfg_path: str | None = None) -> dict:
@@ -385,17 +671,24 @@ def build_final_report(run_root: str | Path, *, cfg_path: str | None = None) -> 
         )
     if gt_pairs is not None:
         gate["n_gt_pair_rows"] = len(gt_pairs)
-        paired = [r for r in gt_pairs if isinstance(r, dict) and r.get("delta_error_ms") is not None]
-        improve_n = sum(1 for r in paired if r.get("label") == "improve")
-        harm_n = sum(1 for r in paired if r.get("label") == "harm")
-        gate["n_paired_units"] = len(paired)
+        finite_pairs = [r for r in gt_pairs if isinstance(r, dict) and r.get("delta_error_ms") is not None]
+        outcome_rows = [r for r in gt_pairs if isinstance(r, dict) and r.get("label") in {"improve", "harm", "neutral"}]
+        improve_n = sum(1 for r in outcome_rows if r.get("label") == "improve")
+        harm_n = sum(1 for r in outcome_rows if r.get("label") == "harm")
+        covered_to_missing_n = sum(
+            1 for r in outcome_rows
+            if r.get("old_missing") is False and r.get("new_missing") is True
+        )
+        gate["n_finite_paired_units"] = len(finite_pairs)
+        gate["n_paired_units"] = len(outcome_rows)
         gate["improve_n"] = improve_n
         gate["harm_n"] = harm_n
+        gate["covered_to_missing_n"] = covered_to_missing_n
         gate["net_improved_count"] = improve_n - harm_n
         gate["net_improved_ratio"] = (
-            (improve_n - harm_n) / len(paired) if paired else None
+            (improve_n - harm_n) / len(outcome_rows) if outcome_rows else None
         )
-        gate["neutral_n"] = sum(1 for r in paired if r.get("label") == "neutral")
+        gate["neutral_n"] = sum(1 for r in outcome_rows if r.get("label") == "neutral")
     if no_gt is not None:
         gate["n_no_gt_rows"] = len(no_gt)
     missing_gate = [
@@ -450,6 +743,23 @@ def build_final_report(run_root: str | Path, *, cfg_path: str | None = None) -> 
     conclusion = _conclusion(audit, gate, cfg)
     sections["conclusion"] = conclusion
 
+    stage_checks, rebuild_inputs = _check_stage_eligibility(run_root, loaded)
+    sections["stage_eligibility"] = stage_checks
+    all_eligible = all(chk["eligible"] for chk in stage_checks.values())
+    if not all_eligible:
+        blocked = [n for n, c in stage_checks.items() if not c["eligible"]]
+        conclusion = {
+            "writeback_gate": "stage_ineligible",
+            "eligible": False,
+            "stage_checks": stage_checks,
+            "rebuild_inputs": rebuild_inputs,
+            "reason": (
+                f"分阶段准入未通过（{', '.join(blocked)}）— 仅诊断结论，"
+                "不输出写入回传或产品 review 建议"
+            ),
+        }
+        sections["conclusion"] = conclusion
+
     report_markdown = _render_markdown(run_root, sections, cfg)
 
     smoke = bool(audit.get("smoke") or audit.get("is_smoke") or (audit.get("requested_limit") or 0) > 0)
@@ -462,7 +772,9 @@ def build_final_report(run_root: str | Path, *, cfg_path: str | None = None) -> 
             "test_demo_stress",
         )
     )
-    if not all_ok:
+    if not all_eligible:
+        result_status = "diag_stage_ineligible"
+    elif not all_ok:
         result_status = "incomplete"
     elif smoke:
         result_status = "ok_smoke_partial"
@@ -479,6 +791,11 @@ def build_final_report(run_root: str | Path, *, cfg_path: str | None = None) -> 
             "actual_writeback": _get(constraints, "actual_writeback", 0),
             "no_gt_control": _get(constraints, "no_gt_control", True),
         },
+        "paired_definition": {
+            "gt_pair_schema": PAIRED_DEFINITION["gt_pair_schema"],
+            "no_gt_schema": PAIRED_DEFINITION["no_gt_schema"],
+            "neutral_eps_ms": PAIRED_DEFINITION["neutral_eps_ms"],
+        },
         "sections": {
             "production_detector_audit": audit,
             "gt_realign_behavior": {
@@ -486,6 +803,7 @@ def build_final_report(run_root: str | Path, *, cfg_path: str | None = None) -> 
             },
             "no_gt_gate_signal": gate,
             "test_demo_stress": {k: v for k, v in demo.items() if not k.startswith("_")},
+            "stage_eligibility": stage_checks,
         },
         "conclusion": conclusion,
         "result_status": result_status,

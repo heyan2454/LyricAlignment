@@ -212,6 +212,17 @@ def test_target_missing_recorded_as_new_missing(real_gt, old_rows):
     assert by_cid[2]["new_error_ms"] is None
 
 
+def test_zero_row_candidate_still_emits_missing_target_for_expected_variant(real_gt, old_rows):
+    paired = pair_gt(
+        [], real_gt, song_id="song1", old_rows=old_rows, target_cids=[1],
+        expected_variants=[{"case_id": "empty", "variant": "R-S"}],
+    )
+    assert len(paired) == 1
+    assert paired[0]["case_id"] == "empty"
+    assert paired[0]["variant"] == "R-S"
+    assert paired[0]["new_missing"] is True
+
+
 # ---------- delta / label / boundaries ----------
 
 
@@ -287,8 +298,8 @@ def test_song_split_disjoint_and_complete(gt_rows, no_gt_rows, tmp_path):
     splits = res["splits"]
     n_unique_songs = len({r["song_id"] for r in gt_rows if r.get("song_id")})
     assert splits["n_dev_songs"] + splits["n_holdout_songs"] == n_unique_songs
-    n_labeled = sum(1 for r in gt_rows if r["label"] is not None)
-    assert splits["n_dev_rows"] + splits["n_holdout_rows"] == n_labeled
+    n_candidates = len({(r["song_id"], r["case_id"], r["variant"]) for r in gt_rows if r["label"] is not None})
+    assert splits["n_dev_candidates"] + splits["n_holdout_candidates"] == n_candidates
 
 
 def test_auroc_computable(gt_rows, no_gt_rows):
@@ -317,9 +328,7 @@ def test_counterexamples_output(gt_rows, no_gt_rows, tmp_path):
 
 def test_three_state_suggestion_in_range(gt_rows, no_gt_rows):
     res = analyze(gt_rows, no_gt_rows)
-    assert res["suggestion"] in {
-        "ACCEPT_WRITEBACK", "UNCERTAIN_KEEP_OR_RETRY", "REJECT_KEEP_ORIGINAL",
-    }
+    assert res["suggestion"] == "DIAGNOSTIC_ONLY_NO_WRITEBACK"
 
 
 def test_run_stage_canonical_wiring(tmp_path, monkeypatch):
@@ -439,7 +448,7 @@ def test_run_stage_canonical_wiring(tmp_path, monkeypatch):
     assert by_cid[0]["new_missing"] is False
     assert by_cid[0]["new_error_ms"] == pytest.approx(100.0)
     assert by_cid[0]["delta_error_ms"] == pytest.approx(-100.0)
-    assert by_cid[0]["label"] == "improve"
+    assert by_cid[0]["label"] == "neutral"  # |delta|=100ms < B13 200ms threshold
 
     ng = [json.loads(l) for l in
           (run_root / "03_gate/NO_GT_FEATURES.jsonl").read_text().splitlines() if l.strip()]
@@ -478,8 +487,8 @@ def test_analyze_variant_join_not_overwriting(tmp_path):
     imp_rows = [c for c in lines if c["variant"] == "R-B"]
     assert any(c["label"] == "harm" and c["n_big"] == 0 for c in harm_rows)
     assert any(c["label"] == "improve" and c["n_big"] == 1 for c in imp_rows)
-    total_rows = res["splits"]["n_dev_rows"] + res["splits"]["n_holdout_rows"]
-    assert total_rows == 2
+    total_candidates = res["splits"]["n_dev_candidates"] + res["splits"]["n_holdout_candidates"]
+    assert total_candidates == 2
 
 
 def test_analyze_reports_duplicate_keys(tmp_path):

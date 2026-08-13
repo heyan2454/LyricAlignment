@@ -39,6 +39,11 @@ class AlignmentRequest:
     model_id: str
     checkpoint_id: str
     input_variant: str
+    # Real sparse realign: all text is retained, while only active timestamp
+    # slots are decoded and complementary slots are frozen/remerged.
+    active_slot_indices: tuple[int, ...] | None = None
+    fixed_slot_rows: tuple[dict[str, Any], ...] | None = None
+    slot_constraint_schema: str | None = None
     # review9-2：C3 canonical lineage 作为【严格 content 字段】进 request identity（非 metadata）。
     # 任一改变（mapping/range/timeline SHA/adapter/source window）都会改变 identity，避免 cache 串台。
     canonical_text_start: int | None = None
@@ -92,6 +97,34 @@ class AlignmentRequest:
         if self.timestamp_slot_indices is not None:
             if any(i < 0 or i >= len(self.text_units) for i in self.timestamp_slot_indices):
                 raise ValueError("timestamp_slot_indices out of text_units range")
+        if self.slot_constraint_schema is not None:
+            if self.slot_constraint_schema != "realign_sparse_fixed_v1":
+                raise ValueError("unsupported slot_constraint_schema")
+            active, fixed = self.active_slot_indices, self.fixed_slot_rows
+            if not active or fixed is None:
+                raise ValueError("real sparse request requires active_slot_indices and fixed_slot_rows")
+            if tuple(sorted(set(active))) != tuple(active):
+                raise ValueError("active_slot_indices must be sorted and unique")
+            if any(i < 0 or i >= len(self.text_units) for i in active):
+                raise ValueError("active_slot_indices out of text_units range")
+            if self.timestamp_slot_indices != active:
+                raise ValueError("real sparse request timestamp_slot_indices must equal active_slot_indices")
+            fixed_by_local: dict[int, dict[str, Any]] = {}
+            for row in fixed:
+                local = row.get("local_index")
+                if not isinstance(local, int) or local in fixed_by_local:
+                    raise ValueError("fixed_slot_rows require unique integer local_index")
+                if local < 0 or local >= len(self.text_units):
+                    raise ValueError("fixed_slot_rows local_index out of range")
+                start = row.get("fixed_global_start_sec", row.get("start_sec"))
+                end = row.get("fixed_global_end_sec", row.get("end_sec"))
+                if not isinstance(start, (int, float)) or not isinstance(end, (int, float)) or end < start:
+                    raise ValueError("fixed_slot_rows require valid baseline start/end")
+                fixed_by_local[local] = row
+            if set(active) & set(fixed_by_local):
+                raise ValueError("active and fixed slots overlap")
+            if set(active) | set(fixed_by_local) != set(range(len(self.text_units))):
+                raise ValueError("real sparse active/fixed slots must partition text_units")
         # review（Phase0）：view_id 非 None 时必须是枚举内视图；hidden_schema 非 None 时必须非空字符串
         if self.view_id is not None and self.view_id not in ("full", "sparse", "overlap", "review"):
             raise ValueError(

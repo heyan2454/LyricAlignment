@@ -1,7 +1,9 @@
 """Tests for realign_gate.report (05_report stage).
 
 Pure functions over fake stage JSON/JSONL (flat schema matching real stage
-artifacts); no GPU/real model dependency.
+artifacts); no GPU/real model dependency. B14: staged admission — the fake
+fixture must satisfy P0/P2/P3 + paired-definition version checks for the
+"all good" path, and specific mutations must degrade to stage_ineligible.
 """
 
 from __future__ import annotations
@@ -41,6 +43,7 @@ def _make_fake_run(tmp_path, *, smoke=False):
                     "accepted_units": 4098,
                     "n_unlabeled_total": 182,
                     "unlabeled_by_reason": {"review_status": 182},
+                    "songs_missing_gt": [],
                 },
                 "constructible_windows": {
                     "n_songs": 5,
@@ -50,11 +53,27 @@ def _make_fake_run(tmp_path, *, smoke=False):
             }
         )
     )
+    _write_jsonl(
+        run / "00_inventory" / "BASELINE_WINDOW_INDEX.jsonl",
+        [
+            {"song_id": f"s{i}", "window_id": 0, "window_start": i * 60.0, "window_end": i * 60.0 + 60.0}
+            for i in range(3)
+        ],
+    )
+    _write_jsonl(
+        run / "00_inventory" / "BASELINE_UNITS.jsonl",
+        [{"song_id": f"s{i}", "unit_id": j} for i in range(3) for j in range(2)],
+    )
+    _write_jsonl(
+        run / "00_inventory" / "BASELINE_DETECTOR_SHADOW.jsonl",
+        [{"song_id": f"s{i}", "window_id": 0, "unsafe": False} for i in range(3)],
+    )
     (run / "01_detector_audit" / "RAW_UNIT_METRICS.json").write_text(
         json.dumps(
             {
                 "schema": "realign_gate_01_detector_audit_v1",
                 "result_status": "ok",
+                "population_kind": "production_raw_baseline",
                 "requested_limit": 20 if smoke else 0,
                 "full_population_size": 988,
                 "evaluated_count": 20 if smoke else 988,
@@ -114,24 +133,59 @@ def _make_fake_run(tmp_path, *, smoke=False):
     _write_jsonl(run / "02_behavior" / "CASES.jsonl", [{"case_id": i} for i in range(3)])
     _write_jsonl(run / "02_behavior" / "REQUESTS.jsonl", [{"request_id": i} for i in range(6)])
     _write_jsonl(
-        run / "02_behavior" / "CANDIDATE_INDEX.jsonl", [{"request_id": i} for i in range(5)]
+        run / "02_behavior" / "CANDIDATE_INDEX.jsonl",
+        [
+            {"request_id": i * 2, "case_id": i, "variant": "R-A", "content_idn": f"c{i}a"}
+            for i in range(3)
+        ]
+        + [
+            {"request_id": i * 2 + 1, "case_id": i, "variant": "R-B", "content_idn": f"c{i}b"}
+            for i in range(3)
+        ],
     )
     _write_jsonl(
         run / "03_gate" / "GT_PAIR_METRICS.jsonl",
         [
-            {"case_id": i, "delta_error_ms": -250.0, "label": "improve"}
+            {
+                "schema": "realign_gate_gt_pair_metrics_v1",
+                "case_id": i,
+                "variant": "R-A",
+                "canonical_unit_id": i,
+                "delta_error_ms": -250.0,
+                "label": "improve",
+            }
             for i in range(4)
         ]
         + [
-            {"case_id": 10 + i, "delta_error_ms": 300.0, "label": "harm"}
+            {
+                "schema": "realign_gate_gt_pair_metrics_v1",
+                "case_id": 10 + i,
+                "variant": "R-B",
+                "canonical_unit_id": 10 + i,
+                "delta_error_ms": 300.0,
+                "label": "harm",
+            }
             for i in range(1)
         ]
         + [
-            {"case_id": 20 + i, "delta_error_ms": 10.0, "label": "neutral"}
+            {
+                "schema": "realign_gate_gt_pair_metrics_v1",
+                "case_id": 20 + i,
+                "variant": "R-A",
+                "canonical_unit_id": 20 + i,
+                "delta_error_ms": 10.0,
+                "label": "neutral",
+            }
             for i in range(5)
         ],
     )
-    _write_jsonl(run / "03_gate" / "NO_GT_FEATURES.jsonl", [{"row": i} for i in range(8)])
+    _write_jsonl(
+        run / "03_gate" / "NO_GT_FEATURES.jsonl",
+        [
+            {"schema": "realign_gate_no_gt_features_v1", "row": i, "feature_valid": True}
+            for i in range(8)
+        ],
+    )
     (run / "03_gate" / "ANALYSIS.json").write_text(
         json.dumps(
             {
@@ -204,6 +258,16 @@ def _make_fake_run(tmp_path, *, smoke=False):
     return run
 
 
+def _assert_stage_ineligible(summary, *, stages):
+    assert summary["conclusion"]["writeback_gate"] == "stage_ineligible"
+    assert summary["conclusion"]["eligible"] is False
+    assert summary["result_status"] == "diag_stage_ineligible"
+    assert summary["conclusion"]["rebuild_inputs"]
+    for st in stages:
+        assert summary["sections"]["stage_eligibility"][st]["eligible"] is False
+        assert summary["sections"]["stage_eligibility"][st]["blockers"]
+
+
 def test_load_stage_json_missing_returns_none(tmp_path):
     run = _make_fake_run(tmp_path)
     assert load_stage_json(run, "00_inventory/NOPE.json") is None
@@ -216,7 +280,7 @@ def test_build_final_report_numbers_from_files(tmp_path):
     result = build_final_report(run)
     summary = result["final_summary"]
     audit = summary["sections"]["production_detector_audit"]
-    assert audit["safe_accept_rate"] == 0.9
+    assert audit["accept_ratio"] == 0.9
     assert audit["hist_safe_accept"] == 0.8689
     assert audit["retro_status"] == "not_reproduced_source_missing"
     assert audit["is_smoke"] is False
@@ -231,11 +295,30 @@ def test_build_final_report_numbers_from_files(tmp_path):
     assert summary["result_status"] == "ok"
     assert summary["smoke"] is False
 
+
+def test_report_headline_includes_covered_to_missing_harm(tmp_path):
+    run = _make_fake_run(tmp_path)
+    _write_jsonl(
+        run / "03_gate" / "GT_PAIR_METRICS.jsonl",
+        [{
+            "schema": "realign_gate_gt_pair_metrics_v1", "case_id": "missing", "variant": "R-A",
+            "canonical_unit_id": 1, "delta_error_ms": None, "label": "harm",
+            "old_missing": False, "new_missing": True,
+        }],
+    )
+    summary = build_final_report(run)["final_summary"]
+    gate = summary["sections"]["no_gt_gate_signal"]
+    assert gate["n_finite_paired_units"] == 0
+    assert gate["n_paired_units"] == 1
+    assert gate["harm_n"] == 1
+    assert gate["covered_to_missing_n"] == 1
+
     (run / "01_detector_audit" / "RAW_UNIT_METRICS.json").write_text(
         json.dumps(
             {
                 "schema": "realign_gate_01_detector_audit_v1",
                 "result_status": "ok",
+                "population_kind": "production_raw_baseline",
                 "requested_limit": 0,
                 "is_smoke": False,
                 "production_audit_complete": True,
@@ -264,7 +347,7 @@ def test_build_final_report_numbers_from_files(tmp_path):
     )
     result2 = build_final_report(run)
     audit2 = result2["final_summary"]["sections"]["production_detector_audit"]
-    assert audit2["safe_accept_rate"] == 0.75
+    assert audit2["accept_ratio"] == 0.75
     assert audit2["hist_safe_accept"] == 0.9
     assert "0.7500" in result2["report_markdown"]
     assert "0.8689" not in result2["report_markdown"]
@@ -346,3 +429,139 @@ def test_smoke_run_marked_partial(tmp_path):
     assert "SMOKE / PARTIAL" in md
     assert "requested_limit=20" in md
     assert "NOT a production audit conclusion" in md
+
+
+def test_b14_all_satisfied_production_conclusion(tmp_path):
+    """B14: with all staged admissions met, normal product conclusion is emitted."""
+    run = _make_fake_run(tmp_path)
+    summary = build_final_report(run)["final_summary"]
+    checks = summary["sections"]["stage_eligibility"]
+    assert all(chk["eligible"] for chk in checks.values())
+    assert summary["conclusion"]["writeback_gate"] == "NOT_FROZEN"
+    assert summary["result_status"] == "ok"
+    assert summary["paired_definition"]["neutral_eps_ms"] == 200.0
+    assert summary["paired_definition"]["gt_pair_schema"] == "realign_gate_gt_pair_metrics_v1"
+    assert summary["paired_definition"]["no_gt_schema"] == "realign_gate_no_gt_features_v1"
+
+
+def test_b14_e5_legacy_population_rejected(tmp_path):
+    """B14: E5 proposal-bank population_kind must be rejected (P0)."""
+    run = _make_fake_run(tmp_path)
+    p = run / "01_detector_audit" / "RAW_UNIT_METRICS.json"
+    data = json.loads(p.read_text())
+    data["population_kind"] = "e5_proposal_bank"
+    p.write_text(json.dumps(data))
+    summary = build_final_report(run)["final_summary"]
+    _assert_stage_ineligible(summary, stages=["p0"])
+    assert "production_raw_baseline" in summary["conclusion"]["rebuild_inputs"][0]["required"]
+    assert "ACCEPT_WRITEBACK" not in summary["conclusion"].get("reason", "")
+
+
+def test_b14_baseline_artifacts_missing(tmp_path):
+    """B14: missing BASELINE_* inventory artifacts degrade P0."""
+    run = _make_fake_run(tmp_path)
+    (run / "00_inventory" / "BASELINE_DETECTOR_SHADOW.jsonl").unlink()
+    summary = build_final_report(run)["final_summary"]
+    _assert_stage_ineligible(summary, stages=["p0"])
+    assert any("BASELINE_DETECTOR_SHADOW" in b for b in summary["sections"]["stage_eligibility"]["p0"]["blockers"])
+
+
+def test_b14_skipped_cases_degrades(tmp_path):
+    """B14: SKIPPED_CASES 是设计内安全窗/不可构造 case，只产生 warning，不降级（P2）。
+
+    skipped case 不允许出现在 CANDIDATE_INDEX 配对要求里；CASES.jsonl 本身不带
+    skipped 标记，跳过信息记录在 SKIPPED_CASES.jsonl（02 build_requests 写）。
+    """
+    run = _make_fake_run(tmp_path)
+    p = run / "02_behavior" / "SKIPPED_CASES.jsonl"
+    p.write_text(json.dumps({"case_id": 9, "skip_reason": "no_unsafe_intervals"}) + "\n")
+    summary = build_final_report(run)["final_summary"]
+    chk = summary["sections"]["stage_eligibility"]["p2"]
+    assert chk["eligible"]
+    assert any("SKIPPED_CASES=1" in w for w in chk["warning"])
+    assert summary["result_status"] == "ok"
+
+
+def test_b14_missing_variant_degrades(tmp_path):
+    """B14: a case missing R-A or R-B degrades P2."""
+    run = _make_fake_run(tmp_path)
+    p = run / "02_behavior" / "CANDIDATE_INDEX.jsonl"
+    rows = [json.loads(line) for line in p.read_text().splitlines() if line.strip()]
+    rows = [r for r in rows if not (r["case_id"] == 1 and r["variant"] == "R-B")]
+    with open(p, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
+    summary = build_final_report(run)["final_summary"]
+    _assert_stage_ineligible(summary, stages=["p2"])
+
+
+def test_b14_duplicate_candidate_pair_degrades(tmp_path):
+    """B14: duplicate (case_id, variant) in CANDIDATE_INDEX degrades P2."""
+    run = _make_fake_run(tmp_path)
+    p = run / "02_behavior" / "CANDIDATE_INDEX.jsonl"
+    with open(p, "a") as f:
+        f.write(json.dumps({"request_id": 99, "case_id": 1, "variant": "R-B"}) + "\n")
+    summary = build_final_report(run)["final_summary"]
+    _assert_stage_ineligible(summary, stages=["p2"])
+
+
+def test_b14_feature_invalid_degrades(tmp_path):
+    """B14: feature_valid=False rows degrade P3."""
+    run = _make_fake_run(tmp_path)
+    p = run / "03_gate" / "NO_GT_FEATURES.jsonl"
+    rows = [json.loads(line) for line in p.read_text().splitlines() if line.strip()]
+    rows[0]["feature_valid"] = False
+    with open(p, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
+    summary = build_final_report(run)["final_summary"]
+    _assert_stage_ineligible(summary, stages=["p3"])
+
+
+def test_b14_gt_pair_duplicate_or_label_gap_degrades(tmp_path):
+    """B14: duplicate GT pair key or missing label degrades P3."""
+    run = _make_fake_run(tmp_path)
+    p = run / "03_gate" / "GT_PAIR_METRICS.jsonl"
+    rows = [json.loads(line) for line in p.read_text().splitlines() if line.strip()]
+    rows.append(dict(rows[0]))
+    with open(p, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
+    summary = build_final_report(run)["final_summary"]
+    _assert_stage_ineligible(summary, stages=["p3"])
+
+    run2 = _make_fake_run(tmp_path)
+    p2 = run2 / "03_gate" / "GT_PAIR_METRICS.jsonl"
+    rows2 = [json.loads(line) for line in p2.read_text().splitlines() if line.strip()]
+    rows2[0]["label"] = None
+    with open(p2, "w") as f:
+        for r in rows2:
+            f.write(json.dumps(r) + "\n")
+    summary2 = build_final_report(run2)["final_summary"]
+    _assert_stage_ineligible(summary2, stages=["p3"])
+
+
+def test_b14_schema_mismatch_degrades(tmp_path):
+    """B14: 03 schema version mismatch degrades paired_definition."""
+    run = _make_fake_run(tmp_path)
+    p = run / "03_gate" / "GT_PAIR_METRICS.jsonl"
+    rows = [json.loads(line) for line in p.read_text().splitlines() if line.strip()]
+    rows[0]["schema"] = "realign_gate_gt_pair_metrics_v0"
+    with open(p, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
+    summary = build_final_report(run)["final_summary"]
+    _assert_stage_ineligible(summary, stages=["paired_definition"])
+
+
+def test_b14_stage_ineligible_markdown_rebuild_list(tmp_path):
+    """B14: ineligible report lists next-round rebuild inputs in markdown."""
+    run = _make_fake_run(tmp_path)
+    p = run / "01_detector_audit" / "RAW_UNIT_METRICS.json"
+    data = json.loads(p.read_text())
+    data["population_kind"] = "e5_proposal_bank"
+    p.write_text(json.dumps(data))
+    md = build_final_report(run)["report_markdown"]
+    assert "stage_ineligible" in md
+    assert "rebuild inputs" in md
+    assert "RAW_UNIT_METRICS.json" in md
