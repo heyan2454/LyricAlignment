@@ -24,6 +24,10 @@
 - 当前累计：0h（尚未跑任何 GPU formal forward）
 - target <=10h / hard cap <=12h
 - 预估 screening+expansion ≈500-1000 forward ≈ 分钟级 warm GPU（E_note §5）
+- **环境约束（2026-08-14 实测）**：`nvidia-smi` 返回 "Failed to initialize NVML"，当前会话沙箱内 **GPU 不可直接访问**。
+  - 影响：WP3+ 的模型 forward（需要 Qwen 推理 + checkpoint）在本会话内无法直接执行；WP2 可视化（matplotlib/ffmpeg，纯 CPU）可跑。
+  - 决策：先完成所有 CPU 可做的实现与 smoke（WP2 渲染、E1/E2/E4 的 request 构造与 CPU smoke 借助 --smoke executor），并把 GPU formal 作为"需用户在可访问 GPU 的运行环境执行的批命令"产出；不强行在无 GPU 会话里跑 forward 造成资源或假跑。
+- **资源纪律**：load 已 10+；不在后台并发多个渲染/训练；每次 smoke 用小样本；超时兜底。
 
 ## Runs（数据目录 /home/hyan/Data/lyricalign/runs/）
 - 见 07 §5：P0..P9 一一对应 06 phases。
