@@ -13,9 +13,10 @@
   含 transformers 5.15.0.dev0、torch、nagisa、soundfile、numpy、pytest 等全部相关依赖）。
   项目包尚未 `pip install -e .`，当前以 `PYTHONPATH=src` 运行即可（`src/` 为 setuptools package root）。
 - 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 active override 指向
-  `docs/sessions/20260812_realign_recovery_research/`。实现前依次阅读 `00`–`06`，再以
-  `07_OPENCODE_IMPLEMENTATION_INDEX.md` 作为分批执行入口，并按其指向读取 `08`–`11`；有冲突时
-  当前 session 的 `04_EXECUTION_CONTRACT.md` 与 `07`–`11` 优先。上游
+  `docs/sessions/20260814_realign_recovery_visualization_overnight/`。实现前依次阅读 `00`–`06`；
+  Codex 先按 `05_CODEX_HANDOFF.md` 核实当前代码/证据并生成 `07_CODEX_IMPLEMENTATION_PLAN.md`，
+  再交 OpenCode/agent 分批实现。与旧 session 冲突时，本 session 的实验/可视化/执行合同优先。
+  上游 `20260813_unit_level_realign_overnight`、`20260812_realign_recovery_research`、
   `research_transition_recovery_detector`、`research_fullslot_serial_detector` 与
   `research_v7_align_behavior` 只作实现和证据追溯。
 
@@ -78,15 +79,14 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
   - L3 全量 `tests/`：仅 merge agent 与阶段收尾跑。
   子 agent 验收默认 L1 + `compileall -q src scripts` + `git diff --check`。
 
-## Current mainline: Realign Recovery（实现阶段）
+## Current mainline: Unit Realign Recovery + Visualization（下一轮）
 
-当前规划/实现入口为 `docs/sessions/20260812_realign_recovery_research/07_OPENCODE_IMPLEMENTATION_INDEX.md`。
-本轮研究 Raw-triggered realign/recovery：oracle repairability、no-GT proposal、repair-quality gate、
-selective writeback 与 serial closed loop。新能力应优先置于独立的
-`src/lyricalign/realign_recovery/`、`scripts/realign_recovery/` 与 `tests/realign_recovery/`，通过明确
-adapter 复用已有 `research_transition_recovery_detector`、`research_v7` 和 demo 的纯函数/模型封装，避免把
-新状态语义继续堆进旧阶段。正式 GPU 运行前必须完成 implementation map、source-song/real-GT provenance、
-GT firewall、resolved config、CPU/small-GPU smoke 和预算投影。
+当前规划入口为 `docs/sessions/20260814_realign_recovery_visualization_overnight/README.md`。
+本轮重点研究困难区 multi-realign dynamics、细粒度 split、audio recrop/multi-view、
+`R-U coarse proposal -> bounded sparse/fixed refinement`，并把 B4-vs-Current 与 Current 四路诊断视频
+作为正式实验。所有 realign 继续 shadow-only；真实 writeback 不启用。实现前必须冻结 Current/B4 exact
+resolved baseline、request/cache identity、GT firewall、evaluator schema、visualization adapter、CPU/small-GPU
+smoke 和 GPU 预算。旧 realign_recovery/research_v7/demo 模块优先通过 adapter 复用，避免复制 runner。
 
 ## Upstream implemented baseline: research_v7 Detector V2
 

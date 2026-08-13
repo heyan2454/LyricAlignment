@@ -1,0 +1,55 @@
+session_id: 20260814_realign_recovery_visualization_overnight
+status: planned_not_implemented
+repo: /home/hyan/LyricAlignment
+run_root_base: /home/hyan/Data/lyricalign/runs
+actual_writeback: 0
+gpu_budget:
+  target_hours: 10
+  hard_cap_hours: 12
+principles:
+  no_gt_gt_firewall: true
+  no_cartesian_product: true
+  content_addressed_cache: true
+  collection_before_visualization: true
+  rerender_without_forward: true
+phases:
+  - id: P0
+    name: freeze_and_preflight
+    outputs:
+      - CURRENT_BASELINE_RESOLVED.json
+      - B4_BASELINE_RESOLVED.json
+      - IMPLEMENTATION_MAP.md
+      - BUDGET_PROJECTION.json
+  - id: PV
+    name: visualization_adapter_and_side_by_side_smoke
+    smoke_media: /root/autodl-tmp/AST_storage/Data/lyricalign/test/Chinese/Side by Side.mp4
+    comparisons:
+      - [B4_legacy_pre_slot, Current_baseline]
+      - [Current_baseline, R-U, R-S, R-U_to_sparse_refinement]
+  - id: P1
+    name: multi_realign_dynamics_screening
+    iterations: [1, 2, 3, 5]
+    mechanisms: [direct_chain, recrop_chain, perturb_and_retry]
+  - id: P2
+    name: fine_grained_split_screening
+    mechanisms: [one_unit, two_unit, adaptive_detector_span, anchor_or_gap_split]
+  - id: P3
+    name: observation_context
+    tasks: [complete_k1_vs_k3, audio_recrop_multiscale, anchor_subset]
+  - id: P4
+    name: coarse_to_fine_combination
+    route: R-U_proposal_to_recrop_to_sparse_fixed_refinement
+  - id: P5
+    name: no_gt_candidate_selection_and_safety
+  - id: P6
+    name: adaptive_expansion
+    rule: expand_only_top_1_or_2_mechanisms_from_screening
+  - id: P7
+    name: recovery_basin_atlas_and_hard_case_mining
+  - id: P8
+    name: serial_accumulated_error_stress
+  - id: P9
+    name: multilingual_and_hard_case_visualization_batch
+  - id: PF
+    name: free_exploration_loop
+    last_todo: regenerate_next_free_exploration_todo_and_keep_this_as_last_item

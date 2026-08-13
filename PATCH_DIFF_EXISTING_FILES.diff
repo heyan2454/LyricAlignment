@@ -1,0 +1,102 @@
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -13,9 +13,10 @@
+   含 transformers 5.15.0.dev0、torch、nagisa、soundfile、numpy、pytest 等全部相关依赖）。
+   项目包尚未 `pip install -e .`，当前以 `PYTHONPATH=src` 运行即可（`src/` 为 setuptools package root）。
+ - 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 active override 指向
+-  `docs/sessions/20260812_realign_recovery_research/`。实现前依次阅读 `00`–`06`，再以
+-  `07_OPENCODE_IMPLEMENTATION_INDEX.md` 作为分批执行入口，并按其指向读取 `08`–`11`；有冲突时
+-  当前 session 的 `04_EXECUTION_CONTRACT.md` 与 `07`–`11` 优先。上游
++  `docs/sessions/20260814_realign_recovery_visualization_overnight/`。实现前依次阅读 `00`–`06`；
++  Codex 先按 `05_CODEX_HANDOFF.md` 核实当前代码/证据并生成 `07_CODEX_IMPLEMENTATION_PLAN.md`，
++  再交 OpenCode/agent 分批实现。与旧 session 冲突时，本 session 的实验/可视化/执行合同优先。
++  上游 `20260813_unit_level_realign_overnight`、`20260812_realign_recovery_research`、
+   `research_transition_recovery_detector`、`research_fullslot_serial_detector` 与
+   `research_v7_align_behavior` 只作实现和证据追溯。
+ 
+@@ -78,15 +79,14 @@
+   - L3 全量 `tests/`：仅 merge agent 与阶段收尾跑。
+   子 agent 验收默认 L1 + `compileall -q src scripts` + `git diff --check`。
+ 
+-## Current mainline: Realign Recovery（实现阶段）
++## Current mainline: Unit Realign Recovery + Visualization（下一轮）
+ 
+-当前规划/实现入口为 `docs/sessions/20260812_realign_recovery_research/07_OPENCODE_IMPLEMENTATION_INDEX.md`。
+-本轮研究 Raw-triggered realign/recovery：oracle repairability、no-GT proposal、repair-quality gate、
+-selective writeback 与 serial closed loop。新能力应优先置于独立的
+-`src/lyricalign/realign_recovery/`、`scripts/realign_recovery/` 与 `tests/realign_recovery/`，通过明确
+-adapter 复用已有 `research_transition_recovery_detector`、`research_v7` 和 demo 的纯函数/模型封装，避免把
+-新状态语义继续堆进旧阶段。正式 GPU 运行前必须完成 implementation map、source-song/real-GT provenance、
+-GT firewall、resolved config、CPU/small-GPU smoke 和预算投影。
++当前规划入口为 `docs/sessions/20260814_realign_recovery_visualization_overnight/README.md`。
++本轮重点研究困难区 multi-realign dynamics、细粒度 split、audio recrop/multi-view、
++`R-U coarse proposal -> bounded sparse/fixed refinement`，并把 B4-vs-Current 与 Current 四路诊断视频
++作为正式实验。所有 realign 继续 shadow-only；真实 writeback 不启用。实现前必须冻结 Current/B4 exact
++resolved baseline、request/cache identity、GT firewall、evaluator schema、visualization adapter、CPU/small-GPU
++smoke 和 GPU 预算。旧 realign_recovery/research_v7/demo 模块优先通过 adapter 复用，避免复制 runner。
+ 
+ ## Upstream implemented baseline: research_v7 Detector V2
+ 
+--- a/AI_SESSION_ENTRY.md
++++ b/AI_SESSION_ENTRY.md
+@@ -1,5 +1,50 @@
+ # AI Session Entry
+ 
++## 2026-08-14 Unit Realign Recovery + Visualization — Active Override
++
++The active planning entry is now:
++
++```text
++docs/sessions/20260814_realign_recovery_visualization_overnight/README.md
++docs/sessions/20260814_realign_recovery_visualization_overnight/00_SESSION_DISCUSSION_RECORD.md
++docs/sessions/20260814_realign_recovery_visualization_overnight/01_CURRENT_EXPERIMENT_RESULTS_AND_CONCLUSIONS.md
++docs/sessions/20260814_realign_recovery_visualization_overnight/02_NEXT_ROUND_EXPERIMENT_DESIGN.md
++docs/sessions/20260814_realign_recovery_visualization_overnight/03_VISUALIZATION_DESIGN_AND_ACCEPTANCE.md
++docs/sessions/20260814_realign_recovery_visualization_overnight/04_EXECUTION_CONTRACT_AND_FREE_EXPLORATION.md
++docs/sessions/20260814_realign_recovery_visualization_overnight/05_CODEX_HANDOFF.md
++docs/sessions/20260814_realign_recovery_visualization_overnight/06_PLANNED_RUNS.yaml
++```
++
++Read 00--06 in order. Codex first verifies current code/provenance and writes `07_CODEX_IMPLEMENTATION_PLAN.md`; only then hand the implementation work packages to OpenCode/agent.
++
++Current stage:
++
++```text
++freeze exact Current/B4 baselines and scientific identities
++-> build a thin visualization adapter and Side by Side smoke
++-> study multi-realign dynamics, fine-grained splitting and audio recrop/multi-view
++-> pilot R-U coarse proposal -> bounded sparse/fixed refinement
++-> expand only mechanisms with evidence of strict recovery and acceptable context safety
++-> evaluate real no-GT candidate/safety signals without GT leakage
++-> grow recovery-basin atlas and real serial accumulated-error stress tests
++-> render B4-vs-Current and Current four-way diagnostic videos
++-> continue free exploration after the main plan or GPU cap unless the user interrupts
++```
++
++Hard requirements:
++
++- `actual_writeback=0`;
++- no-GT control/ranking code cannot read GT; GT is evaluator-only;
++- do not treat fixed-point, multi-view consensus or context displacement as correctness sufficient conditions;
++- do not treat legacy/compat R-B data as genuine bilateral-anchor evidence unless provenance checks pass;
++- avoid Cartesian products; screen mechanism-level variants first and expand only 1--2 useful routes;
++- collection must complete before visualization; presentation rerender cannot repeat Qwen forwards;
++- target GPU <=10h, hard cap <=12h; after cap continue CPU analysis, hard-case mining, cached exploration and the recursive free-exploration todo loop.
++
++The previous 2026-08-12 and 2026-08-13 sessions remain authoritative historical evidence, but this 2026-08-14 session wins for next execution when conflicts exist.
++
++---
++
+ ## 2026-08-12 Realign Recovery — Active Implementation Override
+ 
+ The active planning and implementation handoff is now:
+--- a/docs/sessions/SESSION_INDEX.md
++++ b/docs/sessions/SESSION_INDEX.md
+@@ -8,6 +8,7 @@
+ 
+ | Date | Session | Temperature | Summary |
+ |---|---|---|---|
++| 2026-08-14 | `20260814_realign_recovery_visualization_overnight/` | hot | Post-unit-realign review: preserve R-S as verified context-isolation mechanism, treat R-U as stronger coarse target proposal, investigate multi-iteration recovery, fine-grained difficult-region splitting, audio recrop/multi-view and R-U→sparse refinement; add standalone B4-vs-current and current four-way diagnostic timeline videos; collection-before-visualization, cache-only rerender, <=12h GPU plus continuing free exploration. |
+ | 2026-08-12 | `20260812_detector_production_realign_gate/` | hot | Post-realign evidence audit and next focused round: re-check Raw detector production prevalence versus the biased recovery subset, dynamically use broader M4Singer + all Test Demo, collect 60–100 cross-song realign behavior cases with emphasis on correct-but-detector-bad hard negatives, and explore no-GT writeback-gate signals such as change breadth/locality, safe-context corruption and candidate consistency. Corrects residual-error, E8 net, and shadow-E9 interpretation. |
+ | 2026-08-09 | `20260809_second_supplement` (runs/..._20260809_second_supplement) | hot | 二次补充：committed-view binding 修复 + P exact k-best + interval v2 + PR held-out + recovery 分解。**重大发现：评估 GT 用错（synthetic-uniform 非真实 GT），改用 real_gt_pinyin_overlay 重建——真实 GT 下模型对齐 91.7% Safe，R=0.976/H=0.882/P=0.830；H/P evidence window 污染已修复（recollect 185 窗）。** 见 09_reports/EXPERIMENT_RECORD.md。 |
+ | 2026-08-09 | `20260809_signal_completion` (runs/..._20260809_signal_completion) | warm | 第一次补充：H/P/PR 真实接入、evidence v3、recovery decomposition。结果部分被 committed-view bug 污染，需以二次补充为准。 |

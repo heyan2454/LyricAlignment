@@ -1,5 +1,50 @@
 # AI Session Entry
 
+## 2026-08-14 Unit Realign Recovery + Visualization — Active Override
+
+The active planning entry is now:
+
+```text
+docs/sessions/20260814_realign_recovery_visualization_overnight/README.md
+docs/sessions/20260814_realign_recovery_visualization_overnight/00_SESSION_DISCUSSION_RECORD.md
+docs/sessions/20260814_realign_recovery_visualization_overnight/01_CURRENT_EXPERIMENT_RESULTS_AND_CONCLUSIONS.md
+docs/sessions/20260814_realign_recovery_visualization_overnight/02_NEXT_ROUND_EXPERIMENT_DESIGN.md
+docs/sessions/20260814_realign_recovery_visualization_overnight/03_VISUALIZATION_DESIGN_AND_ACCEPTANCE.md
+docs/sessions/20260814_realign_recovery_visualization_overnight/04_EXECUTION_CONTRACT_AND_FREE_EXPLORATION.md
+docs/sessions/20260814_realign_recovery_visualization_overnight/05_CODEX_HANDOFF.md
+docs/sessions/20260814_realign_recovery_visualization_overnight/06_PLANNED_RUNS.yaml
+```
+
+Read 00--06 in order. Codex first verifies current code/provenance and writes `07_CODEX_IMPLEMENTATION_PLAN.md`; only then hand the implementation work packages to OpenCode/agent.
+
+Current stage:
+
+```text
+freeze exact Current/B4 baselines and scientific identities
+-> build a thin visualization adapter and Side by Side smoke
+-> study multi-realign dynamics, fine-grained splitting and audio recrop/multi-view
+-> pilot R-U coarse proposal -> bounded sparse/fixed refinement
+-> expand only mechanisms with evidence of strict recovery and acceptable context safety
+-> evaluate real no-GT candidate/safety signals without GT leakage
+-> grow recovery-basin atlas and real serial accumulated-error stress tests
+-> render B4-vs-Current and Current four-way diagnostic videos
+-> continue free exploration after the main plan or GPU cap unless the user interrupts
+```
+
+Hard requirements:
+
+- `actual_writeback=0`;
+- no-GT control/ranking code cannot read GT; GT is evaluator-only;
+- do not treat fixed-point, multi-view consensus or context displacement as correctness sufficient conditions;
+- do not treat legacy/compat R-B data as genuine bilateral-anchor evidence unless provenance checks pass;
+- avoid Cartesian products; screen mechanism-level variants first and expand only 1--2 useful routes;
+- collection must complete before visualization; presentation rerender cannot repeat Qwen forwards;
+- target GPU <=10h, hard cap <=12h; after cap continue CPU analysis, hard-case mining, cached exploration and the recursive free-exploration todo loop.
+
+The previous 2026-08-12 and 2026-08-13 sessions remain authoritative historical evidence, but this 2026-08-14 session wins for next execution when conflicts exist.
+
+---
+
 ## 2026-08-12 Realign Recovery — Active Implementation Override
 
 The active planning and implementation handoff is now:
