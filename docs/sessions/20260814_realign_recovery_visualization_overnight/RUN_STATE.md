@@ -45,3 +45,18 @@
   - overlay 版 `runs/20260814_viz_fullsong_4lang_ovl/`（lane:Current全曲+R-U）
 - post-review：`runs/20260814_runs_summary/VIZ_FULLSONG_4LANG_POST_REVIEW.md`
 - 遗留：真 B4(pre-slot 串行)lane、R-S/R-CF overlay、此处通往天空多窗 overlay index 冲突。
+
+## 可视化三版（B4 vs Current 全曲，严格按 03 设计）
+- 用户二版反馈：长图太短字省略/视频看不清/「历史raw是哪个raw？严格遵循实验设计」。
+- 修复：
+  * 长图 160px/s(clamp 12k-64k)——controller full_timeline 宽度按成熟实现。
+  * 视频页默认 15s/页(233px/s)，字宽翻倍。
+  * 对比 lane 语义纠正：撤掉 full-slot batch `alignment.raw.json`(错误)，改用`真 B4
+    (pre-slot serial)`(align_qwen_fa_serial_demo，03 V1/02 B4 冻结配置)。
+- 数据：
+  * B4 串行对齐 `runs/20260814_viz_B4/<song>/alignments/r2/vocal/windowed/alignment.json`
+    (4 首) —— R1 projector 20260724_qwen_fa_r1_pilot_seed20260724 + R2 seed20260724 step-000750。
+  * 渲染 `runs/20260814_viz_B4_vs_cur_4lang/`：4 首全曲 MP4 + 超宽长图(21-46kpx) + 15s/页。
+- post-review：`runs/20260814_runs_summary/VIZ_B4_VS_CURRENT_FULLSONG_POST_REVIEW.md`
+- 提交：controller 160px/s(8c16b7c) + render B4 语义/15s(15f1387)。
+- 遗留：B4 与 Current 分词粒度不同(时间同轴按 start_sec)；真 B4 已满足 03 V1。
