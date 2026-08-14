@@ -145,6 +145,14 @@ def attach_real_units(
                     })
                 unit["start_sec"] = float(s_start)
                 unit["end_sec"] = float(s_end)
+                # Carry the detector unit's tri-state (ACCEPT/UNCERTAIN/REJECT) back
+                # onto the region's unit so downstream partition/stratum logic
+                # (split_variants.unsafe_groups, WP4) sees the detector's difficulty
+                # classification.  Existing REGION_POOL products that lack state are
+                # still handled by the split_variants fallback (WP4 P0 fix).
+                shadow_state = str(shadow.get("state") or "").upper()
+                if shadow_state in {"ACCEPT", "UNCERTAIN", "REJECT"}:
+                    unit["state"] = shadow_state
         out.append(row)
     return out, audit
 

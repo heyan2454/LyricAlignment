@@ -230,16 +230,26 @@ def partition_region(region: Mapping[str, Any], partition: str) -> list[dict]:
                     "boundary_kind": "anchor_gap",
                     "meta": {"anchor_accept_ids": sorted(accept_ids), "anchor_gap_boundary": marks},
                 })
-    if not subtargets and flat_targets:
-        # No unsafe state annotated (no state → treat the whole region's units as
-        # the difficulty fragment so the runner is still constructible/testable).
+    if not subtargets:
+        # Fall back to the region's explicit difficulty description when the units
+        # carry no per-unit detector state (e.g. existing REGION_POOL products built
+        # before state was wired through source_adapter).  Prefer the region-level
+        # target_unit_ids (the unsafe span) when present, else the whole unit list.
+        # Mark the fallback explicitly so the outcome can flag non-conformant inputs
+        # instead of silently treating "no difficulty" as "fewer targets" (WP4 P0).
+        if flat_targets:
+            fallback_ids = flat_targets
+        elif region.get("detector_state") == "UNSAFE" and region.get("target_unit_ids"):
+            fallback_ids = [int(x) for x in region["target_unit_ids"]]
+        else:
+            fallback_ids = cids
         subtargets.append({
             "index": 0,
-            "sub_target_unit_ids": flat_targets,
+            "sub_target_unit_ids": fallback_ids,
             "partition_schema": partition,
-            "partition_identity": _partition_identity(region, partition, "fallback_all", []),
-            "boundary_kind": "fallback_all",
-            "meta": {"fallback_all": True},
+            "partition_identity": _partition_identity(region, partition, "state_missing_fallback", []),
+            "boundary_kind": "state_missing_fallback",
+            "meta": {"state_missing_fallback": True, "state_sources": "region_detector_state"},
         })
     return subtargets
 
