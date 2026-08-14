@@ -60,3 +60,15 @@
 - post-review：`runs/20260814_runs_summary/VIZ_B4_VS_CURRENT_FULLSONG_POST_REVIEW.md`
 - 提交：controller 160px/s(8c16b7c) + render B4 语义/15s(15f1387)。
 - 遗留：B4 与 Current 分词粒度不同(时间同轴按 start_sec)；真 B4 已满足 03 V1。
+
+## 可视化四版：B4 vs Current 公平 + Current vs 机制(V2) 全曲
+- **「Current 反而不如 B4」证伪**：曾用 mix(伴奏) 为 Current 对齐 → 零时长率被拉高(乙女解剖30%/浮夸15%/PastLives13%/此处4.9%)，
+  造成假象；改用**同源 vocal**后 Current 零时长率 4 首都 ≤ B4(21.3/6.4/4.3/1.7%)→ 不劣于 B4。
+  详见 `runs/20260814_runs_summary/VIZ_B4_VS_CURRENT_FAIR_FINDING.md`。
+- 交付两套 full 全曲长图(160px/s 超宽) + MP4(全曲)，分窗 page 不保留：
+  * **V1 B4 vs Current**：`runs/20260814_viz_B4_vs_cur_Fair_vocal/`（lane: B4历史pre-slot串行 / Current当前full-slot，均vocal同源）。
+  * **V2 机制消融**：`runs/20260814_viz_v2_mech_4lang/`（lane: Current全曲 + R-U overlay，mechanism 全局 index 与 Current 对齐已核验）。
+- 真 B4: `runs/20260814_viz_B4/`（align_qwen_fa_serial_demo, 03 冻结配置, R2 seed20260724 step-000750 与 Current 同源）。
+- 工具：`render_full_song.py`(B4/Current/机制全曲) + `batch_v2_overlay.py`(V2 批次)。
+- 提交：e797658(batch_v2_overlay) + 前序 B4/fair 提交。
+- 其余真实 run：见 09 GPU review（E1-E4 等）。
