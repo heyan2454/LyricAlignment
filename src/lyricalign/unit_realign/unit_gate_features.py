@@ -12,6 +12,9 @@ ALLOWED_FEATURE_KEYS = frozenset({
     "signed_detector_delta", "context_protected", "duration_sec", "decoder_confidence", "state_before", "state_after",
     "monotonicity_violation", "inversion_count", "overlap_sec", "compression_ratio", "slot_violation",
     "safe_context_changed_count", "raw_official_disagreement_ms", "local_consistency",
+    # no-GT selector signals (E5/WP7): posterior/scorer/structure, never GT outcomes.
+    "margin", "min_margin", "num_margins_above", "entropy", "detector_state", "detector_p_bad",
+    "context_displacement_ms", "fixed_point_spread_ms", "split",
 })
 
 
