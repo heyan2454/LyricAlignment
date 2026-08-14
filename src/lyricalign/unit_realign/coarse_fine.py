@@ -225,8 +225,19 @@ def build_refinement_stage(region: Mapping[str, Any], target_unit_ids: Sequence[
                 or float(b["fixed_global_end_sec"]) < float(a["fixed_global_end_sec"])):
             return _null_nc(song_id=song_id, region_id=region_id,
                             reason="non_monotonic_fixed_timeline")
-    start = min(float(recrop_units[i]["start_sec"]) for i in active_local)
-    end = max(float(recrop_units[i]["end_sec"]) for i in active_local)
+    # Crop window must be non-degenerate even when every active unit is
+    # zero-duration (collapsed target): apply the same audio_margin_sec as
+    # R-U's build_family_request and guarantee a minimum positive width.
+    # Without this, a zero-duration target yields start == end -> forward
+    # rejects "invalid audio range: t, t".
+    active_starts = [float(recrop_units[i]["start_sec"]) for i in active_local]
+    active_ends = [float(recrop_units[i]["end_sec"]) for i in active_local]
+    start = max(0.0, min(active_starts) - audio_margin_sec)
+    end = max(active_ends) + audio_margin_sec
+    if end - start < 1e-6:
+        center = (min(active_starts) + max(active_ends)) / 2.0
+        start = max(0.0, center - audio_margin_sec)
+        end = center + audio_margin_sec
 
     base = dict(identity_context or {})
     chain = dict(base)

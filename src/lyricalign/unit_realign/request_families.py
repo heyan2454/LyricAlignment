@@ -191,6 +191,15 @@ def build_family_request(
     else:  # R-S: full local span, not the target span
         start = min(float(by_id[cid]["start_sec"]) for cid in context_ids)
         end = max(float(by_id[cid]["end_sec"]) for cid in context_ids)
+        # R-S has no per-target margin (full local span); pad like R-U so a
+        # fully zero-duration local span never yields a degenerate crop.
+        start = max(0.0, start - audio_margin_sec)
+        end = end + audio_margin_sec
+    # Final safety net (all families): never emit a zero-width audio crop.
+    if end - start < 1e-6:
+        center = (start + end) / 2.0
+        start = max(0.0, center - audio_margin_sec)
+        end = center + audio_margin_sec
     sparse = family == "R-S"
     result: dict[str, Any] = {
         "schema": UNIT_REQUEST_SCHEMA, "request_id": f"{song_id}:{region_id}:{family}", "family": family,
