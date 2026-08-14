@@ -170,6 +170,15 @@ def build_chain(base_region: Mapping[str, Any], target_unit_ids: Sequence[int],
     iter0_rows = baseline_rows_from_units(frozen_units, full_ids)
 
     base_ctx = dict(identity_context or {})
+    # GPU-real finding (P0): multiple regions of the same song/window can share the
+    # same audio crop + text window + target, which makes their request_identity
+    # collide (content-addressing merges distinct regions' evidence).  Fold the
+    # region/song identity into the context so each region's realign chain is
+    # content-addressed separately even when its model input coincides with another
+    # region's.
+    base_ctx["region_id"] = region_id
+    if song_id:
+        base_ctx["song_id"] = song_id
 
     steps: list[dict] = []
     prev_request: dict | None = None
