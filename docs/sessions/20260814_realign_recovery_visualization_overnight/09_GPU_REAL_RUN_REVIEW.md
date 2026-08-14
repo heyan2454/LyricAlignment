@@ -65,3 +65,14 @@ PYTHONPATH=src python scripts/unit_realign/run_coarse_fine.py --regions $M --out
 - 四路可视化正式渲染（用真实 collection）。
 - catastrophic 8/40 归因：区分 target 原本远偏 vs refine 引入。
 - E4 Stage-B 真冲突 region：检查 re-crop 前移/后移是否能避免（adaptive recrop）。
+
+## 可视化：真 B4 vs Current 全曲（严格 03 设计）
+- 产 4 首真 B4(pre-slot serial)：`runs/20260814_viz_B4/<song>/alignments/r2/vocal/windowed/alignment.json`
+  （align_qwen_fa_serial_demo，official/60/10/10/silence-aware/skip-silent；R1 20260724_r1_pilot_seed20260724
+  + R2 seed20260724 step-000750，与 Current 同源）。03 V1 公平性满足。
+- **find/mix 音频不一致**：我曾为 Current 用 mix(伴奏) → 零时长率被拉高(30%/15%/13%/5%)，
+  造成「Current 反而不如 B4」假象（违反 03 同 audio preprocessing）。同源(vocal)后 Current 零时长率
+  4 首都 ≤ B4（乙女解剖 21.3% vs 22.3% 等）→ 证伪。
+- 产物：`runs/20260814_viz_B4_vs_cur_Fair_vocal/` 4 首 full_timeline(160px/s 超宽) + MP4(全曲)。
+  分窗 page 不保留（用户弃）。
+- 详见 `runs/20260814_runs_summary/VIZ_B4_VS_CURRENT_FAIR_FINDING.md`。
