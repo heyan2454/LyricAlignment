@@ -42,7 +42,7 @@ consensus/fixed-point 非 correct 充分条件）与 AGENTS「运行完备才算
 | **WP10** | Test Demo 可视化 batch | 416621b | AC | P1×2 | +0 |
 | **WP11** | 收尾 + free-exploration | 本文件 | (见 §7) | — | — |
 
-**小计**：36 个新提交；417 个提交前单测（0→387 新增）；28 个 provenance review/实现 notes。
+**小计**：36 个新提交（merge 后）；当前 HEAD 全量单测（unit_realign + realign_recovery + realign_gate）**387 通过**；28 个 provenance review/实现 notes。
 
 ### 未执行（需 GPU 环境）
 - 所有 **GPU formal forward**（WP3/4/5/6/7/8/9/10 的 `--real` 路径）。
@@ -68,45 +68,64 @@ consensus/fixed-point 非 correct 充分条件）与 AGENTS「运行完备才算
 - hypothesis：相同 formulation 多次 realign 是否逐步纠回 vs 进入错误 fixed point。
 - setup：`multi_iteration.py`，iter 1/2/3/5 chain，identity 含 parent/iteration。
 - observation（smoke）：链能构造、iter 间 baseline 继承正确、target vs fixed-context displacement 分离。
+- alternative：观测到的 "oscillation/divergence" 可能是 smoke 假 executor 的 target +0.1s 离散 artifacts
+  而非真实声学运动；「逐步纠回」也可能是 baseline 继承固有的均值回归而非模型的真实能力（待 formal 区分）。
 - 结论强度：**机制正确（已验）**；「是否纠回」需 real forward（待 formal）。
 
 ### E2 fine-split
 - hypothesis：困难区拆 1/2-unit/adaptive/anchor 扩大 recovery basin。
 - setup：`split_variants.py` 四 partition × 三 direction，split_slot_id identity。
 - P0 修复（Q-review）：真实 REGION_POOL 无 unit-level state → 适配层回写 + state_missing_fallback。
+- alternative：「拆小看似扩 basin」可能被 split_slot_id 导致的 identity 切分混淆（不同分片看似独立恢复，
+  实际共享同一 context 漂移）；方向性 L2R/R2L 差异可能是窗口内触发顺序而非恢复机制本身（待 formal 复测）。
 - 结论强度：**分区机制正确、真实数据可用（已验）**；「拆小是否扩大 basin」待 formal。
 
 ### E3 observation/context
 - k1/k3 closure（no-GT structural，C_note 确认旧 schema 兼容）；audio views（4 预注册 crop）+ no-GT 选择器。
+- alternative：「audio view 改变观察」的收益可能来自 crop 边界几何而非模型对不同 observation 的敏感度；
+  k1/k3 closure 仅 no-GT structural，非 accuracy，不能作为 "text context 无关" 的证据（待 formal 校准）。
 - 结论强度：**closure/recrop 机制正确（已验）**；「audio view 是否比 text context 强」待 formal。
 
 ### E4 coarse→fine + 四路可视化
 - hypothesis：R-U proposal→recrop→sparse/fixed refine 组合同时接近 R-U target 与 R-S safety。
 - setup：`coarse_fine.py`（family=R-CF）+ `render_current_4way --fourth-family R-CF` 四路接线。
 - P1-1（U-review）：Stage B not_constructible 时 A-stage coarse 恢复不丢弃。
+- alternative：「组合 target≈R-U 且 context≈R-S」可能只是从后验里挑了两个已存在结果的并集，而非真正
+  「coarse 定位→fine 精修」产生了新的恢复能力；recrop 中心的选取偏差也可能导致不同结论（待 formal 复测）。
 - 结论强度：**组合机制与四路渲染正确（已验）**；「组合是否达成两全」待 formal。
 
 ### E5 no-GT selector/safety
 - setup：`no_gt_selector.py`，p_bad 主代理 + margin/entropy/raw-official，recovery-first/safety-first 分开。
 - P1 修复（W-review）：proxy 生产者、true-85th、disjoint heldout、测试。
+- alternative：选择阈值（p85、30/80ms、margin 0.2）是 freeze-split 上校准的，真实 heldout 上可能不鲁棒；
+  p_bad 代理来自 FrozenScorer 特征矩阵，若它在困难区本身不可靠，则 selector 的安全性会被高估（待 heldout formal）。
 - 结论强度：**selector/firewall 正确（已验）**；「是否选对/安全拒坏」需真实 decoder 信号 + heldout formal。
 
 ### E6 atlas / E7 serial
 - setup：`recovery_atlas.py`（6 分类）+ `run_serial_stress.py`（下游错误累计）。
 - P1 修复（AA-review）：coarse 比例当布尔、recrop schema 标记。
+- alternative：atlas 六分类的「最简机制优先」可能把同时可被多机制恢复的区域归错（归属偏差）；
+  serial episode 的「windows-to-recover」用 smoke 假 executor，真实 forward 的下游错误传播可能不同（待 formal）。
 - 结论强度：**atlas/serial 机制正确（已验）**；「真实 recoverability 图谱」待 formal evidence。
 
 ### E8/E9 Test Demo 可视化 batch
 - setup：`run_test_demo_viz.py`（复用 WP2 controller + transcode）。
 - P1 修复（AC-review）：family tracks item 收敛（防跨歌污染）、rerender-only 委托真实 renderer。
+- alternative：可视化展示的 "B4-vs-Current / 四路差异" 依赖于 collection 的 evidence 完整性；
+  U4 3 mp4 已被判 ffmpeg-openable 但当前不在 plan，未在渲染中被实际转码覆盖（一旦纳入需复核音轨与时间轴）。
 - 结论强度：**批量渲染正确、U4 3 mp4 判可开（已验）**；「正式多语言批量」待 GPU collection。
 
 ---
 
 ## 3. 预算 / forward / cache（04 §3, §6）
 
-- 本 session **实际 GPU forward = 0**（GPU 不可访问）。
-- CPU smoke 全部 `--smoke`/`forward=0`（E5 selector、E6 atlas 为纯读缓存）。
+- **GPU**：本 session **实际 GPU forward = 0**（GPU 不可访问），GPU wall time = 0。
+- **CPU**：所有 runner 的 CPU smoke 均为秒级（每人机实测：multi_realign ~2-3s、split ~2s、
+  coarse_fine ~2s、audio_views ~1s、no_gt_selector ~1-3s、atlas/serial ~1-2s、wp8 expansion ~1s，
+  单调 machine-load 有波动，非科学计时）。
+- **forward count**：CPU smoke 全部 `--smoke`/读缓存（E5 selector、E6 atlas 为纯读缓存，forward=0）。
+- **cache hit**：各 runner resume 幂等已实测——multi_realign resume skip 5、split skip 6、
+  audio_views skip 4、coarse_fine skip 2（按 request_identity 内容寻址命中，不重复 forward）。
 - 预算 projection（WP8 P6 adaptive expansion）：扩量 ~2880 forwards（estimate，记账非实跑）。
 - GPU formal 命令模板已在各 WP note（R_note §6 / P_wp4 §6 / T_wp6 §6 / V_wp7 / Z_wp9 / AB_wp10 §6）。
 
