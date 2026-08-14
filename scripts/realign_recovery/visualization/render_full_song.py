@@ -117,6 +117,10 @@ def main() -> int:
                     help="seconds per video page; smaller = 更高px-per-sec = 更清晰(默认15)")
     ap.add_argument("--font", default="Noto Sans CJK SC")
     ap.add_argument("--fourth-family", default=None)
+    ap.add_argument("--rcf-evidence-root", type=Path, default=None,
+                    help="extra forward/evidence root for the R-CF (coarse_fine) family; "
+                         "payloads whose file path contains the item's song filename are "
+                         "appended as the 4th lane (R-CF demo runs).")
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
 
@@ -183,6 +187,27 @@ def main() -> int:
                 ))
             else:
                 raise SystemExit(f"--fourth-family {args.fourth_family!r} but no evidence has proposal_method==it")
+
+        # R-CF demo lane: coarse_fine evidence lives in a separate root, keyed by
+        # file path containing the song's filename (no item_id on the request).
+        if args.rcf_evidence_root:
+            import glob as _glob
+            songname = args.item.split("/")[-1]
+            rcf = []
+            for f in _glob.glob(str(args.rcf_evidence_root) + "/**/*R-CF.json", recursive=True):
+                if songname in f:
+                    rcf.append(json.loads(Path(f).read_text(encoding="utf-8")))
+            if rcf:
+                rcf_traces = []
+                for p in rcf:
+                    rq = (p.get("attempt") or {}).get("request") or {}
+                    rcf_traces.append(window_trace_from_request(rq))
+                tracks.append(build_track_from_evidence(
+                    rcf, label="R-CF", decoder_kind="official",
+                    window_trace=rcf_traces, metadata={"family": "R-CF"},
+                ))
+            elif args.fourth_family:
+                pass  # R-CF explicitly requested but no evidence -> already handled above
 
     # windows for overlay (union across mechanism tracks)
     seen = set()
