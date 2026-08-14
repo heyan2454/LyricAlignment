@@ -331,6 +331,13 @@ def page_ranges_for(start: float, end: float, page_seconds: float) -> list[tuple
     return pages
 
 
+def full_timeline_pixel_width(duration: float) -> int:
+    """Match the mature inline-realign viz: wide whole-song canvas so every
+    unit's label gets room (160 px/sec, clamped to [12000, 64000]).
+    See ``scripts/demo/analyze_inline_realign_visuals.full_timeline_pixel_width``."""
+    return max(12000, min(64000, int(max(duration, 30.0) * 160.0)))
+
+
 def render_static_group(
     out: Path,
     *,
@@ -384,6 +391,7 @@ def render_static_group(
         title=title,
         font=font,
         video_layout=False,
+        pixel_width=full_timeline_pixel_width(end - start),
     )
     return {
         "group": group,
