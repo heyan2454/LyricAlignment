@@ -52,8 +52,16 @@ PYTHONPATH=src python scripts/unit_realign/run_audio_views.py --regions $M --out
 PYTHONPATH=src python scripts/unit_realign/run_coarse_fine.py --regions $M --out-root <run>/E4 --family R-CF --real --model-dir $SNAP --revision main --checkpoint-path $CKPT --limit 40
 ```
 
+### E4 coarse→fine R-CF 正式扩量（40 region，20s / 87 outcome rows）
+- stage-A 可构造 27/40；13 个 fail 原因均为 `invalid_unit_target_span`（筛选 manifest 中 target 非连续 span，fail-closed 正常）。
+- stage-A 中 stage-B 可精修 **15/27**；25/40 未到 stage-B（多数为 stage-A 不可构造或 recrop 真冲突，正确 fail-closed）。
+- **stage-B 全部 fixed_context_displacement_ms = 0.0ms**（15/15）→ coarse→fine 精修上下文零位移，核心假设在 40 region 上成立。
+- stage-B 恢复率：`target_recovered_200` 10/15 (≥1.0 全恢复)，`_500` 12/15，`_1000` 13/15；20s 内瞬时恢复多数目标。
+- catastrophic_regression：8/40（需检查是 target 本就远偏，还是 refine 引入；见遗留）。
+- **`test_demo_structural_regressions.ok` 恒 false 且 overlap_pairs 在所有 region（含 13 个完全未精修的 stage-A-fail region）均非空** → overlap 是**源 timeline 固有**，非 R-CF 引入，作为"refine 是否引入回归"信号是假阳性（可在 regress 合约中放宽为"相对 refine 前后新增 overlap"）。
+
 ## 遗留 / 下一步
-- E1/E2/E3/E4 各用 40 region 正式扩量（快速，0.6B）。
-- E3 view 选择样本扩大后再下"audio view 是否有增益"结论。
+- E2 fine-split、E3 audio-view 各扩量到 40 region（0.6B 极快，分钟级）。
 - 四路可视化正式渲染（用真实 collection）。
-- E4 Stage-B 真冲突的 1/5 区域：检查 re-crop 前移/后移是否能避免（adaptive recrop）。
+- catastrophic 8/40 归因：区分 target 原本远偏 vs refine 引入。
+- E4 Stage-B 真冲突 region：检查 re-crop 前移/后移是否能避免（adaptive recrop）。

@@ -22,15 +22,26 @@
 | WP11 收尾 + free-exploration | completed | 08_SESSION_FINAL_REPORT.md (+ AD review P1s fixed); 满足 04 §10; free-exploration 递归 todo 已在报告 §8 保留 |
 
 ## GPU 预算（GPU formal forward）
-- 当前累计：0h（尚未跑任何 GPU formal forward）
 - target <=10h / hard cap <=12h
-- 预估 screening+expansion ≈500-1000 forward ≈ 分钟级 warm GPU（E_note §5）
-- **环境约束（2026-08-14 实测）**：`nvidia-smi` 返回 "Failed to initialize NVML"，当前会话沙箱内 **GPU 不可直接访问**。
-  - 影响：WP3+ 的模型 forward（需要 Qwen 推理 + checkpoint）在本会话内无法直接执行；WP2 可视化（matplotlib/ffmpeg，纯 CPU）可跑。
-  - 决策：先完成所有 CPU 可做的实现与 smoke（WP2 渲染、E1/E2/E4 的 request 构造与 CPU smoke 借助 --smoke executor），并把 GPU formal 作为"需用户在可访问 GPU 的运行环境执行的批命令"产出；不强行在无 GPU 会话里跑 forward 造成资源或假跑。
-- **资源纪律**：load 已 10+；不在后台并发多个渲染/训练；每次 smoke 用小样本；超时兜底。
+- 当前累计：**GPU 已在 full-access 会话内直接可跑**（RTX 4080 SUPER，Qwen 0.6B 峰值 2.5GB；每 fwd ~0.5s）。
+- 已跑真实扩量：E1(40region/200fwd/54s)、E4(40region/87行/20s)、E2(见下)。
+- **资源纪律**：run 数据一律写 `/home/hyan/Data/lyricalign/runs/20260814_*`；**GPU 任务串行**（一次一个，避免并发显存/内存峰值）；RAII 顺序：先小 limit 验通 → 扩量到 40；禁止全笛卡尔积（挑关键 cell）。
 
 ## Runs（数据目录 /home/hyan/Data/lyricalign/runs/）
 - 见 07 §5：P0..P9 一一对应 06 phases。
 
 ## Resume 命令（E0 冻结后填）
+
+## 可视化二版（全曲）记录（用户反馈后）
+- 反馈：首版 4lang(20260814_viz_4lang)不是全曲(7-60s)、看不清、无过去 baseline 对比。
+- 根因：render_current_4way 的 timeline 边界 = unsafe 窗口 R-U/R-S evidence 的 start/end；
+  且那几首无全曲逐字对齐；render_b4_vs_current 的 B4 是 raw-argmax 替身。
+- 修复：新增 `scripts/realign_recovery/visualization/render_full_song.py`(commit bdc802d)，
+  全曲 lane = 现跑 `alignments/r2/mix/windowed/alignment.json`(30s/页 + 5600px 全曲长图)。
+- 产全曲 baseline：run_qwen_fa_batch --individual r2:mix:windowed --stage align 于数据盘
+  `viz_fullsong_prep/`（不污染 test 源）；4 首饰全曲(203.8/287.0/134.7/229.6s)。
+- 产物：
+  - 纯全曲版 `runs/20260814_viz_fullsong_4lang/`（lane:历史raw解码 vs 当前精修）
+  - overlay 版 `runs/20260814_viz_fullsong_4lang_ovl/`（lane:Current全曲+R-U）
+- post-review：`runs/20260814_runs_summary/VIZ_FULLSONG_4LANG_POST_REVIEW.md`
+- 遗留：真 B4(pre-slot 串行)lane、R-S/R-CF overlay、此处通往天空多窗 overlay index 冲突。
