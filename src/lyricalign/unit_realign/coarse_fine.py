@@ -516,13 +516,22 @@ def run_coarse_fine(region: Mapping[str, Any], target_unit_ids: Sequence[int],
 #  evaluation — coarse_fine_v1 (02 E4 §311-319)
 # --------------------------------------------------------------------------- #
 def _final_rows(steps: Sequence[Mapping[str, Any]]) -> tuple[list[dict] | None, dict | None]:
-    """Return (merged final candidate rows, winning stage) across steps."""
-    for step in steps:
-        if step.get("stage") == "B" and step.get("status") == "ok":
-            return step.get("candidate_rows"), step
-        if step.get("stage") == "A" and step.get("status") == "ok" and not (
-            any(s.get("stage") == "B" for s in steps)):
-            return step.get("candidate_rows"), step
+    """Return (merged final candidate rows, winning stage) across steps.
+
+    U-review P1-1: if Stage A produced a valid coarse proposal but Stage B was
+    not_constructible (fail-closed stop), the coarse recovery is still real and
+    must not be discarded. We fall back to Stage A's candidate rows in that case
+    so coverage/target_recovered_* reflect the coarse recovery rather than a
+    spurious 0.
+    """
+    b_step = next((s for s in steps if s.get("stage") == "B"), None)
+    a_step = next((s for s in steps if s.get("stage") == "A"), None)
+    if b_step is not None and b_step.get("status") == "ok":
+        return b_step.get("candidate_rows"), b_step
+    # Stage B absent, or present-but-not-constructible, while Stage A succeeded:
+    # use the coarse proposal as the final result.
+    if a_step is not None and a_step.get("status") == "ok":
+        return a_step.get("candidate_rows"), a_step
     return None, None
 
 
@@ -662,6 +671,10 @@ def evaluate_coarse_fine(steps: Sequence[Mapping[str, Any]]) -> list[dict[str, A
         "stage_a_constructible": constructible_a,
         "stage_b_constructible": constructible_b,
         "not_constructible_reason": (_fail_reason(steps) or None),
+        # U-review P1-1: final_stage records whether the reported recovery came from
+        # Stage B (refine) or fell back to Stage A (coarse) when B was not_constructible.
+        "final_stage": str((win or {}).get("stage")) if win else None,
+        "stage_b_not_constructible": bool(b_step is not None and b_step.get("status") != "ok"),
         # target 100/200/500/1000ms recovery rates.
         "n_target_units": len(target_ids),
         "target_recovered_100": round((n_100 / n_ok), 4) if n_ok else 0.0,

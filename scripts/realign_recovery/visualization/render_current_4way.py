@@ -100,14 +100,26 @@ def main() -> int:
 
     fourth_family = args.fourth_family
     if fourth_family:
-        f4 = evidence_payloads_for_family(evidence_index, request_ids, family=fourth_family)
+        # U-review P1-2: do not depend on the external plan's request_ids containing
+        # the 4th-route id (it usually doesn't, since the plan comes from the R-U/R-S
+        # pipeline).  Collect every payload whose proposal_method == fourth_family
+        # directly from the frozen evidence index; if none exist, fail explicitly
+        # (explicit --fourth-family with no evidence is a config error, not a silent
+        # 3-track fallback).
+        f4 = [p for p in evidence_index.values()
+              if ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
+              .get("proposal_method") == fourth_family]
         if f4:
             tracks.append(build_track_from_evidence(
                 f4, label=fourth_family, decoder_kind="official",
                 window_trace=_trace_for(f4), metadata={"family": fourth_family},
             ))
         else:
-            print(f"[warn] fourth family {fourth_family!r} has no ok evidence; keeping 3 tracks")
+            raise SystemExit(
+                f"[error] --fourth-family {fourth_family!r} specified but no evidence has "
+                f"proposal_method=={fourth_family!r} in forward-root; refusing to render a "
+                f"silent 3-track fallback"
+            )
 
     rows = current_track.get("rows") or []
     if not rows:
