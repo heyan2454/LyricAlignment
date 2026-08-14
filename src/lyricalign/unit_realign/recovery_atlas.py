@@ -60,6 +60,10 @@ MECHANISMS = (MECH_ITERATIVE, MECH_SPLIT, MECH_RECROP, MECH_COARSE)
 _SCHEMA_MECH = {
     "multi_realign_dynamics_v1": MECH_ITERATIVE,
     "split_realign_v1": MECH_SPLIT,
+    # AA-review P1: E3's actual schema is audio_view_study_v1 (not "audio_views");
+    # fix the marker so recrop rows are recognized instead of depending on the
+    # "view" substring fallback.
+    "audio_view_study": MECH_RECROP,
     "audio_views": MECH_RECROP,
     "coarse_fine_v1": MECH_COARSE,
 }
@@ -106,16 +110,28 @@ def _row_recovered_buckets(row: Mapping[str, Any]) -> dict[int, bool]:
     out: dict[int, bool] = {}
     for b in BUCKETS_MS:
         ok = None
+        # Boolean-shaped buckets (split: recovered_strict_*/recovered_coarse_*).
         for key in (f"recovered_strict_{b}", f"recovered_coarse_{b}",
-                    f"target_recovered_{b}", f"{b}_recovered",
-                    f"recovered_{b}", f"{b}ms"):
+                    f"{b}_recovered", f"recovered_{b}"):
             v = row.get(key)
             if isinstance(v, bool):
                 ok = v
                 break
-            if isinstance(v, (int, float)):
-                ok = bool(v)
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                ok = bool(v)  # 0/1 ints legitimately use bool
                 break
+        # AA-review P1: coarse_fine's target_recovered_{b} is a 0..1 PROPORTION
+        # (n_recovered/n), NOT a boolean; treat it as "reached the bucket" only when
+        # >= 1.0 - eps (i.e. every target recovered), otherwise it is a partial hit
+        # and must NOT mark the bucket reached.
+        if ok is None:
+            pv = row.get(f"target_recovered_{b}")
+            if isinstance(pv, (int, float)) and not isinstance(pv, bool):
+                ok = bool(float(pv) >= 1.0 - 1e-6)
+        if ok is None:
+            mv = row.get(f"{b}ms")
+            if isinstance(mv, (int, float)) and not isinstance(mv, bool):
+                ok = bool(mv)
         fh = row.get(f"first_hit_ms_iteration_{b}")
         if isinstance(fh, (int, float)) and not isinstance(fh, bool):
             ok = True
