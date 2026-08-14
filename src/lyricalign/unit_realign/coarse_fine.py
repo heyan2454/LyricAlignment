@@ -358,13 +358,19 @@ def make_coarse_fine_smoke_executor(nudge_target_sec: float = 0.0,
 #  constructibility / fail-closed geometry guard
 # --------------------------------------------------------------------------- #
 def constructible(proposal_rows: Sequence[Mapping[str, Any]],
-                  region: Mapping[str, Any]) -> str | None:
+                  region: Mapping[str, Any], *, scope_ids: Sequence[int] | None = None) -> str | None:
     """Return None if the coarse proposal plus the frozen fixed context form a
     legal timeline; otherwise a fail-closed not_constructible reason string.
 
-    The proposal target rows and all region context rows are merged and validated
+    The proposal target rows and the in-scope context rows are merged and validated
     for monotonicity / non-negative duration (``validate_rows``).  If the proposal
     collides with or flips the fixed context, the refinement is not constructible.
+
+    ``scope_ids`` (GPU-real finding) limits the validated units to those actually
+    refined in Stage B (the re-centered recrop window).  Without it the whole-region
+    merged timeline is checked, and units OUTSIDE the Stage-B crop whose frozen times
+    happen to invert relative to the proposal falsely mark a fine refinement
+    not_constructible even though Stage-B never touches them.
     """
     by_id = {int(r["canonical_unit_id"]): r for r in (proposal_rows or ())}
     if not by_id:
@@ -373,6 +379,8 @@ def constructible(proposal_rows: Sequence[Mapping[str, Any]],
     merged: list[dict[str, Any]] = []
     for u in _unit_rows(region):
         cid = int(u["canonical_unit_id"])
+        if scope_ids is not None and cid not in set(scope_ids):
+            continue
         cand = by_id.get(cid)
         merged.append({"canonical_unit_id": cid,
                        "start_sec": float(cand["start_sec"]) if cand is not None else float(u["start_sec"]),
@@ -475,7 +483,12 @@ def run_coarse_fine(region: Mapping[str, Any], target_unit_ids: Sequence[int],
         return steps
 
     proposal = a_step["candidate_rows"]
-    geo = constructible(proposal, region)
+    # GPU-real fix: validate constructibility against the units Stage-B will
+    # actually refine (the re-centered recrop window), not the whole region, so
+    # out-of-crop units' stale times cannot falsely fail a fine refinement.
+    recrop_ids, _ = _recrop_context_ids(region, targets, proposal,
+                                        neighbors=STAGE_B_CONTEXT_NEIGHBORS)
+    geo = constructible(proposal, region, scope_ids=recrop_ids)
     if geo:
         b_step["constructible"] = False
         b_step["not_constructible_reason"] = f"proposal_invalidates_fixed_context:{geo}"
