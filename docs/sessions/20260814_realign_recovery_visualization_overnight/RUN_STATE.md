@@ -11,8 +11,8 @@
 | WP1 E0 freeze/smoke | completed | commit 94fa0bf + e2729fa + 4785170; H/I review P1s fixed; 243→351 tests |
 | WP2 可视化 adapter + 三路 smoke | completed | commit 714d514 + 44cc51d; K/L review P0+P1s fixed (doc-global index restore, batch namespacing, rerender hash, B4 stand-in labeled); 6 track_view tests |
 | WP3 E1 multi-realign screening | completed | commit 3d19152 + 0da7424; N/O review P0(oscillation signed)+3 P1+best_error fixed; 6 multi_iteration tests; GPU formal 命令模板已交付 |
-| 待 formal 补齐 | open | ① 正式 B4 alignment 替换 raw stand-in；② `<out>/scientific/` 落盘纳入 rerender hash；③ R-U->sparse 第四路（WP6）；④ WP3 wall_time 真实计时 |
-| WP4 E2 fine-split screening | pending | Plan §9 WP4 |
+| 待 formal 补齐 | open | ① 正式 B4 alignment 替换 raw stand-in；② `<out>/scientific/` 落盘纳入 rerender hash；③ R-U->sparse 第四路（WP6）；④ WP3 wall_time 真实计时；⑤ WP4 串行链 identity 脆弱点（backlog） |
+| WP4 E2 fine-split screening | completed | commit e257542 + 7b7422d + aaaf3e8; Q review P0(unit-state wiring + state_missing_fallback) + P1-2(identity 脆弱,backlog) fixed; 4 split tests; GPU formal 命令模板已交付 |
 | WP5 E3 k1/k3 + recrop | pending | Plan §9 WP5 |
 | WP6 E4 coarse->fine | pending | Plan §9 WP6 |
 | WP7 E5 no-GT selector/safety | pending | Plan §9 WP7 |
