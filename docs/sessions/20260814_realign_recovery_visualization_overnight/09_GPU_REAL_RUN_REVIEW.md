@@ -76,3 +76,13 @@ PYTHONPATH=src python scripts/unit_realign/run_coarse_fine.py --regions $M --out
 - 产物：`runs/20260814_viz_B4_vs_cur_Fair_vocal/` 4 首 full_timeline(160px/s 超宽) + MP4(全曲)。
   分窗 page 不保留（用户弃）。
 - 详见 `runs/20260814_runs_summary/VIZ_B4_VS_CURRENT_FAIR_FINDING.md`。
+
+## 补充试验结论（会话末）
+- **E2 fine-split one_unit direction 矩阵（40）**：independent=L2R=R2L 结果全同
+  (rec 0.748, 26/40 全恢复, ctx_harmed 80/40)—split direction 不改变 R-U 行为；机制差异来自 family。
+- **R-CF for test-demo**：`build_demo_rcf_regions.py` 构造 demo 窗口 region(稀疏 target≤3 + identity ctx)，
+  跑 WP6 coarse_fine：59/59 stage-B, fixed_context_disp=0ms, recovered@200ms 53/59。V2 四路合并渲染。
+- **E4 catastrophic 8/40 归因**：5 个 target 已修好但被误标(baseline target 原远偏,修复位移算 catastrophic)、
+  3 个真精修失败。catastrophic 判定口径 caveat(未区分修复位移 vs 弄坏)。
+- **E6 atlas 无 GT** = 保守 still-unrecoverable（符合设计），各机制 best_*ms 可达阈值仍记录。
+- 详见 `runs/20260814_runs_summary/{E4_CATASTROPHIC_AND_E6,VIZ_FINAL_4WAY_RCF_DEMO}.md`。
