@@ -158,6 +158,17 @@ def main() -> int:
                     best[g] = row
         merged = [best[k] for k in sorted(best)]
         merged.sort(key=lambda r: float(r.get("selected_start_sec") or 0))
+        # rebuild lines + summary for renderer compatibility
+        by_line: dict[int, list[dict]] = {}
+        for row in merged:
+            by_line.setdefault(int(row.get("line_index", 0)), []).append(row)
+        lines = [{"line_index": li,
+                  "display_text": "".join(r.get("display_text") or r.get("character") or ""
+                                          for r in sorted(rows, key=lambda x: int(x.get("index_in_line", 0)))),
+                  "character_start": min((int(r.get("global_character_index", -1)) for r in rows), default=0),
+                  "character_end": max((int(r.get("global_character_index", -1)) + 1 for r in rows), default=0)}
+                 for li, rows in sorted(by_line.items())]
+        dur = max((float(r.get("selected_end_sec") or 0) for r in merged), default=0.0)
         out_dir = args.out_root / song / "alignments/r2/vocal/windowed"
         out_dir.mkdir(parents=True, exist_ok=True)
         payload = {
@@ -165,8 +176,8 @@ def main() -> int:
             "identity": {"request_mode": "full_slot", "decoder_view": "official",
                          "window_plan": "silence_aware_60s_10_10_skip_silent",
                          "runner": "run_testdemo_slot_infer.py (Plan A, direct infer_slice)"},
-            "summary": {"characters": len(merged)},
-            "lines": [], "characters": merged, "window_trace": [],
+            "summary": {"audio_duration_sec": round(dur, 4), "characters": len(merged)},
+            "lines": lines, "characters": merged, "window_trace": [],
             "artifact_stage": "real",
         }
         p = out_dir / "alignment.json"
