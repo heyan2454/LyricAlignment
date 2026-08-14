@@ -171,6 +171,7 @@ def main() -> int:
                 payloads, label=fam, decoder_kind="official",
                 window_trace=traces, metadata={"family": fam},
             ))
+        f4_handled = False  # whether a lane labelled args.fourth_family got appended
         if args.fourth_family:
             f4 = [p for p in evidence_index.values()
                   if ((p.get("attempt") or {}).get("request") or {}).get("item_id") == args.item
@@ -185,8 +186,7 @@ def main() -> int:
                     f4, label=args.fourth_family, decoder_kind="official",
                     window_trace=f4_traces, metadata={"family": args.fourth_family},
                 ))
-            else:
-                raise SystemExit(f"--fourth-family {args.fourth_family!r} but no evidence has proposal_method==it")
+                f4_handled = True
 
         # R-CF demo lane: coarse_fine evidence lives in a separate root, keyed by
         # file path containing the song's filename (no item_id on the request).
@@ -206,8 +206,15 @@ def main() -> int:
                     rcf, label="R-CF", decoder_kind="official",
                     window_trace=rcf_traces, metadata={"family": "R-CF"},
                 ))
+                if args.fourth_family == "R-CF":
+                    f4_handled = True
             elif args.fourth_family:
-                pass  # R-CF explicitly requested but no evidence -> already handled above
+                pass  # R-CF explicitly requested but no evidence -> raise below if unhandled
+
+        if args.fourth_family and not f4_handled:
+            raise SystemExit(
+                f"--fourth-family {args.fourth_family!r} but no evidence has proposal_method==it "
+                f"(searched main forward_root and rcf_evidence_root)")
 
     # windows for overlay (union across mechanism tracks)
     seen = set()
@@ -234,7 +241,16 @@ def main() -> int:
         title="全曲 Current vs 机制 — %s" % Path(args.item).name,
         font=args.font, video_layout=True, page_seconds=args.page_seconds,
     )
-    rows = tracks[0].get("rows") or []
+    # KTV highlight must follow the current/playback-truth lane, not necessarily
+    # the first lane: batch_b4_dual puts the historical pre-slot B4 first, and
+    # 03 §3.3 requires character highlight to match the actual sung time.
+    ktv_track = next(
+        (t for t in tracks
+         if ("Current" in (t.get("label") or ""))
+         and (t.get("metadata") or {}).get("family") == "full_song"),
+        tracks[0],
+    )
+    rows = ktv_track.get("rows") or tracks[0].get("rows") or []
     alignment_ktv = build_karaoke_alignment(rows, duration_sec=end - start)
     video_meta = render_video(
         out, group="current_full_song", pages_meta=group_meta["pages"],
