@@ -149,7 +149,14 @@ def main() -> int:
         request_ids = [str(r["request_id"]) for r in item_reqs]
         evidence_index = load_evidence_index(args.forward_root / "evidence")
         for fam in ("R-U", "R-S"):
-            payloads = evidence_payloads_for_family(evidence_index, request_ids, family=fam)
+            # Robust match by item + proposal_method (plan request_ids often only
+            # carry the executed R-U variant; R-S payloads live under item-scope).
+            payloads = [
+                p for p in evidence_index.values()
+                if ((p.get("attempt") or {}).get("request") or {}).get("item_id") == args.item
+                and ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
+                .get("proposal_method") == fam
+            ]
             if not payloads:
                 continue
             traces = []
@@ -162,7 +169,8 @@ def main() -> int:
             ))
         if args.fourth_family:
             f4 = [p for p in evidence_index.values()
-                  if ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
+                  if ((p.get("attempt") or {}).get("request") or {}).get("item_id") == args.item
+                  and ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
                   .get("proposal_method") == args.fourth_family]
             if f4:
                 f4_traces = []
