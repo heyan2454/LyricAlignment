@@ -113,7 +113,13 @@ def main() -> int:
     videos = args.deliver / "videos"
     videos.mkdir(parents=True, exist_ok=True)
     ass_root = args.deliver / "_ktv_ass"
-    existing = sorted(p.stem[len("B4_vs_Current_"):] for p in videos.glob("B4_vs_Current_*.mp4"))
+    # Only the original B4_vs_Current_<song>.mp4 set is an input; the *_KTV_*
+    # outputs of this renderer must not be fed back in as inputs.
+    existing = sorted(
+        p.stem[len("B4_vs_Current_"):]
+        for p in videos.glob("B4_vs_Current_*.mp4")
+        if not p.stem.startswith("B4_vs_Current_KTV_")
+    )
     if args.end:
         existing = existing[args.start:args.end]
     else:
@@ -124,12 +130,17 @@ def main() -> int:
         song = slug_to_song(slug)
         lang = LANG_LOOKUP.get(song)
         if lang is None:
-            print(f"SKIP {song}: no lang mapping", flush=True); continue
+            results.append({"song": song, "ok": False, "reason": "no_lang"})
+            continue
         cur = resolve_current(song, lang)
         b4 = resolve_b4(song)
         audio = resolve_audio(song, lang)
         if not (cur and b4 and audio):
-            print(f"SKIP {song}: cur={bool(cur)} b4={bool(b4)} audio={bool(audio)}", flush=True)
+            results.append({
+                "song": song, "ok": False,
+                "reason": "missing_inputs",
+                "has_current": bool(cur), "has_b4": bool(b4), "has_audio": bool(audio),
+            })
             continue
         out = videos / f"B4_vs_Current_KTV_{slug}.mp4"
         try:
@@ -153,7 +164,7 @@ def main() -> int:
         results.append({"song": song, **{k: meta.get(k) for k in ("path", "skipped", "request_hash", "encoding_passes")}, "ok": True})
 
     summary = {"ok": sum(1 for r in results if r.get("ok")), "total": len(existing),
-               "skipped": [slug for slug, r in zip(existing, [dict(r, song=slug_to_song(s)) for r in results]) if not r.get("ok")],
+               "skipped": [r["song"] for r in results if not r.get("ok")],
                "results": results}
     (args.deliver / "ktv_compare_manifest.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
