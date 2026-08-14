@@ -14,7 +14,7 @@
 | 待 formal 补齐 | open | ① 正式 B4 alignment 替换 raw stand-in；② `<out>/scientific/` 落盘纳入 rerender hash；③ R-U->sparse 第四路（WP6）；④ WP3 wall_time 真实计时；⑤ WP4 串行链 identity 脆弱点（backlog） |
 | WP4 E2 fine-split screening | completed | commit e257542 + 7b7422d + aaaf3e8; Q review P0(unit-state wiring + state_missing_fallback) + P1-2(identity 脆弱,backlog) fixed; 4 split tests; GPU formal 命令模板已交付 |
 | WP5 E3 k1/k3 + recrop | completed | commit 622708b + 4fc3f6f; S review 无 P0/P1; MINOR-1 测试补齐; GPU formal 模板已交付 |
-| WP6 E4 coarse->fine | pending | Plan §9 WP6; 含 R-U->sparse 第四路，补进四路可视化 |
+| WP6 E4 coarse->fine | completed | commit b89654b + fef297c; U review P1(A-stage fallback)+P1-2(4th-route hard fail) fixed; 4 coarse_fine tests; 四路可视化经 --fourth-family R-CF 接入; GPU formal 模板已交付 |
 | WP7 E5 no-GT selector/safety | pending | Plan §9 WP7 |
 | WP8 P6 adaptive expansion | pending | Plan §9 WP8 |
 | WP9 E6 atlas + E7 serial stress | pending | Plan §9 WP9 |
