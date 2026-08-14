@@ -33,12 +33,23 @@ def _overlap(a0, a1, b0, b1):
     return a0 < b1 and b0 < a1
 
 
-def _local_context(all_chars, win_chars, context_neighbors: int = 3):
+def _local_context(all_chars, win_chars, context_neighbors: int = 3, gap_sec: float | None = None):
     """Window chars + up to `context_neighbors` chars on each side (by index),
-    so len(units) > len(targets).  Returns the ordered subset from all_chars."""
+    so len(units) > len(targets).  Returns the ordered subset from all_chars.
+
+    Silence-aware: if ``gap_sec`` is set, units separated from the window's
+    time cluster by a gap > ``gap_sec`` are dropped (acoustically separated
+    segments never share a region).  ``gap_sec=None`` keeps legacy pure-id
+    behaviour.
+    """
+    from region_silence import context_units_silence_aware
     ids = {int(c["global_character_index"]) for c in win_chars}
     lo = min(ids); hi = max(ids)
-    return [c for c in all_chars if lo - context_neighbors <= int(c["global_character_index"]) <= hi + context_neighbors]
+    window = [c for c in all_chars if lo - context_neighbors <= int(c["global_character_index"]) <= hi + context_neighbors]
+    if gap_sec is None or float(gap_sec) <= 0:
+        return window
+    return context_units_silence_aware(
+        all_chars, sorted(ids), gap_sec, context_neighbors=context_neighbors)
 
 
 def main() -> int:
@@ -57,6 +68,10 @@ def main() -> int:
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--item", action="append", default=[],
                     help="only these item ids (else all with current-align)")
+    ap.add_argument("--context-gap-sec", type=float, default=1.5,
+                    help="max time gap (s) between neighbouring units allowed inside one "
+                         "region's context; 0 disables (legacy pure-id context). "
+                         "default 1.5 (= strong_silence_anchor_sec, shared with Current/B4)")
     args = ap.parse_args()
 
     ident_template = None
@@ -121,7 +136,8 @@ def main() -> int:
                     continue
                 # build local units = window chars + surrounding context so
                 # len(units) > len(targets) (avoid whole_item_pseudo_local).
-                local_sel = _local_context(chars, win_chars, context_neighbors=3)
+                local_sel = _local_context(chars, win_chars, context_neighbors=3,
+                                           gap_sec=args.context_gap_sec)
                 units = [{
                     "canonical_unit_id": int(c["global_character_index"]),
                     "start_sec": c.get("selected_start_sec") or c.get("start_sec"),
@@ -144,6 +160,7 @@ def main() -> int:
                         sha = "missing_audio"
                     idctx = dict(ident_template)
                     idctx["audio_sha256"] = sha
+                    idctx["context_gap_sec"] = args.context_gap_sec
                 rid = str(rq.get("region_id") or rq.get("request_id") or f"test-demo-{item}:{win}")
                 rows.append({
                     "region_id": rid,
