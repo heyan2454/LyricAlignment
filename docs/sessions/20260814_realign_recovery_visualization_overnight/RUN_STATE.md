@@ -10,8 +10,8 @@
 | 07_CODEX_IMPLEMENTATION_PLAN | completed | 生成 + F/G 两路 review，全部 P0/P1 已修订回 07 |
 | WP1 E0 freeze/smoke | completed | commit 94fa0bf + e2729fa + 4785170; H/I review P1s fixed; 243→351 tests |
 | WP2 可视化 adapter + 三路 smoke | completed | commit 714d514 + 44cc51d; K/L review P0+P1s fixed (doc-global index restore, batch namespacing, rerender hash, B4 stand-in labeled); 6 track_view tests |
-| 待 formal 补齐 | open | ① 正式 B4 alignment 替换 raw stand-in；② `<out>/scientific/` 在 collection 前从上游落盘并纳入 rerender hash 断言；③ R-U->sparse 第四路（WP6） |
-| WP3 E1 multi-realign screening | pending | Plan §9 WP3 |
+| WP3 E1 multi-realign screening | completed | commit 3d19152 + 0da7424; N/O review P0(oscillation signed)+3 P1+best_error fixed; 6 multi_iteration tests; GPU formal 命令模板已交付 |
+| 待 formal 补齐 | open | ① 正式 B4 alignment 替换 raw stand-in；② `<out>/scientific/` 落盘纳入 rerender hash；③ R-U->sparse 第四路（WP6）；④ WP3 wall_time 真实计时 |
 | WP4 E2 fine-split screening | pending | Plan §9 WP4 |
 | WP5 E3 k1/k3 + recrop | pending | Plan §9 WP5 |
 | WP6 E4 coarse->fine | pending | Plan §9 WP6 |
