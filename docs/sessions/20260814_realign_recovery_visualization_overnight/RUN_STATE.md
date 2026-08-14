@@ -72,3 +72,12 @@
 - 工具：`render_full_song.py`(B4/Current/机制全曲) + `batch_v2_overlay.py`(V2 批次)。
 - 提交：e797658(batch_v2_overlay) + 前序 B4/fair 提交。
 - 其余真实 run：见 09 GPU review（E1-E4 等）。
+
+## 可视化五版 + 试验索引（2026-08-14 末）
+- 可视化 5 首（乙女解剖/浮夸/PastLives/此处通往天空/人造卫星）两套：
+  * V1 B4 vs Current(fair vocal)：`20260814_viz_B4_vs_cur_Fair_vocal/`
+  * V2 Current + R-U + R-S：`20260814_viz_v2_mech_4lang/`
+  （每首 full_timeline 160px/s 超宽 + MP4 全曲；分窗 page 清空不保留）
+- 修：mechanism overlay 按 item+proposal_method 匹配(否则漏 R-S)——commit a306188。
+- 试验索引：`20260814_runs_summary/VIZ_AND_TRIALS_INDEX.md`；E1-E7 已跑(见 index)。
+- 遗留：WP8 adaptive real、E6 atlas evidence 匹配修复、E2 其余 direction、更多歌可视化/hard-case。
