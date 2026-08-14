@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
-"""V2.1 — full-song segmented render: Current(全曲) + R-U/R-S[/R-CF] 窗口 overlay.
+"""V2.1 — full-song segmented B4-vs-Current + 机制 overlay renderer.
 
-修复 2026-08-14 可视化三处反馈：
-  1. 时长不是全曲 —— 旧 render_current_4way 以 evidence(只覆盖 unsafe 窗口)的
-     start/end 为界翻页，导致视频只覆盖 ~7-60s。本 runner 用现成的
-     ``r2_vocal_windowed/alignment.json``(整歌逐字对齐，539 字/230s 等)作为
-     「Current baseline」全曲横道，因此能按整歌时长(默认 30s/page)分段输出，
-     机制(R-U/R-S/R-CF)只在它们实际作用的 unsafe 窗口上方局部叠加。
-  2. 看不清 —— 输出两档：(a) video pages(3840×1080, 30s/page, 加高横道);
-     (b) 超宽全曲 static 长图(大字号、高 lane)，可平移缩放。
-  3. 没有过去 baseline 对比 —— 全曲 Current 基底客观呈现 baseline;
-     真 B4(pre-slot 串行)lane 由 render_b4_vs_current 或后续 B4 重跑补齐。
+严格遵循 03 实验设计的 B4 vs Current 全曲双路可视化：
+  * 「B4」lane = 真 pre-slot serial 逐字对齐 —— 由
+    ``scripts/demo/align_qwen_fa_serial_demo.py`` 按 03 V1/02 B4 冻结配置产出
+    (official, core/left/right=60/10/10, silence-aware, skip-silent)。
+  * 「Current 全曲」lane = full-slot windowed 对齐。
+  两者时间轴共用整歌时长，任意条 ``--baseline-align LABEL=path[,geom]`` 叠加。
 
-数据来源于冻结产物，只读 forward evidence，不触发新 forward；GT firewall 保持
-(evaluator-only，本 runner 不读 GT)。所有 run 产物写入数据盘，不进 git。
+修复可视化质量(用户 2026-08-14 反馈)：
+  1. 全曲时长 —— timeline = 整歌逐字对齐，按真实时间分页(默认 15s/page, 更高 px/s)。
+  2. 看得清 —— video page 233px/s(15s/页)字宽翻倍；full-timeline 160px/s
+     (clamp 12k-64k 超宽长图)每个字有横向空间不再省略。
+  3. 过去 baseline 对比 —— 真 B4(pre-slot serial) vs 当前(不 alias 成
+     full-slot batch 的 raw 解码——上一版标注错误，本版用真 B4 语义)。
+
+数据来源于冻结/串行对齐产物，不触发多余 forward；GT firewall(evaluator-only)。
+所有 run 产物写数据盘，不进 git。
 
 Usage:
   PYTHONPATH=src python scripts/realign_recovery/visualization/render_full_song.py \
-      --fullsong-align <...>/alignments/r2/vocal/windowed/alignment.json \
-      --forward-root <test_demo>/04_test_demo/forward \
-      --plan <test_demo>/04_test_demo/TEST_DEMO_REALIGN_REQUEST_PLAN.jsonl \
-      --item "Japanese/乙女解剖.mp3" \
-      --audio <乙女解剖>.wav \
-      --out <run> \
-      [--page-seconds 30] [--fourth-family R-CF] [--force]
+      --baseline-align "B4 历史串行=<B4_r2/vocal/windowed/alignment.json>" \
+      --baseline-align "Current 全曲=<full_slot_align.json>" \
+      --item "Japanese/乙女解剖.mp3" --audio <mix.wav> --out <run>
+      [--page-seconds 15] [--forward-root ...] ...
 """
 from __future__ import annotations
 
@@ -113,7 +113,8 @@ def main() -> int:
                     help="item label, e.g. 'Japanese/乙女解剖.mp3'")
     ap.add_argument("--audio", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--page-seconds", type=float, default=30.0)
+    ap.add_argument("--page-seconds", type=float, default=15.0,
+                    help="seconds per video page; smaller = 更高px-per-sec = 更清晰(默认15)")
     ap.add_argument("--font", default="Noto Sans CJK SC")
     ap.add_argument("--fourth-family", default=None)
     ap.add_argument("--force", action="store_true")
