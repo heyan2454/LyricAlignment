@@ -15,7 +15,7 @@
 | WP4 E2 fine-split screening | completed | commit e257542 + 7b7422d + aaaf3e8; Q review P0(unit-state wiring + state_missing_fallback) + P1-2(identity 脆弱,backlog) fixed; 4 split tests; GPU formal 命令模板已交付 |
 | WP5 E3 k1/k3 + recrop | completed | commit 622708b + 4fc3f6f; S review 无 P0/P1; MINOR-1 测试补齐; GPU formal 模板已交付 |
 | WP6 E4 coarse->fine | completed | commit b89654b + fef297c; U review P1(A-stage fallback)+P1-2(4th-route hard fail) fixed; 4 coarse_fine tests; 四路可视化经 --fourth-family R-CF 接入; GPU formal 模板已交付 |
-| WP7 E5 no-GT selector/safety | pending | Plan §9 WP7 |
+| WP7 E5 no-GT selector/safety | completed | commit 202bcba + 76656df; W review 4 P1(proxy producer/true-p85/disjoint heldout/tests) fixed; 11 tests; GPU formal 模板已交付 |
 | WP8 P6 adaptive expansion | pending | Plan §9 WP8 |
 | WP9 E6 atlas + E7 serial stress | pending | Plan §9 WP9 |
 | WP10 E8/E9 Test Demo 可视化 batch | pending | Plan §9 WP10 |
