@@ -125,7 +125,7 @@ def build_family_request(
     context_neighbors: int = 1, ra_context_units: int = 1,
 ) -> dict[str, Any]:
     """Build a v2 local request; callers add frozen identity context before execution."""
-    allowed = {"R-U", "R-U1", "R-U3", "R-A", "R-B", "R-S", "R-O", "R-NULL"}
+    allowed = {"R-U", "R-U1", "R-U3", "R-A", "R-B", "R-S", "R-O", "R-CF", "R-NULL"}
     if family not in allowed:
         raise ValueError(f"unsupported family {family}")
     by_id = {int(u["canonical_unit_id"]): u for u in units}
@@ -238,3 +238,11 @@ def build_r_b(**kwargs: Any) -> dict[str, Any]:
 
 def build_r_s(**kwargs: Any) -> dict[str, Any]:
     return build_family_request(family="R-S", **kwargs)
+
+
+def build_r_cf(**kwargs: Any) -> dict[str, Any]:
+    """E4 fourth family (composite): the coarse->fine composition is assembled by
+    ``coarse_fine`` (stage-A R-U proposal + stage-B recrop sparse/fixed refinement)
+    rather than a single-call geometric constructor; this alias exists so the
+    family round-trips through the same dispatch without an UnsupportedFamily."""
+    return build_family_request(family="R-CF", **kwargs)
