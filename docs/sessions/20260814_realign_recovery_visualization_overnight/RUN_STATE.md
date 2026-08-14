@@ -18,8 +18,8 @@
 | WP7 E5 no-GT selector/safety | completed | commit 202bcba + 76656df; W review 4 P1(proxy producer/true-p85/disjoint heldout/tests) fixed; 11 tests; GPU formal 模板已交付 |
 | WP8 P6 adaptive expansion | completed | commit 5f17160 + 6cd5f90; Y review P0(real-field aliases+fail-closed)+P1(mech-id/no-overwrite) fixed; 3 tests; GPU formal 扩量命令模板已交付 |
 | WP9 E6 atlas + E7 serial stress | completed | commit 37e88d9 + 97f5399; AA review P1(coarse proportion+recrop schema) fixed; 4 tests; GPU formal 模板已交付 |
-| WP10 E8/E9 Test Demo 可视化 batch | pending | Plan §9 WP10 |
-| WP11 收尾 + free-exploration | pending | Plan §9 WP11 |
+| WP10 E8/E9 Test Demo 可视化 batch | completed | commit 416621b + 9f4196e; AC review P1(item-scope + real rerender) fixed; item convergence verified; GPU formal 批量模板已交付 |
+| WP11 收尾 + free-exploration | in_progress | Plan §9 WP11 |
 
 ## GPU 预算（GPU formal forward）
 - 当前累计：0h（尚未跑任何 GPU formal forward）
