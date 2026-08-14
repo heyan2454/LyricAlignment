@@ -323,13 +323,15 @@ def freeze_simple_selector(features: Sequence[Mapping[str, Any]], split: str) ->
         stats[sig] = {
             "n": len(vals),
             "p50": round(vals[len(vals) // 2], 6) if vals else None,
+            "p85": round(vals[min(len(vals) - 1, int(0.85 * len(vals)))], 6) if vals else None,
             "p90": round(vals[min(len(vals) - 1, int(0.9 * len(vals)))], 6) if vals else None,
         }
 
     rules = dict(_DEFAULT_RULES)
     if _signal_mean(rows, "detector_p_bad") is not None:
-        # tighten p_bad threshold to the 85th percentile on the freeze split (proxy-driven).
-        p85 = stats["detector_p_bad"]["p90"]
+        # tighten p_bad threshold to the true 85th percentile on the freeze split
+        # (W-review P1-2: the implementation previously computed p90 while claiming 85).
+        p85 = stats["detector_p_bad"]["p85"]
         if p85 is not None:
             rules["p_bad_threshold"] = p85
     return {

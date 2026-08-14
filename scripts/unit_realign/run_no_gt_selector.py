@@ -106,16 +106,41 @@ def main() -> int:
     freeze_split = args.split if args.split in ("discovery", "validation") else "validation"
     heldout_split = "heldout" if args.split in ("heldout", "validation_heldout") else "validation"
 
-    # For the smoke we can't re-route feature rows by split if evidence lacks
-    # split metadata; freeze on the whole set but RECORD that heldout splits were
-    # not distinguishable so the runner can remap on real data.
-    frozen = ngs.freeze_simple_selector(sel_features, split=freeze_split)
+    # W-review P1-3: real (non-smoke) runs must evaluate heldout on a DISJOINT
+    # region partition, never the same rows used for freezing.  Split feature rows
+    # by region identity (region_id) into a discovery/freeze set and a heldout set,
+    # then guard with disjoint_check (fail-fast if the freeze split leaks in).
+    if not args.smoke:
+        freeze_rows, heldout_rows = [], []
+        for row in sel_features:
+            target = freeze_rows if (len(freeze_rows) <= len(heldout_rows)) else heldout_rows
+            target.append(row)
+        # make the two partitions region-disjoint when possible
+        region_buckets: dict[str, list[dict]] = {}
+        for row in sel_features:
+            region_buckets.setdefault(str(row.get("region_id") or "?"), []).append(row)
+        keys = sorted(region_buckets)
+        freeze_rows = [r for i, k in enumerate(keys) if i % 2 == 0 for r in region_buckets[k]]
+        heldout_rows = [r for i, k in enumerate(keys) if i % 2 == 1 for r in region_buckets[k]]
+        if not heldout_rows:
+            # not enough regions -> cannot form a disjoint heldout; bail instead of
+            # silently reusing the freeze set as heldout evidence.
+            raise SystemExit("[error] not enough region partitions to form a disjoint "
+                             "heldout; refusing to evaluate on the freeze split")
+    else:
+        freeze_rows, heldout_rows = list(sel_features), list(sel_features)
+
+    frozen = ngs.freeze_simple_selector(freeze_rows, split=freeze_split)
     (out_root / "02_selector" / "FROZEN_SELECTOR.json").write_text(
         json.dumps(frozen, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"[selector] frozen on split={freeze_split}, rules={frozen['rules']}")
 
     # ---- 3. heldout evaluation (once) ----
-    heldout_features = sel_features  # smoke: same set; real callers split before wiring
+    heldout_features = heldout_rows
+    if not args.smoke:
+        if ngs.disjoint_check(frozen, heldout_features):
+            raise SystemExit("[error] heldout split overlaps the freeze split; "
+                             "cannot treat as valid heldout evidence")
     heldout_eval = ngs.evaluate_heldout_once(frozen, heldout_features)
     heldout_eval["_smoke_split_warning"] = (
         "smoke evaluated the frozen rules on the available cached set; real runs must "

@@ -78,6 +78,10 @@ def build_unit_features(
             "mean_boundary_displacement_ms": displacement,
             "candidate_missing": new is None,
             "detector_p_bad_before": pb, "detector_p_bad_after": pa,
+            # W-review P1-1: expose a bare detector_p_bad (max of before/after) so the
+            # no-GT selector's primary proxy has a real producer on the extracted
+            # feature matrix (SIGNAL_NAMES intent), instead of being None on real data.
+            "detector_p_bad": None if pb is None and pa is None else round(max(pb or 0.0, pa or 0.0), 6),
             "signed_detector_delta": None if pb is None or pa is None else round(pa - pb, 6),
             "context_protected": None if cid in targets or displacement is None else displacement <= 10.0,
             "duration_sec": None if ns is None or ne is None else round(ne - ns, 6),
