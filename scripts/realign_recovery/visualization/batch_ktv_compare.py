@@ -31,6 +31,7 @@ PREP = "/home/hyan/Data/lyricalign/viz_fullsong_prep"
 TEST = "/home/hyan/Data/lyricalign/test"
 B4_CORE = "/home/hyan/Data/lyricalign/runs/20260814_viz_B4"       # core 5 songs (乙女/浮夸/PastLives/此处/人造)
 B4_NONCORE = "/home/hyan/Data/lyricalign/runs/20260814_b4review"   # 月半/祈愿/冬之花 (and any other b4 there)
+B4_KTV = "/home/hyan/Data/lyricalign/runs/20260814_ktv_B4"         # freshly-regenerated B4 for the other non-core songs
 
 # slug (deliver filename stem) -> (song original name, language).  slug came from
 # name.replace(" ","_"), so inverted by "_"->" " except the known multi-part/odd ones.
@@ -77,7 +78,7 @@ def resolve_current(song: str, lang: str) -> Path | None:
 
 
 def resolve_b4(song: str) -> Path | None:
-    for root in (B4_NONCORE, B4_CORE):
+    for root in (B4_NONCORE, B4_CORE, B4_KTV):
         cand = Path(root) / song / "alignments/r2/vocal/windowed/alignment.json"
         if cand.is_file():
             return cand
