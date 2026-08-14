@@ -98,21 +98,29 @@ def main() -> int:
         if end <= start:
             print(f"FAIL {r['request_id']}: empty audio crop", flush=True)
             continue
-        # timestamp slots: manifest timestamp_slot_indices are local indices into
-        # the FULL text_units.  We pass them directly (full-slot = range(N),
-        # sparse = subset); the document must have the same unit count.
-        slot = tuple(r["timestamp_slot_indices"]) if r.get("timestamp_slot_indices") is not None else None
+        # timestamp slots: true full-slot = query ALL units in the window.
+        # window_unit_ids = canonical ids of this window's units (contiguous in
+        # the full-song doc, since doc covers the full song).  Pass
+        # character_start/end = window range and timestamp_slot_indices =
+        # range(len(window units)) → no pruning → genuine full-slot.
+        wids = r.get("window_unit_ids") or []
+        if not wids:
+            print(f"FAIL {r['request_id']}: no window_unit_ids", flush=True)
+            continue
+        wstart = min(wids)
+        wend = max(wids) + 1
+        n_win = wend - wstart
         try:
             rows_out, audit = SERIAL.infer_slice(
                 processor=processor,
                 model=model,
                 audio=audio[start:end],
                 document=doc,
-                character_start=0,
-                character_end=len(doc.characters),
+                character_start=wstart,
+                character_end=wend,
                 global_audio_offset_sec=inp_s,
                 args=infer_args,
-                timestamp_slot_indices=slot,
+                timestamp_slot_indices=list(range(n_win)),
             )
         except Exception as e:  # noqa: BLE001
             print(f"FAIL {r['request_id']}: {e}", flush=True)
