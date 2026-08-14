@@ -17,7 +17,7 @@
 | WP6 E4 coarse->fine | completed | commit b89654b + fef297c; U review P1(A-stage fallback)+P1-2(4th-route hard fail) fixed; 4 coarse_fine tests; 四路可视化经 --fourth-family R-CF 接入; GPU formal 模板已交付 |
 | WP7 E5 no-GT selector/safety | completed | commit 202bcba + 76656df; W review 4 P1(proxy producer/true-p85/disjoint heldout/tests) fixed; 11 tests; GPU formal 模板已交付 |
 | WP8 P6 adaptive expansion | completed | commit 5f17160 + 6cd5f90; Y review P0(real-field aliases+fail-closed)+P1(mech-id/no-overwrite) fixed; 3 tests; GPU formal 扩量命令模板已交付 |
-| WP9 E6 atlas + E7 serial stress | pending | Plan §9 WP9 |
+| WP9 E6 atlas + E7 serial stress | completed | commit 37e88d9 + 97f5399; AA review P1(coarse proportion+recrop schema) fixed; 4 tests; GPU formal 模板已交付 |
 | WP10 E8/E9 Test Demo 可视化 batch | pending | Plan §9 WP10 |
 | WP11 收尾 + free-exploration | pending | Plan §9 WP11 |
 
