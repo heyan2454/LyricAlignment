@@ -78,13 +78,18 @@ def region_recovery(row: Mapping[str, Any]) -> dict[str, float | None]:
     Looks up a priority list of field-name conventions used by WP3/4/6 aggregate
     rows so ranking works regardless of which runner produced the row:
     ``region_strict_100``, ``strict_100``, ``best_strict_100``, ``r100``... and
-    the 200 ms variants. ``all_targets_hit`` / ``region_all_hit`` is treated as
-    the 200-ms-ish gate when present.
+    the 200 ms variants.  Y-review P0: include the ACTUAL field names emitted by
+    the real runners (split_variants ``strict_*_recovery``, coarse_fine
+    ``target_recovered_*``, multi_iteration ``case_pct_recovered`` /
+    ``all_target_recovered``), otherwise real runs silently score 0.
+    ``all_targets_hit``-family is treated as the 200-ms-ish gate when present.
     """
     fields_100 = ("region_strict_100", "strict_100", "best_strict_100", "best_100", "hit_100", "r100",
-                  "strict_100_ratio", "region_recovery_100")
+                  "strict_100_ratio", "region_recovery_100", "strict_100_recovery",
+                  "target_recovered_100", "region_recovered_100")
     fields_200 = ("region_strict_200", "strict_200", "best_strict_200", "best_200", "hit_200", "r200",
-                  "strict_200_ratio", "region_recovery_200")
+                  "strict_200_ratio", "region_recovery_200", "strict_200_recovery",
+                  "target_recovered_200", "region_recovered_200")
     strict_100 = strict_200 = None
     for key in fields_100:
         if key in row:
@@ -94,13 +99,38 @@ def region_recovery(row: Mapping[str, Any]) -> dict[str, float | None]:
         if key in row:
             strict_200 = _rate(row[key])
             break
+    # E1 (multi_iteration) has no per-region strict ratio; use the pct-of-targets
+    # recovered as the 200-ms-ish gate when it is the only signal.
+    if strict_200 is None and strict_100 is None:
+        pct = row.get("case_pct_recovered")
+        if _rate(pct) is not None:
+            strict_200 = _rate(pct) / 100.0 if _rate(pct) > 1.0 else _rate(pct)
     all_hit = None
-    for key in ("all_targets_hit", "region_all_hit", "all_hit", "region_all_targets_hit"):
+    for key in ("all_targets_hit", "region_all_hit", "all_hit", "region_all_targets_hit",
+                "all_target_recovered"):
         if key in row:
             all_hit = bool(row[key])
             break
     return {"strict_100": strict_100, "strict_200": strict_200,
             "all_targets_hit": all_hit, "recovery_best": strict_200 if strict_200 is not None else (strict_100 if strict_100 is not None else None)}
+
+
+_RECOVERY_FIELD_NAMES = (
+    "strict_100", "strict_200", "region_strict_100", "region_strict_200",
+    "best_100", "best_200", "hit_100", "hit_200", "r100", "r200",
+    "strict_100_ratio", "strict_200_ratio", "region_recovery_100", "region_recovery_200",
+    "strict_100_recovery", "strict_200_recovery", "target_recovered_100", "target_recovered_200",
+    "region_recovered_100", "region_recovered_200", "case_pct_recovered",
+    "all_target_recovered", "region_all_hit", "all_hit",
+)
+
+
+def aggregates_rows_have_recovery(aggregates: Sequence[Mapping[str, Any]]) -> bool:
+    """Return True if ANY region aggregate row carries a recognizable recovery field."""
+    for row in aggregates:
+        if any(k in row for k in _RECOVERY_FIELD_NAMES):
+            return True
+    return False
 
 def region_safety(row: Mapping[str, Any]) -> dict[str, float | None]:
     """Context displacement (lower better) and catastrophic flag."""
@@ -143,7 +173,8 @@ def mechanism_metrics(aggregates: Sequence[Mapping[str, Any]]) -> dict[str, Any]
 
     n_fwd = []
     for r in rows:
-        f = _num(r.get("forward_attempts", r.get("n_forward", r.get("forward_count"))))
+        f = _num(r.get("forward_attempts", r.get("n_forward", r.get("forward_count",
+                r.get("forward_cost")))))
         if f is not None and f >= 0:
             n_fwd.append(f)
 
@@ -208,6 +239,16 @@ def rank_mechanisms(screening_results: Mapping[str, Sequence[Mapping[str, Any]]]
     scored: list[dict[str, Any]] = []
     for mech, aggregates in screening_results.items():
         agg = mechanism_metrics(aggregates or [])
+        # Y-review P0 fail-closed: if a mechanism has NO recognizable strict
+        # recovery field on any region row (schema mismatch), that is a wiring bug,
+        # not a zero-recovery mechanism — refuse rather than silently dropping it.
+        if aggregates and agg.get("mean_strict_100") is None and agg.get("mean_strict_200") is None \
+                and not aggregates_rows_have_recovery(aggregates):
+            sample_keys = sorted((aggregates[0] or {}).keys())
+            raise ValueError(
+                f"mechanism {mech!r} has no recognizable strict 100/200ms recovery field "
+                f"on any region row (rows[0] keys={sample_keys[:12]})"
+            )
         scored.append({
             "mechanism_id": str(mech),
             **agg,

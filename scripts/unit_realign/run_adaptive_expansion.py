@@ -89,18 +89,20 @@ def _load_screening(paths: Sequence[str]) -> dict[str, list[dict[str, Any]]]:
         fp = Path(p)
         data = _load_json(fp)
         stem = fp.stem
-        # Prefer an embedded explicit mechanism id, else a known filename mapping.
+        # Prefer an explicit mechanism id, then a known filename mapping, THEN family.
+        # (Y-review P1: family is too generic — E1/E2 both serialize family='R-U' and
+        # colliding under it; filename mapping must win so E1_direct and E2_adaptive
+        # stay distinct.)  family is only a last-resort fallback.
         if data.get("mechanism_id"):
             base = str(data["mechanism_id"])
-        elif data.get("family"):
-            base = str(data["family"])
         else:
+            base = None
             for token, mech in FILENAME_MECHANISM.items():
                 if token in stem:
                     base = mech
                     break
-            else:
-                base = stem
+            if base is None:
+                base = str(data.get("family") or "") or stem
         aggregates = data.get("aggregates") or []
         # Some FINAL files may have per-mechanism aggregates under a nested map.
         if isinstance(aggregates, dict):
@@ -154,6 +156,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--out-root", required=True, help="output root (under /home/hyan/Data/lyricalign/runs/...)")
     ap.add_argument("--mechanism-ids", nargs="*", default=None,
                     help="explicit mechanism override (skips ranking); used for resume/inspection")
+    ap.add_argument("--force", action="store_true",
+                    help="overwrite existing FINAL_EXPANSION.json (default refuses)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--resume", action="store_true", help="resume: reuse prior RUN_STATE if screening digest matches")
     args = ap.parse_args(argv)
@@ -238,7 +242,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     }
     _write_json(rank_dir / "MECHANISM_RANKING.json", {"schema_version": EXPANSION_SCHEMA_VERSION,
                                                        "digest": digest, "ranking": ranking})
-    _write_json(root / "FINAL_EXPANSION.json", result)
+    # Y-review P1: never silently overwrite the previous run's FINAL_EXPANSION.
+    final_path = root / "FINAL_EXPANSION.json"
+    if final_path.exists() and not args.force:
+        raise FileExistsError(
+            f"refusing to overwrite {final_path}; pass --force or use a fresh --out-root")
+    _write_json(final_path, result)
     _write_json(runtime_dir / "RUN_STATE.json", {
         "schema": EXPANSION_SCHEMA_VERSION,
         "screening_digest": digest,
