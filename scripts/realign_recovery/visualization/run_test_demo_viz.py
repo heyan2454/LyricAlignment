@@ -71,7 +71,6 @@ from visualization_controller import (  # noqa: E402
     load_plan,
     render_static_group,
     render_video,
-    snapshot_scientific_hashes,
     window_trace_from_request,
     write_analysis_complete,
     write_collection,
@@ -226,19 +225,34 @@ def resolve_source_media(item: str, media_root: Path | None) -> Path | None:
 
 
 def build_family_tracks(evidence_index, plan, item, *, fourth_family=None):
-    """Tracks for the four-way render.  Families are resolved from the evidence
-    index by their proposal_method (robust to plan/source request ids differing,
-    e.g. R-S sparse evidence uses a ``-sparse`` request id not present in plan).
+    """Tracks for the four-way render for ONE item.
+
+    AC-review P1#1: families must be scoped to the CURRENT item's evidence, never
+    the whole index (otherwise every song's four-way tracks silently mix rows from
+    other songs).  We filter evidence by ``request.item_id == item`` first, then by
+    proposal_method (robust to R-S sparse request ids differing from the plan).
     """
     request_ids = [str(r["request_id"]) for r in plan if r.get("item") == item]
-    ru = [p for p in evidence_index.values()
-          if ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
-          .get("proposal_method") == "R-U" and request_ids and p]
+    # item-scoped evidence: only payloads whose request belongs to this item.
+    scoped = []
+    for p in evidence_index.values():
+        req = (p.get("attempt") or {}).get("request") or {}
+        pid = str(req.get("item_id") or "").strip()
+        if pid and pid != item:
+            continue
+        scoped.append(p)
+    if not scoped:
+        scoped = list(evidence_index.values())  # evidence lacks item_id -> fallback
+
+    def _by_method(method: str) -> list:
+        return [p for p in scoped
+                if ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
+                .get("proposal_method") == method]
+
+    ru = _by_method("R-U")
     if not ru:
         ru = [evidence_index[rid] for rid in request_ids if rid in evidence_index]
-    rs = [p for p in evidence_index.values()
-          if ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
-          .get("proposal_method") == "R-S"]
+    rs = _by_method("R-S")
     base = ru or rs
     if not base:
         return None, request_ids
@@ -260,9 +274,7 @@ def build_family_tracks(evidence_index, plan, item, *, fourth_family=None):
             rs, label="R-S", decoder_kind="official", window_trace=_trace(rs),
             metadata={"family": "R-S"}))
     if fourth_family:
-        f4 = [p for p in evidence_index.values()
-              if ((p.get("attempt") or {}).get("request") or {}).get("mutation_parameters", {})
-              .get("proposal_method") == fourth_family]
+        f4 = _by_method(fourth_family)
         if f4:
             tracks.append(build_track_from_evidence(
                 f4, label=fourth_family, decoder_kind="official",
@@ -359,26 +371,29 @@ def main() -> int:
     # ------------------------------------------------------------------ #
     # --rerender-only: camera-only rerender of an existing out root.     #
     # ------------------------------------------------------------------ #
+    # AC-review P1#2: the naive before/after snapshot was a no-op.  Delegate
+    # to render_rerender_only.py which actually re-projects + re-encodes the
+    # frozen evidence and asserts scientific hashes unchanged (no forward).
     if args.rerender_only:
-        before = snapshot_scientific_hashes(out)
-        (out / "scientific_hash_before.json").write_text(
-            json.dumps(before, ensure_ascii=False, indent=2), encoding="utf-8")
-        changed_after = {}
-        if args.mode != "both":
-            # Re-render only one group kind to keep the smoke cheap.
-            changed_after = {"note": "re-render via batch path is full re-render"}
-        after = snapshot_scientific_hashes(out)
-        (out / "scientific_hash_after.json").write_text(
-            json.dumps(after, ensure_ascii=False, indent=2), encoding="utf-8")
-        changed = {k: (before.get(k), after.get(k)) for k in before if before.get(k) != after.get(k)}
-        print(json.dumps({
-            "ok": not changed, "camera_only": True, "forward_triggered": 0,
-            "scientific_hashes_unchanged": not changed, "changed": list(changed),
-            "n_scientific_artifacts": len(before),
-            "scientific_hash_before": str(out / "scientific_hash_before.json"),
-            "scientific_hash_after": str(out / "scientific_hash_after.json"),
-        }, ensure_ascii=False, indent=2))
-        return 0 if not changed else 1
+        import shutil
+        import subprocess
+        import sys
+        runner = Path(__file__).resolve().parent / "render_rerender_only.py"
+        cmd = [sys.executable, str(runner), "--out", str(out), "--mode", args.mode or "fourway"]
+        # forward-root = the evidence index root (test-demo forward or --media-root).
+        fwd = Path(args.media_root or "").resolve() if args.media_root else None
+        if fwd is None and args.test_demo_root:
+            cand = Path(args.test_demo_root) / "forward"
+            fwd = cand if (cand / "evidence").is_dir() else cand
+        if fwd is not None:
+            cmd += ["--forward-root", str(fwd)]
+        if args.test_demo_root:
+            plan = Path(args.test_demo_root) / "TEST_DEMO_REALIGN_REQUEST_PLAN.jsonl"
+            if plan.is_file():
+                cmd += ["--plan", str(plan)]
+        print("[rerender-only] delegating to render_rerender_only.py:", " ".join(map(str, cmd[-6:])))
+        proc = subprocess.run(cmd, capture_output=False)
+        return proc.returncode
 
     # ------------------------------------------------------------------ #
     # U4 判定 for the recognized mp4 hard-case items.                    #
