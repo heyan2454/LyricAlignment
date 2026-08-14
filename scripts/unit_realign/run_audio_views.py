@@ -326,6 +326,14 @@ def main(argv=None):
     for region in regions:
         song, region_id = str(region.get("song_id") or ""), str(region.get("region_id") or "")
         duration_sec = float(region.get("duration_sec") or args.duration_sec)
+        # GPU-real fix: when no explicit duration_sec, infer it from the region's
+        # actual unit span + margin so a target deep into a long audio isn't
+        # clipped into an empty crop by a default like 30s.
+        if not region.get("duration_sec"):
+            unit_ends = [float(u.get("end_sec") or 0.0) for u in (region.get("units") or ())]
+            if unit_ends:
+                inferred = max(unit_ends) + 5.0
+                duration_sec = max(duration_sec, inferred)
         region_requests = build_view_requests(
             region, [int(x) for x in region.get("target_unit_ids") or ()],
             family=args.family, duration_sec=duration_sec,
