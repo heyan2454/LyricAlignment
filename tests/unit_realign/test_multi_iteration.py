@@ -91,3 +91,28 @@ def test_extract_trajectory_has_region_and_unit_rows():
     # target vs fixed-context displacement stay separated at the region level.
     reg = next(r for r in rows if r["row_kind"] == "region")
     assert "target_displacement_ms" in reg and "fixed_context_displacement_ms" in reg
+    # P0-1 fix + schema completeness: per-unit carries first-hit buckets and the
+    # region aggregate carries collateral_harm / catastrophic_regression.
+    unit = next(r for r in rows if r["row_kind"] == "unit")
+    assert "first_hit_ms_iteration_100" in unit
+    assert "oscillation_or_divergence" in unit
+    assert "collateral_harm" in reg and "catastrophic_regression" in reg
+
+
+def test_classify_unit_dynamics_p0_signed_oscillation():
+    """O-review P0-1: pure improvement must not be oscillation; true osc must be."""
+    from lyricalign.unit_realign.multi_iteration import classify_unit_dynamics
+    # Pure monotonic improvement in |err| -> NOT oscillation.
+    imp = classify_unit_dynamics([500.0, 300.0, 100.0], [0, 0, 0])
+    assert imp["oscillation_or_divergence"] is False
+    assert imp["monotonic_improvement_ratio"] == 1.0
+    # True oscillation (signed) -> IS oscillation.
+    osc = classify_unit_dynamics([500.0, 100.0, 500.0], [0, 0, 0])
+    assert osc["oscillation_or_divergence"] is True
+    # Monotonic divergence -> oscillation_or_divergence True (strict divergence).
+    div = classify_unit_dynamics([100.0, 300.0, 500.0], [0, 0, 0])
+    assert div["oscillation_or_divergence"] is True
+    # Fixed point when candidate stops moving (near-zero deltas).
+    fp = classify_unit_dynamics([500.0, 500.0], [0.0, 0.0])
+    assert fp["fixed_point_iteration"] is True
+

@@ -117,10 +117,12 @@ def _save_state(root: Path, state: dict) -> None:
 def _record(state: dict, identity: str | None, status: str) -> None:
     bucket = {"not_constructible": "not_constructible_identities",
               "ok": "completed_identities",
-              "executed": "completed_identities"}.get(status, "failed_identities")
-    if identity and identity not in state.setdefault(bucket, []) and bucket == "completed_identities":
-        state[bucket].append(identity)
+              "executed": "completed_identities",
+              "failed": "failed_identities"}.get(status, "failed_identities")
     if identity:
+        target_bucket = state.setdefault(bucket, [])
+        if identity not in target_bucket:
+            target_bucket.append(identity)
         planned = state.setdefault("planned_identities", [])
         if identity not in planned:
             planned.append(identity)
@@ -218,15 +220,39 @@ def main(argv=None) -> int:
         )
         steps = run["steps"]
         fresh_region = False
+        fresh_ids: set[str] = set()
         for s in steps:
             request = s.get("request")
             if request is None:
+                # A not_constructible stop-step has no v2 request; still record a stub
+                # so REQUESTS / RUN_STATE / summary preserve the stop point (N-review P1-3).
+                reason = s.get("not_constructible_reason") or "unknown_not_constructible"
+                seed = f"{region.get('song_id','?')}:{region.get('region_id','?')}:iter{s.get('iteration')}:{reason}"
+                stub = {
+                    "schema": "unit_realign_request_v2",
+                    "row_kind": "not_constructible_stub",
+                    "schema_version": TRAJECTORY_SCHEMA_VERSION,
+                    "song_id": region.get("song_id"), "region_id": region.get("region_id"),
+                    "iteration": s.get("iteration"), "family": args.family,
+                    "request_identity": seed,
+                    "request_id": seed,
+                    "not_constructible_reason": reason,
+                    "constructible": False,
+                    "actual_writeback": 0,
+                }
+                if seed not in done_ids:
+                    fresh_region = True
+                    fresh_ids.add(seed)
+                    all_requests.append(stub)
+                    _record(state, seed, "not_constructible")
+                    count["not_constructible"] += 1
                 continue
             rid = request.get("request_identity")
             if rid and rid in done_ids:
                 count["resume_skipped"] += 1
                 continue
             fresh_region = True
+            fresh_ids.add(rid)
             all_requests.append(request)
             if s.get("constructible"):
                 _record(state, rid, "ok")
@@ -236,10 +262,26 @@ def main(argv=None) -> int:
                 count["not_constructible"] += 1
 
         if fresh_region:
-            traj = run["trajectory"]
-            all_traj_rows.extend(traj)
-            region_agg.extend(r for r in traj if r.get("row_kind") == "region")
-            all_runs.extend(steps)
+            # Keep only trajectory/runs rows for identities that were newly executed
+            # this run, so partial resume never duplicates already-persisted rows
+            # (O-review P1-1).
+            def _is_fresh_step(st: dict) -> bool:
+                rq = st.get("request")
+                if rq is not None:
+                    rid = rq.get("request_identity")
+                    return rid in fresh_ids
+                reason = st.get("not_constructible_reason") or "unknown_not_constructible"
+                seed = f"{region.get('song_id','?')}:{region.get('region_id','?')}:iter{st.get('iteration')}:{reason}"
+                return seed in fresh_ids
+
+            fresh_steps = [st for st in steps if _is_fresh_step(st)]
+            fresh_traj = [
+                r for r in run["trajectory"]
+                if r.get("request_identity") in fresh_ids or r.get("row_kind") == "region"
+            ]
+            all_traj_rows.extend(fresh_traj)
+            region_agg.extend(r for r in fresh_traj if r.get("row_kind") == "region")
+            all_runs.extend(s for s in fresh_steps)
 
     _write_jsonl(root / _QUESTS_PATH, all_requests)
     _write_jsonl(root / _TRAJ_PATH, all_traj_rows)

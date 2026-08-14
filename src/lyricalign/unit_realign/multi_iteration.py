@@ -445,6 +445,57 @@ def _initial_target_error_ms(request, cid: int, target_ids: Sequence[int]) -> fl
     return 0.0
 
 
+def classify_unit_dynamics(
+    signed_errors_ms: Sequence[float], signed_deltas_ms: Sequence[float],
+) -> dict[str, Any]:
+    """Classify one unit's recovery dynamics from its per-iteration series.
+
+    Pure, testable helper (O-review P0-1).  Uses the SIGNED error series for
+    direction-flip (oscillation) detection and the TRUE per-iteration position
+    for fixed-point (candidate stops moving), so pure monotonic improvement is
+    never misreported as oscillation.
+
+    Returns:
+        monotonic_improvement_ratio, improve_then_regress, fixed_point_iteration,
+        oscillation_or_divergence
+    """
+    abs_series = [abs(float(e)) for e in signed_errors_ms]
+    signed_series = [float(e) for e in signed_errors_ms]
+    deltas = [float(d) for d in signed_deltas_ms]
+
+    mono = 0.0
+    if len(abs_series) >= 2:
+        mono = sum(1 for a, b in zip(abs_series, abs_series[1:]) if b <= a) / (len(abs_series) - 1)
+
+    improve_then_regress = False
+    if len(abs_series) >= 3:
+        m = abs_series.index(min(abs_series))
+        improve_then_regress = 0 < m < len(abs_series) - 1
+
+    fixed_point = bool(len(deltas) >= 2 and all(abs(d) <= 1.0 for d in deltas[-2:]))
+
+    # oscillation: the SIGNED error direction FLIPS between steps (a + then a -
+    # change), never a repeated same direction.  Pure monotonic series (one
+    # direction, whether improving or worsening) are therefore not oscillation;
+    # divergence (strictly growing in one direction) is reported separately.
+    signs = []
+    for a, b in zip(signed_series, signed_series[1:]):
+        d = b - a
+        if abs(d) > 1.0:
+            signs.append(1 if d > 0 else -1)
+    osc = any(s != p for s, p in zip(signs, signs[1:]))
+    div = bool(abs_series and signs and len(set(signs)) == 1 and signs[0] > 0
+               and abs_series[-1] > min(abs_series) + 2.0)
+    osc_div = osc or div
+
+    return {
+        "monotonic_improvement_ratio": round(mono, 4),
+        "improve_then_regress": improve_then_regress,
+        "fixed_point_iteration": fixed_point,
+        "oscillation_or_divergence": osc_div,
+    }
+
+
 def extract_trajectory(steps_results: Sequence[Mapping[str, Any]],
                        region: Mapping[str, Any] | None = None) -> list[dict]:
     """Turn a chain's step results into ``multi_realign_dynamics_v1`` rows.
@@ -506,7 +557,7 @@ def extract_trajectory(steps_results: Sequence[Mapping[str, Any]],
                 "canonical_unit_id": cid,
                 "initial_error_ms": round(init_err_ms, 4),
                 "error_ms": round(err_ms, 4),
-                "best_error_ms": round(err_ms, 4),
+                "best_error_ms": round(err_ms, 4),  # filled with cross-iteration min below
                 "delta_to_baseline_ms": round(delta_ms, 4),
             }
             per_unit.append(row)
@@ -516,52 +567,67 @@ def extract_trajectory(steps_results: Sequence[Mapping[str, Any]],
     if not per_unit:
         return []
 
-    # ---- per-region aggregate ----
-    by_target_id: dict[int, list[float]] = {cid: [] for cid in target_ids}
+    # Cross-iteration per-unit best + first-hit + dynamics (P1-1 / N-review):
+    # group per unit's error series to compute best_error_ms (true min over
+    # iterations) and first_hit_ms_iteration for the 100/200/500/1000ms buckets,
+    # plus per-unit monotonic / improve-then-regress / fixed-point / oscillation.
+    _unit_errs: dict[int, list[float]] = {}
     for row in per_unit:
-        if row["canonical_unit_id"] in by_target_id:
-            by_target_id[row["canonical_unit_id"]].append(row["error_ms"])
-    target_series = {cid: [abs(e) for e in errs] for cid, errs in by_target_id.items() if errs}
-    recovered = {cid: (min(errs) <= 1.0) for cid, errs in target_series.items()}  # <=1ms ~= hit
-    all_recovered = bool(target_series) and all(recovered.values())
+        _unit_errs.setdefault(row["canonical_unit_id"], []).append(abs(float(row["error_ms"])))
+    for row in per_unit:
+        cid = row["canonical_unit_id"]
+        series = sorted((r for r in per_unit if r["canonical_unit_id"] == cid),
+                        key=lambda r: int(r["iteration"]))
+        best = min(float(r["error_ms"]) for r in series)
+        row["best_error_ms"] = round(best, 4)
+        # first-hit iteration per tolerance bucket: earliest iteration where |err|<=bucket.
+        for bucket in (100, 200, 500, 1000):
+            hit = next((int(r["iteration"]) for r in series
+                        if abs(float(r["error_ms"])) <= float(bucket)), None)
+            row[f"first_hit_ms_iteration_{bucket}"] = hit
+        # per-unit dynamics over the error series (O/N review P0/P1 fixes) — see
+        # classify_unit_dynamics for the signed-vs-abs semantics.
+        signed_series = [float(r["error_ms"]) for r in series]
+        deltas = [float(r["delta_to_baseline_ms"]) for r in series]
+        dyn = classify_unit_dynamics(signed_series, deltas)
+        row.update(dyn)
+
+    # ---- per-region aggregate (derived from the enriched per-unit rows) ----
+    by_target: dict[int, list[dict]] = {cid: [] for cid in target_ids}
+    for row in per_unit:
+        if row["canonical_unit_id"] in by_target:
+            by_target[row["canonical_unit_id"]].append(row)
+    # best absolute error per target unit over the chain (best_error_ms is already
+    # the per-unit min); recovered if the unit's best error <= 1ms (~= strict hit).
+    target_best = {cid: min(abs(float(r["error_ms"])) for r in rows) for cid, rows in by_target.items() if rows}
+    recovered = {cid: (best <= 1.0) for cid, best in target_best.items()}
+    all_recovered = bool(target_best) and all(recovered.values())
     pct = 100.0 * sum(1 for cid in target_ids if recovered.get(cid, False)) / max(1, len(target_ids))
 
-    # monotonic improvement ratio: fraction of steps where candidate <= previous candidate.
-    mono_series: list[float] = []
-    for cid, errs in target_series.items():
-        if len(errs) < 2:
-            continue
-        mono_series.append(sum(1 for a, b in zip(errs, errs[1:]) if b <= a) / (len(errs) - 1))
-    monotonic_ratio = (sum(mono_series) / len(mono_series)) if mono_series else 0.0
+    # worst-case error ever observed on a target (for catastrophic detection).
+    max_target_err = max((abs(float(r["error_ms"])) for r in per_unit
+                          if r["canonical_unit_id"] in target_ids), default=0.0)
+    # catastrophic: a target ever regresses well beyond its initial error.
+    init_by_target = {}
+    for cid, rows in by_target.items():
+        if rows:
+            init_by_target[cid] = min(abs(float(r["initial_error_ms"])) for r in rows)
+    catastrophic_regression = bool(
+        target_best and any(
+            max_target_err > init_by_target.get(cid, 0.0) + 1000.0 for cid in target_best
+        )
+    )
 
-    improve_then_regress = False
-    for cid, errs in target_series.items():
-        m = errs.index(min(errs))
-        if 0 < m < len(errs) - 1:
-            improve_then_regress = True
-            break
+    # region-level monotonic ratio / improve-then-regress / fixed-point / oscillation:
+    # reuse the per-unit booleans but report them at region granularity too.
+    mono_vals = [float(r["monotonic_improvement_ratio"]) for r in per_unit
+                 if r["canonical_unit_id"] in target_ids and r.get("monotonic_improvement_ratio") is not None]
+    monotonic_ratio = (sum(mono_vals) / len(mono_vals)) if mono_vals else 0.0
+    improve_then_regress = any(r["improve_then_regress"] for r in per_unit if r["canonical_unit_id"] in target_ids)
+    fixed_point_iteration = any(r["fixed_point_iteration"] for r in per_unit if r["canonical_unit_id"] in target_ids)
+    osc_div = any(r["oscillation_or_divergence"] for r in per_unit if r["canonical_unit_id"] in target_ids)
 
-    # fixed point: candidate error stabilizes to ~0 across last two steps.
-    last_errs = [errs[-1] for errs in target_series.values()]
-    fixed_point_iteration = bool(last_errs) and all(e <= 1.0 for e in last_errs)
-
-    # oscillation / divergence: net error grows OR direction flips repeatedly.
-    osc_div = False
-    for cid, errs in target_series.items():
-        if len(errs) >= 3:
-            signs = []
-            for a, b in zip(errs, errs[1:]):
-                d = b - a
-                if abs(d) > 1.0:
-                    signs.append(1 if d > 0 else -1)
-            if any(prev_s == s for prev_s, s in zip(signs, signs[1:])):
-                osc_div = True
-                break
-        if errs and errs[-1] > max(errs[:1] + [0.0]) + 2.0:
-            osc_div = True
-            break
-
-    # displacement: motion of target row vs frozen iter0; fixed-context vs frozen.
+    # displacement: motion of target/fixed-context rows vs frozen iter0.
     target_disp = 0.0
     fixed_disp = 0.0
     last_cand = next((s["candidate_rows"] for s in reversed(steps) if s.get("constructible")), [])
@@ -576,9 +642,10 @@ def extract_trajectory(steps_results: Sequence[Mapping[str, Any]],
         else:
             fixed_disp += abs(d)
 
-    wall_ms = 0.0
     n_ok = sum(1 for s in steps if s.get("status") == "ok")
-
+    # collateral harm: any fixed-context unit displaced beyond a small margin by
+    # the recovery chain (02 §139 / 07 §3.2 collateral_harm).
+    collateral_harm = fixed_disp > 1.0
     aggregate = {
         "row_kind": "region",
         "schema_version": TRAJECTORY_SCHEMA_VERSION,
@@ -588,15 +655,18 @@ def extract_trajectory(steps_results: Sequence[Mapping[str, Any]],
         "initial_error_ms": None, "error_ms": None, "best_error_ms": None,
         "delta_to_baseline_ms": None,
         "all_target_recovered": all_recovered,
-        "case_pct_recovered": pct,
+        "case_pct_recovered": round(pct, 4),
         "monotonic_improvement_ratio": round(monotonic_ratio, 4),
         "monotonic_improvement": monotonic_ratio >= 0.5,
         "improve_then_regress": improve_then_regress,
         "fixed_point_iteration": fixed_point_iteration,
         "oscillation_or_divergence": osc_div,
+        "catastrophic_regression": catastrophic_regression,
+        "collateral_harm": collateral_harm,
         "target_displacement_ms": round(target_disp, 4),
         "fixed_context_displacement_ms": round(fixed_disp, 4),
         "forward_count": n_ok,
-        "wall_time_ms": round(wall_ms, 2),
+        "wall_time_ms": 0.0,
     }
     return per_unit + [aggregate]
+
