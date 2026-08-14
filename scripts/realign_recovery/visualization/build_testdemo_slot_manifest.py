@@ -57,6 +57,7 @@ def main() -> int:
                 "text": str(c.get("display_text") or c.get("character") or ""),
                 "line_index": int(c.get("line_index", 0)),
                 "index_in_line": int(c.get("index_in_line", 0)),
+                "owner_window_index": c.get("owner_window_index"),
             })
         # time per canonical unit from the B4 alignment (selected geometry)
         for u in units:
@@ -79,10 +80,12 @@ def main() -> int:
             inp_e = float(w.get("input_end_sec") or w.get("core_end_sec") or inp_s + 60.0)
             core_s = float(w.get("core_start_sec") or 0.0)
             core_e = float(w.get("core_end_sec") or inp_e)
-            # units whose start falls in the input span
-            in_units = [u for u in units if inp_s <= u["start_sec"] < inp_e]
+            # units owned by THIS window (B4 owner_window_index) — same query
+            # set as B4, full-slot semantics (query all window units in one pass)
+            in_units = [u for u in units if u.get("owner_window_index") == wi]
             if not in_units:
-                in_units = [u for u in units if u["start_sec"] < inp_e and u["end_sec"] > inp_s]
+                # fallback: units whose start falls in the core span
+                in_units = [u for u in units if core_s <= u["start_sec"] < core_e]
             if not in_units:
                 rows.append({
                     "schema_version": "testdemo_slot_manifest_v1",
