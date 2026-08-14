@@ -137,3 +137,10 @@ PYTHONPATH=src python scripts/unit_realign/run_audio_views.py \
   才导出。E5 no-GT selector（07 §9 WP7）会接这些。
 - k1/k3 只做 no-GT structural 复用，**不**为旧 run 补 forward/进 v2 可视化（anti-scope）。
 - E3-C stable anchors、one-sided anchor pilot 未在 WP5，属后续（02 E3-C）。
+
+## 8. review 后补充（S_review_wp5，2026-08-14）
+
+S review：**无 P0/P1**，3 MINOR。其中 MINOR-1（select_view_no_gt 无提交级回归）已补
+`tests/unit_realign/test_audio_views.py`（no_signal / unique winner / all-tied-indeterminate /
+votes-tie 四路径 + GT firewall 断言，4 passed）。MINOR-2（real 下 identity=None 的 view 静默缺行）
+与 MINOR-3（死参数 `_view_result.view_out`）记 backlog，formal real 前优先处理 MINOR-2。
