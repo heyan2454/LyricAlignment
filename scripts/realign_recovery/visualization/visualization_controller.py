@@ -382,6 +382,8 @@ def render_static_group(
         )
         pages_meta.append(meta)
     full_path = group_dir / "full_timeline.png"
+    # Whole-song canvas: wide (160 px/sec) so every unit's glyph has room;
+    # height stays auto (renderer sizes it from lane count / glyph size).
     full_meta = render_timeline_page(
         output=full_path,
         tracks=renderer_tracks,
