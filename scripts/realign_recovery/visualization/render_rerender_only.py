@@ -105,7 +105,12 @@ def main() -> int:
                                           window_trace=trace, metadata={"family": "official_fixed"}),
             ]
         group = "current_realign_4way" if args.mode == "fourway" else "b4_vs_current"
-        rows = next((t.get("rows") for t in tracks if t.get("rows")), [])
+        # KTV highlight must follow the current/playback-truth lane (03 §3.3); the
+        # twoway branch puts historical B4 first, so prefer a lane whose label
+        # contains "Current" before falling back to the first-with-rows.
+        rows = next((t.get("rows") for t in tracks
+                     if ("Current" in (t.get("label") or "")) and t.get("rows")),
+                    next((t.get("rows") for t in tracks if t.get("rows")), []))
         if not rows:
             raise SystemExit("no projected rows")
         start = min(float(r["start_sec"]) for r in rows)

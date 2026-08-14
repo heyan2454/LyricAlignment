@@ -104,7 +104,12 @@ def item_slug(item: str) -> str:
 
 
 def render_group(out, *, group, item, tracks, windows, args, mode, audio=None):
-    rows = next((t.get("rows") for t in tracks if t.get("rows")), [])
+    # KTV highlight must follow the current/playback-truth lane (03 §3.3); the
+    # B4-vs-Current twoway branch puts historical B4 first, so prefer a lane
+    # whose label contains "Current" before falling back to the first-with-rows.
+    rows = next((t.get("rows") for t in tracks
+                 if ("Current" in (t.get("label") or "")) and t.get("rows")),
+                next((t.get("rows") for t in tracks if t.get("rows")), []))
     if not rows:
         return None
     start = min(float(r["start_sec"]) for r in rows)
