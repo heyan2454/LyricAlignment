@@ -443,24 +443,42 @@ def _existing_render_audio_paths(
 
 
 def _alignment_args(args: argparse.Namespace) -> SimpleNamespace:
-    return SimpleNamespace(
-        model=str(args.model),
-        revision=str(args.revision),
-        local_files_only=args.local_files_only,
-        cache_dir=args.cache_dir,
-        device=args.device,
-        language=args.language,
-        timestamp_segment_sec=args.timestamp_segment_sec,
-        core_sec=args.core_sec,
-        left_context_sec=args.left_context_sec,
-        right_context_sec=args.right_context_sec,
-        future_line_padding=args.future_line_padding,
-        minimum_forward_characters=args.minimum_forward_characters,
-        future_character_ratio=args.future_character_ratio,
-        max_candidate_expansions=args.max_candidate_expansions,
-        boundary_start_tolerance_sec=args.boundary_start_tolerance_sec,
-        seam_tolerance_sec=args.seam_tolerance_sec,
-    )
+    forward = {
+        "model": str(args.model), "revision": str(args.revision),
+        "local_files_only": args.local_files_only, "cache_dir": args.cache_dir,
+        "device": args.device, "language": args.language,
+        "timestamp_segment_sec": args.timestamp_segment_sec,
+        "core_sec": args.core_sec, "left_context_sec": args.left_context_sec,
+        "right_context_sec": args.right_context_sec,
+        "future_line_padding": args.future_line_padding,
+        "minimum_forward_characters": args.minimum_forward_characters,
+        "future_character_ratio": args.future_character_ratio,
+        "max_candidate_expansions": args.max_candidate_expansions,
+        "boundary_start_tolerance_sec": args.boundary_start_tolerance_sec,
+        "seam_tolerance_sec": args.seam_tolerance_sec,
+        # silence-aware / skip-silent / boundary-protection controls (transparent
+        # to windowed_alignment; mirrors serial_demo's surface so Current can be
+        # run with the same mechanism as B4_60_silence_official).
+        "silence_aware_window_plan": getattr(args, "silence_aware_window_plan", False),
+        "skip_silent_windows": getattr(args, "skip_silent_windows", False),
+        "silent_active_ratio_max": getattr(args, "silent_active_ratio_max", 0.01),
+        "silent_peak_margin_db": getattr(args, "silent_peak_margin_db", 3.0),
+        "silent_min_sustained_sec": getattr(args, "silent_min_sustained_sec", 0.40),
+        "startup_vocal_preroll_sec": getattr(args, "startup_vocal_preroll_sec", 2.0),
+        "startup_minimum_forward_characters": getattr(args, "startup_minimum_forward_characters", 24),
+        "silence_boundary_min_sec": getattr(args, "silence_boundary_min_sec", 0.8),
+        "strong_silence_anchor_sec": getattr(args, "strong_silence_anchor_sec", 1.5),
+        "strict_silence_boundary_plan": getattr(args, "strict_silence_boundary_plan", False),
+        "strict_silence_boundary_sec": getattr(args, "strict_silence_boundary_sec", 1.5),
+        "compress_silence_audio": getattr(args, "compress_silence_audio", False),
+        "silence_compression_min_sec": getattr(args, "silence_compression_min_sec", 1.5),
+        "silence_compression_padding_sec": getattr(args, "silence_compression_padding_sec", 0.20),
+        "silence_boundary_search_sec": getattr(args, "silence_boundary_search_sec", 6.0),
+        "leading_silence_min_sec": getattr(args, "leading_silence_min_sec", 2.0),
+        "tail_min_core_sec": getattr(args, "tail_min_core_sec", 18.0),
+        "minimum_core_sec": getattr(args, "minimum_core_sec", 12.0),
+    }
+    return SimpleNamespace(**forward)
 
 
 def _alignment_request(
@@ -957,6 +975,40 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--force-align", action="store_true")
     parser.add_argument("--force-render", action="store_true")
     parser.add_argument("--force", action="store_true", help="force prepare, separation, align, and render")
+
+    # --- silence-aware windowing controls (transparent to windowed_alignment,
+    #     mirroring align_qwen_fa_serial_demo.py defaults so Current can be run
+    #     under the exact same mechanism config as B4_60_silence_official) ---
+    parser.add_argument(
+        "--silence-aware-window-plan", action=argparse.BooleanOptionalAction, default=False,
+        help="plan the whole song around sustained silence before serial inference",
+    )
+    parser.add_argument(
+        "--skip-silent-windows", action=argparse.BooleanOptionalAction, default=False,
+        help="skip non-final cores that are essentially silent in the vocal stem",
+    )
+    parser.add_argument("--silent-active-ratio-max", type=float, default=0.01)
+    parser.add_argument("--silent-peak-margin-db", type=float, default=3.0)
+    parser.add_argument("--silent-min-sustained-sec", type=float, default=0.40)
+    parser.add_argument("--startup-vocal-preroll-sec", type=float, default=2.0)
+    parser.add_argument("--startup-minimum-forward-characters", type=int, default=24)
+    parser.add_argument("--silence-boundary-min-sec", type=float, default=0.8)
+    parser.add_argument("--strong-silence-anchor-sec", type=float, default=1.5)
+    parser.add_argument(
+        "--strict-silence-boundary-plan", action="store_true",
+        help="split model inputs at long strong-silence intervals; no window crosses the boundary",
+    )
+    parser.add_argument("--strict-silence-boundary-sec", type=float, default=1.5)
+    parser.add_argument(
+        "--compress-silence-audio", action="store_true",
+        help="diagnostic: remove long silence interiors, align compressed audio, then map timestamps back",
+    )
+    parser.add_argument("--silence-compression-min-sec", type=float, default=1.5)
+    parser.add_argument("--silence-compression-padding-sec", type=float, default=0.20)
+    parser.add_argument("--silence-boundary-search-sec", type=float, default=6.0)
+    parser.add_argument("--leading-silence-min-sec", type=float, default=2.0)
+    parser.add_argument("--tail-min-core-sec", type=float, default=18.0)
+    parser.add_argument("--minimum-core-sec", type=float, default=12.0)
     return parser
 
 
