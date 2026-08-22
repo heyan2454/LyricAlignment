@@ -1,0 +1,18 @@
+{
+  "schema_version": "pjs_rawdecoder_summary_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "dataset": "PJS Japanese pjs001-pjs005",
+  "units": 113,
+  "note": "No phoneme-level GT yet; only structural/warning comparison.",
+  "official": {
+    "r0": {"passed_structural": 2, "warning": 3, "final_zero_duration": 2, "raw_inter_unit_overlap": 3},
+    "r1": {"passed_structural": 1, "warning": 4, "final_zero_duration": 2, "raw_inter_unit_overlap": 4},
+    "r2": {"passed_structural": 2, "warning": 3, "final_zero_duration": 2, "raw_inter_unit_overlap": 2}
+  },
+  "raw_decoder": {
+    "r0": {"passed_structural": 2, "warning": 3, "final_zero_duration": 2, "raw_inter_unit_overlap": 3, "selected_inter_unit_overlap": 3, "cross_window_overlap_compression": 3},
+    "r1": {"passed_structural": 1, "warning": 4, "final_zero_duration": 2, "raw_inter_unit_overlap": 4, "selected_inter_unit_overlap": 4, "cross_window_overlap_compression": 4},
+    "r2": {"passed_structural": 2, "warning": 3, "final_zero_duration": 2, "raw_inter_unit_overlap": 2, "selected_inter_unit_overlap": 2, "cross_window_overlap_compression": 2}
+  },
+  "observation": "Raw decoder reduced final zero-duration counts but introduced selected overlap warnings; phoneme GT required."
+}

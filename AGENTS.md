@@ -12,8 +12,10 @@
   后 `conda activate lyricalign-qwen`；env 实际位于 `/root/autodl-tmp/AST_storage/conda/envs/lyricalign-qwen`，
   含 transformers 5.15.0.dev0、torch、nagisa、soundfile、numpy、pytest 等全部相关依赖）。
   项目包尚未 `pip install -e .`，当前以 `PYTHONPATH=src` 运行即可（`src/` 为 setuptools package root）。
-- 深度上下文从 `AI_SESSION_ENTRY.md` 进入：当前 active override 指向
-  `docs/sessions/20260814_realign_recovery_visualization_overnight/`。实现前依次阅读 `00`–`06`；
+- 深度上下文从 `AI_SESSION_ENTRY.md` 进入，active override 以其中最新段为准（当前最新段为
+  2026-08-16，指路 `docs/sessions/20260816_lyric_align_dataset_acquisition_evaluation_strategy/`；
+  其与 2026-08-14 段的关系不作裁定，请自行核实）。上一覆盖层
+  `docs/sessions/20260814_realign_recovery_visualization_overnight/`：实现前依次阅读 `00`–`06`；
   Codex 先按 `05_CODEX_HANDOFF.md` 核实当前代码/证据并生成 `07_CODEX_IMPLEMENTATION_PLAN.md`，
   再交 OpenCode/agent 分批实现。与旧 session 冲突时，本 session 的实验/可视化/执行合同优先。
   上游 `20260813_unit_level_realign_overnight`、`20260812_realign_recovery_research`、
@@ -80,6 +82,9 @@ bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
   子 agent 验收默认 L1 + `compileall -q src scripts` + `git diff --check`。
 
 ## Current mainline: Unit Realign Recovery + Visualization（下一轮）
+
+> 2026-08-16 起另有更新 focus（数据获取 + 无训练评测/产品化），入口见 `AI_SESSION_ENTRY.md` 最新段；
+> 本段保留为 2026-08-14 主线说明，是否仍为当前主线请自行核实判断。
 
 当前规划入口为 `docs/sessions/20260814_realign_recovery_visualization_overnight/README.md`。
 本轮重点研究困难区 multi-realign dynamics、细粒度 split、audio recrop/multi-view、
@@ -172,3 +177,55 @@ PYTHONPATH=src python scripts/research_v7/report_long_slot_region.py --run-root 
   只提交代码/配置/轻量 manifest 与摘要，禁止音频/checkpoint/大预测文件。
 - `reasonix` 是本机同构工具；其同类项目指令文件见 `/home/hyan/AST/REASONIX.md`（不同仓库，仅风格参考，
   不适用于本仓库路径/命令）。
+
+---
+
+# 迁移的全局纪律（原 `~/.dsh/AGENTS.md`，2026-08-17 迁入，对本项目会话生效）
+
+# DSH 用户级全局工作纪律
+本文件原为 DSH 用户级全局工作纪律（`~/.dsh/AGENTS.md`），2026-08-17 迁入本项目，对**本项目会话及其子 agent 生效**。项目纪律更具体、优先级更高；本文件聚焦通用科研与多 agent 编排纪律。
+
+## 语言约定(对所有会话生效)
+- **用中文思考,并用中文回答**。代码、标识符、命令、专有名词、路径、变量名、引用的字段名除外。
+- 面向用户的状态、说明、结论、计划、建议一律中文;即使底层倾向用英文,也强制切换到中文。
+- 代码内注释可用中文或英文(随项目习惯),但对用户的回复必须中文。
+
+## 多 agent 编排纪律(跨项目通用 playbook)
+适用于一切"长时间、多模块、多子 agent、需断线存活"的科研/技术工作。
+
+### 调度与并行
+- 任务级并行:相互独立的子 agent 一次尽量多派,各自隔离工作区/模块,避免文件冲突。dsh 的 subagent 默认后台运行,应按需派发。
+- 主 agent 只调度、派发、合并验收,不重复实现了代工作。子 agent 返回结构化短报告(改动/测试/产物/下一步),长代码与结果写文件。
+- 阶段级并行:开发/审查/测试/运行是独立且并发的阶段,不串成严苛流水线;不同阶段交给不同 agent。
+- 批次流水线重叠:批次 N 产物一产生就交审查,主 agent 同时派发批次 N+1;P0/P1 以增量补丁回流,不阻塞新批次。
+
+### 子 agent 约束
+- 给每个子 agent 显式步数预算;到预算后转"已完成/未完成+原因/产物/上下文摘要/下一步",绝不无限循环。
+- 不无限重试:失败自动重启(优先续跑,其次拆小重派),同一任务最多 2 次;重启前读上一次总结避免返工。
+- 任务 prompt 硬要求:子步骤全完成前不写收尾总结;一次工具调用小而可控;步数精打细算,先读最小必要上下文,禁止重复探索。
+
+### 验收与审查
+- 分层测试:快速层(秒级,每个子 agent 必跑)→ 模块层(跨模块 ~分钟)→ 全量(仅 merge/阶段收尾)。失败只阻塞受影响部分。附语法编译检查与 `git diff --check`。
+- 每批后两个独立审查并行:代码正确性/契约、数据一致性/跨模块接线;**只关注 P0/P1**,MINOR 进 backlog 不阻塞;审查与下一批开发重叠。
+
+### 状态跟踪
+- 维护单一状态文件,每单元完成原子更新;记录每部分状态/已用预算/resume 命令,主 agent 据此调度。
+
+## 长期任务执行纪律
+- 阶段分层:小规模 pre-flight(结果可改设计)→ 冻结设计 → smoke 只验可执行性(含 resume)→ 正式长跑;三层语义不同。
+- 断线存活:长跑必须挺过终端断开——用后台/nohup/进程管理器?会话,输出重定向日志并记录 PID;任何"随会话死亡"的方式都不合格。
+- resume 语义:中间产物按 identity 哈希缓存(同输入跳过);组件从各自 checkpoint 续;禁止两个 controller 并发写同一输出根。
+- 禁止全笛卡尔积:绝大多数维度一开始固定,仅少数维度分级 escalate;新增实验走偏差日志(为何不足、回答什么、额外成本、替换哪个低优先项)。
+- 小样本安全:按子集分层抽样,每子集保留代表;数据不足显式回退并记录,不静默启用。
+- 冻结参数纪律:正式阶段前冻结所有超参;正式期只修 bug 及会致结果失效的 schema/identity bug,修后使受影响结果失效并只重跑受影响 identity;不做临场调参。
+
+## 完成/科学/报告纪律
+- 不得过早整体终止:单项失败/无收益/item 失败不是整体终止理由——写权威失败/负结果产物(状态/真实分母/原因),继续不依赖它的阶段。仅全局阻塞(依赖/数据/环境缺失、磁盘不可写、会污染全部结果的严重 identity/split 错误)可终止,且写完整阻塞文档(已完成阶段/最后成功产物/失败命令日志/可粘贴 resume 命令)。
+- 运行完备才算完成:每项都有显式状态(completed / bounded-insufficient / blocked / abandoned-with-reason)才允许结论。
+- 科学边界:指标口径先定义并冻结,中途不改;报告数字由结构化数据(JSON)生成,绝不手抄;比较同标准(同 split/identity),不跨不兼容指标合并;不凭 training loss 宣称更优。
+- 主线后受控探索(可选):主线完成后,主 agent 编排、多个 explore/review 子 agent 并行探测;结论分类(立即可行动/backlog/P0);可推翻主结论者走升级路径(数据确认→独立反查→影响边界评估→根因追溯→最高优先 todo)。
+
+## DSH 机制速记
+- 用户级全局指令 = `~/.dsh/AGENTS.md`(已于 2026-08-17 删除,内容迁入本项目);项目级指令 = `<项目根>/AGENTS.md`(更具体,优先);本文件即迁移后的纪律。
+- 需要"按需加载"的工具类知识(非常驻纪律)放 dsh skill:用户级 `~/.dsh/skills/`,项目级 `<项目根>/.dsh/skills/`,agent 按需通过 `skill` 工具加载。
+- 语言、方法论这类"希望自动常驻"的内容放 AGENTS.md,而非 skill。

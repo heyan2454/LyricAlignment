@@ -1,0 +1,22 @@
+{
+  "schema_version": "gtsinger_regression_quality_gate_summary_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "dataset": "GTSinger regression_selection (84 items)",
+  "official": {
+    "gate_passed": 53,
+    "gate_failed": 31,
+    "problem_counts": {"zero_duration_rate": 31},
+    "total_zero_duration": 44,
+    "total_overlap": 0,
+    "total_regression": 0
+  },
+  "rawdecoder": {
+    "gate_passed": 45,
+    "gate_failed": 39,
+    "problem_counts": {"overlap_count": 34, "zero_duration_rate": 8, "regression_count": 1},
+    "total_zero_duration": 9,
+    "total_overlap": 47,
+    "total_regression": 1
+  },
+  "conclusion": "Official fails mostly on zero-duration; raw decoder fails mostly on overlap. Gate design should consider both failure modes and possibly hybrid selection."
+}

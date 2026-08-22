@@ -1,0 +1,37 @@
+{
+  "schema_version": "gtsinger_diagnostic_summary_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "source": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_diag_all",
+  "dataset": "GTSinger Chinese mini diagnostic split",
+  "items": 75,
+  "units": 1226,
+  "metric": "both boundary abs error <= threshold (vocal/windowed)",
+  "models": {
+    "r0": {
+      "both_100ms": 0.748,
+      "both_200ms": 0.814,
+      "both_500ms": 0.956
+    },
+    "r1": {
+      "both_100ms": 0.876,
+      "both_200ms": 0.9282,
+      "both_500ms": 0.9772
+    },
+    "r2": {
+      "both_100ms": 0.9005,
+      "both_200ms": 0.9551,
+      "both_500ms": 0.9812
+    },
+    "r2_rawdecoder": {
+      "both_100ms": 0.9184,
+      "both_200ms": 0.96,
+      "both_500ms": 0.9821
+    }
+  },
+  "notes": [
+    "GTSinger JSON word-level GT, filtered <AP>.",
+    "This is diagnostic_visible data, not sealed final.",
+    "R2 is the current best productization candidate on this Chinese diagnostic set.",
+    "r2_rawdecoder uses --decoder-kind raw on same 75 diagnostic items; improved vs official r2."
+  ]
+}

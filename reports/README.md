@@ -31,6 +31,14 @@ reports/resume/      基于真实完成工作的简历表达。
 | `reports/research_transition_recovery_detector_20260807/` | transition-recovery 探索 session 报告、negative results、transition map |
 | `reports/review/` | 各阶段 archive/包/环境/依赖审查 |
 | `reports/assets/` | 资产清单与 AST 数据集复用审计 |
+| `reports/behavior_registry.json` | Lyric Align 单因素行为注册表（Evaluation V1 产品化研究用） |
+| `reports/progress/20260816_evaluation_v1_first_light.md` | Evaluation V1 首轮数据/工具链/GTSinger smoke 小结 |
+| `reports/progress/20260816_gtsinger_first_metrics.md` | GTSinger 新数据首个 R0/R1/R2 数值评测（短片段 first-light） |
+| `reports/progress/20260816_productization_validation_report.md` | 当前产品化验证总报告（基础设施、GTSinger 全量结果、质量 gate、下一步） |
+| `reports/progress/20260816_productization_milestones.md` | 产品化验证 Milestone 清单（已完成/待办） |
+| `reports/progress/20260816_productization_recommendations.md` | 基于当前证据的产品化建议（模型/decoder/gate/下一步） |
+| `reports/progress/20260816_productization_final.md` | 产品化验证最终摘要（关键指标、建议、产物索引） |
+| `reports/progress/20260816_evaluation_outputs_index.json` | Evaluation V1 外部产物批次索引与 cleanup 状态 |
 
 ## 数据边界
 

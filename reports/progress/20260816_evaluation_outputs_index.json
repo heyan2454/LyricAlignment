@@ -1,0 +1,336 @@
+{
+  "schema_version": "evaluation_outputs_index_v1",
+  "runs_root": "/home/hyan/Data/lyricalign/runs",
+  "batches": [
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_baseline_identity",
+      "name": "20260816_evaluation_v1_baseline_identity",
+      "has_cleanup_report": true,
+      "file_count": 2,
+      "files": [
+        "baseline_identity.json",
+        "cleanup_report.md"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_datasets_audit",
+      "name": "20260816_evaluation_v1_datasets_audit",
+      "has_cleanup_report": true,
+      "file_count": 2,
+      "files": [
+        "cleanup_report.md",
+        "dataset_readiness_audit.json"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_ablation_compress",
+      "name": "20260816_evaluation_v1_gtsinger_ablation_compress",
+      "has_cleanup_report": true,
+      "file_count": 5,
+      "files": [
+        "ABLATION_RESULT.md",
+        "cleanup_report.md",
+        "eval_batch_r2_compress.json",
+        "gt_map.jsonl",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_ablation_rawdec",
+      "name": "20260816_evaluation_v1_gtsinger_ablation_rawdec",
+      "has_cleanup_report": true,
+      "file_count": 5,
+      "files": [
+        "ABLATION_RESULT.md",
+        "cleanup_report.md",
+        "eval_batch_r2_rawdec.json",
+        "gt_map.jsonl",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_ablation_rawdec_all",
+      "name": "20260816_evaluation_v1_gtsinger_ablation_rawdec_all",
+      "has_cleanup_report": true,
+      "file_count": 5,
+      "files": [
+        "RAWDEC_ALL_RESULT.md",
+        "cleanup_report.md",
+        "eval_batch_r2_rawdec.json",
+        "gt_map.jsonl",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_ablation_skip",
+      "name": "20260816_evaluation_v1_gtsinger_ablation_skip",
+      "has_cleanup_report": true,
+      "file_count": 5,
+      "files": [
+        "ABLATION_RESULT.md",
+        "cleanup_report.md",
+        "eval_batch_r2_skip.json",
+        "gt_map.jsonl",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_ablation_strict",
+      "name": "20260816_evaluation_v1_gtsinger_ablation_strict",
+      "has_cleanup_report": true,
+      "file_count": 5,
+      "files": [
+        "ABLATION_RESULT.md",
+        "cleanup_report.md",
+        "eval_batch_r2_strict.json",
+        "gt_map.jsonl",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_batch",
+      "name": "20260816_evaluation_v1_gtsinger_batch",
+      "has_cleanup_report": true,
+      "file_count": 8,
+      "files": [
+        "SMOKE_BATCH_RESULT.md",
+        "batch.log",
+        "cleanup_report.md",
+        "eval_batch_r0.json",
+        "eval_batch_r1.json",
+        "eval_batch_r2.json",
+        "gt_map.jsonl",
+        "run_batch.sh"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_diag_all",
+      "name": "20260816_evaluation_v1_gtsinger_diag_all",
+      "has_cleanup_report": true,
+      "file_count": 10,
+      "files": [
+        "GTSINGER_DIAGNOSTIC_RESULT.md",
+        "aggregate_summary.json",
+        "cleanup_report.md",
+        "eval_batch_r0.json",
+        "eval_batch_r1.json",
+        "eval_batch_r2.json",
+        "gt_map.jsonl",
+        "gtsinger_hard_cases.jsonl",
+        "quality_warnings_summary.json",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_diag_test",
+      "name": "20260816_evaluation_v1_gtsinger_diag_test",
+      "has_cleanup_report": true,
+      "file_count": 2,
+      "files": [
+        "cleanup_report.md",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_rawdec_all",
+      "name": "20260816_evaluation_v1_gtsinger_rawdec_all",
+      "has_cleanup_report": true,
+      "file_count": 7,
+      "files": [
+        "RAWDEC_FULL_RESULT.md",
+        "REGRESSION_ANALYSIS.md",
+        "cleanup_report.md",
+        "comparison_official_vs_rawdec.json",
+        "eval_batch_r2_rawdec.json",
+        "gt_map.jsonl",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_regression_official_all",
+      "name": "20260816_evaluation_v1_gtsinger_regression_official_all",
+      "has_cleanup_report": true,
+      "file_count": 6,
+      "files": [
+        "REGRESSION_OFFICIAL_ALL.md",
+        "cleanup_report.md",
+        "eval_batch_r2_official.json",
+        "gt_map.jsonl",
+        "quality_warnings_summary.json",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_regression_rawdec_all",
+      "name": "20260816_evaluation_v1_gtsinger_regression_rawdec_all",
+      "has_cleanup_report": true,
+      "file_count": 6,
+      "files": [
+        "REGRESSION_RAWDEC_ALL.md",
+        "cleanup_report.md",
+        "eval_batch_r2_rawdec.json",
+        "gt_map.jsonl",
+        "quality_warnings_summary.json",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_regression_rawdec_smoke",
+      "name": "20260816_evaluation_v1_gtsinger_regression_rawdec_smoke",
+      "has_cleanup_report": true,
+      "file_count": 5,
+      "files": [
+        "REGRESSION_RAWDEC_SMOKE.md",
+        "cleanup_report.md",
+        "eval_batch_r2_rawdec.json",
+        "gt_map.jsonl",
+        "run.log"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_smoke",
+      "name": "20260816_evaluation_v1_gtsinger_smoke",
+      "has_cleanup_report": true,
+      "file_count": 12,
+      "files": [
+        "SMOKE_RESULT.md",
+        "alignment_matrix.complete.json",
+        "cleanup_report.md",
+        "eval_r0_vocal_windowed.json",
+        "eval_r1_vocal_windowed.json",
+        "eval_r2_vocal_windowed.json",
+        "lyrics.txt",
+        "lyrics_generated.txt",
+        "lyrics_structure.json",
+        "pipeline.log",
+        "run_cmd.sh",
+        "smoke_summary.json"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_smoke2",
+      "name": "20260816_evaluation_v1_gtsinger_smoke2",
+      "has_cleanup_report": true,
+      "file_count": 10,
+      "files": [
+        "SMOKE_RESULT.md",
+        "alignment_matrix.complete.json",
+        "cleanup_report.md",
+        "eval_r1_vocal_windowed.json",
+        "eval_r2_vocal_windowed.json",
+        "lyrics.txt",
+        "lyrics_structure.json",
+        "pipeline.log",
+        "run_cmd.sh",
+        "smoke_summary.json"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_smoke3",
+      "name": "20260816_evaluation_v1_gtsinger_smoke3",
+      "has_cleanup_report": true,
+      "file_count": 11,
+      "files": [
+        "SMOKE_RESULT.md",
+        "alignment_matrix.complete.json",
+        "cleanup_report.md",
+        "eval_r0_vocal_windowed.json",
+        "eval_r1_vocal_windowed.json",
+        "eval_r2_vocal_windowed.json",
+        "lyrics.txt",
+        "lyrics_structure.json",
+        "pipeline.log",
+        "run_cmd.sh",
+        "smoke_summary.json"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_mir_smoke",
+      "name": "20260816_evaluation_v1_mir_smoke",
+      "has_cleanup_report": true,
+      "file_count": 8,
+      "files": [
+        "SMOKE_RESULT.md",
+        "alignment_matrix.complete.json",
+        "cleanup_report.md",
+        "crop_30s.wav",
+        "lyrics.txt",
+        "lyrics_structure.json",
+        "pipeline.log",
+        "run_cmd.sh"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_pjs_batch",
+      "name": "20260816_evaluation_v1_pjs_batch",
+      "has_cleanup_report": true,
+      "file_count": 4,
+      "files": [
+        "PJS_BATCH_RESULT.md",
+        "batch.log",
+        "cleanup_report.md",
+        "run_batch.sh"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_pjs_rawdec_batch",
+      "name": "20260816_evaluation_v1_pjs_rawdec_batch",
+      "has_cleanup_report": true,
+      "file_count": 4,
+      "files": [
+        "PJS_RAWDEC_RESULT.md",
+        "batch.log",
+        "cleanup_report.md",
+        "run_batch.sh"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_pjs_smoke",
+      "name": "20260816_evaluation_v1_pjs_smoke",
+      "has_cleanup_report": true,
+      "file_count": 7,
+      "files": [
+        "SMOKE_RESULT.md",
+        "alignment_matrix.complete.json",
+        "cleanup_report.md",
+        "lyrics.txt",
+        "lyrics_structure.json",
+        "pipeline.log",
+        "run_cmd.sh"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_split_draft",
+      "name": "20260816_evaluation_v1_split_draft",
+      "has_cleanup_report": true,
+      "file_count": 14,
+      "files": [
+        "cleanup_report.md",
+        "dataset_compatibility_matrix.json",
+        "evaluation_v1_diagnostic_only.jsonl",
+        "evaluation_v1_diagnostic_regression.jsonl",
+        "evaluation_v1_leakage_audit.json",
+        "evaluation_v1_manifest.sha256",
+        "evaluation_v1_split_manifest.jsonl",
+        "evaluation_v1_split_summary.json",
+        "evaluation_v1_summary_report.md",
+        "gtsinger_diagnostic_manifest.jsonl",
+        "gtsinger_hard_manifest.jsonl",
+        "gtsinger_regression_manifest.jsonl",
+        "gtsinger_regression_only.jsonl",
+        "pjs_manifest.jsonl"
+      ]
+    },
+    {
+      "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_vocal_plan",
+      "name": "20260816_evaluation_v1_vocal_plan",
+      "has_cleanup_report": true,
+      "file_count": 3,
+      "files": [
+        "cleanup_report.md",
+        "operational_input_manifest.jsonl",
+        "vocal_derivation_plan.json"
+      ]
+    }
+  ]
+}

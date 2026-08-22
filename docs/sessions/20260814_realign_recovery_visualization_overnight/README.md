@@ -15,6 +15,13 @@
 6. `05_CODEX_HANDOFF.md`：要求 Codex 先生成实现方案，再交 OpenCode/agent 执行；
 7. `06_PLANNED_RUNS.yaml`：建议 run/session 名称与阶段顺序，作为声明式工作清单，不代表代码已经实现。
 
+## 2026-08-15 追加：窗口输入/装配层架构讨论
+
+`00_SESSION_DISCUSSION_RECORD.md` 第 9 节（执行期记录）与第 10 节（架构讨论）记录了 strict/compress 实现前转入的架构讨论
+（分窗只决定 core、上下文是装配可选项、装配与推进做成层式双向、避免上下文成为推进方式的
+笛卡尔积等）。该节同时包含讨论前的代码落地状态（window_planning.py 改动与自检结果）与
+待续事项；本 session 后续实现顺序以该节为准。
+
 ## 当前冻结原则
 
 - `actual_writeback = 0`，所有 realign 仍为 shadow/evaluator-only；

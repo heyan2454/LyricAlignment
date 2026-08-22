@@ -1,0 +1,14 @@
+{
+  "schema_version": "gtsinger_regression_rawdec_smoke_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "dataset": "GTSinger regression_selection smoke (first 5 items)",
+  "items": 5,
+  "units": 94,
+  "raw_decoder_r2": {
+    "both_100ms": 0.9362,
+    "both_200ms": 0.9574,
+    "both_500ms": 1.0
+  },
+  "source": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_gtsinger_regression_rawdec_smoke/eval_batch_r2_rawdec.json",
+  "note": "Full regression_selection raw decoder run is in progress."
+}

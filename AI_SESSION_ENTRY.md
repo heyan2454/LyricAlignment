@@ -1,5 +1,19 @@
 # AI Session Entry
 
+## 2026-08-16 Lyric Align Dataset Acquisition & No-Training Evaluation — Newer Session
+
+A newer 2026-08-16 session exists and is the current focus:
+
+```text
+docs/sessions/20260816_lyric_align_dataset_acquisition_evaluation_strategy/README.md
+docs/sessions/20260816_lyric_align_dataset_acquisition_evaluation_strategy/00..06_*.md
+```
+
+Direction (as stated in that session's own README): dataset acquisition plus a
+no-training evaluation-v1 / productization research line. This entry only points
+the way; it does not rule on how this session relates to the 2026-08-14 session
+or to the current mainline — verify and judge for yourself before relying on either.
+
 ## 2026-08-14 Unit Realign Recovery + Visualization — Active Override
 
 The active planning entry is now:

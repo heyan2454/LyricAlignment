@@ -1,0 +1,116 @@
+{
+  "schema_version": "gtsinger_ablation_summary_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "dataset": "GTSinger Chinese diagnostic hard cases",
+  "items": [
+    "Control_0009",
+    "Glissando_0010",
+    "Glissando_0011"
+  ],
+  "metric": "R2 vocal/windowed both-boundary hit rate",
+  "baseline": {
+    "Control_0009": {
+      "both_100ms": 0.75,
+      "both_200ms": 0.875
+    },
+    "Glissando_0010": {
+      "both_100ms": 0.8235,
+      "both_200ms": 1.0
+    },
+    "Glissando_0011": {
+      "both_100ms": 0.75,
+      "both_200ms": 1.0
+    }
+  },
+  "ablations": {
+    "compress_silence_audio": {
+      "Control_0009": {
+        "both_100ms": 0.75,
+        "both_200ms": 0.875
+      },
+      "Glissando_0010": {
+        "both_100ms": 0.8235,
+        "both_200ms": 1.0
+      },
+      "Glissando_0011": {
+        "both_100ms": 0.75,
+        "both_200ms": 1.0
+      }
+    },
+    "strict_silence_boundary_plan": {
+      "Control_0009": {
+        "both_100ms": 0.75,
+        "both_200ms": 0.875
+      },
+      "Glissando_0010": {
+        "both_100ms": 0.8235,
+        "both_200ms": 1.0
+      },
+      "Glissando_0011": {
+        "both_100ms": 0.75,
+        "both_200ms": 1.0
+      }
+    },
+    "skip_silent_windows": {
+      "Control_0009": {
+        "both_100ms": 0.75,
+        "both_200ms": 0.875
+      },
+      "Glissando_0010": {
+        "both_100ms": 0.8235,
+        "both_200ms": 1.0
+      },
+      "Glissando_0011": {
+        "both_100ms": 0.75,
+        "both_200ms": 1.0
+      }
+    },
+    "decoder_kind_raw": {
+      "Control_0009": {
+        "both_100ms": 0.75,
+        "both_200ms": 0.875
+      },
+      "Glissando_0010": {
+        "both_100ms": 0.8235,
+        "both_200ms": 1.0
+      },
+      "Glissando_0011": {
+        "both_100ms": 0.8333,
+        "both_200ms": 1.0
+      }
+    }
+  },
+  "conclusion": "Raw decoder improves full GTSinger diagnostic both_100ms from 90.05% to 91.84% (20 improved, 2 regressed).",
+  "rawdec_all_18": {
+    "baseline": {
+      "units": 309,
+      "both_100ms": 0.7832,
+      "both_200ms": 0.9029
+    },
+    "raw_decoder": {
+      "units": 309,
+      "both_100ms": 0.8447,
+      "both_200ms": 0.9159
+    },
+    "improved_100ms": 14,
+    "regressed_100ms": 0,
+    "same_100ms": 4
+  },
+  "rawdec_full_75": {
+    "baseline": {
+      "units": 1226,
+      "both_100ms": 0.9005,
+      "both_200ms": 0.9551,
+      "both_500ms": 0.9812
+    },
+    "raw_decoder": {
+      "units": 1226,
+      "both_100ms": 0.9184,
+      "both_200ms": 0.96,
+      "both_500ms": 0.9821
+    },
+    "improved_100ms": 20,
+    "regressed_100ms": 2,
+    "same_100ms": 53
+  }
+}

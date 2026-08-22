@@ -7,7 +7,8 @@
 - `assets/`：数据发现、模型下载与外部资产校验；
 - `datasets/`：M4Singer、MIR-1K 与 synthetic-long 准备；
 - `training/`：Qwen FA LoRA、恢复评估、120s 快速诊断入口；
-- `evaluation/`：字符指标、长音频诊断、raw/fixed timestamp 审计与汇总；
+- `evaluation/`：字符指标、长音频诊断、raw/fixed timestamp 审计与汇总；另含 Evaluation V1
+  产品化准备（split manifest、sealed gate、dataset readiness、baseline identity），见 `evaluation/README.md`；
 - `demo/`：独立歌曲的串行分窗对齐、Spleeter 人声分离与 KTV 视频；
 - `maintenance/`：轻量证据收集；
 - `environment/`：环境、包来源和 archive 构建。

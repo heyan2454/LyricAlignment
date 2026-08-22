@@ -585,7 +585,7 @@ def render_alignment_comparison(
     the final comparison. No intermediate panel videos or duplicate audio
     encodes are created.
     """
-    expected = {"two": 2, "four": 4}.get(layout)
+    expected = {"two": 2, "three": 3, "four": 4}.get(layout)
     if expected is None:
         raise ValueError(f"unsupported direct comparison layout: {layout}")
     if len(alignment_paths) != expected or len(labels) != expected:
@@ -685,6 +685,8 @@ def render_alignment_comparison(
         filters.append(f"[b{index}]ass={ass_name}[v{index}]")
     if layout == "two":
         filters.append("[v0][v1]hstack=inputs=2[v]")
+    elif layout == "three":
+        filters.append("[v0][v1][v2]xstack=inputs=3:layout=0_0|w0_0|0_h0:fill=black[v]")
     else:
         filters.append("[v0][v1][v2][v3]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0:fill=black[v]")
     command.extend([

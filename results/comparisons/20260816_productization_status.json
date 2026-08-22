@@ -1,0 +1,62 @@
+{
+  "schema_version": "productization_status_v1",
+  "date": "2026-08-16",
+  "split_manifest": {
+    "path": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_split_draft/evaluation_v1_split_manifest.jsonl",
+    "sha256": "f04e0b9b959907a87965c581a615dd1d74b03dbd88dce837e2cc97927602ed8f"
+  },
+  "gtsinger": {
+    "official_r2": {
+      "units": 1226,
+      "both_100ms": 0.9005,
+      "both_200ms": 0.9551,
+      "both_500ms": 0.9812
+    },
+    "rawdecoder_r2": {
+      "units": 1226,
+      "both_100ms": 0.9184,
+      "both_200ms": 0.96,
+      "both_500ms": 0.9821
+    },
+    "hard18_rawdecoder": {
+      "baseline_100": 0.7832,
+      "rawdec_100": 0.8447
+    },
+    "comparison": {
+      "improved": 20,
+      "regressed": 2,
+      "same": 53
+    },
+    "regression_rawdecoder_r2": {
+      "items": 84,
+      "units": 1189,
+      "both_100ms": 0.8949,
+      "both_200ms": 0.9386,
+      "both_500ms": 0.9832
+    },
+    "regression_official_all": "done",
+    "regression_official_r2": {
+      "items": 84,
+      "units": 1189,
+      "both_100ms": 0.8747,
+      "both_200ms": 0.9277,
+      "both_500ms": 0.984
+    }
+  },
+  "pjs": {
+    "smoke": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_pjs_smoke/",
+    "batch": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_pjs_batch/",
+    "rawdecoder_batch": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_pjs_rawdec_batch/",
+    "summary": "results/comparisons/20260816_pjs_rawdecoder_summary.json"
+  },
+  "mir": {
+    "raw_smoke": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_mir_smoke/",
+    "status": "raw_mixture_pending_vocal"
+  },
+  "next_steps": [
+    "raw decoder regression_selection validation",
+    "PJS phoneme-level GT",
+    "MIR/Jamendo vocal derivation",
+    "R-U/R-S/R-CF recovery ablation"
+  ]
+}

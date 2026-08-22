@@ -1,0 +1,13 @@
+{
+  "schema_version": "gtsinger_rawdec_quality_gate_summary_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "dataset": "GTSinger diagnostic raw decoder",
+  "items": 75,
+  "gate_passed": 33,
+  "gate_failed": 42,
+  "problem_counts": {"overlap_count": 38, "zero_duration_rate": 10, "regression_count": 1},
+  "total_zero_duration_units": 11,
+  "total_inter_unit_overlap": 50,
+  "total_timestamp_regression": 1,
+  "note": "Strict gate: any overlap fails. Most failures are overlap, not zero-duration."
+}

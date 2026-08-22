@@ -1,0 +1,19 @@
+{
+  "schema_version": "gtsinger_hybrid_gate_analysis_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "dataset": "GTSinger regression_selection (84 items)",
+  "insight": "Raw decoder's metric gains are concentrated in items where raw decoder fails the overlap gate.",
+  "raw_gate_pass_subset": {
+    "items": 45,
+    "units": 577,
+    "official_both_100ms": 0.9272,
+    "rawdecoder_both_100ms": 0.9272
+  },
+  "raw_gate_fail_subset": {
+    "items": 39,
+    "units": 612,
+    "official_both_100ms": 0.8252,
+    "rawdecoder_both_100ms": 0.8644
+  },
+  "implication": "Simple gate-based selection (only use raw when raw gate passes) does not improve aggregate. Productization should either use raw + overlap repair, or use a different selection signal than the final overlap gate."
+}

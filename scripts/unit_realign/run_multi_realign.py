@@ -190,9 +190,13 @@ def main(argv=None) -> int:
     region_agg: list[dict] = []
     count = {"ok": 0, "not_constructible": 0, "failed": 0, "resume_skipped": 0}
 
-    for region in regions:
+    for idx, region in enumerate(regions, 1):
         song_id = str(region.get("song_id") or "")
         region_id = str(region.get("region_id") or "")
+        if idx == 1 or idx % 10 == 0 or idx == len(regions):
+            print(f"[progress] region {idx}/{len(regions)} song={song_id} region={region_id} "
+                  f"t0={time.strftime('%H:%M:%S')} ok={count['ok']} nc={count['not_constructible']} "
+                  f"failed={count['failed']}", flush=True)
         targets = _select_targets(region, args.targets)
         if not targets:
             count["not_constructible"] += 1

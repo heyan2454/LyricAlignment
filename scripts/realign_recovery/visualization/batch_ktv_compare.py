@@ -32,6 +32,7 @@ TEST = "/home/hyan/Data/lyricalign/test"
 B4_CORE = "/home/hyan/Data/lyricalign/runs/20260814_viz_B4"       # core 5 songs (乙女/浮夸/PastLives/此处/人造)
 B4_NONCORE = "/home/hyan/Data/lyricalign/runs/20260814_b4review"   # 月半/祈愿/冬之花 (and any other b4 there)
 B4_KTV = "/home/hyan/Data/lyricalign/runs/20260814_ktv_B4"         # freshly-regenerated B4 for the other non-core songs
+CURRENT_SILENCE = "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence"  # fixed Current (silence-aware + skip-silent, B4-consistent)
 
 # slug (deliver filename stem) -> (song original name, language).  slug came from
 # name.replace(" ","_"), so inverted by "_"->" " except the known multi-part/odd ones.
@@ -68,6 +69,8 @@ def slug_to_song(slug: str) -> str:
 
 def resolve_current(song: str, lang: str) -> Path | None:
     cand = [
+        # fixed Current (silence-aware + skip-silent, B4-consistent config)
+        Path(CURRENT_SILENCE) / song / "alignments/r2/vocal/windowed/alignment.json",
         Path(PREP) / lang / f"{song}_qwen_fa/alignments/r2/vocal/windowed/alignment.json",
         Path(TEST) / lang / f"{song}_qwen_fa/alignments/r2/vocal/windowed/alignment.json",
     ]

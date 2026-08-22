@@ -24,6 +24,6 @@
 - `by_run/`：qwen_fa R2 全量训练（seed 20260724）的 sealed test / MIR-1K OOD / validation
   step001110，以及 R0/R1/R2 早期评测（20260723–20260724），每个 run 独立目录含 metrics、
   evaluation_identity、return_code、stderr 等。
-- `comparisons/`：LoRA 摘要、R2 cross-seed follow-up、long b180 outlier audit 等跨 run 比较。
+- `comparisons/`：LoRA 摘要、R2 cross-seed follow-up、long b180 outlier audit 等跨 run 比较；另含 `20260816_gtsinger_diagnostic_summary.json`（GTSinger 75 段 diagnostic first-light）、`20260816_gtsinger_ablation_summary.json`（hard-case 消融）、`20260816_pjs_rawdecoder_summary.json`（PJS raw decoder 结构对比）、`20260816_productization_status.json`（产品化状态总览）、`20260816_gtsinger_regression_rawdec_smoke_summary.json`（regression raw decoder smoke）、`20260816_gtsinger_regression_rawdec_summary.json`（全量 regression raw decoder）、`20260816_gtsinger_regression_official_vs_rawdec.json`（regression official vs raw decoder）、`20260816_gtsinger_regression_quality_warnings.json`（regression quality warning 对比）、`20260816_mir_vocal_separation_smoke.json`（MIR vocal 分离 smoke）、`20260816_gtsinger_rawdec_quality_gate_summary.json`（raw decoder quality gate 汇总）、`20260816_gtsinger_regression_quality_gate_summary.json`（regression quality gate 对比）和 `20260816_gtsinger_hybrid_gate_analysis.json`（hybrid gate 分析）。
 - `recomputed/20260724_character_metrics_v3/`：character metric v3 修正重算的
   `metrics.corrected.json`（canonical，禁止再被原始 aggregate 覆盖）。

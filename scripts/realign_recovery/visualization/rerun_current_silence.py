@@ -87,7 +87,7 @@ def main() -> int:
         if txt is None:
             print(f"SKIP {song}: no txt", flush=True)
             continue
-        out = args.out_root / song.replace(" ", "_")
+        out = args.out_root / song  # batch writes to <out-root>/<original stem> (spaces kept)
         align = out / "alignments/r2/vocal/windowed/alignment.json"
         if align.is_file():
             print(f"{song}: already exists, skip", flush=True)

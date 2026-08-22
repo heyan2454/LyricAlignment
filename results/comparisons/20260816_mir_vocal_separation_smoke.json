@@ -1,0 +1,11 @@
+{
+  "schema_version": "mir_vocal_separation_smoke_v1",
+  "created_at_utc": "2026-08-16T00:00:00Z",
+  "dataset": "MIR-MLPop cmn song 1, first 30s",
+  "separator": "spleeter:2stems",
+  "model_path": "/root/autodl-tmp/AST_storage/Data/lyricalign/models/spleeter",
+  "alignment_status": "all_warning",
+  "warnings": ["final_zero_duration", "raw_inter_unit_overlap", "raw_timestamp_regression"],
+  "source": "/home/hyan/Data/lyricalign/runs/20260816_evaluation_v1_mir_smoke/vocal_run",
+  "note": "Vocal separation is necessary but not sufficient on this short crop."
+}

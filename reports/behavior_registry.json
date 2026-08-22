@@ -1,0 +1,276 @@
+{
+  "behaviors": [
+    {
+      "behavior_id": "input.multilingual_normalization",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "mir_mlpop_yue",
+        "pjs",
+        "gtsinger_chinese",
+        "jamendolyrics_en"
+      ],
+      "evidence": [
+        "20260814 full-slot vs B4 language-aware comparison",
+        "20260816 GTSinger full diagnostic: R2 both_100ms=90.1% on 1226 Chinese units"
+      ],
+      "hypothesis": "Explicit language-aware unit construction reduces forced-aligner prompt ambiguity.",
+      "layer": "input_text_normalization",
+      "name": "Multilingual character/word/phoneme unit mapping",
+      "possible_harm": [
+        "Over-splitting/merging changes alignment semantics",
+        "Extra normalization complexity"
+      ],
+      "productization_gate": "diagnostic_visible then regression_selection",
+      "target_failures": [
+        "cross-language token mismatch",
+        "character vs word granularity leakage",
+        "Japanese word-unit boundary errors"
+      ]
+    },
+    {
+      "behavior_id": "window.silence_aware",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "mir_mlpop_yue",
+        "jamendolyrics_en"
+      ],
+      "evidence": [
+        "Current full-slot baseline uses shared silence-aware config",
+        "B4-vs-Current visualization",
+        "20260816 GTSinger full diagnostic: 75 short segments runnable through serial demo",
+        "20260816 hard-case ablation: compress/strict/skip silence mechanisms showed no metric change on 3 short hard cases"
+      ],
+      "hypothesis": "Using strong silence anchors keeps each 60s request acoustically coherent.",
+      "layer": "window_context",
+      "name": "Silence-aware window planning with skip-silent and boundary protection",
+      "possible_harm": [
+        "Short cores near silence may lose context",
+        "More window-planning code paths"
+      ],
+      "productization_gate": "diagnostic_visible then regression_selection",
+      "target_failures": [
+        "long-song degradation",
+        "silence-split fragments",
+        "context drift across acoustic gaps"
+      ]
+    },
+    {
+      "behavior_id": "window.full_slot_vs_preslot",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "jamendolyrics_en"
+      ],
+      "evidence": [
+        "20260814 full-slot fixes",
+        "B4-vs-Current comparisons"
+      ],
+      "hypothesis": "Full-slot with the complete window text avoids feeding whole-song units into one window.",
+      "layer": "window_context",
+      "name": "Full-slot direct inference vs pre-slot occurrence-aware serial",
+      "possible_harm": [
+        "Full-slot may lose serial cursor constraints",
+        "Different failure modes on very long songs"
+      ],
+      "productization_gate": "regression_selection",
+      "target_failures": [
+        "repeated-lyrics misassignment",
+        "serial error propagation",
+        "whole-song collapse"
+      ]
+    },
+    {
+      "behavior_id": "recovery.ru_coarse_proposal",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "jamendolyrics_en",
+        "gtsinger_chinese"
+      ],
+      "evidence": [
+        "20260814 R-U evidence",
+        "E4 coarse-fine pilot"
+      ],
+      "hypothesis": "A coarse proposal identifies the recovery basin better than re-aligning the whole region.",
+      "layer": "candidate_selection",
+      "name": "R-U coarse target proposal",
+      "possible_harm": [
+        "Proposal may be wrong and bias refinement",
+        "Extra forward cost"
+      ],
+      "productization_gate": "diagnostic_visible then regression_selection",
+      "target_failures": [
+        "large initial errors",
+        "targets needing coarse localization before refinement"
+      ]
+    },
+    {
+      "behavior_id": "recovery.rs_context_isolation",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "pjs",
+        "gtsinger_chinese"
+      ],
+      "evidence": [
+        "20260814 R-S verified context-isolation mechanism"
+      ],
+      "hypothesis": "Isolating active targets while freezing context slots preserves surrounding alignment.",
+      "layer": "candidate_selection",
+      "name": "R-S full local window with fixed context slots",
+      "possible_harm": [
+        "May be too conservative for large errors",
+        "Requires reliable fixed anchors"
+      ],
+      "productization_gate": "diagnostic_visible then regression_selection",
+      "target_failures": [
+        "context displacement",
+        "collateral harm when repairing a target"
+      ]
+    },
+    {
+      "behavior_id": "recovery.coarse_fine",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "jamendolyrics_en",
+        "gtsinger_chinese"
+      ],
+      "evidence": [
+        "20260814 R-CF demo and E4 pilot"
+      ],
+      "hypothesis": "First localize with R-U, then refine with a bounded sparse/fixed target.",
+      "layer": "candidate_selection",
+      "name": "R-CF coarse-to-fine refinement",
+      "possible_harm": [
+        "Two-stage cost",
+        "Stage A/B mismatch can add complexity"
+      ],
+      "productization_gate": "diagnostic_visible then regression_selection",
+      "target_failures": [
+        "cases where R-U proposal alone is insufficient",
+        "fine-grained split needed"
+      ]
+    },
+    {
+      "behavior_id": "recovery.multi_iteration_recrop_split",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "jamendolyrics_en",
+        "gtsinger_chinese"
+      ],
+      "evidence": [
+        "20260814 E1/E2/E3 design; not fully productized"
+      ],
+      "hypothesis": "Changing observation/crop or splitting the region can expand the recovery basin.",
+      "layer": "recovery_dynamics",
+      "name": "Multi-iteration / audio recrop / fine-grained split",
+      "possible_harm": [
+        "More forwards",
+        "oscillation/divergence",
+        "increased system complexity"
+      ],
+      "productization_gate": "diagnostic_visible screening, then regression_selection",
+      "target_failures": [
+        "first repair stalls at fixed point",
+        "coarse region formulation hides recoverable units"
+      ]
+    },
+    {
+      "behavior_id": "safety.no_gt_gate",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "jamendolyrics_en",
+        "pjs"
+      ],
+      "evidence": [
+        "20260814 E5/E7 no-GT signal design"
+      ],
+      "hypothesis": "Structural and confidence signals can gate writeback without GT leakage.",
+      "layer": "safety_writeback",
+      "name": "No-GT writeback gate using raw/official/posterior/consensus signals",
+      "possible_harm": [
+        "Over-conservative gate blocks useful repairs",
+        "Signal calibration cost"
+      ],
+      "productization_gate": "regression_selection only after diagnostic signal study",
+      "target_failures": [
+        "unsafe realign writeback",
+        "catastrophic regressions",
+        "context corruption"
+      ]
+    },
+    {
+      "behavior_id": "postprocess.monotonic_min_duration",
+      "datasets": [
+        "mir_mlpop_cmn",
+        "jamendolyrics_en",
+        "pjs",
+        "gtsinger_chinese"
+      ],
+      "evidence": [
+        "Existing character_interval_metrics_v3_tolerant",
+        "zero-duration analysis"
+      ],
+      "hypothesis": "Deterministic postprocessing can turn structurally invalid outputs into usable timelines.",
+      "layer": "postprocessing",
+      "name": "Monotonicity, minimum duration, boundary smoothing and merge rules",
+      "possible_harm": [
+        "May hide genuine model uncertainty",
+        "Aggressive smoothing can reduce accuracy"
+      ],
+      "productization_gate": "diagnostic_visible then regression_selection",
+      "target_failures": [
+        "zero-duration runs",
+        "timestamp inversions",
+        "cross-line overlaps"
+      ]
+    },
+    {
+      "behavior_id": "postprocess.zero_duration_gate",
+      "datasets": [
+        "gtsinger_chinese",
+        "mir_mlpop_cmn",
+        "jamendolyrics_en"
+      ],
+      "evidence": [
+        "20260816 GTSinger full diagnostic: 30-34/75 segments had final_zero_duration warning"
+      ],
+      "hypothesis": "Explicit quality gates can separate structurally clean outputs from outputs needing repair or rejection.",
+      "layer": "postprocessing",
+      "name": "Zero-duration and overlap warning gate for productization",
+      "possible_harm": [
+        "Over-rejection lowers usable yield",
+        "Gate thresholds need calibration"
+      ],
+      "productization_gate": "diagnostic_visible then regression_selection",
+      "target_failures": [
+        "final zero-duration units",
+        "raw inter-unit overlap",
+        "timestamp regressions"
+      ]
+    },
+    {
+      "behavior_id": "decoder.raw_vs_official",
+      "datasets": [
+        "gtsinger_chinese",
+        "pjs"
+      ],
+      "evidence": [
+        "20260816 GTSinger full diagnostic: raw decoder improved both_100ms 90.05%->91.84% (20 improved, 2 regressed)",
+        "20260816 PJS 5-segment: raw decoder reduced zero-duration but added selected overlap warnings"
+      ],
+      "hypothesis": "Raw decoder may preserve sharper boundaries while official decoder may smooth; selection should be data-dependent.",
+      "layer": "timestamp_decoder",
+      "name": "Raw vs official timestamp decoder selection",
+      "possible_harm": [
+        "Raw decoder can introduce overlap/selected overlap",
+        "Regressions on a small number of clean segments"
+      ],
+      "productization_gate": "regression_selection",
+      "target_failures": [
+        "boundary jitter",
+        "zero-duration",
+        "overlap"
+      ]
+    }
+  ],
+  "description": "Single-factor ablation candidates for no-training Evaluation V1 productization research.",
+  "schema_version": "lyric_align_behavior_registry_v1"
+}

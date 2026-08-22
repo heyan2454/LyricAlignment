@@ -146,29 +146,23 @@ def build_silence_aware_window_plan(
         profile, duration_sec=duration_sec, min_silence_sec=min_silence_sec,
         strong_silence_sec=strong_silence_sec,
     )
-    active_start = 0.0
-    active_end = float(duration_sec)
-    leading = next((row for row in intervals if float(row["start_sec"]) <= 1e-9), None)
-    if leading is not None and float(leading["duration_sec"]) + 1e-9 >= leading_silence_min_sec:
-        active_start = float(leading["end_sec"])
-    trailing = next((row for row in reversed(intervals) if float(row["end_sec"]) >= duration_sec - 1e-9), None)
-    if trailing is not None and float(trailing["duration_sec"]) + 1e-9 >= leading_silence_min_sec:
-        active_end = float(trailing["start_sec"])
-    if active_end <= active_start + 1e-6:
-        active_start, active_end = 0.0, float(duration_sec)
-        leading = trailing = None
-
-    boundaries = [active_start]
-    cursor = active_start + target_core_sec
-    while cursor < active_end - 1e-9:
-        boundaries.append(cursor)
-        cursor += target_core_sec
-    boundaries.append(active_end)
-    snapped, snap_diagnostics = _snap_internal_boundaries(
-        boundaries, intervals=intervals, search_sec=boundary_search_sec,
+    soft = _soft_plan_in_span(
+        0.0, float(duration_sec), intervals,
+        target_core_sec=target_core_sec,
+        boundary_search_sec=boundary_search_sec,
+        leading_silence_min_sec=leading_silence_min_sec,
+        tail_min_core_sec=tail_min_core_sec,
         minimum_core_sec=minimum_core_sec,
     )
-    balanced, tail_diagnostic = _rebalance_short_tail(snapped, minimum_tail_sec=tail_min_core_sec)
+    active_start = soft["active_start_sec"]
+    active_end = soft["active_end_sec"]
+    leading = soft["leading_silence_skipped"]
+    trailing = soft["trailing_silence_skipped"]
+    boundaries = soft["initial_boundaries_sec"]
+    snapped = soft["snapped_boundaries_sec"]
+    balanced = soft["final_boundaries_sec"]
+    snap_diagnostics = soft["boundary_snap_diagnostics"]
+    tail_diagnostic = soft["tail_adjustment"]
 
     windows: list[dict[str, Any]] = []
     for index, (start, end) in enumerate(zip(balanced[:-1], balanced[1:], strict=True)):
@@ -242,6 +236,63 @@ def _active_regions_from_strict_silence(
     return regions, strict
 
 
+def _soft_plan_in_span(
+    span_start: float,
+    span_end: float,
+    intervals: Sequence[dict[str, Any]],
+    *,
+    target_core_sec: float,
+    boundary_search_sec: float,
+    leading_silence_min_sec: float,
+    tail_min_core_sec: float,
+    minimum_core_sec: float,
+) -> dict[str, Any]:
+    """Run the silence-aware soft windowing logic on an arbitrary time span.
+
+    This is the shared core of ``build_silence_aware_window_plan`` (whole-song
+    span) and ``build_strict_silence_boundary_window_plan`` (one active region
+    per call).  ``intervals`` must already be restricted to the span; all
+    returned times are absolute.  The caller owns leading/trailing semantics
+    identical to the whole-song planner: a silence anchored at the span start
+    (>= leading_silence_min_sec) trims the active span, and likewise at the end.
+    """
+    active_start = float(span_start)
+    active_end = float(span_end)
+    leading = next((row for row in intervals if float(row["start_sec"]) <= float(span_start) + 1e-9), None)
+    if leading is not None and float(leading["duration_sec"]) + 1e-9 >= leading_silence_min_sec:
+        active_start = float(leading["end_sec"])
+    trailing = next((row for row in reversed(intervals) if float(row["end_sec"]) >= float(span_end) - 1e-9), None)
+    if trailing is not None and float(trailing["duration_sec"]) + 1e-9 >= leading_silence_min_sec:
+        active_end = float(trailing["start_sec"])
+    if active_end <= active_start + 1e-6:
+        active_start, active_end = float(span_start), float(span_end)
+        leading = trailing = None
+
+    boundaries = [active_start]
+    cursor = active_start + target_core_sec
+    while cursor < active_end - 1e-9:
+        boundaries.append(cursor)
+        cursor += target_core_sec
+    boundaries.append(active_end)
+    snapped, snap_diagnostics = _snap_internal_boundaries(
+        boundaries, intervals=intervals, search_sec=boundary_search_sec,
+        minimum_core_sec=minimum_core_sec,
+    )
+    balanced, tail_diagnostic = _rebalance_short_tail(snapped, minimum_tail_sec=tail_min_core_sec)
+
+    return {
+        "active_start_sec": float(active_start),
+        "active_end_sec": float(active_end),
+        "leading_silence_skipped": leading,
+        "trailing_silence_skipped": trailing,
+        "initial_boundaries_sec": [float(value) for value in boundaries],
+        "snapped_boundaries_sec": [float(value) for value in snapped],
+        "final_boundaries_sec": [float(value) for value in balanced],
+        "boundary_snap_diagnostics": snap_diagnostics,
+        "tail_adjustment": tail_diagnostic,
+    }
+
+
 def _subdivide_region(
     start_sec: float,
     end_sec: float,
@@ -274,16 +325,23 @@ def build_strict_silence_boundary_window_plan(
     min_silence_sec: float = 0.8,
     strong_silence_sec: float = 1.5,
     strict_silence_sec: float | None = None,
+    boundary_search_sec: float = 6.0,
+    leading_silence_min_sec: float = 2.0,
     tail_min_core_sec: float = 18.0,
     minimum_core_sec: float = 12.0,
 ) -> dict[str, Any]:
     """Build windows whose model inputs never cross a strong-silence boundary.
 
     Unlike the ordinary silence-aware planner, this planner treats sufficiently
-    long silence as a hard acoustic boundary.  The silent gap remains on the
-    global timeline, but neither neighboring model input contains its body.
-    Consequently each input interval and its transcript can be cropped from the
-    same active region without orphan audio from the opposite side.
+    long silence (>= ``strict_silence_sec``) as a hard acoustic boundary: the
+    timeline is split into active regions separated by those silences, and the
+    *same soft logic as the whole-song planner* (target-core cursor, silence
+    snap inside the region, short-tail redistribution, leading/trailing trim)
+    runs **independently inside each active region**.  Small island regions
+    never participate in another region's split — each region yields its own
+    windows.  The silent gap remains on the global timeline, but neither
+    neighboring model input contains its body: input intervals are clipped to
+    their region, so no input/transcript crop crosses a strict silence.
     """
     if duration_sec <= 0 or target_core_sec <= 0:
         raise ValueError("duration_sec and target_core_sec must be positive")
@@ -304,20 +362,34 @@ def build_strict_silence_boundary_window_plan(
         region_end = float(region["end_sec"])
         if region_end <= region_start + 1e-6:
             continue
-        boundaries = _subdivide_region(
-            region_start,
-            region_end,
+        # restrict the silence evidence to this active region; a strict
+        # silence is a hard boundary so no interval straddles the region edges
+        local = [
+            dict(row) for row in intervals
+            if float(row["end_sec"]) > region_start + 1e-9
+            and float(row["start_sec"]) < region_end - 1e-9
+        ]
+        for row in local:
+            row["start_sec"] = max(float(row["start_sec"]), region_start)
+            row["end_sec"] = min(float(row["end_sec"]), region_end)
+            row["duration_sec"] = float(row["end_sec"]) - float(row["start_sec"])
+        soft = _soft_plan_in_span(
+            region_start, region_end, local,
             target_core_sec=target_core_sec,
-            minimum_core_sec=minimum_core_sec,
+            boundary_search_sec=boundary_search_sec,
+            leading_silence_min_sec=leading_silence_min_sec,
             tail_min_core_sec=tail_min_core_sec,
+            minimum_core_sec=minimum_core_sec,
         )
+        balanced = soft["final_boundaries_sec"]
         region_diagnostics.append({
             "region_index": region_index,
             "start_sec": region_start,
             "end_sec": region_end,
-            "boundaries_sec": boundaries,
+            "boundaries_sec": balanced,
+            "soft_plan": soft,
         })
-        for local_index, (core_start, core_end) in enumerate(zip(boundaries[:-1], boundaries[1:], strict=True)):
+        for local_index, (core_start, core_end) in enumerate(zip(balanced[:-1], balanced[1:], strict=True)):
             windows.append({
                 "window_index": len(windows),
                 "region_index": region_index,
@@ -328,8 +400,8 @@ def build_strict_silence_boundary_window_plan(
                 "input_start_sec": max(region_start, float(core_start) - left_context_sec),
                 "input_end_sec": min(region_end, float(core_end) + right_context_sec),
                 "is_final_core": False,
-                "is_final_region_core": local_index == len(boundaries) - 2,
-                "strict_boundary_cursor_policy": "continue_from_committed_cursor_after_region",
+                "is_final_region_core": local_index == len(balanced) - 2,
+                "strict_boundary_cursor_policy": "per_region_soft_continue_from_committed_cursor",
                 "window_plan_policy": "strict_silence_boundary_v1",
                 "strict_region_start_sec": region_start,
                 "strict_region_end_sec": region_end,
@@ -338,8 +410,8 @@ def build_strict_silence_boundary_window_plan(
     if windows:
         windows[-1]["is_final_core"] = True
     return {
-        "schema_version": "strict_silence_boundary_window_plan_v1",
-        "policy": "hard_split_at_strong_silence_and_clip_context",
+        "schema_version": "strict_silence_boundary_window_plan_v2",
+        "policy": "hard_split_at_strong_silence_then_per_region_soft",
         "duration_sec": float(duration_sec),
         "target_core_sec": float(target_core_sec),
         "active_span_start_sec": float(regions[0]["start_sec"]) if regions else 0.0,
@@ -357,6 +429,8 @@ def build_strict_silence_boundary_window_plan(
             "strict_silence_sec": strict_threshold,
             "left_context_sec": float(left_context_sec),
             "right_context_sec": float(right_context_sec),
+            "boundary_search_sec": float(boundary_search_sec),
+            "leading_silence_min_sec": float(leading_silence_min_sec),
             "tail_min_core_sec": float(tail_min_core_sec),
             "minimum_core_sec": float(minimum_core_sec),
         },
@@ -372,12 +446,22 @@ def compress_silence_audio(
     strong_silence_sec: float = 1.5,
     remove_silence_sec: float | None = None,
     keep_edge_padding_sec: float = 0.20,
+    trim_to_sec: float | None = None,
 ) -> tuple[Any, dict[str, Any]]:
-    """Remove long-silence interiors and return a reversible time mapping.
+    """Remove/trim long-silence interiors and return a reversible time mapping.
 
     This is a diagnostic counterfactual, not the production window policy.  A
     short edge padding is retained on both sides of each removed interval to
     avoid cutting directly into vocal activity.
+
+    ``trim_to_sec`` selects the "compress to N seconds" mode: every silence
+    interval at least ``remove_silence_sec`` long keeps exactly
+    ``min(duration, trim_to_sec)`` seconds (split symmetrically, interior
+    removed) instead of being removed down to the edge padding.  This keeps a
+    short silence marker between active regions so that strict-boundary
+    semantics survive compression.  When ``trim_to_sec`` is None the legacy
+    removal behavior (keep only ``keep_edge_padding_sec`` on each side) is
+    unchanged.
     """
     import numpy as np
 
@@ -394,8 +478,16 @@ def compress_silence_audio(
     for row in detected:
         if float(row["duration_sec"]) + 1e-9 < threshold:
             continue
-        start = min(float(row["end_sec"]), float(row["start_sec"]) + keep_edge_padding_sec)
-        end = max(start, float(row["end_sec"]) - keep_edge_padding_sec)
+        row_start = float(row["start_sec"])
+        row_end = float(row["end_sec"])
+        if trim_to_sec is not None:
+            keep = min(float(row["duration_sec"]), float(trim_to_sec))
+            half = keep / 2.0
+            start = min(row_end, row_start + half)
+            end = max(start, row_end - half)
+        else:
+            start = min(row_end, row_start + keep_edge_padding_sec)
+            end = max(start, row_end - keep_edge_padding_sec)
         if end > start + 1e-6:
             removed.append({"start_sec": start, "end_sec": end, "duration_sec": end - start})
     kept_segments: list[dict[str, float]] = []

@@ -441,6 +441,7 @@ def split_core_commit_prefix(
     core_end_sec: float,
     final_core: bool,
     start_tolerance_sec: float = 0.32,
+    start_key: str = "fixed_global_start_sec",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     """Split one window result into left context, hard commits and lookahead.
 
@@ -480,7 +481,7 @@ def split_core_commit_prefix(
     lookahead: list[dict[str, Any]] = []
     boundary_found = False
     for row in uncommitted:
-        start = float(row["fixed_global_start_sec"])
+        start = float(row[start_key])
         if not boundary_found and start < core_end_sec:
             committed.append(row)
         else:

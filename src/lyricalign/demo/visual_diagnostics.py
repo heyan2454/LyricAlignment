@@ -271,6 +271,13 @@ def draw_track_windows(
                     color="#555555", clip_on=True, zorder=6,
                 )
 
+    # Deduplicate boundary positions: adjacent windows share core edges and
+    # input ticks can coincide with core lines; drawing each window's lines
+    # separately stacks alpha and darkens shared boundaries.
+    core_set: dict[float, None] = {}
+    input_set: dict[float, None] = {}
+    region_set: dict[float, None] = {}
+    labels: list[tuple[float, int]] = []
     for position, window in enumerate(windows):
         core_start = float(window.get("core_start_sec", 0.0))
         core_end = float(window.get("core_end_sec", core_start))
@@ -278,37 +285,48 @@ def draw_track_windows(
         input_end = float(window.get("effective_input_end_sec", window.get("input_end_sec", core_end)))
         if core_end < start or core_start > end:
             continue
+        core_set.setdefault(round(core_start, 3))
+        core_set.setdefault(round(core_end, 3))
+        input_set.setdefault(round(input_start, 3))
+        input_set.setdefault(round(input_end, 3))
+        labels.append((core_start, int(window.get("window_index", position))))
+        if "strict" in str(window.get("window_plan_policy") or ""):
+            for boundary in (window.get("strict_region_start_sec"), window.get("strict_region_end_sec")):
+                if boundary is not None:
+                    region_set.setdefault(round(float(boundary), 3))
+        # core span light wash: uniform faint alpha; adjacent cores are
+        # exactly contiguous so fills never stack
         left = max(start, core_start)
         right = min(end, core_end)
         if right > left:
             ax.fill_between(
                 [left, right], y_bottom, y_top, color=color,
-                alpha=0.075 if position % 2 == 0 else 0.14, zorder=0,
+                alpha=0.06, zorder=0,
             )
-        for boundary in (input_start, input_end):
-            if start <= boundary <= end:
-                ax.vlines(
-                    boundary, input_tick_bottom, y_top, color=color,
-                    linestyle=":", linewidth=0.9, alpha=0.78, zorder=2,
-                )
-        for boundary in (core_start, core_end):
-            if start <= boundary <= end:
-                ax.vlines(
-                    boundary, y_bottom, y_top, color=color,
-                    linewidth=1.45, alpha=0.88, zorder=2,
-                )
-        if start <= core_start <= end:
+    for boundary in sorted(input_set):
+        if start <= boundary <= end and boundary not in core_set:
+            ax.vlines(
+                boundary, input_tick_bottom, y_top, color=color,
+                linestyle=":", linewidth=0.9, alpha=0.78, zorder=2,
+            )
+    for boundary in sorted(core_set):
+        if start <= boundary <= end:
+            ax.vlines(
+                boundary, y_bottom, y_top, color=color,
+                linewidth=1.45, alpha=0.88, zorder=2,
+            )
+    for boundary in sorted(region_set):
+        if start <= boundary <= end and boundary not in core_set:
+            ax.vlines(
+                boundary, y_bottom, y_top, color=color,
+                linewidth=2.8, alpha=0.95, zorder=2,
+            )
+    for boundary, win_index in labels:
+        if start <= boundary <= end:
             ax.text(
-                core_start + 0.015, y_top - 0.02, f"窗{window.get('window_index')}",
+                boundary + 0.015, y_top - 0.02, f"窗{win_index}",
                 fontsize=6, va="top", color=color, clip_on=True, zorder=6,
             )
-        if "strict" in str(window.get("window_plan_policy") or ""):
-            for boundary in (window.get("strict_region_start_sec"), window.get("strict_region_end_sec")):
-                if boundary is not None and start <= float(boundary) <= end:
-                    ax.vlines(
-                        float(boundary), y_bottom, y_top, color=color,
-                        linewidth=2.8, alpha=0.95, zorder=2,
-                    )
 
 
 def _row_display_label(row: dict[str, Any]) -> str:
@@ -504,6 +522,25 @@ def draw_track(
             (x0, y - 0.095), width, 0.19, facecolor=color, edgecolor=color,
             linewidth=0.35 if overflow else 0.55, alpha=0.18 if overflow else 0.43, zorder=3,
         ))
+        # RAW overlay: thin dark line under the official bar (propagation view).
+        # Only meaningful when the row carries raw_* fields (overlay_raw=True).
+        if "raw_start_sec" in row:
+            rx0 = min(float(row["raw_start_sec"]), float(row["raw_end_sec"]))
+            rx1 = max(float(row["raw_start_sec"]), float(row["raw_end_sec"]))
+            cx0 = max(start, rx0)
+            cx1 = min(end, rx1)
+            if cx1 > cx0:
+                ax.add_patch(Rectangle(
+                    (cx0, y - 0.135), cx1 - cx0, 0.045, facecolor="#222222",
+                    edgecolor="#222222", linewidth=0.0, alpha=0.75, zorder=4,
+                ))
+            # raw start marker: small tick where raw begins (offset visible)
+            if rx0 < start - 1e-9:
+                ax.plot([start + 0.005], [y - 0.112], marker="<", markersize=3.2,
+                        color="#222222", clip_on=True, zorder=4)
+            elif rx1 > end + 1e-9:
+                ax.plot([end - 0.005], [y - 0.112], marker=">", markersize=3.2,
+                        color="#222222", clip_on=True, zorder=4)
         text = _adaptive_row_label(row, width * pixels_per_second)
         if text:
             ax.text(

@@ -55,13 +55,18 @@ def load_fullsong_alignment(path: Path) -> dict:
     return payload
 
 
-def characters_to_rows(alignment: dict, *, geom: str = "selected") -> list[dict]:
+def characters_to_rows(alignment: dict, *, geom: str = "selected",
+                       overlay_raw: bool = False) -> list[dict]:
     """Project alignment.json ``characters`` to track_view visual rows.
 
     Each char -> one row with ``global_character_index``, ``display_text``,
     ``start_sec/end_sec`` from the requested geometry (default ``selected``;
     alternatives: ``raw`` -> raw_global_*, ``official`` -> official_global_*,
     ``fixed`` -> fixed_global_*).
+
+    ``overlay_raw`` additionally attaches ``raw_start_sec/raw_end_sec`` to every
+    row so the track renderer can draw a thin RAW line under the official bar
+    (propagation view vs legalized output view, 2026-08-16 design).
     """
     def g(c, k):
         if geom == "selected":
@@ -74,26 +79,35 @@ def characters_to_rows(alignment: dict, *, geom: str = "selected") -> list[dict]
         s, e = g(c, 0)
         if s is None or e is None:
             continue
-        rows.append({
+        row = {
             "canonical_unit_id": c.get("global_character_index"),
             "global_character_index": c.get("global_character_index"),
             "display_text": str(c.get("display_text") or c.get("character") or "·"),
             "start_sec": float(s),
             "end_sec": float(e),
-        })
+        }
+        if overlay_raw:
+            rs = c.get("raw_global_start_sec")
+            re_ = c.get("raw_global_end_sec")
+            if rs is not None and re_ is not None:
+                row["raw_start_sec"] = float(rs)
+                row["raw_end_sec"] = float(re_)
+        rows.append(row)
     rows.sort(key=lambda r: (float(r["start_sec"]), r["global_character_index"] or 0))
     return rows
 
 
-def build_fullsong_track(alignment: dict, label: str, geom: str = "selected") -> dict:
+def build_fullsong_track(alignment: dict, label: str, geom: str = "selected",
+                         overlay_raw: bool = False) -> dict:
     """Full-song lane from a full-song alignment (one geometry)."""
-    rows = characters_to_rows(alignment, geom=geom)
+    rows = characters_to_rows(alignment, geom=geom, overlay_raw=overlay_raw)
     return {
         "schema": "track_view_v1",
         "label": label,
         "rows": rows,
         "window_trace": list(alignment.get("window_trace") or []),
-        "metadata": {"family": "full_song", "geometry": geom},
+        "metadata": {"family": "full_song", "geometry": geom,
+                     "overlay_raw": overlay_raw},
     }
 
 
@@ -122,6 +136,14 @@ def main() -> int:
                          "payloads whose file path contains the item's song filename are "
                          "appended as the 4th lane (R-CF demo runs).")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--no-global-windows", action="store_true",
+                    help="skip the whole-canvas window overlay (track-level "
+                         "window boundaries are still drawn per lane)")
+    ap.add_argument("--overlay-raw", action="store_true",
+                    help="draw a thin RAW line under each official bar in the "
+                         "full-song lanes (propagation view vs legalized output)")
+    ap.add_argument("--no-video", action="store_true",
+                    help="skip the timeline video render (static PNG only)")
     args = ap.parse_args()
 
     # ---- full-song baseline lanes ----
@@ -143,7 +165,7 @@ def main() -> int:
                              for c in alignments[0]["characters"]))
     start = 0.0
     end = max(audio_dur, start + 0.5)
-    tracks = [build_fullsong_track(a, label, geom)
+    tracks = [build_fullsong_track(a, label, geom, overlay_raw=args.overlay_raw)
               for (label, _path, geom), a in zip(baseline_specs, alignments)]
 
     # ---- mechanism overlay tracks (窗口局部, 可选) ----
@@ -216,16 +238,22 @@ def main() -> int:
                 f"--fourth-family {args.fourth_family!r} but no evidence has proposal_method==it "
                 f"(searched main forward_root and rcf_evidence_root)")
 
-    # windows for overlay (union across mechanism tracks)
-    seen = set()
-    windows = []
-    for t in tracks:
-        for w in (t.get("window_trace") or []):
-            key = (w.get("core_start_sec"), w.get("core_end_sec"))
-            if key in seen:
-                continue
-            seen.add(key)
-            windows.append(w)
+    # windows for overlay (union across mechanism tracks); the per-lane
+    # boundaries are drawn by draw_track_windows from each track's own
+    # window_trace, so the whole-canvas union is optional (it draws one
+    # cross-lane frame per window, which collides with per-lane marks).
+    if getattr(args, "no_global_windows", False):
+        windows = []
+    else:
+        seen = set()
+        windows = []
+        for t in tracks:
+            for w in (t.get("window_trace") or []):
+                key = (w.get("core_start_sec"), w.get("core_end_sec"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                windows.append(w)
 
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
@@ -252,12 +280,16 @@ def main() -> int:
     )
     rows = ktv_track.get("rows") or tracks[0].get("rows") or []
     alignment_ktv = build_karaoke_alignment(rows, duration_sec=end - start)
-    video_meta = render_video(
-        out, group="current_full_song", pages_meta=group_meta["pages"],
-        alignment=alignment_ktv, audio_track=args.audio, title="全曲 Current vs 机制",
-        font=args.font, force=args.force,
-    )
-    write_render_manifest(out, visual_groups=[group_meta], videos=[video_meta])
+    if args.no_video:
+        video_meta = None
+    else:
+        video_meta = render_video(
+            out, group="current_full_song", pages_meta=group_meta["pages"],
+            alignment=alignment_ktv, audio_track=args.audio, title="全曲 Current vs 机制",
+            font=args.font, force=args.force,
+        )
+    write_render_manifest(out, visual_groups=[group_meta],
+                          videos=[video_meta] if video_meta else [])
     summary = {
         "runner": "render_full_song.py",
         "item": args.item, "full_song_sec": [start, end],
@@ -277,7 +309,7 @@ def main() -> int:
         "tracks": [t["label"] for t in tracks],
         "pages": len(group_meta["pages"]),
         "full_timeline": group_meta["full_timeline"],
-        "video": video_meta.get("path"),
+        "video": (video_meta or {}).get("path"),
     }, ensure_ascii=False, indent=2))
     return 0
 
