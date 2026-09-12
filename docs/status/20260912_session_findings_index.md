@@ -48,6 +48,9 @@
 | B14 | **交换端点是结构净亏**：真实歌非法率 16.72%→**19.64%**（重叠 0.10%→6.19%、回退 0.07%→3.28%），因倒序幅度中位 2.48s、p90 65.5s 会吞掉邻居；**邻居顺延(P4)最差**（MAE 1.17s、偏置转正）⇒ 不要用局部修补代替重解码 | ❌（否证了直观修法） | 同上 §2 |
 | B15 | 可行组合 = **倒序作重解码触发器**（代价：真实歌 6.33%、M4 1.161%、GTSinger 0.229% 单元）**+ 全局联合求解保结构**（swap 后求解非法率 0.01%） | ✅ | 同上 |
 
+| B19 | **多视图选择路关闭（录音室中文）**：12 视图并集 oracle 仅比生产视图高 +2.40pp（长音 +0.88pp），因为 8.4% 单元（长音 15.8%、首单元 30.8%）**12 个视图全错**，且错误与生产视图相关系数 0.69–0.89 ⇒ 给第 9/10 轮"共识只赚 2.3pp"提供机制解释 | ✅ | `reports/progress/20260912_multi_view_ceiling.md` |
+| B20 | 真实录音留白更大但一半需新证据：MIR-1K 并集比生产 +4.77pp（长音 +10.71pp、corr 仅 0.414），而实测共识 +2.3pp ⇒ 剩余差距不是"更好的平均"，要换窗口/重解码；**且这些是 test-only 回溯上界，不用于任何选择** | ✅ | 同上 |
+| B21 | **容差口径警告**：50ms 时并集 oracle 掉到 79.8%（GTSinger）/75.2%（MIR-1K），20.2%/24.8% 单元无任何视图可达 ⇒ 50ms 尺度上指标测的是解码上限而非选择能力；detector_v2 SAFE ≤100ms 恰在分界上 | ✅ | 同上 + `tolerance_sensitivity` |
 | B16 | **可解码上限（新发现，解释本会话所有"后处理只有个位数 pp"）**：长音（≥1s）端点有 **40.0%** 的 GT 格点**不在模型 top-2 候选内**（全体 15.7%、首单元 44.0%）⇒ 这些单元上任何基于本次解码的选择/共识/门控在原理上都不可能选对 | ✅ | `reports/progress/20260912_decodability_ceiling.md`、`runs/20260912_decodability_ceiling/CEILING.json` |
 | B17 | **训练在抬这个上限**：长音端点不可达率 r0 **70.8%** → r1 27.5% → r2 **21.7%**（top-1 恰中 12.5%→55.0%），r1→r2 增益变小 ⇒ 该层预算应投训练侧且仍有余量；旁证 `pipeline=raw` 包含率一致（39.9% vs 40.0%）⇒ 上限来自解码器而非第 16/17 轮的钳位 | ✅ | 同上 |
 | B18 | 置信度可预示"真值是否可达"（无参考触发器基础）：AUC(top1_prob→真值在候选±1格内) 全体端点 0.792、末单元 0.955，但**长音只有 0.616** ⇒ 恰在最需要处变弱；另 GTSinger 末单元（硬切尾，可达 90.6%）≠ MIR-1K 末字（自然衰减长音），不可互相推断 | ✅ | 同上 |
@@ -112,12 +115,15 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 126 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1569 passed / 3 pre-existing failed`（最新一次隔离复跑；同一命令内并发写盘会额外触发 LP 用例的负载敏感失败）
+- 测试：本会话新增 131 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1574 passed / 3 pre-existing failed`（第 20 轮后最新隔离复跑）。
+  负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
+  "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
   window_anchor_pinning 2% / start_order_integrity 2% / repair_feasibility
 - 序列身份教训：**任何"逐序列"求解/统计的分组键必须含 `run`**（不同 run 的同名单元混在一个序列会让单调约束互相打乱）
 - 阶段名对照：生产 `processor_decoded` == 本索引/分析模块所称 `fixed`（同一个 `fixed_global_*` 阶段）
+- **一页式交付前检查清单**：`docs/status/20260912_predelivery_checklist.md`（13 条判据 + 3 条已否证路径）
 - 自检入口：`PYTHONPATH=src python scripts/evaluation/audit_batch.py --batch <dir> [--compare-batch <dir>]`
 - 报告：`reports/progress/20260912_*.md` 共 7 份 + 本索引
 - 纪律：全程零 GPU 前向、realign 仍 shadow-only、未改任何生产实现、MIR-1K/PJS 仅 test-only 报告用途

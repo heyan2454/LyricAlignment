@@ -1013,3 +1013,48 @@ M4 长时序（弱真值，134,538 单元，倒序 1,562 个 = 1.161%）：**所
 
 自查：AUC 第一版把标签定为"不可达"导致读数 <0.5 易被误读，已改成正向口径并写明方向；
 报告生成器另修两处取数/措辞错误（"全体"误取长音 AUC、首单元表述串行）。
+
+---
+
+# 第 20 轮：多解码选择的空间（并集 oracle + 错误相关性）+ 一页式交付前检查清单
+
+- 代码：`src/lyricalign/analysis/multi_view_ceiling.py`（`correctness_matrix / ceiling_by_stratum / build_long_from_wide`）
+- 入口：`scripts/evaluation/{run,report}_multi_view_ceiling.py`；测试 5 项
+- 产物：`runs/20260912_multi_view_ceiling/MULTI_VIEW_CEILING.json`、
+  `reports/progress/20260912_multi_view_ceiling.md`、`docs/status/20260912_predelivery_checklist.md`、
+  `results/by_run/20260912_multi_view_ceiling/metrics.json`
+- 纪律：MIR-1K（test-only）数字只作**回溯上界**，不用于选 checkpoint/视图/阈值
+
+## 结果（tol=100ms，both_abs_err 口径）
+
+GTSinger 12 视图（人工真值，非 test）：
+
+| 层 | 单元 | 生产视图 | 并集 oracle | 选择可挽回 | **无任何视图正确** | 错误相关性 |
+|---|---:|---:|---:|---:|---:|---:|
+| all | 2,415 | 89.19% | 91.59% | **+2.40pp** | 8.4% | 0.694 |
+| long_note | 114 | 83.33% | 84.21% | +0.88pp | **15.8%** | 0.602 |
+| short_note | 1,153 | 90.37% | 93.24% | +2.86pp | 6.8% | 0.746 |
+| is_first | 159 | 67.30% | 69.18% | +1.89pp | **30.8%** | 0.888 |
+
+MIR-1K 6 checkpoint（test-only，仅上界）：all 91.79% → 96.56%（**+4.77pp**，0ofk 3.4%，corr 0.543）；
+long_note 84.82% → 95.54%（**+10.71pp**，corr 仅 0.414）；last_char 82.35% → 88.24%（+5.88pp，n=17）。
+
+## 三条结论
+
+1. **录音室中文数据上"多视图选择"这条路可以关掉**：最多再赚 +2.4pp，长音层只有 +0.88pp，
+   因为 15.8% 的长音单元 12 个视图**全错**、且错误与生产视图高度相关（0.69–0.89）——
+   选择需要的是去相关，而这里恰恰没有。这给第 9/10 轮"共识只赚 2.3pp / 选择器无效"提供了机制解释。
+2. **真实录音上留白更大但一半要新证据**：MIR-1K 并集比生产高 4.77pp（长音 10.71pp），
+   而第 9 轮实测共识只拿到 +2.3pp ⇒ oracle 与实际选择器还差约一半，
+   这部分不是"更好的平均"能拿到的，需要**换窗口/重解码**产生新候选。
+3. **容差口径警告**：50ms 时并集 oracle 掉到 79.8%（GTSinger）/75.2%（MIR-1K），
+   且 20.2%/24.8% 的单元无任何视图可达 ⇒ **在 50ms 尺度上指标主要测解码上限，不测选择能力**；
+   detector_v2 的 SAFE ≤100ms 带正好落在这条分界上，解释其指标时应引用本表。
+
+## 交付前检查清单（docs/status/20260912_predelivery_checklist.md）
+13 条，每条对应本会话一次实测并给出判据/阈值/依据轮次（身份可归因、批内因子、批间可比、口径声明、
+结构合法 ≤5%、阶段归因 ≤1%、起止顺序 ≤2%、钉锚点 ≤2%、退化率伴生列、可达性标注、分诊带、
+禁止从 test/OOD 选择、realign shadow-only），并列出**三条已否证路径**避免重复投入。
+
+自查修正：`best_single_view_hit` 第一版写成 `m.any(axis=0).max()`（恒 1.0）⇒ 改为 `m.mean(axis=0).max()`；
+GTSinger 的 unit_key 误用 `UNIT_KEY[:-1]`（漏 unit_index）导致塌成 item 级（假 100%）⇒ 修正后单元数 2,415。
