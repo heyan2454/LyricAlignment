@@ -1,0 +1,134 @@
+{
+  "schema_version": "retrain_data_inventory_v1",
+  "training_protocol": {
+    "run": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724",
+    "max_steps": 1110,
+    "eval_steps": 250,
+    "save_steps": 250,
+    "effective_batch": 32,
+    "epochs_implied": 2.0,
+    "early_stopping": false,
+    "stop_reason": "step budget exhausted (no convergence or patience criterion in config)",
+    "selection_split": "M4Singer_validation",
+    "selection_metric": "song_macro_boundary_mae_sec",
+    "tie_break": "lower_checkpoint_step",
+    "test_or_ood_not_used": true,
+    "candidate_steps": [
+      250,
+      500,
+      750,
+      1000,
+      1110
+    ],
+    "candidate_mae_sec": {
+      "250": 0.050984832507581165,
+      "500": 0.04751132618292308,
+      "750": 0.04715958845875161,
+      "1000": 0.04837222699319582,
+      "1110": 0.048412240009076984
+    },
+    "selected_step": 750,
+    "validation_set_songs": 29,
+    "validation_per_song_data_stored": false,
+    "differences_vs_resolution_ms": {
+      "best_vs_next_best_ms": 0.35,
+      "best_vs_last_ms": 1.25,
+      "spread_ms": 3.83,
+      "metric_resolution_ms": 80.0
+    }
+  },
+  "m4_training_corpus": {
+    "label_rows": 20298,
+    "split_counts": {
+      "train": 17748,
+      "validation": 1711,
+      "test": 839
+    }
+  },
+  "datasets": [
+    {
+      "dataset": "amll_ttml_db",
+      "present_on_disk": true,
+      "size_gb": 0.16330718994140625,
+      "registered_role": "community silver pool",
+      "training_eligibility": "无音频，不可训练；底层歌词权利未解决"
+    },
+    {
+      "dataset": "audio_works_202604",
+      "present_on_disk": true,
+      "size_gb": 100.64635848999023,
+      "registered_role": "real-song pool",
+      "training_eligibility": "无标注；只能作评测/伪标签来源"
+    },
+    {
+      "dataset": "gtsinger_chinese",
+      "present_on_disk": true,
+      "size_gb": 0.28204345703125,
+      "registered_role": "phoneme-boundary + technique stress test",
+      "training_eligibility": "CC BY-NC-SA + 附加协议未澄清；登记表限定内部非商业研究；未定前不进训练"
+    },
+    {
+      "dataset": "ikala",
+      "present_on_disk": true,
+      "size_gb": 1.52587890625e-05,
+      "registered_role": "benchmark candidate",
+      "training_eligibility": "blocked_pending_access：未获授权，禁止训练"
+    },
+    {
+      "dataset": "ismir2014_singing",
+      "present_on_disk": true,
+      "size_gb": 0.17906951904296875,
+      "registered_role": "未登记",
+      "training_eligibility": "同上"
+    },
+    {
+      "dataset": "jamendolyrics_en",
+      "present_on_disk": true,
+      "size_gb": 0.09865570068359375,
+      "registered_role": "English evaluation candidate",
+      "training_eligibility": "登记表明文『不混入训练』；逐曲许可"
+    },
+    {
+      "dataset": "m4singer",
+      "present_on_disk": true,
+      "size_gb": 18.785388946533203,
+      "registered_role": "primary train + custom validation",
+      "training_eligibility": "可用于训练（现行唯一训练语料）"
+    },
+    {
+      "dataset": "mir1k",
+      "present_on_disk": true,
+      "size_gb": 2.6420631408691406,
+      "registered_role": "OOD test-only",
+      "training_eligibility": "禁止：不训练、不验证、不调参（登记表明文）"
+    },
+    {
+      "dataset": "mir_mlpop",
+      "present_on_disk": true,
+      "size_gb": 1.1613731384277344,
+      "registered_role": "natural-mixture evaluation candidate",
+      "training_eligibility": "仅学术非商业；普通话音频 20/30，规模不足作训练"
+    },
+    {
+      "dataset": "mirst500",
+      "present_on_disk": true,
+      "size_gb": 2.6125717163085938,
+      "registered_role": "未登记",
+      "training_eligibility": "只有 raw/，无 acquisition.json/checksums ⇒ 不可依赖"
+    },
+    {
+      "dataset": "pjs",
+      "present_on_disk": true,
+      "size_gb": 0.5556221008300781,
+      "registered_role": "Japanese phoneme/boundary calibration",
+      "training_eligibility": "CC BY-SA 4.0；单男声短句，只做边界单测，域不匹配"
+    },
+    {
+      "dataset": "tonas",
+      "present_on_disk": true,
+      "size_gb": 0.19739913940429688,
+      "registered_role": "未登记",
+      "training_eligibility": "同上"
+    }
+  ]
+}
