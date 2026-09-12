@@ -94,14 +94,14 @@ def main() -> int:
     # the headline comparison: r0 vs r2 progression under each filter
     prog: dict[str, Any] = {}
     for fname in filters:
-        vals = {}
+        vals: dict[str, float] = {}        # exact-bin tolerance (the one rounds 19/21 quoted)
         for model in ("r0", "r1", "r2"):
             blk = res["by_checkpoint"].get(model, {}).get("filters", {}).get(fname, {}).get("long_note")
             if blk:
-                vals[model] = blk["end_outside_top2_within1bin"]
+                vals[model] = blk["end_outside_top2_exact"]
         # two tolerances, named explicitly: rounds 19/21 quoted the EXACT bin match (70.8/27.5/21.7),
         # so anything compared against those numbers must use the same column, not the +-1-bin one
-        vals1 = {}
+        vals1: dict[str, float] = {}      # +-1 bin tolerance, kept alongside so the two are never mixed
         for model in ("r0", "r1", "r2"):
             blk = res["by_checkpoint"].get(model, {}).get("filters", {}).get(fname, {}).get("long_note")
             if blk:

@@ -239,16 +239,16 @@
     "progression_by_filter": {
       "all_units": {
         "long_note_end_outside_top2_exact": {
-          "r0": 0.4667,
-          "r1": 0.1,
-          "r2": 0.05
+          "r0": 0.7083,
+          "r1": 0.275,
+          "r2": 0.2167
         },
         "long_note_end_outside_top2_within1bin": {
           "r0": 0.4667,
           "r1": 0.1,
           "r2": 0.05
         },
-        "improvement_r0_to_r2_pp": 41.67,
+        "improvement_r0_to_r2_pp": 49.16,
         "improvement_r0_to_r2_pp_within1bin": 41.67,
         "units_per_checkpoint": [
           480,
@@ -258,16 +258,16 @@
       },
       "excluding_shipped_degenerate": {
         "long_note_end_outside_top2_exact": {
-          "r0": 0.4649,
-          "r1": 0.0855,
-          "r2": 0.0427
+          "r0": 0.7018,
+          "r1": 0.265,
+          "r2": 0.2051
         },
         "long_note_end_outside_top2_within1bin": {
           "r0": 0.4649,
           "r1": 0.0855,
           "r2": 0.0427
         },
-        "improvement_r0_to_r2_pp": 42.22,
+        "improvement_r0_to_r2_pp": 49.67,
         "improvement_r0_to_r2_pp_within1bin": 42.22,
         "units_per_checkpoint": [
           456,
@@ -277,16 +277,16 @@
       },
       "excluding_raw_inverted": {
         "long_note_end_outside_top2_exact": {
-          "r0": 0.4667,
-          "r1": 0.1,
-          "r2": 0.0508
+          "r0": 0.7083,
+          "r1": 0.275,
+          "r2": 0.2119
         },
         "long_note_end_outside_top2_within1bin": {
           "r0": 0.4667,
           "r1": 0.1,
           "r2": 0.0508
         },
-        "improvement_r0_to_r2_pp": 41.59,
+        "improvement_r0_to_r2_pp": 49.64,
         "improvement_r0_to_r2_pp_within1bin": 41.59,
         "units_per_checkpoint": [
           480,
@@ -296,16 +296,16 @@
       },
       "excluding_both": {
         "long_note_end_outside_top2_exact": {
-          "r0": 0.4649,
-          "r1": 0.0855,
-          "r2": 0.0427
+          "r0": 0.7018,
+          "r1": 0.265,
+          "r2": 0.2051
         },
         "long_note_end_outside_top2_within1bin": {
           "r0": 0.4649,
           "r1": 0.0855,
           "r2": 0.0427
         },
-        "improvement_r0_to_r2_pp": 42.22,
+        "improvement_r0_to_r2_pp": 49.67,
         "improvement_r0_to_r2_pp_within1bin": 42.22,
         "units_per_checkpoint": [
           456,
@@ -317,23 +317,23 @@
   },
   "headline": {
     "legacy_reproduced_exact": {
-      "r0": 0.4667,
-      "r1": 0.1,
-      "r2": 0.05
+      "r0": 0.7083,
+      "r1": 0.275,
+      "r2": 0.2167
     },
     "clean_subset_exact": {
-      "r0": 0.4649,
-      "r1": 0.0855,
-      "r2": 0.0427
+      "r0": 0.7018,
+      "r1": 0.265,
+      "r2": 0.2051
     },
     "within_one_bin_reference": {
       "r0": 0.4649,
       "r1": 0.0855,
       "r2": 0.0427
     },
-    "r2_change_pp": -0.73,
-    "training_improvement_pp_legacy": 41.67,
-    "training_improvement_pp_clean": 42.22,
+    "r2_change_pp": -1.16,
+    "training_improvement_pp_legacy": 49.16,
+    "training_improvement_pp_clean": 49.67,
     "conclusion": "long-note unreachability is not an artefact of the upstream collapse: on units the pipeline did not destroy, r2 still leaves 20.5 % of long-note endings outside the top-2 candidates, and the r0-to-r2 training gain is slightly larger on the clean subset"
   }
 }
