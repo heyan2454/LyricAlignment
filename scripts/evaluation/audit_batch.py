@@ -28,6 +28,7 @@ GATES = {
     "illegal_share_max": 0.05,          # delivery gate: >5% illegal units -> do not ship
     "stage_net_addition_max": 0.01,     # any stage creating >1% net degeneracy -> block + localise
     "pinned_anchor_share_max": 0.02,    # blocks pinned to a window anchor -> mapping defect
+    "start_after_end_max": 0.02,        # decoder emitting end < start; free early-warning signal
 }
 
 
@@ -86,6 +87,19 @@ def audit(batch: Path) -> dict[str, object]:
                   "top_songs": pinned.get("top_songs", [])[:3]},
         "pass": bool(pshare <= GATES["pinned_anchor_share_max"]),
         "gate": GATES["pinned_anchor_share_max"],
+    }
+    start_order = {st: v["negative_units"] for st, v in lin["totals"].items()}
+    known = {st: v["known_units"] for st, v in lin["totals"].items()}
+    worst_order_stage = max(start_order, key=lambda s: (start_order[s] / max(known[s], 1)))
+    worst_order_share = start_order[worst_order_stage] / max(known[worst_order_stage], 1)
+    checks["start_order_integrity"] = {
+        "value": {"start_after_end_by_stage": start_order,
+                  "share_by_stage": {st: round(start_order[st] / max(known[st], 1), 4) for st in start_order},
+                  "worst_stage": worst_order_stage, "worst_share": round(worst_order_share, 4)},
+        "pass": bool(worst_order_share <= GATES["start_after_end_max"]),
+        "gate": GATES["start_after_end_max"],
+        "rationale": "raw start-after-end predicts the later fixed-stage collapse with ~8-10x lift, "
+                     "so it is worth blocking on even though it costs nothing to compute",
     }
     checks["repair_feasibility"] = {
         "value": {"post_repair_illegal_share": post["illegal_share"],

@@ -117,6 +117,14 @@ def stage_degeneracy_audit(
             if units and (v / units) > net_share_warn]
     if units and pinned / units > net_share_warn:
         warn.append("pinned_to_window_anchor")
+    # start-after-end is checkable with no ground truth and no extra forward pass, and on the
+    # shipped real-song batches it predicts the later collapse with ~8-10x lift (2026-09-12 audit),
+    # so it is reported separately as an actionable integrity signal, not folded into "degenerate".
+    start_after_end = {st: counts[st]["negative"] for st in stages}
+    for st in stages:
+        known = counts[st]["known"]
+        if known and start_after_end[st] / known > net_share_warn:
+            warn.append(f"start_after_end_at_{st}")
     return {
         "units": units,
         "known_units": {st: counts[st]["known"] for st in stages},
@@ -124,6 +132,7 @@ def stage_degeneracy_audit(
         "negative_duration_units": {st: counts[st]["negative"] for st in stages},
         "degenerate_share": shares,
         "net_added_degenerate_units": net_added,
+        "start_after_end_units": start_after_end,
         "pinned_to_window_anchor_units": int(pinned),
         "pinned_to_window_anchor_rate": round(pinned / units, 4) if units else None,
         "warnings": warn,

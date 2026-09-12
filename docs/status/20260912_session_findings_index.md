@@ -34,6 +34,8 @@
 | B8 | 联合求解逐歌施加后两批 zero/overlap/overshoot/regression 全为 0.00%；位移必须分层报（剔除超长单元后中位 0.1s），否则被 40+s 异常区间钳制主导 | ✅ | 同上 |
 | B9a | **raw 起止倒序是后续塌陷的强前兆**：钉锚点 lift 10.1×、fixed 退化 lift 8.3×、25/25 首歌内部方向一致（符号检验）；最终塌陷单元中 **50.3% 在 raw 阶段已退化** ⇒ 免费的 raw 顺序自检可提前拦下一半塌陷（无需真值/前向） | ✅ | `runs/20260912_raw_degeneracy/RAW_DEGENERACY.json`、报告 §1 |
 | B9b | raw 负时长有两个子群：同窗口小幅倒序（多数，中位 2.5s，可由约束解码/单调化消除）与**跨窗口起止混配**（23.1%，最大 105.5s，属窗口→全局组装索引 bug，必须改代码）；且不是量化格点抖动（70.6% >1s）、不是接缝现象（窗口内位置平坦） | ✅ | 同上 |
+| B9d | **根因落地**：`karaoke.py::append_strict_core_commits` 在压缩前钳位 `end := max(end, start)` ⇒ 解码器起止倒序被**静默转成零长单元**（870 中 595=68.4%，解释 fixed 阶段净 +807 的 73.7%），且因此**同时骗过 `overlap_compressed` 与 `collapsed_to_zero` 两个计数器**；已用生产函数复现（3 项测试）并加 `start_after_end_at_<stage>` 警告 + `start_order_integrity` gate | ✅ | `tests/test_inversion_clamp_observability.py`、`RAW_DEGENERACY.json.inversion_clamp` |
+| B9e | 「raw_classes 槽位整体错位 k=1」假设**被否证**：若成立则 `e[i]==s[i+1]` 应≈100%，实测 0.31–0.68（相邻单元天然连续）⇒ 负时长确为解码器输出倒序；另 GPU 路径有 `2*len(selected)` 断言而 raw 路径没有（可选加固点） | ❌ | `run_raw_degeneracy_forensics` 位移检验 |
 | B9c | 中文 raw 负时长仅 **1.1%**（cjk_character 3.0%），日文词 22.6%、英文 word 8.2% ⇒ 普通话侧解码质量明显更好 | ✅ | 同上 |
 | C4a | **联合求解不伤末字**（GTSinger 人工真值：末单元 74.8% 持平、首单元 +2.78pp、总 MAE 77.6→68.3ms），但**长音末字三系统完全同分**（55.9%，MAE 372ms）⇒ 该层只能靠解码信息，与第 11 轮一致 | ✅ | `runs/20260912_last_unit_validation/LAST_UNIT.json` |
 | B9 | 分诊规则：交付非法率 >35% 的歌应重解码而非修复（I See Fire 88% 单元被压成同一时间戳 64.48，而其 raw 边界本不相同） | ✅ | 同上 §3 |
@@ -98,7 +100,10 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：`tests/evaluation/` + artifacts 共 107 项（本会话新增），全量 `1549 passed / 3 pre-existing failed`
+- 测试：本会话新增 110 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1552 passed / 3 pre-existing failed`
+- gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
+  window_anchor_pinning 2% / start_order_integrity 2% / repair_feasibility
 - 序列身份教训：**任何"逐序列"求解/统计的分组键必须含 `run`**（不同 run 的同名单元混在一个序列会让单调约束互相打乱）
 - 阶段名对照：生产 `processor_decoded` == 本索引/分析模块所称 `fixed`（同一个 `fixed_global_*` 阶段）
 - 自检入口：`PYTHONPATH=src python scripts/evaluation/audit_batch.py --batch <dir> [--compare-batch <dir>]`

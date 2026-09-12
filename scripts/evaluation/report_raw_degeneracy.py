@@ -132,6 +132,34 @@ def main() -> int:
     w("  1. 交付前对 timeline 做 **raw 起止顺序自检**（lift 8.3× 且覆盖一半塌陷，等于免费的召回器）；")
     w("  2. 把跨窗口起止混配（最大 105s）作为独立 bug 立项修：它不是解码问题而是窗口→全局组装的索引问题。")
     w("")
+    ic = fx.get("inversion_clamp", {})
+    if ic.get("available"):
+        w("## 3b. 根因落地：倒序被**预钳位**转成零长，两个现有计数器都看不见")
+        w("")
+        w(f"- `src/lyricalign/demo/karaoke.py` 的 `append_strict_core_commits` 在进入重叠压缩之前先做"
+          f"`original_end = min(max(fixed_end, original_start), duration)` ⇒ **end 不可能小于 start**："
+          f"下游 selected/final 的负时长实测都是 {ic['negative_units_downstream']['selected']}/"
+          f"{ic['negative_units_downstream']['final']}。")
+        w(f"- 于是 {ic['raw_inversions']:,} 个 raw 倒序里 "
+          f"**{ic['inversions_becoming_zero_selected']:,}（{pct(ic['share_of_inversions_clamped_to_zero'],1)}）"
+          f"变成了零长单元**，另有 {ic['new_zeros_from_raw_clean_units']:,} 个零长来自原本干净的单元"
+          f"（钉锚点/压缩路径）。这解释了第 13 轮的 `net_added_by_fixed=+807` 中约 "
+          f"{pct(ic['inversions_becoming_zero_selected'] / 807, 1)} 的来源。")
+        w(f"- **为什么一直是静默的**：钳位使 `original_duration` 变为 0，而"
+          f"`overlap_compression_collapsed_to_zero` 的定义要求 `original_duration > 0`；"
+          f"若该行的起点已在上一单元尾端之后，连 `overlap_compressed` 也不会置位 ⇒ "
+          "**两个计数器同时漏计**（第 14 轮的 per-stage 观测 + 本轮 `start_after_end_at_*` 警告补上了这个洞，"
+          f"复现用例见 `tests/test_inversion_clamp_observability.py`）。")
+        w("")
+        w("| 语言 | raw 倒序 | 被钳成零长 |")
+        w("|---|---:|---:|")
+        for k, v in sorted(ic["by_language"].items(), key=lambda kv: -kv[1]["inversions"]):
+            w(f"| {k} | {v['inversions']} | {v['clamped_to_zero']} |")
+        w("")
+        w("- **建议的策略决定**（不改行为，先让人看到）：对 raw 倒序单元不要静默钳成零长，而是"
+          "（a）交换 start/end 或按下一单元起点重排，(b) 标记为 `needs_redecode` 交给触发器（第 15 轮已证明"
+          "这批单元后来塌陷率 lift 8–10×），并至少 (c) 计入 summary 的 `start_after_end_units`。")
+        w("")
     w("## 4. 复现")
     w("")
     w("```bash")
@@ -153,6 +181,7 @@ def main() -> int:
                    "japanese_word_negative_share": p["by_unit_type"].get("japanese_word", {}).get("negative_share"),
                    "share_gt_1s": p["magnitude"]["gt_1s_share"],
                    "cross_window_explained_share": 0.231,
+                   "inversion_clamp": ic,
                    "lift_pinned": c["lift_pinned"], "lift_fixed_degenerate": c["lift_fixed_degenerate"],
                    "per_song_sign_test": c["per_song_direction"],
                    "collapse_covered_by_raw_check": c["collapse_explained_by_raw_degeneracy"]["share"],

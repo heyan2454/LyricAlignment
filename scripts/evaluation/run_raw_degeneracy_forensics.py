@@ -32,7 +32,8 @@ def main() -> int:
         return 1
     res = {"schema": "raw_degeneracy_forensics_v1", "batch": str(args.batch),
            "profile": F.profile(df), "predicts_collapse": F.predicts_collapse(df),
-           "examples": F.top_examples(df)}
+           "examples": F.top_examples(df),
+           "inversion_clamp": F.inversion_clamp_accounting(df)}
     (args.out_dir / "RAW_DEGENERACY.json").write_text(
         json.dumps(res, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     p, c = res["profile"], res["predicts_collapse"]
@@ -53,6 +54,10 @@ def main() -> int:
         n_, c_ = v.get("raw_negative"), v.get("clean")
         print(f"   {col:7s} negative={n_} clean={c_}")
     print("\ncollapse prediction:", json.dumps(c, ensure_ascii=False, indent=1)[:900])
+    ic = res["inversion_clamp"]
+    print("\ninversion -> zero-length clamp accounting:")
+    print("   ", json.dumps({k: v for k, v in ic.items() if k != "by_language"}, ensure_ascii=False))
+    print("   by language:", json.dumps(ic.get("by_language"), ensure_ascii=False))
     print("\nexamples (largest reversals):")
     for r in res["examples"][:6]:
         print(f"   {r['song'][:14]:14s} {r['language'][:9]:9s} i={r['unit_index']:4d} raw={r['raw']} "

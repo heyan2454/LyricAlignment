@@ -424,7 +424,39 @@
         "pinned": true,
         "ent_max": 5.446
       }
-    ]
+    ],
+    "inversion_clamp": {
+      "available": true,
+      "raw_inversions": 870,
+      "inversions_becoming_zero_selected": 595,
+      "inversions_becoming_zero_final": 595,
+      "inversions_still_nonzero": 275,
+      "share_of_inversions_clamped_to_zero": 0.6839,
+      "new_zeros_from_raw_clean_units": 1112,
+      "negative_units_downstream": {
+        "selected": 0,
+        "final": 0
+      },
+      "invisible_to_shipped_counters": true,
+      "by_language": {
+        "Cantonese": {
+          "inversions": 183,
+          "clamped_to_zero": 98
+        },
+        "Chinese": {
+          "inversions": 79,
+          "clamped_to_zero": 55
+        },
+        "English": {
+          "inversions": 173,
+          "clamped_to_zero": 127
+        },
+        "Japanese": {
+          "inversions": 435,
+          "clamped_to_zero": 315
+        }
+      }
+    }
   },
   "last_unit_validation": {
     "schema": "last_unit_validation_v1",
@@ -557,6 +589,38 @@
     "japanese_word_negative_share": 0.2263,
     "share_gt_1s": 0.7057,
     "cross_window_explained_share": 0.231,
+    "inversion_clamp": {
+      "available": true,
+      "raw_inversions": 870,
+      "inversions_becoming_zero_selected": 595,
+      "inversions_becoming_zero_final": 595,
+      "inversions_still_nonzero": 275,
+      "share_of_inversions_clamped_to_zero": 0.6839,
+      "new_zeros_from_raw_clean_units": 1112,
+      "negative_units_downstream": {
+        "selected": 0,
+        "final": 0
+      },
+      "invisible_to_shipped_counters": true,
+      "by_language": {
+        "Cantonese": {
+          "inversions": 183,
+          "clamped_to_zero": 98
+        },
+        "Chinese": {
+          "inversions": 79,
+          "clamped_to_zero": 55
+        },
+        "English": {
+          "inversions": 173,
+          "clamped_to_zero": 127
+        },
+        "Japanese": {
+          "inversions": 435,
+          "clamped_to_zero": 315
+        }
+      }
+    },
     "lift_pinned": 10.075,
     "lift_fixed_degenerate": 8.347,
     "per_song_sign_test": {

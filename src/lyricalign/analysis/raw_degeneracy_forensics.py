@@ -229,3 +229,42 @@ def top_examples(df: pd.DataFrame, k: int = 12) -> list[dict[str, Any]]:
              "ent_max": None if not np.isfinite(max(r.ent_s or -1, r.ent_e or -1))
              else round(float(max(r.ent_s or -1, r.ent_e or -1)), 3)}
             for r in neg.head(k).itertuples()]
+
+
+def inversion_clamp_accounting(df: pd.DataFrame) -> dict[str, Any]:
+    """How raw start/end inversions turn into zero-length rows, and who can see it.
+
+    The pipeline clamps `end := max(end, start)` before overlap handling (demo/karaoke.py, the
+    pre-compression clamp in ``append_strict_core_commits``), so an inversion can never reach a later
+    stage as a negative interval: it becomes a zero-length unit, and because the pre-clamp duration is
+    already zero, neither ``overlap_compressed`` nor ``overlap_compression_collapsed_to_zero`` is set.
+    This function measures that conversion instead of assuming it.
+    """
+    if df.empty or "raw_negative" not in df:
+        return {"available": False}
+    neg = df["raw_negative"].to_numpy(dtype=bool)
+    sel_zero = ((df["sel_e"] - df["sel_s"]) <= 1e-6).to_numpy(dtype=bool)
+    fin_zero = ((df["fin_e"] - df["fin_s"]) <= 1e-6).to_numpy(dtype=bool)
+    raw_zero = df["raw_zero"].to_numpy(dtype=bool)
+    clean = ~(neg | raw_zero)
+    out: dict[str, Any] = {
+        "available": True,
+        "raw_inversions": int(neg.sum()),
+        "inversions_becoming_zero_selected": int((neg & sel_zero).sum()),
+        "inversions_becoming_zero_final": int((neg & fin_zero).sum()),
+        "inversions_still_nonzero": int((neg & ~sel_zero).sum()),
+        "share_of_inversions_clamped_to_zero": round(
+            float((neg & sel_zero).sum() / max(neg.sum(), 1)), 4),
+        "new_zeros_from_raw_clean_units": int((clean & sel_zero).sum()),
+        "negative_units_downstream": {
+            "selected": int(((df["sel_e"] - df["sel_s"]) < -1e-6).sum()),
+            "final": int(((df["fin_e"] - df["fin_s"]) < -1e-6).sum())},
+        "invisible_to_shipped_counters": bool(
+            int(((df["sel_e"] - df["sel_s"]) < -1e-6).sum()) == 0),
+    }
+    by_lang: dict[str, dict[str, int]] = {}
+    for lang, sub in df[neg].groupby("language", observed=True):
+        z = ((sub["sel_e"] - sub["sel_s"]) <= 1e-6)
+        by_lang[str(lang)] = {"inversions": int(len(sub)), "clamped_to_zero": int(z.sum())}
+    out["by_language"] = by_lang
+    return out

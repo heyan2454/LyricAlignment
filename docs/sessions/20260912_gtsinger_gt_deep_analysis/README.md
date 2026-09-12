@@ -841,3 +841,47 @@ MAE(end) 全部 77.6→68.3ms、首单元 119.9→59.4ms；末单元 177.7→173
 1. 序列键漏 `run`（不同 run 的同名单元混进一条序列，单调约束互相打乱）⇒ 第一版误报 joint 只有 77.5%；修正后 82.4%；
 2. `raw_negative_share` 误算为负时长集合内的比例（显示 100%）⇒ 改为全单元比例并加断言；
 3. 「跨窗口错配是大头」这一自我假设被数据否证（只 23.1%）。
+
+---
+
+# 第 16 轮：倒序→零长的静默钳位（根因落地）+ `start_after_end` gate
+
+- 代码：`raw_degeneracy_forensics.inversion_clamp_accounting()`；
+  `alignment_artifacts.stage_degeneracy_audit()` 新增 `start_after_end_units` 与
+  `start_after_end_at_<stage>` 警告；`audit_batch.py` 新增 gate `start_order_integrity`（默认 2%）
+- 测试：`tests/test_inversion_clamp_observability.py`（3 项，直接对生产函数 `append_strict_core_commits` 复现）
+
+## 一、否证我自己的"槽位索引错位"假设
+若真是 `raw_classes` 槽位整体错位 k=1，则 `e[i] == s[i+1]` 应接近 100%；实测各歌只有 0.31–0.68
+（而负时长单元仅 6–10%），且每首歌最佳 k 都是 1 —— 那正是**相邻单元天然连续**的表现，不是错位。
+⇒ 负时长是解码器**自身的起止倒序**（end 槽位类小于 start 槽位类）；另注：GPU 解码路径有
+`2*len(selected)` 长度断言，raw_classes 没有（潜在加固点，但本批数据不支持它已发生）。
+
+## 二、真正的机制链（有行号、有复现用例）
+`src/lyricalign/demo/karaoke.py::append_strict_core_commits` 在重叠压缩**之前**执行
+`original_end = min(max(fixed_end, original_start), duration_sec)` ⇒ end 不可能小于 start：
+实测下游 selected/final 的负时长均为 **0/0**（33 首全部）。于是：
+
+| 量 | 数值 |
+|---|---:|
+| raw 起止倒序 | 870（6.33%） |
+| 其中最终变成零长单元 | **595（68.4%）** |
+| 仍保持非零长 | 275 |
+| 来自原本干净单元的新零长（钉锚点/压缩） | 1,112 |
+| 解释第 13 轮 `net_added_by_fixed=+807` 的比例 | **73.7%** |
+
+分语言：Japanese 435→315、Cantonese 183→98、English 173→127、**Chinese 79→55**。
+
+**为什么一直静默**：钳位把 `original_duration` 变成 0，而
+`overlap_compression_collapsed_to_zero` 的定义要求 `original_duration > 0`；若该行起点已在上一单元尾端之后，
+连 `overlap_compressed` 都不置位 ⇒ **两个现有计数器同时漏计**（复现用例断言这两点）。
+第 14 轮的 per-stage 观测 + 本轮 `start_after_end_at_*` 警告补上了这个洞。
+
+⇒ 建议的策略决定（仍未改行为，等人裁定）：对 raw 倒序不要静默钳成零长，而是
+(a) 交换/按下一单元起点重排，(b) 标 `needs_redecode`（第 15 轮：这批后来塌陷率 lift 8–10×），
+(c) 至少计入 summary 的 `start_after_end_units`（已实现）。
+
+## 三、`audit_batch.py` 现在的 gate 集合
+`attributable_identity` / `structural_legality`(5%) / `stage_attribution`(1%) /
+`window_anchor_pinning`(2%) / **`start_order_integrity`(2%，本轮新增)** / `repair_feasibility`。
+对真实批次输出 `VERDICT=blocked`，blocking 含 `start_order_integrity: raw 6.33%, fixed/selected/final 0%`。
