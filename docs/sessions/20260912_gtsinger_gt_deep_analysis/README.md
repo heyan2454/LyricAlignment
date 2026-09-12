@@ -395,3 +395,57 @@ R3 只修尾端+0.05s 下限 / R4 置信加权拆分 / R5 修尾端后钳位 / R
 2. 绝对值线性化的两条右端项符号写反 ⇒ 平均位移出现 15.7s 荒谬值。
 3. 长时序序列误按 (view, segment) 分组（把同一单元的多次尝试混进一条序列）⇒ 首次跑出 6% hit@100；
    正确分组是 **(request_identity, view_id)**，并把 (view,cid) 缺少 song 导致的"40% 冲突行"假象一并澄清。
+
+---
+
+# 第 8 轮：长时序跨窗口选择（先修好尺子，再量 headroom 能不能无真值吃到）
+
+- 代码：`src/lyricalign/analysis/{longform_signed_gt,cross_window_selection}.py`
+- 入口：`scripts/evaluation/{rebuild_longform_signed_gt,run_cross_window_selection,report_cross_window_selection}.py`
+- 产物：`runs/20260912_m4_longform_weakgt/{signed_gt.pkl,SIGNED_GT_STATS.json,CROSS_WINDOW_SELECTION.json,per_unit_attempt_summary.csv.gz}`（1.3M + 160K，删掉了临时 64MB 特征 pickle）
+- 测试：`tests/evaluation/test_cross_window_selection.py`（3 项；tests/evaluation 64 passed）
+- 报告：`reports/progress/20260912_cross_window_selection.md`；指标：`results/by_run/20260912_cross_window_selection/metrics.json`
+
+## 0. 尺子问题（本轮先解决它）
+
+面板的 `label_*_err_sec` 是**无符号**绝对误差 ⇒ `raw − err` 反推真值有 ± 号歧义；
+面板自带 `gt_*` 又是第 3 轮证明的伪造均匀轴。按 labeler 的公式重建
+（段局部 `timestamp_class_ids × 0.08s` + `segment_offsets.global_start_sec`）后：
+
+- **与冻结误差偏差 max = 0.0s、corr = 1.0（raw 与 official 两阶段都是）** ⇒ 与 labeler 用的是同一份参考；
+- 与 raw 距离 ≤100ms 的比例：面板伪造轴 15.9% vs 重建参考 89.1%（中位 327.5ms vs 33.0ms）
+  ⇒ 第 3 轮"伪造均匀轴"结论获得定量版本；
+- 同单元跨尝试的重建真值极差中位 0.0s、≤5ms 占比 100% ⇒ **此前看到的"24% 单元跨尝试分歧 >100ms"是 ± 号假象**；
+- 参考性质：`rule_validated`、模型产出、80ms 量化 ⇒ 有一切一致性指标都有 ±40ms 底噪，不是人工 GT。
+
+## 1. 结果（13,743 单元 / 127,923 次尝试；每单元最多 24 个窗口覆盖）
+
+| 方法 | hit@100 | MAE | Δ vs 跨窗中位 | 吃掉 oracle 差距 |
+|---|---:|---:|---:|---:|
+| 任意单一窗口（现状） | 84.81% | 271.5ms | −2.14pp | −64% |
+| 跨窗误差中位（参考线） | 86.95% | 117.9ms | 0 | 0 |
+| 跨窗边界取中位（共识输出） | 86.97% | 116.7ms | +0.02pp | 0.6% |
+| 离共识最近的那一次 | 86.97% | 118.0ms | +0.02pp | 0.6% |
+| **与其余尝试一致度最高（no-GT）** | **87.55%** | 118.0ms | **+0.60pp** | **18%** |
+| 熵最低 / margin 最大 | 87.04% / 87.11% | 135.1 / 150.8ms | +0.09 / +0.16pp | 2.7% / 4.8% |
+| 单元在窗口内最居中 | 85.80% | 209.8ms | **−1.15pp** | −34.5% |
+| 先用 ≤100ms 门控再取熵最低 | 87.34% | **112.7ms** | +0.39pp | 11.7% |
+| 用真值挑最好尝试（上界） | 90.28% | 87.8ms | +3.33pp | 100% |
+
+1. **长时序的真实风险来自窗口选择，不是解码器平均质量**：随机用一个窗口比跨窗中位差 2.14pp；
+   最差尝试只有 64.85%（MAE 1.85s）。
+2. **无真值可部署的支持度选择器拿到 +0.60pp**（oracle 差距的 18%）——显著好于第 5 轮跨 checkpoint 共识（+0.34pp、7.4%）
+   ⇒ 视图多样性（不同裁窗）才是值得花钱的变量，同裁窗换模型不是。
+3. **置信信号不足以选窗**：熵 +0.09pp、margin +0.16pp ⇒ 它们能抓 gross 错误（第 1/3/5 轮），
+   但不能在多个"合格"尝试中挑出最好的。
+4. **反直觉负结果**：把单元放在窗口中央反而更差（−1.15pp）
+   ⇒ 削弱"重新裁窗把困难单元居中"这类 realign 设计的理论依据。
+5. 工程上可直接输出跨窗**中位边界**（86.97%，等价于回选尝试），无需保留多个尝试。
+
+## 2. 本轮自查纠正
+
+- 首版重建给 end 多加了一个量化格点（`(id+1)×0.08`），与 labeler 的 `id×0.08` 不符 ⇒ 端点命中率一度只有 0.38%；
+  修正后端点也 100% 命中（`max_deviation 0.0`）。
+- 首版按 `(view_id, canonical_unit_id)` 分组得出"面板 40% 冲突行"，实为漏了 `song` 维度
+  （cid 是**歌曲内** timeline 下标）；加入 song 后跨尝试自洽率 100%。
+- 临时写的 64MB 特征 pickle 已删除，改存 160KB 逐单元汇总（`per_unit_attempt_summary.csv.gz`）。

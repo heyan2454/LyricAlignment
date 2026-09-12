@@ -1,0 +1,321 @@
+{
+  "schema_version": "cross_window_selection_metrics_v1",
+  "run": "/home/hyan/Data/lyricalign/runs/20260912_m4_longform_weakgt",
+  "signed_gt_verification": {
+    "panel_rows": 134538,
+    "merged_rows": 127923,
+    "merge_share": 0.9508,
+    "raw": {
+      "n": 121891,
+      "start_within_tol_share": 1.0,
+      "end_within_tol_share": 1.0,
+      "max_deviation_sec": 0.0,
+      "median_deviation_sec": 0.0,
+      "correlation_start": 1.0
+    },
+    "official": {
+      "n": 121891,
+      "start_within_tol_share": 1.0,
+      "end_within_tol_share": 1.0,
+      "max_deviation_sec": 0.0,
+      "median_deviation_sec": 0.0,
+      "correlation_start": 1.0
+    },
+    "fabricated_axis_contrast": {
+      "share_within_100ms_panel_gt": 0.1591,
+      "share_within_100ms_rebuilt": 0.8907,
+      "median_distance_panel_gt_sec": 0.3275,
+      "median_distance_rebuilt_sec": 0.033
+    },
+    "cross_attempt_reference_spread": {
+      "units": 13743,
+      "multi_attempt_units": 5493,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_within_5ms": 1.0
+    }
+  },
+  "signed_gt_stats": {
+    "schema": "longform_signed_gt_v1",
+    "manifests": [
+      "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/timeline_v4/LONG_TIMELINE_MANIFEST.jsonl"
+    ],
+    "reference": {
+      "mapping_status": [
+        "accepted_rule_based_pinyin_validated",
+        "accepted_rule_validated_held_vowel"
+      ],
+      "validation_basis": "rule_validated (model-derived, not human GT)",
+      "quantisation_sec": 0.08,
+      "note": "80 ms grid implies a +-40 ms floor on any agreement measured against this reference"
+    },
+    "units": 10094,
+    "dropped_missing_segment_label": 538,
+    "dropped_index_out_of_range": 0,
+    "char_mismatches": 0,
+    "unique_units": 10094
+  },
+  "panel": {
+    "schema": "cross_window_selection_v1",
+    "rows": 127923,
+    "units": 13743,
+    "reference": "signed GT reconstructed from segment labels + timeline offsets (verified: max deviation 0.0 vs frozen absolute errors)",
+    "reference_quantisation_sec": 0.08,
+    "attempts_per_unit": {
+      "median": 1,
+      "p90": 24.0,
+      "max": 24,
+      "units_with_ge2": 5493,
+      "units_with_ge3": 5493
+    }
+  },
+  "results": {
+    "panel": {
+      "schema": "cross_window_selection_v1",
+      "rows": 127923,
+      "units": 13743,
+      "reference": "signed GT reconstructed from segment labels + timeline offsets (verified: max deviation 0.0 vs frozen absolute errors)",
+      "reference_quantisation_sec": 0.08,
+      "attempts_per_unit": {
+        "median": 1,
+        "p90": 24.0,
+        "max": 24,
+        "units_with_ge2": 5493,
+        "units_with_ge3": 5493
+      }
+    },
+    "schema": "cross_window_selection_results_v1",
+    "selectors": {
+      "A_first_attempt": {
+        "units": 13743,
+        "hit100": 0.8481,
+        "hit200": 0.9312,
+        "hit250": 0.9403,
+        "mae_both_sec": 0.2715,
+        "median_both_sec": 0.05,
+        "p90_both_sec": 0.135,
+        "mae_ci95_song_boot": [
+          0.1895,
+          0.366
+        ],
+        "note": "single pass (arbitrary window)"
+      },
+      "C_closest_to_consensus": {
+        "units": 13743,
+        "hit100": 0.8697,
+        "hit200": 0.956,
+        "hit250": 0.9657,
+        "mae_both_sec": 0.118,
+        "median_both_sec": 0.05,
+        "p90_both_sec": 0.116,
+        "mae_ci95_song_boot": [
+          0.0857,
+          0.1698
+        ],
+        "note": "pick attempt by loo_spread (min)"
+      },
+      "D_max_support": {
+        "units": 13743,
+        "hit100": 0.8755,
+        "hit200": 0.9571,
+        "hit250": 0.9662,
+        "mae_both_sec": 0.118,
+        "median_both_sec": 0.049,
+        "p90_both_sec": 0.114,
+        "mae_ci95_song_boot": [
+          0.0846,
+          0.1693
+        ],
+        "note": "pick attempt by support_50ms (max)"
+      },
+      "E_min_entropy": {
+        "units": 13743,
+        "hit100": 0.8704,
+        "hit200": 0.9531,
+        "hit250": 0.9624,
+        "mae_both_sec": 0.1351,
+        "median_both_sec": 0.049,
+        "p90_both_sec": 0.115,
+        "mae_ci95_song_boot": [
+          0.1098,
+          0.1715
+        ],
+        "note": "pick attempt by ent_max (min)"
+      },
+      "F_max_margin": {
+        "units": 13743,
+        "hit100": 0.8711,
+        "hit200": 0.9503,
+        "hit250": 0.9593,
+        "mae_both_sec": 0.1508,
+        "median_both_sec": 0.049,
+        "p90_both_sec": 0.118,
+        "mae_ci95_song_boot": [
+          0.1261,
+          0.1874
+        ],
+        "note": "pick attempt by margin_min (max)"
+      },
+      "G_most_central_in_request": {
+        "units": 13743,
+        "hit100": 0.858,
+        "hit200": 0.9442,
+        "hit250": 0.9531,
+        "mae_both_sec": 0.2098,
+        "median_both_sec": 0.05,
+        "p90_both_sec": 0.122,
+        "mae_ci95_song_boot": [
+          0.1369,
+          0.2976
+        ],
+        "note": "pick attempt by edge_distance (max)"
+      },
+      "H_gated_then_confident": {
+        "units": 13736,
+        "hit100": 0.8734,
+        "hit200": 0.9569,
+        "hit250": 0.966,
+        "mae_both_sec": 0.1127,
+        "median_both_sec": 0.049,
+        "p90_both_sec": 0.115,
+        "mae_ci95_song_boot": [
+          0.0831,
+          0.1641
+        ],
+        "note": "consensus-gated (<=100ms) then lowest entropy; covers 1.00 of units"
+      }
+    },
+    "aggregates": {
+      "unit_median_of_attempts": {
+        "units": 13743,
+        "hit100": 0.8695,
+        "hit200": 0.9558,
+        "hit250": 0.9654,
+        "mae_both_sec": 0.1179,
+        "median_both_sec": 0.05,
+        "p90_both_sec": 0.1168,
+        "mae_ci95_song_boot": [
+          0.0858,
+          0.1701
+        ]
+      },
+      "unit_worst_of_attempts": {
+        "units": 13743,
+        "hit100": 0.6485,
+        "hit200": 0.7284,
+        "hit250": 0.7374,
+        "mae_both_sec": 1.8513,
+        "median_both_sec": 0.07,
+        "p90_both_sec": 7.48,
+        "mae_ci95_song_boot": [
+          1.678,
+          2.047
+        ]
+      },
+      "unit_best_of_attempts_oracle": {
+        "units": 13743,
+        "hit100": 0.9028,
+        "hit200": 0.9674,
+        "hit250": 0.9747,
+        "mae_both_sec": 0.0878,
+        "median_both_sec": 0.04,
+        "p90_both_sec": 0.1,
+        "mae_ci95_song_boot": [
+          0.0655,
+          0.1197
+        ]
+      },
+      "B_consensus_median_boundaries": {
+        "units": 13743,
+        "hit100": 0.8697,
+        "hit200": 0.956,
+        "hit250": 0.9657,
+        "mae_both_sec": 0.1167,
+        "median_both_sec": 0.05,
+        "p90_both_sec": 0.116,
+        "mae_ci95_song_boot": [
+          0.0849,
+          0.1687
+        ]
+      }
+    },
+    "oracle": {
+      "unit_best_attempt": {
+        "units": 13743,
+        "hit100": 0.9028,
+        "hit200": 0.9674,
+        "hit250": 0.9747,
+        "mae_both_sec": 0.0878,
+        "median_both_sec": 0.04,
+        "p90_both_sec": 0.1,
+        "mae_ci95_song_boot": [
+          0.0655,
+          0.1197
+        ]
+      }
+    },
+    "gap_closed_vs_oracle": {
+      "A_first_attempt": {
+        "hit100": 0.8481,
+        "delta_pp_vs_median_attempt": -2.14,
+        "share_of_oracle_gap_closed": -0.643
+      },
+      "C_closest_to_consensus": {
+        "hit100": 0.8697,
+        "delta_pp_vs_median_attempt": 0.02,
+        "share_of_oracle_gap_closed": 0.006
+      },
+      "D_max_support": {
+        "hit100": 0.8755,
+        "delta_pp_vs_median_attempt": 0.6,
+        "share_of_oracle_gap_closed": 0.18
+      },
+      "E_min_entropy": {
+        "hit100": 0.8704,
+        "delta_pp_vs_median_attempt": 0.09,
+        "share_of_oracle_gap_closed": 0.027
+      },
+      "F_max_margin": {
+        "hit100": 0.8711,
+        "delta_pp_vs_median_attempt": 0.16,
+        "share_of_oracle_gap_closed": 0.048
+      },
+      "G_most_central_in_request": {
+        "hit100": 0.858,
+        "delta_pp_vs_median_attempt": -1.15,
+        "share_of_oracle_gap_closed": -0.345
+      },
+      "H_gated_then_confident": {
+        "hit100": 0.8734,
+        "delta_pp_vs_median_attempt": 0.39,
+        "share_of_oracle_gap_closed": 0.117
+      },
+      "median_of_attempts": {
+        "hit100": 0.8695,
+        "delta_pp_vs_median_attempt": 0.0,
+        "share_of_oracle_gap_closed": 0.0
+      },
+      "consensus_median_boundaries": {
+        "hit100": 0.8697,
+        "delta_pp_vs_median_attempt": 0.02,
+        "share_of_oracle_gap_closed": 0.006
+      }
+    },
+    "reference_headroom": {
+      "median_attempt_hit100": 0.8695,
+      "oracle_hit100": 0.9028,
+      "headroom_pp": 3.33
+    }
+  },
+  "headline": {
+    "single_window_penalty_pp": 2.14,
+    "best_deployable_selector": "D_max_support",
+    "best_deployable_gain_pp": 0.6,
+    "oracle_headroom_pp": 3.33,
+    "gap_closed_by_support_selector": 0.18,
+    "entropy_selector_gain_pp": 0.09,
+    "central_position_selector_gain_pp": -1.15,
+    "worst_attempt_hit100": 0.6485
+  },
+  "claim": "long-form risk is window choice, not decoder average quality; view diversity (different crops) is the variable worth paying for"
+}

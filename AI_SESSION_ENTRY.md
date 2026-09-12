@@ -11,7 +11,7 @@ reports/progress/20260912_gtsinger_gt_deep_analysis.md
 results/by_run/20260912_gtsinger_gt_deep/metrics.json
 ```
 
-Ten things later rounds must not re-assume:
+Twelve things later rounds must not re-assume:
 
 1. The 3x2x2 evaluation matrix is degenerate — `mix`/`vocal` were fed the same wav and
    `full`/`windowed` coincide on short clips, so those runs contain no audio-input or planning-mode
@@ -59,7 +59,19 @@ Ten things later rounds must not re-assume:
    MAE 101.2ms; accuracy-neutral on natural long-form (86.57% vs 86.54% raw) and the only rule reaching
    0% degenerate/overlap/regression on 25 real accompanied songs. See
    `src/lyricalign/analysis/joint_cleanup.py` and `reports/progress/20260912_joint_cleanup.md`.
-10. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
+10. The long-form panel's `label_*_err_sec` are **unsigned**, so `raw − err` cannot recover the
+    reference (± ambiguity, previously misread as "24% of units disagree across attempts"). The verified
+    reconstruction is `segment timestamp_class_ids × 0.08 s + segment_offsets.global_start_sec`
+    (`src/lyricalign/analysis/longform_signed_gt.py`): it reproduces the frozen errors with **max deviation
+    0.0 s** on both stages, and shows the panel's own `gt_*` axis agrees with raw only 15.9% of the time vs
+    89.1% for the rebuilt reference.
+11. **Long-form risk is window choice, not decoder quality**: an arbitrary single covering window scores
+    84.81% hit@100 vs 86.95% for the cross-window median attempt (worst attempt 64.85%, MAE 1.85 s). A
+    label-free support selector (most peers within 50 ms) reaches 87.55% (+0.60 pp, 18% of the 3.33 pp oracle
+    gap) while entropy/margin add only +0.09/+0.16 pp, and *placing the unit centrally in its window is
+    1.15 pp worse* — which undercuts "re-crop to centre the hard unit" realign designs. See
+    `reports/progress/20260912_cross_window_selection.md`.
+12. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
    ground truth: joining predictions to it yields hit@100 = 5.3% where the frozen real-GT labels give
    87.9%. Any reuse of `research_v7_detector_v2` evidence must reconcile recomputed errors against
    that run's frozen `LABELS.jsonl` before believing a number (see `uniform_axis_trap`), and run1's
