@@ -91,6 +91,49 @@ def main() -> int:
       "英文约 23%、日文 45-53%），与 GTSinger 干净录音上的 2-4% 完全不同量级："
       "**产品化必须把零时长/退化区间当作首要结构 gate**，而不是把它当成可忽略的边角。")
     w("")
+    pa_path = args.dir / "POSTPROCESS_ATTRIBUTION.json"
+    if pa_path.exists():
+        pa = json.loads(pa_path.read_text(encoding="utf-8"))
+        hv = pa["headline"]
+        b4 = pa["views"]["b4_60s_windowed"]
+        w("## 3b. 后处理归因（无真值，纯结构）：**干净结构是靠压扁单元换来的**")
+        w("")
+        w(f"- 退化（零/负时长）单元：清理前 {pct(b4['raw_degenerate_share'],1)} → 清理后 "
+          f"**{pct(b4['selected_degenerate_share'],1)}**；"
+          f"清理创建 {b4['created_by_postprocess']} 个、修复 {b4['healed_by_postprocess']} 个"
+          f"（净 **{b4['net_change_in_degenerate']:+d}**）⇒ 判定：{hv['verdict']}。")
+        w(f"- 机制与第 2 轮同型但更温和：被移动的起点中 "
+          f"{pct(hv['mechanism']['start_pinned_to_prev_end'],1)} 落在前一单元 selected 尾端、"
+          f"{pct(hv['mechanism']['end_pinned_to_next_start'],1)} 的尾端落在下一单元起点；"
+          f"相邻重叠率 {pct(hv['mechanism']['overlap_rate_before'],1)} → "
+          f"{pct(hv['mechanism']['overlap_rate_after'],2)}（连续性确实被强制执行）。")
+        rd, sd = b4["raw_structural_defects"], b4["selected_structural_defects"]
+        w(f"- **raw 解码本身在真实伴奏歌上结构就不成立**："
+          f"负时长 {pct(rd['negative_duration_share'],1)}、时长>3s {pct(rd['duration_over_3s_share'],1)}、"
+          f"单单元最长 raw 时长 **{rd['max_raw_duration_sec']}s**（中位仅 {rd['median_raw_duration_sec']}s）、"
+          f"起点回退 {pct(rd['start_regression_share'],1)}；清理后这些分别为 "
+          f"{pct(sd['negative_duration_share'],1)} / {pct(sd['duration_over_3s_share'],1)} / "
+          f"{pct(sd['start_regression_share'],1)} —— 全部被\u300c压成零长\u300d抹平而非修好。")
+        cg = b4["created_degenerate_origin"]
+        w(f"- 被压扁的 {cg['n']} 个单元里 {pct(cg['share_from_overshoot_gt1s'],1)} 原本 raw 时长 >1s"
+          f"（中位 {cg['median_raw_duration_of_created_sec']}s）"
+          f"⇒ 后处理是在**掩盖 gross 解码错误**，不是在修复边界。")
+        w("")
+        w("按单元类型（关键：普通话最健康，灾难在 word 单元路径）：")
+        w("")
+        w("| 单元类型 | 单元数 | raw 退化 | 清理后退化 | raw 负时长 | raw 最长时长 |")
+        w("|---|---:|---:|---:|---:|---:|")
+        for ut, v in sorted(b4.get("by_unit_type", {}).items(),
+                            key=lambda kv: -kv[1]["selected_degenerate_share"]):
+            w(f"| `{ut}` | {v['units']:,} | {pct(v['raw_degenerate_share'],1)} | "
+              f"{pct(v['selected_degenerate_share'],1)} | {pct(v['raw_negative_share'],1)} | "
+              f"{v['max_raw_duration_sec']}s |")
+        w("")
+        w("- ⇒ 对\u300c优先普通话\u300d的直接含义：中文字符路径清理后退化率 9.7%（GTSinger 干净数据 2-4%），"
+          "而英/日 word 路径 23-53% ⇒ **word 单元化策略与解码结构约束是普通话之外语言的主要故障源**；"
+          "普通话侧真正该做的是把 9.7% 的退化率压下去（约束解码或单调性修复），"
+          "而不是继续在边界毫秒级打磨。")
+        w("")
     w("## 4. 与前三轮结论的接续")
     w("")
     w("- 第 1 轮：GTSinger 上 12 配置矩阵是假因子 ⇒ 本轮在真实长歌上又发现一个假因子"
@@ -125,6 +168,8 @@ def main() -> int:
         "per_song": a["per_song"], "seam_head_profile": a.get("seam_head_profile"),
         "seam_tail_profile": a.get("seam_tail_profile"),
         "posterior_predicts_disagreement_auc": a.get("posterior_predicts_disagreement_auc"),
+        "postprocess_attribution": (json.loads((args.dir / "POSTPROCESS_ATTRIBUTION.json").read_text(encoding="utf-8"))
+                                    if (args.dir / "POSTPROCESS_ATTRIBUTION.json").exists() else None),
         "headline": {
             "comparable_pair_units": pairs["b4_vs_cur"]["comparable_units"],
             "comparable_pair_share_gt100ms": pairs["b4_vs_cur"]["share_gt_100ms"],
@@ -136,6 +181,18 @@ def main() -> int:
                 a["by_language"], key=lambda r: r["zero_dur_b4"])["language"],
             "conclusion": "B4 vs current_silence is not an identified contrast; no usable multi-view "
                           "evidence exists on natural long songs",
+            "degenerate_before_cleanup": (pa["headline"]["degenerates_before_cleanup"]
+                                          if pa_path.exists() else None),
+            "degenerate_after_cleanup": (pa["headline"]["degenerates_after_cleanup"]
+                                         if pa_path.exists() else None),
+            "raw_negative_duration_share": (pa["views"]["b4_60s_windowed"]["raw_structural_defects"]
+                                            ["negative_duration_share"] if pa_path.exists() else None),
+            "cjk_selected_degenerate_share": (pa["views"]["b4_60s_windowed"]["by_unit_type"]
+                                              .get("cjk_character", {}).get("selected_degenerate_share")
+                                              if pa_path.exists() else None),
+            "japanese_word_selected_degenerate_share": (
+                pa["views"]["b4_60s_windowed"]["by_unit_type"].get("japanese_word", {})
+                .get("selected_degenerate_share") if pa_path.exists() else None),
         },
     }
     mout = REPO / "results/by_run/20260912_real_song_views/metrics.json"

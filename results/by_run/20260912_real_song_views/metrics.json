@@ -505,6 +505,301 @@
     "current_silence_aware__ent_s": 0.778,
     "current_silence_aware__ent_e": 0.7795
   },
+  "postprocess_attribution": {
+    "schema": "real_song_postprocess_attribution_v1",
+    "tolerance_sec": 0.001,
+    "views": {
+      "b4_60s_windowed": {
+        "units": 10909,
+        "songs": 25,
+        "raw_degenerate_share": 0.1125,
+        "selected_degenerate_share": 0.1713,
+        "created_by_postprocess": 947,
+        "healed_by_postprocess": 305,
+        "net_change_in_degenerate": 642,
+        "share_units_touched": 0.2251,
+        "median_abs_shift_start_sec": 1.12,
+        "p90_abs_shift_start_sec": 61.014,
+        "mean_abs_shift_start_sec_USE_WITH_CARE": 15.7364,
+        "median_abs_shift_end_sec": 1.2275,
+        "start_moves_later_share": 0.456,
+        "end_moves_earlier_share": 0.3734,
+        "raw_overlap_rate": 0.122,
+        "selected_overlap_rate": 0.0009,
+        "raw_structural_defects": {
+          "negative_duration_share": 0.0658,
+          "duration_over_3s_share": 0.039,
+          "max_raw_duration_sec": 108.72,
+          "start_regression_share": 0.071,
+          "median_raw_duration_sec": 0.24
+        },
+        "selected_structural_defects": {
+          "negative_duration_share": 0.0,
+          "duration_over_3s_share": 0.0039,
+          "start_regression_share": 0.0006
+        },
+        "created_degenerate_origin": {
+          "n": 947,
+          "share_from_negative_raw_duration": 0.0,
+          "share_from_overshoot_gt1s": 0.4266,
+          "median_raw_duration_of_created_sec": 0.64
+        },
+        "share_start_moves_pinned_to_prev_end": 0.7196,
+        "share_end_moves_pinned_to_next_start": 0.5389,
+        "by_language": {
+          "Cantonese": {
+            "units": 1564,
+            "raw_degenerate_share": 0.1228,
+            "selected_degenerate_share": 0.1522,
+            "created": 118,
+            "healed": 72
+          },
+          "Chinese": {
+            "units": 5980,
+            "raw_degenerate_share": 0.0338,
+            "selected_degenerate_share": 0.0719,
+            "created": 259,
+            "healed": 31
+          },
+          "English": {
+            "units": 1946,
+            "raw_degenerate_share": 0.1439,
+            "selected_degenerate_share": 0.2318,
+            "created": 221,
+            "healed": 50
+          },
+          "Japanese": {
+            "units": 1419,
+            "raw_degenerate_share": 0.3897,
+            "selected_degenerate_share": 0.5285,
+            "created": 349,
+            "healed": 152
+          }
+        },
+        "by_unit_type": {
+          "cjk_character": {
+            "units": 7689,
+            "raw_degenerate_share": 0.057,
+            "selected_degenerate_share": 0.0973,
+            "raw_negative_share": 0.0299,
+            "max_raw_duration_sec": 90.64
+          },
+          "japanese_word": {
+            "units": 1269,
+            "raw_degenerate_share": 0.4011,
+            "selected_degenerate_share": 0.528,
+            "raw_negative_share": 0.2506,
+            "max_raw_duration_sec": 108.72
+          },
+          "word": {
+            "units": 1951,
+            "raw_degenerate_share": 0.1435,
+            "selected_degenerate_share": 0.2312,
+            "raw_negative_share": 0.0871,
+            "max_raw_duration_sec": 79.2
+          }
+        }
+      },
+      "current_silence_aware": {
+        "units": 10909,
+        "songs": 25,
+        "raw_degenerate_share": 0.1127,
+        "selected_degenerate_share": 0.1717,
+        "created_by_postprocess": 950,
+        "healed_by_postprocess": 306,
+        "net_change_in_degenerate": 644,
+        "share_units_touched": 0.2252,
+        "median_abs_shift_start_sec": 1.12,
+        "p90_abs_shift_start_sec": 61.0088,
+        "mean_abs_shift_start_sec_USE_WITH_CARE": 15.73,
+        "median_abs_shift_end_sec": 1.235,
+        "start_moves_later_share": 0.455,
+        "end_moves_earlier_share": 0.374,
+        "raw_overlap_rate": 0.122,
+        "selected_overlap_rate": 0.0009,
+        "raw_structural_defects": {
+          "negative_duration_share": 0.0659,
+          "duration_over_3s_share": 0.0389,
+          "max_raw_duration_sec": 108.72,
+          "start_regression_share": 0.071,
+          "median_raw_duration_sec": 0.24
+        },
+        "selected_structural_defects": {
+          "negative_duration_share": 0.0,
+          "duration_over_3s_share": 0.0039,
+          "start_regression_share": 0.0006
+        },
+        "created_degenerate_origin": {
+          "n": 950,
+          "share_from_negative_raw_duration": 0.0,
+          "share_from_overshoot_gt1s": 0.4274,
+          "median_raw_duration_of_created_sec": 0.64
+        },
+        "share_start_moves_pinned_to_prev_end": 0.72,
+        "share_end_moves_pinned_to_next_start": 0.5382,
+        "by_language": {
+          "Cantonese": {
+            "units": 1564,
+            "raw_degenerate_share": 0.1228,
+            "selected_degenerate_share": 0.1522,
+            "created": 118,
+            "healed": 72
+          },
+          "Chinese": {
+            "units": 5980,
+            "raw_degenerate_share": 0.0338,
+            "selected_degenerate_share": 0.0721,
+            "created": 260,
+            "healed": 31
+          },
+          "English": {
+            "units": 1946,
+            "raw_degenerate_share": 0.1449,
+            "selected_degenerate_share": 0.2333,
+            "created": 223,
+            "healed": 51
+          },
+          "Japanese": {
+            "units": 1419,
+            "raw_degenerate_share": 0.3897,
+            "selected_degenerate_share": 0.5285,
+            "created": 349,
+            "healed": 152
+          }
+        },
+        "by_unit_type": {
+          "cjk_character": {
+            "units": 7689,
+            "raw_degenerate_share": 0.057,
+            "selected_degenerate_share": 0.0974,
+            "raw_negative_share": 0.0299,
+            "max_raw_duration_sec": 90.64
+          },
+          "japanese_word": {
+            "units": 1269,
+            "raw_degenerate_share": 0.4011,
+            "selected_degenerate_share": 0.528,
+            "raw_negative_share": 0.2506,
+            "max_raw_duration_sec": 108.72
+          },
+          "word": {
+            "units": 1951,
+            "raw_degenerate_share": 0.1445,
+            "selected_degenerate_share": 0.2327,
+            "raw_negative_share": 0.0876,
+            "max_raw_duration_sec": 79.2
+          }
+        }
+      },
+      "full_slot": {
+        "units": 10909,
+        "songs": 25,
+        "raw_degenerate_share": 0.1297,
+        "selected_degenerate_share": 0.1552,
+        "created_by_postprocess": 812,
+        "healed_by_postprocess": 534,
+        "net_change_in_degenerate": 278,
+        "share_units_touched": 0.2512,
+        "median_abs_shift_start_sec": 1.36,
+        "p90_abs_shift_start_sec": 47.824,
+        "mean_abs_shift_start_sec_USE_WITH_CARE": 11.8619,
+        "median_abs_shift_end_sec": 1.3195,
+        "start_moves_later_share": 0.5916,
+        "end_moves_earlier_share": 0.2398,
+        "raw_overlap_rate": 0.1634,
+        "selected_overlap_rate": 0.0469,
+        "raw_structural_defects": {
+          "negative_duration_share": 0.0736,
+          "duration_over_3s_share": 0.0475,
+          "max_raw_duration_sec": 100.16,
+          "start_regression_share": 0.0856,
+          "median_raw_duration_sec": 0.24
+        },
+        "selected_structural_defects": {
+          "negative_duration_share": 0.0,
+          "duration_over_3s_share": 0.0061,
+          "start_regression_share": 0.0
+        },
+        "created_degenerate_origin": {
+          "n": 812,
+          "share_from_negative_raw_duration": 0.0,
+          "share_from_overshoot_gt1s": 0.4224,
+          "median_raw_duration_of_created_sec": 0.56
+        },
+        "share_start_moves_pinned_to_prev_end": 0.583,
+        "share_end_moves_pinned_to_next_start": 0.4073,
+        "by_language": {
+          "Cantonese": {
+            "units": 1564,
+            "raw_degenerate_share": 0.1624,
+            "selected_degenerate_share": 0.1784,
+            "created": 138,
+            "healed": 113
+          },
+          "Chinese": {
+            "units": 5980,
+            "raw_degenerate_share": 0.0346,
+            "selected_degenerate_share": 0.058,
+            "created": 224,
+            "healed": 84
+          },
+          "English": {
+            "units": 1946,
+            "raw_degenerate_share": 0.1948,
+            "selected_degenerate_share": 0.2205,
+            "created": 187,
+            "healed": 137
+          },
+          "Japanese": {
+            "units": 1419,
+            "raw_degenerate_share": 0.4052,
+            "selected_degenerate_share": 0.4496,
+            "created": 263,
+            "healed": 200
+          }
+        },
+        "by_unit_type": {
+          "cjk_character": {
+            "units": 7689,
+            "raw_degenerate_share": 0.0679,
+            "selected_degenerate_share": 0.0908,
+            "raw_negative_share": 0.0403,
+            "max_raw_duration_sec": 89.92
+          },
+          "japanese_word": {
+            "units": 1269,
+            "raw_degenerate_share": 0.405,
+            "selected_degenerate_share": 0.446,
+            "raw_negative_share": 0.2348,
+            "max_raw_duration_sec": 100.16
+          },
+          "word": {
+            "units": 1951,
+            "raw_degenerate_share": 0.1943,
+            "selected_degenerate_share": 0.2199,
+            "raw_negative_share": 0.0999,
+            "max_raw_duration_sec": 79.12
+          }
+        }
+      }
+    },
+    "headline": {
+      "degenerates_before_cleanup": 0.1125,
+      "degenerates_after_cleanup": 0.1713,
+      "created_by_cleanup": 947,
+      "healed_by_cleanup": 305,
+      "verdict": "cleanup CREATES degenerate units",
+      "mechanism": {
+        "start_pinned_to_prev_end": 0.7196,
+        "end_pinned_to_next_start": 0.5389,
+        "overlap_rate_before": 0.122,
+        "overlap_rate_after": 0.0009,
+        "created_from_negative_duration_share": 0.0,
+        "created_from_overshoot_gt1s_share": 0.4266
+      },
+      "note": "cleanup enforces contiguity (overlaps ~12% -> ~0.1%) but does so by collapsing gross raw intervals to zero length rather than repairing them"
+    }
+  },
   "headline": {
     "comparable_pair_units": 10909,
     "comparable_pair_share_gt100ms": 0.0008,
@@ -515,6 +810,11 @@
       "full_slot": "0/33"
     },
     "zero_duration_worst_language_b4": "Japanese",
-    "conclusion": "B4 vs current_silence is not an identified contrast; no usable multi-view evidence exists on natural long songs"
+    "conclusion": "B4 vs current_silence is not an identified contrast; no usable multi-view evidence exists on natural long songs",
+    "degenerate_before_cleanup": 0.1125,
+    "degenerate_after_cleanup": 0.1713,
+    "raw_negative_duration_share": 0.0658,
+    "cjk_selected_degenerate_share": 0.0973,
+    "japanese_word_selected_degenerate_share": 0.528
   }
 }

@@ -107,6 +107,29 @@ def test_language_rollup_and_targeting(fake_views: Path):
     assert a["posterior_predicts_disagreement_auc"]
 
 
+def test_postprocess_attribution_separates_created_from_healed(fake_views: Path):
+    """The attribution must count degenerate units before/after the cleanup and identify the
+    pinning mechanism, without ever claiming accuracy (there is no ground truth here)."""
+    out = fake_views / "panel5"
+    R.build_panel(out)
+    df = R.load_frame(out / "real_song_views.jsonl.gz")
+    pa = R.analyse_postprocess_attribution(df)
+    assert pa["views"], "expected at least one view"
+    b4 = pa["views"]["b4_60s_windowed"]
+    assert b4["units"] == 12                              # 2 songs x 6 units
+    assert b4["raw_degenerate_share"] <= b4["selected_degenerate_share"]
+    assert b4["created_by_postprocess"] >= 0 and b4["healed_by_postprocess"] >= 0
+    assert b4["net_change_in_degenerate"] == (b4["created_by_postprocess"]
+                                             - b4["healed_by_postprocess"])
+    assert 0.0 <= b4["raw_overlap_rate"] <= 1.0
+    assert b4["raw_structural_defects"]["negative_duration_share"] >= 0.0
+    assert b4["selected_structural_defects"]["negative_duration_share"] == 0.0
+    assert {"cjk_character"} <= set(b4["by_unit_type"])
+    assert pa["headline"]["verdict"] in {
+        "cleanup is degenerate-neutral", "cleanup CREATES degenerate units",
+        "cleanup REMOVES degenerate units"}
+
+
 def test_min_unit_guard(fake_views: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(R, "MIN_UNITS", 10)          # every synthetic song has 6 units
     out = fake_views / "panel4"
