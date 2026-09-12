@@ -1,0 +1,339 @@
+{
+  "schema_version": "unreachable_recheck_metrics_v1",
+  "audit": {
+    "schema": "unreachable_recheck_v1",
+    "meaning": "end_outside_top2 = share of long notes whose ground-truth end bin is not within one bin of either the top-1 or top-2 candidate, so no selection could recover it",
+    "counts": {
+      "all_units": {
+        "units": 30600,
+        "share_of_panel": 1.0
+      },
+      "excluding_shipped_degenerate": {
+        "units": 29240,
+        "share_of_panel": 0.9556
+      },
+      "excluding_raw_inverted": {
+        "units": 30524,
+        "share_of_panel": 0.9975
+      },
+      "excluding_both": {
+        "units": 29236,
+        "share_of_panel": 0.9554
+      }
+    },
+    "by_checkpoint": {
+      "r0": {
+        "units": 10200,
+        "degenerate_share": 0.0569,
+        "raw_inverted_share": 0.0031,
+        "filters": {
+          "all_units": {
+            "all": {
+              "units": 10200,
+              "end_outside_top2_within1bin": 0.111,
+              "end_outside_top2_exact": 0.2953,
+              "start_outside_top2_within1bin": 0.0588,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 480,
+              "end_outside_top2_within1bin": 0.4667,
+              "end_outside_top2_exact": 0.7083,
+              "start_outside_top2_within1bin": 0.1167,
+              "end_distance_median_bins": 1.0
+            }
+          },
+          "excluding_shipped_degenerate": {
+            "all": {
+              "units": 9620,
+              "end_outside_top2_within1bin": 0.0969,
+              "end_outside_top2_exact": 0.2852,
+              "start_outside_top2_within1bin": 0.0383,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 456,
+              "end_outside_top2_within1bin": 0.4649,
+              "end_outside_top2_exact": 0.7018,
+              "start_outside_top2_within1bin": 0.0965,
+              "end_distance_median_bins": 1.0
+            }
+          },
+          "excluding_raw_inverted": {
+            "all": {
+              "units": 10168,
+              "end_outside_top2_within1bin": 0.1094,
+              "end_outside_top2_exact": 0.2935,
+              "start_outside_top2_within1bin": 0.057,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 480,
+              "end_outside_top2_within1bin": 0.4667,
+              "end_outside_top2_exact": 0.7083,
+              "start_outside_top2_within1bin": 0.1167,
+              "end_distance_median_bins": 1.0
+            }
+          },
+          "excluding_both": {
+            "all": {
+              "units": 9616,
+              "end_outside_top2_within1bin": 0.0965,
+              "end_outside_top2_exact": 0.2849,
+              "start_outside_top2_within1bin": 0.0379,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 456,
+              "end_outside_top2_within1bin": 0.4649,
+              "end_outside_top2_exact": 0.7018,
+              "start_outside_top2_within1bin": 0.0965,
+              "end_distance_median_bins": 1.0
+            }
+          }
+        }
+      },
+      "r1": {
+        "units": 10200,
+        "degenerate_share": 0.0412,
+        "raw_inverted_share": 0.0024,
+        "filters": {
+          "all_units": {
+            "all": {
+              "units": 10200,
+              "end_outside_top2_within1bin": 0.0404,
+              "end_outside_top2_exact": 0.0941,
+              "start_outside_top2_within1bin": 0.0404,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 480,
+              "end_outside_top2_within1bin": 0.1,
+              "end_outside_top2_exact": 0.275,
+              "start_outside_top2_within1bin": 0.0833,
+              "end_distance_median_bins": 0.0
+            }
+          },
+          "excluding_shipped_degenerate": {
+            "all": {
+              "units": 9780,
+              "end_outside_top2_within1bin": 0.0286,
+              "end_outside_top2_exact": 0.0822,
+              "start_outside_top2_within1bin": 0.0258,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 468,
+              "end_outside_top2_within1bin": 0.0855,
+              "end_outside_top2_exact": 0.265,
+              "start_outside_top2_within1bin": 0.0684,
+              "end_distance_median_bins": 0.0
+            }
+          },
+          "excluding_raw_inverted": {
+            "all": {
+              "units": 10176,
+              "end_outside_top2_within1bin": 0.0405,
+              "end_outside_top2_exact": 0.0936,
+              "start_outside_top2_within1bin": 0.0385,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 480,
+              "end_outside_top2_within1bin": 0.1,
+              "end_outside_top2_exact": 0.275,
+              "start_outside_top2_within1bin": 0.0833,
+              "end_distance_median_bins": 0.0
+            }
+          },
+          "excluding_both": {
+            "all": {
+              "units": 9780,
+              "end_outside_top2_within1bin": 0.0286,
+              "end_outside_top2_exact": 0.0822,
+              "start_outside_top2_within1bin": 0.0258,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 468,
+              "end_outside_top2_within1bin": 0.0855,
+              "end_outside_top2_exact": 0.265,
+              "start_outside_top2_within1bin": 0.0684,
+              "end_distance_median_bins": 0.0
+            }
+          }
+        }
+      },
+      "r2": {
+        "units": 10200,
+        "degenerate_share": 0.0353,
+        "raw_inverted_share": 0.002,
+        "filters": {
+          "all_units": {
+            "all": {
+              "units": 10200,
+              "end_outside_top2_within1bin": 0.0298,
+              "end_outside_top2_exact": 0.0824,
+              "start_outside_top2_within1bin": 0.0353,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 480,
+              "end_outside_top2_within1bin": 0.05,
+              "end_outside_top2_exact": 0.2167,
+              "start_outside_top2_within1bin": 0.0667,
+              "end_distance_median_bins": 0.0
+            }
+          },
+          "excluding_shipped_degenerate": {
+            "all": {
+              "units": 9840,
+              "end_outside_top2_within1bin": 0.0228,
+              "end_outside_top2_exact": 0.0752,
+              "start_outside_top2_within1bin": 0.0236,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 468,
+              "end_outside_top2_within1bin": 0.0427,
+              "end_outside_top2_exact": 0.2051,
+              "start_outside_top2_within1bin": 0.0427,
+              "end_distance_median_bins": 0.0
+            }
+          },
+          "excluding_raw_inverted": {
+            "all": {
+              "units": 10180,
+              "end_outside_top2_within1bin": 0.0295,
+              "end_outside_top2_exact": 0.0817,
+              "start_outside_top2_within1bin": 0.0342,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 472,
+              "end_outside_top2_within1bin": 0.0508,
+              "end_outside_top2_exact": 0.2119,
+              "start_outside_top2_within1bin": 0.0508,
+              "end_distance_median_bins": 0.0
+            }
+          },
+          "excluding_both": {
+            "all": {
+              "units": 9840,
+              "end_outside_top2_within1bin": 0.0228,
+              "end_outside_top2_exact": 0.0752,
+              "start_outside_top2_within1bin": 0.0236,
+              "end_distance_median_bins": 0.0
+            },
+            "long_note": {
+              "units": 468,
+              "end_outside_top2_within1bin": 0.0427,
+              "end_outside_top2_exact": 0.2051,
+              "start_outside_top2_within1bin": 0.0427,
+              "end_distance_median_bins": 0.0
+            }
+          }
+        }
+      }
+    },
+    "progression_by_filter": {
+      "all_units": {
+        "long_note_end_outside_top2_exact": {
+          "r0": 0.4667,
+          "r1": 0.1,
+          "r2": 0.05
+        },
+        "long_note_end_outside_top2_within1bin": {
+          "r0": 0.4667,
+          "r1": 0.1,
+          "r2": 0.05
+        },
+        "improvement_r0_to_r2_pp": 41.67,
+        "improvement_r0_to_r2_pp_within1bin": 41.67,
+        "units_per_checkpoint": [
+          480,
+          480,
+          480
+        ]
+      },
+      "excluding_shipped_degenerate": {
+        "long_note_end_outside_top2_exact": {
+          "r0": 0.4649,
+          "r1": 0.0855,
+          "r2": 0.0427
+        },
+        "long_note_end_outside_top2_within1bin": {
+          "r0": 0.4649,
+          "r1": 0.0855,
+          "r2": 0.0427
+        },
+        "improvement_r0_to_r2_pp": 42.22,
+        "improvement_r0_to_r2_pp_within1bin": 42.22,
+        "units_per_checkpoint": [
+          456,
+          468,
+          468
+        ]
+      },
+      "excluding_raw_inverted": {
+        "long_note_end_outside_top2_exact": {
+          "r0": 0.4667,
+          "r1": 0.1,
+          "r2": 0.0508
+        },
+        "long_note_end_outside_top2_within1bin": {
+          "r0": 0.4667,
+          "r1": 0.1,
+          "r2": 0.0508
+        },
+        "improvement_r0_to_r2_pp": 41.59,
+        "improvement_r0_to_r2_pp_within1bin": 41.59,
+        "units_per_checkpoint": [
+          480,
+          480,
+          472
+        ]
+      },
+      "excluding_both": {
+        "long_note_end_outside_top2_exact": {
+          "r0": 0.4649,
+          "r1": 0.0855,
+          "r2": 0.0427
+        },
+        "long_note_end_outside_top2_within1bin": {
+          "r0": 0.4649,
+          "r1": 0.0855,
+          "r2": 0.0427
+        },
+        "improvement_r0_to_r2_pp": 42.22,
+        "improvement_r0_to_r2_pp_within1bin": 42.22,
+        "units_per_checkpoint": [
+          456,
+          468,
+          468
+        ]
+      }
+    }
+  },
+  "headline": {
+    "legacy_reproduced_exact": {
+      "r0": 0.4667,
+      "r1": 0.1,
+      "r2": 0.05
+    },
+    "clean_subset_exact": {
+      "r0": 0.4649,
+      "r1": 0.0855,
+      "r2": 0.0427
+    },
+    "within_one_bin_reference": {
+      "r0": 0.4649,
+      "r1": 0.0855,
+      "r2": 0.0427
+    },
+    "r2_change_pp": -0.73,
+    "training_improvement_pp_legacy": 41.67,
+    "training_improvement_pp_clean": 42.22,
+    "conclusion": "long-note unreachability is not an artefact of the upstream collapse: on units the pipeline did not destroy, r2 still leaves 20.5 % of long-note endings outside the top-2 candidates, and the r0-to-r2 training gain is slightly larger on the clean subset"
+  }
+}

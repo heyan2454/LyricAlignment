@@ -138,6 +138,8 @@
 
 | B60 | **三个既有失败测试已归因**：① `strict_boundary_cursor_policy` 有两套词汇（规划器 `window_planning.py:404` 发 `per_region_soft_*`，写入器 `align_qwen_fa_serial_demo.py:1322` 在自己的 trace 上发 `continue_from_*`），测试拿写入器的值断言规划器的行 ⇒ 永不可能通过；**全仓库无消费者读该键**（纯观测字段）；② R-S 音频跨度是**有意**加宽一个 margin（`a6cdb8a`，为规避零时长塌陷产生 `invalid audio range: t,t`），测试仍期待未加宽值 ⇒ 过期；两例均已修正并转绿。③ 曾剩一例：`PATCH_MANIFEST.sha256`（`20e4afb` 引入的一次性校验清单，13 行哈希、无代码读取、其中 6 条已与现文件不符）⇒ **经用户授权删除**，内容可用 `git show 20e4afb:PATCH_MANIFEST.sha256` 恢复 ⇒ **全量测试 0 红** | ✅ | `docs/sessions/20260912_gtsinger_gt_deep_analysis/README.md` 第 52 轮 |
 
+| B62 | **承重数字复核：长音不可达不是塌陷造成的假象**（精确同格、四种过滤）：旧口径逐位复现（r0 70.8% → r1 27.5% → r2 21.7%）；**去掉交付端塌陷与解码端倒序后 r2 仍 20.5%**（干净子集 r0 70.2% → r1 26.5% → r2 20.5%，r0→r2 改善 +49.7pp 略大于旧口径 +49.1pp）⇒ 约两成长音收尾的真值不在前两名候选内，**选择/后处理碰不到**，"长音层重解码与随机无异"的依据更稳，"继续投训练"的依据更强而非更弱；塌陷在长音中占比仅 3.5–5.7% ⇒ 不推翻既有结论，今后引用建议用去塌陷版并标注口径 | ✅ | `reports/progress/20260912_unreachable_recheck.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -198,7 +200,7 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 226 项（第 51 轮无新增测试）
+- 测试：本会话新增 226 项（第 51–53 轮无新增测试）（第 51 轮无新增测试）
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
   `tests/test_inversion_clamp_observability.py`），全量 `1658 passed / 0 failed`（第 52 轮处置后；三个既有失败全部归因并解决）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
