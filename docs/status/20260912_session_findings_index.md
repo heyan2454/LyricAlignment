@@ -111,6 +111,8 @@
 
 | B46 | **分数阶梯（同一拟合/评估切分、天花板同片重算）**：200ms 边、5% 误放预算下 GTSinger 两折叠 —— 只用边界熵放行 76.3%/72.7%（余量 11.0/14.5pp），**加间隙残余后 85.0%/80.6%（余量压到 2.3/6.6pp）**；**加倒序无增量**（R2≈R1，与第 32 轮"倒序预示塌陷不预示精度"一致）；**第 27 轮的融合分位 R4 反而没兑现**（75.9%/75.1%，因常量件与 NaN 稀释权重）⇒ 含缺失值的免费信号应用**等权分位平均**；oracle 档贴天花板（headroom −3.5~+0.2pp）⇒ 框架自洽；**M4 上 R1–R4 全档不可行且天花板仅 ~23%** ⇒ 该链路问题在产物质量不在分数。**限定：R3 的收益完全依赖 gap_over_core，其跨语料复现未通过（B37/B39）⇒ 仅 GTSinger 口径上限证据，不得上线** | ✅ | `reports/progress/20260912_gate_score_ladder.md` |
 
+| B47 | **真实歌批上的无真值结构审计**（按 GTSinger 学到的放行率做批内分位匹配，因绝对阈值不跨域）：整批 13,735 单元零长 16.28%、非法 16.72%；**R1 只用边界熵放行 76.30% 时，放行集合零长仅 5.10% vs 拦下集合 52.26%（lift +47.1pp）⇒ 用 23.7% 复核量捕获 76% 的零长单元**（熵信号在生产数据上确实有效）；**R3 新增放行的 1,490 单元里 35.7% 是零长（整批 16.3% 的 2.2×）⇒ 结构代理独立否证间隙残余迁移**，与第 30/31 轮一致，且本批间隙覆盖仅 12.7%；**单一全局阈值等于按语言分配复核预算**（放行率 普通话 94.1% / 粤语 72.5% / 英语 66.1% / **日语 27.1%**）⇒ 需按语言标定；队列最集中的歌与第 27 轮重解码队列同源同序 | ✅ | `reports/progress/20260912_gate_batch_application.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -171,9 +173,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 184 项（第 38 轮无新增测试，复用第 37 轮的 4 项）
+- 测试：本会话新增 184 项（第 38/39 轮无新增测试，复用第 37 轮的 4 项）
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1623 passed / 3 pre-existing failed`（第 37 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1623 passed / 3 pre-existing failed`（第 39 轮后隔离复跑；38/39 轮无新增测试）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

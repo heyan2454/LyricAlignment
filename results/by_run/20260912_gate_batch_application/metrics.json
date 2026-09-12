@@ -1,0 +1,260 @@
+{
+  "schema_version": "gate_batch_application_metrics_v1",
+  "audit": {
+    "schema": "gate_batch_application_v1",
+    "discipline": "no ground truth on this batch: acceptance rates are rate-matched from GTSinger (absolute thresholds do not transfer, round 27) and the accepted set is audited for STRUCTURAL safety only; nothing here is an accuracy claim",
+    "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+    "units": 13735,
+    "gap_feature_coverage": 0.1267,
+    "whole_batch_violations": {
+      "flag_zero_or_negative": 0.1628,
+      "flag_overshoot": 0.0037,
+      "flag_overlaps_next": 0.001,
+      "flag_start_regression": 0.0007,
+      "is_illegal": 0.1672
+    },
+    "policies": {
+      "r1_entropy": {
+        "target_accept_rate": 0.763,
+        "realised_accept_rate": 0.763,
+        "threshold_within_batch": 0.763,
+        "accepted_violations": {
+          "flag_zero_or_negative": 0.051,
+          "flag_overshoot": 0.0011,
+          "flag_overlaps_next": 0.0005,
+          "flag_start_regression": 0.0002,
+          "is_illegal": 0.0526
+        },
+        "rejected_violations": {
+          "flag_zero_or_negative": 0.5226,
+          "flag_overshoot": 0.012,
+          "flag_overlaps_next": 0.0028,
+          "flag_start_regression": 0.0022,
+          "is_illegal": 0.5364
+        },
+        "safety_lift_accepted_vs_rejected": {
+          "flag_zero_or_negative": 0.4715,
+          "flag_overshoot": 0.0108,
+          "flag_overlaps_next": 0.0023,
+          "flag_start_regression": 0.002,
+          "is_illegal": 0.4838
+        },
+        "by_language": {
+          "Cantonese": {
+            "units": 2439,
+            "accepted_share": 0.7249
+          },
+          "Chinese": {
+            "units": 7206,
+            "accepted_share": 0.941
+          },
+          "English": {
+            "units": 2108,
+            "accepted_share": 0.6608
+          },
+          "Japanese": {
+            "units": 1982,
+            "accepted_share": 0.2714
+          }
+        },
+        "review_budget_concentration": {
+          "songs_fully_rejected": 0,
+          "least_accepted_songs": [
+            {
+              "song": "I See Fire",
+              "language": "English",
+              "units": 311,
+              "accepted_share": 0.0257
+            },
+            {
+              "song": "初音未来的消失",
+              "language": "Japanese",
+              "units": 561,
+              "accepted_share": 0.0713
+            },
+            {
+              "song": "p.h",
+              "language": "Japanese",
+              "units": 271,
+              "accepted_share": 0.155
+            },
+            {
+              "song": "冬之花",
+              "language": "Japanese",
+              "units": 222,
+              "accepted_share": 0.2297
+            },
+            {
+              "song": "皱鳃鲨",
+              "language": "Japanese",
+              "units": 261,
+              "accepted_share": 0.2299
+            },
+            {
+              "song": "Camelia",
+              "language": "English",
+              "units": 334,
+              "accepted_share": 0.2605
+            },
+            {
+              "song": "电灯胆",
+              "language": "Cantonese",
+              "units": 350,
+              "accepted_share": 0.3857
+            },
+            {
+              "song": "炉心融解",
+              "language": "Japanese",
+              "units": 326,
+              "accepted_share": 0.408
+            }
+          ]
+        }
+      },
+      "r3_entropy_inversion_gap": {
+        "target_accept_rate": 0.8501,
+        "realised_accept_rate": 0.8501,
+        "threshold_within_batch": 0.4534,
+        "accepted_violations": {
+          "flag_zero_or_negative": 0.0874,
+          "flag_overshoot": 0.0024,
+          "flag_overlaps_next": 0.0006,
+          "flag_start_regression": 0.0005,
+          "is_illegal": 0.0903
+        },
+        "rejected_violations": {
+          "flag_zero_or_negative": 0.5906,
+          "flag_overshoot": 0.0112,
+          "flag_overlaps_next": 0.0034,
+          "flag_start_regression": 0.0015,
+          "is_illegal": 0.6037
+        },
+        "safety_lift_accepted_vs_rejected": {
+          "flag_zero_or_negative": 0.5032,
+          "flag_overshoot": 0.0088,
+          "flag_overlaps_next": 0.0028,
+          "flag_start_regression": 0.0009,
+          "is_illegal": 0.5134
+        },
+        "by_language": {
+          "Cantonese": {
+            "units": 2439,
+            "accepted_share": 0.8581
+          },
+          "Chinese": {
+            "units": 7206,
+            "accepted_share": 0.9623
+          },
+          "English": {
+            "units": 2108,
+            "accepted_share": 0.7913
+          },
+          "Japanese": {
+            "units": 1982,
+            "accepted_share": 0.495
+          }
+        },
+        "review_budget_concentration": {
+          "songs_fully_rejected": 0,
+          "least_accepted_songs": [
+            {
+              "song": "I See Fire",
+              "language": "English",
+              "units": 311,
+              "accepted_share": 0.2154
+            },
+            {
+              "song": "初音未来的消失",
+              "language": "Japanese",
+              "units": 561,
+              "accepted_share": 0.2727
+            },
+            {
+              "song": "皱鳃鲨",
+              "language": "Japanese",
+              "units": 261,
+              "accepted_share": 0.3985
+            },
+            {
+              "song": "p.h",
+              "language": "Japanese",
+              "units": 271,
+              "accepted_share": 0.4871
+            },
+            {
+              "song": "冬之花",
+              "language": "Japanese",
+              "units": 222,
+              "accepted_share": 0.527
+            },
+            {
+              "song": "炉心融解",
+              "language": "Japanese",
+              "units": 326,
+              "accepted_share": 0.6258
+            },
+            {
+              "song": "Camelia",
+              "language": "English",
+              "units": 334,
+              "accepted_share": 0.7305
+            },
+            {
+              "song": "电灯胆",
+              "language": "Cantonese",
+              "units": 350,
+              "accepted_share": 0.7343
+            }
+          ]
+        }
+      }
+    },
+    "rung_agreement": {
+      "both_accept": 10186,
+      "newly_accepted_by_r3": 1490,
+      "withdrawn_by_r3": 294,
+      "jaccard": 0.851,
+      "newly_accepted_violations": {
+        "flag_zero_or_negative": 0.357,
+        "flag_overshoot": 0.0134,
+        "flag_overlaps_next": 0.0013,
+        "flag_start_regression": 0.0027,
+        "is_illegal": 0.3718
+      },
+      "withdrawn_violations": {
+        "flag_zero_or_negative": 0.1599,
+        "flag_overshoot": 0.0136,
+        "flag_overlaps_next": 0.0,
+        "flag_start_regression": 0.0,
+        "is_illegal": 0.1735
+      },
+      "gap_coverage_among_newly_accepted": 0.153
+    }
+  },
+  "headline": {
+    "batch_units": 13735,
+    "batch_zero_length_share": 0.1628,
+    "batch_illegal_share": 0.1672,
+    "r1": {
+      "accept": 0.763,
+      "accepted_zero_length": 0.051,
+      "rejected_zero_length": 0.5226,
+      "illegal_captured_in_review": 0.7608
+    },
+    "r3": {
+      "accept": 0.8501,
+      "accepted_zero_length": 0.0874,
+      "illegal_captured_in_review": 0.5438
+    },
+    "r3_newly_accepted_zero_length_share": 0.357,
+    "r3_newly_accepted_vs_batch_x": 2.19,
+    "accepted_share_by_language_r1": {
+      "Cantonese": 0.7249,
+      "Chinese": 0.941,
+      "English": 0.6608,
+      "Japanese": 0.2714
+    },
+    "structural_proxy_refutes_r3_transfer": true,
+    "caveat": "rate-matched application, structural-only evidence; no accuracy claim"
+  }
+}
