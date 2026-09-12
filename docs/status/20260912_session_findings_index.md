@@ -50,6 +50,8 @@
 
 | B19 | **多视图选择路关闭（录音室中文）**：12 视图并集 oracle 仅比生产视图高 +2.40pp（长音 +0.88pp），因为 8.4% 单元（长音 15.8%、首单元 30.8%）**12 个视图全错**，且错误与生产视图相关系数 0.69–0.89 ⇒ 给第 9/10 轮"共识只赚 2.3pp"提供机制解释 | ✅ | `reports/progress/20260912_multi_view_ceiling.md` |
 | B20 | 真实录音留白更大但一半需新证据：MIR-1K 并集比生产 +4.77pp（长音 +10.71pp、corr 仅 0.414），而实测共识 +2.3pp ⇒ 剩余差距不是"更好的平均"，要换窗口/重解码；**且这些是 test-only 回溯上界，不用于任何选择** | ✅ | 同上 |
+| B24 | **伴奏泄漏机制（回溯）**：MIR-1K 长音真值结束后 0.3s 引导区里人声通道 **91.2% 的能量来自伴奏**（短音对照 48.8%）；落晚 >100ms 的单元该占比 85.8% vs 按时 49.5%，AUC(泄漏占比→落晚)=0.78（基准率 3.2%）⇒ **落晚的单元确实落在"人声已停、伴奏仍在"的区段** | ✅ | `reports/progress/20260912_accompaniment_leak.md` |
+| B25 | 但机制**不是"该点伴奏更响"**（配对不显著/略低），而是**人声能量更低**（长音 rb=−0.507、p≈0；corr(误差, 人声@pred)=−0.40）⇒ 解码器跟"通道不再变化"而非"嗓音停止"；且**层内无判别力（AUC 0.52）**，泄漏占比只能圈位置不能定量。这把 B23 的跨域反向偏置解释成机制，并暴露一个从未测试的杠杆：**真实伴奏链路的输入是声道选择而非源分离**（改分离需 GPU 批准）；GTSinger 清唱基准结构上测不到此失效 ⇒ 录音室指标只能当 lower bound | ✅ | 同上 |
 | B22 | **不可达真值的几何**：不可达时 top-1/top-2 候选跨度中位数只有 **0.08s（相邻 1 格）** ⇒ 真值几乎不在两者之间（全体 9.7%、长音 4.0%），长音 **96.0% 落在跨度之外**（外移中位 0.8s）⇒ "插值/重排造出真值"这条路关闭 | ❌ | `reports/progress/20260912_decodability_geometry.md` |
 | B23 | **偏置方向跨域相反**：长音端点录音室**截早**（中位 −40.0ms、偏晚比 0.239）、真实伴奏**拖晚**（+32.4ms、偏晚比 0.741），机判 `same_direction=false`（late-share 差 0.502）⇒ 全局偏移修正不可迁移；这同时回收第 11 轮"θ 不可迁移"的疑问（根因是误差方向相反而非阈值选错）。另注：末单元不可达 100% 偏右、首单元 78.5% 偏左 | ❌ | 同上 + `results/by_run/20260912_decodability_geometry/metrics.json` |
 | B21 | **容差口径警告**：50ms 时并集 oracle 掉到 79.8%（GTSinger）/75.2%（MIR-1K），20.2%/24.8% 单元无任何视图可达 ⇒ 50ms 尺度上指标测的是解码上限而非选择能力；detector_v2 SAFE ≤100ms 恰在分界上 | ✅ | 同上 + `tolerance_sensitivity` |
@@ -117,8 +119,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 136 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1579 passed / 3 pre-existing failed`（第 21 轮后最新隔离复跑）。
+- 测试：本会话新增 141 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1584 passed / 3 pre-existing failed`（第 22 轮后最新隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
