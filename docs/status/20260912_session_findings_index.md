@@ -128,6 +128,8 @@
 
 | B55 | **组合修复的影子对照：只改塌陷那一步，别的都不要动**（GTSinger 人工真值 30,600 字 + 真歌批结构）：① **只修塌陷块**＝零长度归零、中位误差不变、hit@100/200/250 对现交付值 **+1.02/+1.09/+1.01pp**；② **再定向治重叠**（只裁越界结尾）＝结构非法 13.62%→**0.87%** 但精度 **−3.60pp**（0.2s 档，中位误差 40→45ms）；③ **再走整体合法化求解**＝非法 0.01% 但精度 **−4.32pp**（中位 40→50ms）。真歌批：零长度 16.28%→**0.00%**、同一时刻长块 16→**0**；现交付值重叠仅 0.10% ⇒ **流水线本已处理重叠，叠加只会重复收费** ⇒ 最终建议：仅替换上游常数填充为定向块修复，不叠加任何额外合法化；批次自检已加「同一时刻长块」观察列 | ✅ | `reports/progress/20260912_combined_repair_shadow.md` |
 
+| B56 | **定向修复已做成默认关的开关**：`--fixed-timestamp-policy`（默认 `upstream_repaired`＝逐位等价今天行为；`raw_with_targeted_repair`＝已实测推荐；`upstream_with_block_repair`＝未实测实验项），策略写入产物 `audit.fixed_timestamp_policy`；3 项契约测试守住"默认值不放宽""默认路径逐位不变""策略先于 research decoder 生效"；落地说明见 `docs/status/20260913_fixed_timestamp_policy_runbook.md` | ✅ | 同上 + `src/lyricalign/analysis/monotone_repair.py` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -188,9 +190,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 207 项
+- 测试：本会话新增 224 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1646 passed / 3 pre-existing failed`（第 47 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1653 passed / 3 pre-existing failed`（第 48 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

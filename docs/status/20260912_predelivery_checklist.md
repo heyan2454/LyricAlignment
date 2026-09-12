@@ -42,6 +42,8 @@
 
 | 27 | **整窗塌陷告警已接入** | `audit_batch.py` 输出 `observations.collapse_blocks`（同一时刻连续 ≥5 字的块数/字数/最大块，仅统计真正零长的块），有块时打印 `COLLAPSE` 标记；观察列不参与判定 | 第 47 轮 |
 
+| 28 | **改动已就绪（默认关）** | `--fixed-timestamp-policy raw_with_targeted_repair` 即为已实测的定向修复；默认 `upstream_repaired` 保证合入不改行为；验收＝`audit_batch` 的 `collapse_blocks.blocks==0` 且 `zero_share≈0`；**禁止**在其后再叠加治重叠/整体合法化（实测 −3.60/−4.32pp）；先在单曲启用抽听再全批 | 第 48 轮 |
+
 ## 已证否的路径（避免重复投入）
 
 - 事后声学阈值（RMS 衰减、人声/伴奏比值）修末字/长音：**否证**（第 11 轮，末字 oracle 界 +0.00pp）；

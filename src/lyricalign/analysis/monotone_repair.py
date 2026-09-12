@@ -247,3 +247,83 @@ def repair_all_targeted(starts, ends, *, min_dur: float = MIN_DUR_SEC,
     return {**res, "starts": fixed["starts"], "ends": fixed["ends"],
             "overlap_moved_units": fixed["moved_units"], "shifts": fixed["shifts"],
             "zero_length_units": fixed["zero_length_units"], "illegal_units": fixed["illegal_units"]}
+
+
+#: policies for the fixed-timestamp stage, in the order they were measured (rounds 45-47)
+FIXED_POLICIES = ("upstream_repaired", "raw_with_targeted_repair", "upstream_with_block_repair")
+
+#: only these have a measured accuracy comparison against human ground truth (round 46);
+#: ``upstream_with_block_repair`` is offered for experiment only and is explicitly unmeasured
+MEASURED_POLICIES = ("upstream_repaired", "raw_with_targeted_repair")
+
+
+def apply_fixed_timestamp_policy(raw_starts, raw_ends, official_starts, official_ends, *,
+                                 policy: str = "upstream_repaired",
+                                 min_dur: float = MIN_DUR_SEC,
+                                 duration: float | None = None) -> dict[str, Any]:
+    """Choose the fixed-stage timestamps under an explicit, recordable policy.
+
+    * ``upstream_repaired`` (default, current product behaviour): return the upstream processor's
+      values unchanged.  This is the branch that collapses whole spans onto one timestamp when its
+      outlier block touches either end of the sequence (rounds 45).
+    * ``raw_with_targeted_repair`` (recommended, measured): start from our own argmax timestamps and
+      redistribute only the collapsed / inverted stretches, leaving every other unit exactly where the
+      data put it.  Measured on GTSinger against human ground truth: zero-length 4.44 % -> 0 % and
+      hit@100/200/250 ms +1.02/+1.09/+1.01 pp versus the shipped values.
+    * ``upstream_with_block_repair`` (experiment only, **unmeasured**): keep the upstream values but
+      redistribute their collapsed blocks, so the accuracy of the resulting timestamps is not known.
+    """
+    if policy not in FIXED_POLICIES:
+        raise ValueError(f"unknown fixed-timestamp policy: {policy!r}; expected one of {FIXED_POLICIES}")
+    o_s = np.asarray(official_starts, dtype=float)
+    o_e = np.asarray(official_ends, dtype=float)
+    if policy == "upstream_repaired":
+        return {"starts": o_s.copy(), "ends": o_e.copy(), "policy": policy,
+                "measured": policy in MEASURED_POLICIES, "changed_units": 0}
+    r_s = np.asarray(raw_starts, dtype=float)
+    r_e = np.asarray(raw_ends, dtype=float)
+    if policy == "raw_with_targeted_repair":
+        res = repair_targeted_blocks(r_s, r_e, min_dur=min_dur, duration=duration)
+    else:
+        res = repair_targeted_blocks(o_s, o_e, min_dur=min_dur, duration=duration)
+    changed = int(np.sum((np.abs(res["starts"] - o_s) > 1e-9) | (np.abs(res["ends"] - o_e) > 1e-9)))
+    return {"starts": res["starts"], "ends": res["ends"], "policy": policy,
+            "measured": policy in MEASURED_POLICIES, "changed_units": changed,
+            "zero_length_units": int(np.sum(res["ends"] - res["starts"] <= 1e-9)),
+            "blocks_repaired": int(res.get("blocks", 0)),
+            "repaired_units": int(res.get("repaired_units", 0))}
+
+
+def apply_fixed_timestamp_policy_rows(rows: list[dict], *, policy: str = "upstream_repaired",
+                                      segment_sec: float = 0.08,
+                                      offset_sec: float = 0.0) -> tuple[list[dict], dict[str, Any]]:
+    """Row-level wrapper for :func:`apply_fixed_timestamp_policy`, for the batch writer.
+
+    Reads ``raw_local_*`` / ``official_fixed_local_*`` from the writer's row dicts, applies the chosen
+    policy once for the whole window (the upstream repair also works per window), and writes the
+    result into ``fixed_local_*`` and ``fixed_global_*``.  The caller is expected to pass the policy
+    through unchanged from its CLI flag so the default path stays bit-identical.
+    """
+    if not rows:
+        return rows, {"policy": policy, "units": 0, "changed_units": 0}
+    raw_s = np.array([float(r.get("raw_local_start_sec", np.nan)) for r in rows], dtype=float)
+    raw_e = np.array([float(r.get("raw_local_end_sec", np.nan)) for r in rows], dtype=float)
+    off_s = np.array([float(r.get("official_fixed_local_start_sec",
+                                 r.get("fixed_local_start_sec", np.nan))) for r in rows], dtype=float)
+    off_e = np.array([float(r.get("official_fixed_local_end_sec",
+                                 r.get("fixed_local_end_sec", np.nan))) for r in rows], dtype=float)
+    duration = float(np.nanmax(np.concatenate([raw_e, off_e]))) + max(segment_sec, 0.08)
+    res = apply_fixed_timestamp_policy(raw_s, raw_e, off_s, off_e, policy=policy,
+                                       duration=duration if np.isfinite(duration) else None)
+    out: list[dict] = []
+    for i, row in enumerate(rows):
+        new = dict(row)
+        new["fixed_local_start_sec"] = float(res["starts"][i])
+        new["fixed_local_end_sec"] = float(res["ends"][i])
+        new["fixed_global_start_sec"] = float(res["starts"][i]) + float(offset_sec)
+        new["fixed_global_end_sec"] = float(res["ends"][i]) + float(offset_sec)
+        new["fixed_timestamp_policy"] = policy
+        out.append(new)
+    diag = {k: v for k, v in res.items() if k not in ("starts", "ends")}
+    diag["units"] = len(rows)
+    return out, diag

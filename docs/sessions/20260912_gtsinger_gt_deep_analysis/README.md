@@ -1872,3 +1872,18 @@ MIR-1K：hit@50 ±47.9pp、hit@100 ±40.5pp、hit@200 ±2.0pp、hit@250 ±0.7pp�
 `illegal_units` 诊断两处数组形状写错（`e[:-1]` 误配 `s[1:]` 再补 `inf`）⇒ 抽出 `_count_illegal()` 统一；
 左锚点漏了"不得早于前一个单元的结束"⇒ 修正后不再产生重叠；两个修复函数诊断键名不同导致聚合 KeyError
 ⇒ 改为容错聚合；报告生成器第 12 次内嵌 ASCII 引号语法错误 ⇒ 改「」。
+
+---
+
+# 第 48 轮：把建议做成默认关的开关 + 落地说明
+
+- 代码：`monotone_repair.{apply_fixed_timestamp_policy, apply_fixed_timestamp_policy_rows}`
+  （策略 `upstream_repaired`｜`raw_with_targeted_repair`｜`upstream_with_block_repair`）
+- 接线：`scripts/demo/align_qwen_fa_serial_demo.py` 新增 `--fixed-timestamp-policy`（**默认 `upstream_repaired`＝行为逐位不变**），
+  选中策略写入产物 `audit.fixed_timestamp_policy`
+- 测试：`test_monotone_repair.py` 增至 **14 项**、新增 `test_fixed_timestamp_policy_contract.py`（3 项，
+  守"默认值不得改动""默认路径逐位不变""策略须在任何 research decoder 之前生效"）
+- 落地说明：`docs/status/20260913_fixed_timestamp_policy_runbook.md`（启用命令、验收口径、代价边界、回滚）
+
+设计要点：开关的**默认值是今天的行为**，所以合入本身不改变任何产品输出；只有显式传
+`--fixed-timestamp-policy raw_with_targeted_repair` 才会启用已实测的定向修复。

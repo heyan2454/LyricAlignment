@@ -123,3 +123,64 @@ def test_recommended_chain_is_legal_on_a_mixed_timeline():
     assert res["zero_length_units"] == 0
     assert res["illegal_units"] == 0
     assert res["starts"][0] == 0.0 and res["ends"][0] == 0.9
+
+
+def test_default_policy_is_bit_identical_to_current_behaviour():
+    """The flag must be safe: 'upstream_repaired' changes nothing at all."""
+    from lyricalign.analysis.monotone_repair import apply_fixed_timestamp_policy
+
+    raw_s = np.array([0.0, 1.0, 2.0]); raw_e = np.array([0.9, 1.9, 2.9])
+    off_s = np.array([5.0, 5.0, 5.0]); off_e = np.array([5.0, 5.0, 5.0])   # collapsed by upstream
+    res = apply_fixed_timestamp_policy(raw_s, raw_e, off_s, off_e)
+    assert res["policy"] == "upstream_repaired"
+    assert res["starts"].tolist() == off_s.tolist()
+    assert res["ends"].tolist() == off_e.tolist()
+    assert res["changed_units"] == 0
+
+
+def test_recommended_policy_removes_the_collapse_and_uses_raw_anchors():
+    from lyricalign.analysis.monotone_repair import apply_fixed_timestamp_policy
+
+    raw_s = np.array([0.0, 1.0, 2.0]); raw_e = np.array([0.9, 1.9, 2.9])
+    off_s = np.array([5.0, 5.0, 5.0]); off_e = np.array([5.0, 5.0, 5.0])
+    res = apply_fixed_timestamp_policy(raw_s, raw_e, off_s, off_e,
+                                       policy="raw_with_targeted_repair")
+    assert res["measured"] is True
+    assert res["zero_length_units"] == 0
+    assert res["starts"].tolist() == raw_s.tolist()       # healthy raw values are kept verbatim
+    assert res["ends"].tolist() == raw_e.tolist()
+
+
+def test_experimental_policy_is_marked_unmeasured_and_unknown_names_are_rejected():
+    from lyricalign.analysis.monotone_repair import apply_fixed_timestamp_policy
+
+    raw_s = np.array([0.0, 1.0]); raw_e = np.array([0.9, 1.9])
+    off_s = np.array([3.0, 3.0]); off_e = np.array([3.0, 3.0])
+    res = apply_fixed_timestamp_policy(raw_s, raw_e, off_s, off_e,
+                                       policy="upstream_with_block_repair")
+    assert res["measured"] is False
+    assert res["zero_length_units"] == 0
+    with pytest.raises(ValueError):
+        apply_fixed_timestamp_policy(raw_s, raw_e, off_s, off_e, policy="whatever")
+
+
+def test_row_level_policy_default_is_identity_and_opted_in_policy_rewrites_rows():
+    from lyricalign.analysis.monotone_repair import apply_fixed_timestamp_policy_rows
+
+    def _rows():
+        return [{"raw_local_start_sec": 0.0, "raw_local_end_sec": 0.9,
+                 "official_fixed_local_start_sec": 5.0, "official_fixed_local_end_sec": 5.0},
+                {"raw_local_start_sec": 1.0, "raw_local_end_sec": 1.9,
+                 "official_fixed_local_start_sec": 5.0, "official_fixed_local_end_sec": 5.0}]
+
+    same, diag_off = apply_fixed_timestamp_policy_rows(_rows())
+    assert diag_off["policy"] == "upstream_repaired"
+    assert [r["fixed_local_start_sec"] for r in same] == [5.0, 5.0]      # untouched by default
+    assert [r["fixed_global_start_sec"] for r in same] == [5.0, 5.0]
+
+    fixed, diag_on = apply_fixed_timestamp_policy_rows(
+        _rows(), policy="raw_with_targeted_repair", offset_sec=10.0)
+    assert diag_on["measured"] is True and diag_on["zero_length_units"] == 0
+    assert [r["fixed_local_start_sec"] for r in fixed] == [0.0, 1.0]
+    assert [r["fixed_global_end_sec"] for r in fixed] == [10.9, 11.9]
+    assert all(r["fixed_timestamp_policy"] == "raw_with_targeted_repair" for r in fixed)

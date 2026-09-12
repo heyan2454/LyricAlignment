@@ -453,6 +453,22 @@ def infer_slice(
                 ),
             }
         )
+    # fixed-timestamp policy: the default ("upstream_repaired") keeps current product behaviour
+    # exactly; the measured alternative redistributes only the collapsed spans instead of letting the
+    # upstream repair flatten them onto a single timestamp (see analysis/monotone_repair.py and
+    # reports/progress/20260912_combined_repair_shadow.md).
+    fixed_policy = str(getattr(args, "fixed_timestamp_policy", "upstream_repaired"))
+    fixed_policy_diag: dict[str, Any] = {"policy": fixed_policy, "units": len(rows), "changed_units": 0}
+    if fixed_policy != "upstream_repaired" and rows:
+        from lyricalign.analysis.monotone_repair import apply_fixed_timestamp_policy_rows
+
+        rows, fixed_policy_diag = apply_fixed_timestamp_policy_rows(
+            rows,
+            policy=fixed_policy,
+            segment_sec=float(args.timestamp_segment_sec),
+            offset_sec=float(global_audio_offset_sec),
+        )
+
     if decoder_kind in RESEARCH_TIMESTAMP_DECODERS:
         # These decoders consume the raw/top-K evidence from the complete model
         # window.  Applying them here, before ownership splitting and cursor
@@ -468,6 +484,7 @@ def infer_slice(
         )
 
     audit = {
+        "fixed_timestamp_policy": fixed_policy_diag,
         "character_start": character_start,
         "character_end": character_end,
         "character_count": len(selected),
@@ -1602,6 +1619,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--language", type=normalize_alignment_language, default="Chinese")
     parser.add_argument("--timestamp-segment-sec", type=float, default=0.08)
     parser.add_argument("--decoder-top-k", type=int, default=8, help="save top-K timestamp candidates for offline structured decoders")
+    parser.add_argument(
+        "--fixed-timestamp-policy",
+        choices=("upstream_repaired", "raw_with_targeted_repair", "upstream_with_block_repair"),
+        default="upstream_repaired",
+        help="how fixed-stage timestamps are produced; the default keeps current behaviour, "
+             "raw_with_targeted_repair removes the upstream collapse (measured on GTSinger: "
+             "zero-length 4.44%%->0%%, hit@0.2s +1.09pp), upstream_with_block_repair is unmeasured",
+    )
     parser.add_argument("--core-sec", type=float, default=60.0)
     parser.add_argument("--left-context-sec", type=float, default=10.0)
     parser.add_argument("--right-context-sec", type=float, default=10.0)
