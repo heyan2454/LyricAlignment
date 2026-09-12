@@ -1990,3 +1990,16 @@ MIR-1K：hit@50 ±47.9pp、hit@100 ±40.5pp、hit@200 ±2.0pp、hit@250 ±0.7pp�
 ## 结果
 `tests/test_inline_realign_v4_full_mechanism.py` 与 `tests/unit_realign/test_request_families.py`
 两文件现全绿（32 项通过）；全量剩 **1** 项失败（上面第 3 条），属需授权事项而非代码缺陷。
+
+## 第 3 项的处置（用户授权后完成，2026-09-13）
+`PATCH_MANIFEST.sha256` 经核实为 **2026-08-14 合并时的一次性校验清单**（13 行 SHA256：AGENTS.md、
+AI_SESSION_ENTRY.md、两个根目录补丁说明/差异文件、以及 `docs/sessions/20260814_*` 的 00–06+README、
+SESSION_INDEX.md）。核实结论：
+- **没有任何代码读取它**（唯一提到它的代码是自检测试的禁止列表；另有一处旧会话 RUN_STATE.md 的文字提及）；
+- 作为校验用途**已经失效**：`sha256sum -c` 显示 13 条中 **6 条与当前文件不符**
+  （AGENTS.md、AI_SESSION_ENTRY.md、00_、06_、session README、SESSION_INDEX 都是后续会变更的活文档）。
+
+因此按"只是验证用哈希即可删除"的授权删除；**内容仍完整保留在 git 历史里可恢复**：
+`git show 20e4afb:PATCH_MANIFEST.sha256`（该版本 blob 为 `5f987597a4c76780a278a9556a681f2bb942c84c`）。
+⇒ 全量测试从 1 红变 **0 红**。旧会话 `RUN_STATE.md` 里对该文件的文字引用不改写（不作清理），
+以本节作为可追溯说明。
