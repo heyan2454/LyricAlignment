@@ -111,6 +111,9 @@ def main() -> int:
                     help="optional second batch: run the identity/comparability gate between them")
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--triage-language", default=None,
+                    help="also emit a per-song triage table for this language (e.g. Chinese)")
+    ap.add_argument("--triage-out", type=Path, default=None)
     args = ap.parse_args()
     result: dict[str, object] = {"schema": "batch_audit_v1", "gates": GATES,
                                  "batches": [audit(args.batch)]}
@@ -124,6 +127,27 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
         return 0
+    if args.triage_language:
+        batch = Path(args.batch)
+        frame, _meta = SC.load_batch(batch)
+        frame = SC.flag_violations(frame)
+        frame, _rep = SC.repair(frame)
+        table = SC.triage_by_song(frame, SC.stage_lineage_attribution(batch),
+                                 language=args.triage_language)
+        result["triage"] = {"language": args.triage_language, "rows": table.to_dict(orient="records")}
+        print(f"\ntriage ({args.triage_language}): {len(table)} songs, "
+              + ", ".join(f"{k}={int(v)}" for k, v in table["triage"].value_counts().items()))
+        for r in table.to_dict(orient="records"):
+            if r["illegal_share"] > 0.05:
+                print(f"   {r['triage']:14s} {r['song'][:20]:20s} units={r['units']:5d} "
+                      f"illegal={100*r['illegal_share']:5.1f}% pinned={r['pinned_units']:4d} "
+                      f"net_added_by_fixed={r['net_added_by_fixed']:+4d} "
+                      f"median_repair_shift={r['median_repair_shift_sec']}s")
+        if args.triage_out:
+            args.triage_out.parent.mkdir(parents=True, exist_ok=True)
+            table.to_csv(args.triage_out, index=False, compression="gzip"
+                         if args.triage_out.suffix == ".gz" else None)
+            result["triage"]["path"] = str(args.triage_out)
     for b in result["batches"]:
         print(f"batch {b['batch']}  songs={b.get('songs')} units={b.get('units')}  "
               f"VERDICT={b['verdict']}"

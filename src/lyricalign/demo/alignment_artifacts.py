@@ -35,6 +35,101 @@ _STAGE_FIELDS = {
 }
 
 
+def stage_degeneracy_audit(
+    rows: Iterable[dict[str, Any]],
+    window_trace: Iterable[dict[str, Any]] | None = None,
+    *,
+    net_share_warn: float = 0.01,
+) -> dict[str, Any]:
+    """Per-stage degeneracy accounting, so a collapse is attributed to the stage that created it.
+
+    Motivation (2026-09-12 audit of the shipped real-song batches): ~7% of units arrive with a
+    zero-length boundary because the *processor/fixed* stage pinned a whole block onto the owning
+    window's ``input_start_sec``, while the only existing counter
+    (``overlap_compression_collapsed_to_zero_count``) is scoped to the overlap-compression step and
+    is correct for it.  Without per-stage numbers a regression like that is invisible in the
+    artifacts themselves.
+
+    Additive by design: it never changes any boundary, it only reports.
+    """
+    ordered = list(rows)
+    stages = ["raw", "processor_decoded", "selected", "final"]
+    counts: dict[str, dict[str, int]] = {
+        st: {"known": 0, "zero": 0, "negative": 0} for st in stages
+    }
+    per_row: dict[int, dict[str, tuple[float, float] | None]] = {}
+    for row in ordered:
+        idx = int(row.get("global_character_index", -1))
+        per_row.setdefault(idx, {})
+        for st in stages:
+            start_key, end_key = _STAGE_FIELDS[st]
+            start = row.get(start_key)
+            end = row.get(end_key)
+            if st == "processor_decoded" and row.get("official_fixed_global_start_sec") is not None:
+                start = row.get("official_fixed_global_start_sec")
+                end = row.get("official_fixed_global_end_sec")
+            if st == "selected" and start is None:
+                start = row.get("fixed_global_start_sec")
+                end = row.get("fixed_global_end_sec")
+            if start is None or end is None:
+                continue
+            try:
+                dur = float(end) - float(start)
+            except (TypeError, ValueError):
+                continue
+            counts[st]["known"] += 1
+            if dur < -1e-6:
+                counts[st]["negative"] += 1
+            elif dur <= 1e-6:
+                counts[st]["zero"] += 1
+            per_row[idx][st] = (float(start), float(end))
+    shares: dict[str, float | None] = {}
+    for st in stages:
+        known = counts[st]["known"]
+        shares[st] = round((counts[st]["zero"] + counts[st]["negative"]) / known, 4) if known else None
+    net_added: dict[str, int] = {}
+    prev = None
+    for st in stages:
+        if prev is not None:
+            created = healed = 0
+            for vals in per_row.values():
+                a, b = vals.get(prev), vals.get(st)
+                if a is None or b is None:
+                    continue
+                a_bad = (a[1] - a[0]) <= 1e-6
+                b_bad = (b[1] - b[0]) <= 1e-6
+                created += int((not a_bad) and b_bad)
+                healed += int(a_bad and (not b_bad))
+            net_added[f"{prev}->{st}"] = int(created - healed)
+        prev = st
+    pinned = 0
+    anchors = [float(w["input_start_sec"]) for w in (window_trace or [])
+               if isinstance(w, dict) and w.get("input_start_sec") is not None]
+    if anchors:
+        for vals in per_row.values():
+            fixed = vals.get("processor_decoded")
+            if fixed is None:
+                continue
+            if any(abs(fixed[0] - a) <= 1e-6 for a in anchors):
+                pinned += 1
+    units = len(ordered)
+    warn = [f"degeneracy_added_by_{k}" for k, v in net_added.items()
+            if units and (v / units) > net_share_warn]
+    if units and pinned / units > net_share_warn:
+        warn.append("pinned_to_window_anchor")
+    return {
+        "units": units,
+        "known_units": {st: counts[st]["known"] for st in stages},
+        "zero_duration_units": {st: counts[st]["zero"] for st in stages},
+        "negative_duration_units": {st: counts[st]["negative"] for st in stages},
+        "degenerate_share": shares,
+        "net_added_degenerate_units": net_added,
+        "pinned_to_window_anchor_units": int(pinned),
+        "pinned_to_window_anchor_rate": round(pinned / units, 4) if units else None,
+        "warnings": warn,
+    }
+
+
 def _atomic_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(

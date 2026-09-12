@@ -78,6 +78,34 @@ def test_missing_artifacts_are_survivable(tmp_path: Path):
     assert res["stage_transitions_degenerate_share_delta"] == {}
 
 
+def test_triage_by_song_separates_repairable_from_destroyed(fake_batch: Path):
+    """The triage table must send high-degeneracy songs to re-decode, not to a cosmetic fix."""
+    from lyricalign.analysis import structural_compliance as S
+
+    df, _meta = S.load_batch(fake_batch)
+    df = S.flag_violations(df)
+    df, _rep = S.repair(df)
+    lin = S.stage_lineage_attribution(fake_batch)
+    table = S.triage_by_song(df, lin, language="English")
+    assert len(table) == 1
+    row = table.iloc[0]
+    assert row["units"] == 3
+    assert row["illegal_share"] > 0.0                     # one unit pinned to the window anchor
+    assert row["pinned_units"] == 1
+    assert row["triage"] in {"review", "repair+review", "re-decode", "ship-ok"}
+    assert "median_repair_shift_sec" in table.columns
+
+
+def test_triage_bands_are_monotone():
+    from lyricalign.analysis import structural_compliance as S
+
+    bands = S.TRIAGE_BANDS
+    thresholds = [lo for lo, _ in bands]
+    assert thresholds == sorted(thresholds, reverse=True)
+    labels = [label for _, label in bands]
+    assert labels == ["re-decode", "repair+review", "review", "ship-ok"]
+
+
 def test_stage_key_pairs_are_not_conflated():
     """Regression guard: an earlier version paired the start-key list with the wrong end-key list and
     reported the whole `fixed` stage as missing."""

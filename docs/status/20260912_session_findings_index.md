@@ -81,8 +81,10 @@
 | F2 | 真实整曲 ≥180s 的自然长音频 + 人工 GT（当前 MIR-1K 最长 126.7s） | ⛔ 需标注 | GTSinger 整曲试点（25 连续段、wav==labels，2026-08-21 记录） |
 | F3 | 末字拖长音尾边界判据 | ❌ **REFUTED（第 11 轮）** | 相对 RMS 衰减与「人声/伴奏能量比」两条事后声学判据均不可用：前者在末字上几乎不触发（MIR-1K 1/17、GTSinger 6/168），导出阈值迁移后 −13.4pp；后者覆盖 88–99% 但 hit@100 仅 6–62%（同单元模型 95.8%）。oracle 界末字 +0.00pp ⇒ 需模型侧改动 |
 | F6 | **已定位（第 13 轮）**：塌陷来自 fixed 阶段的窗口→全局回映射（块被钉到 `window.input_start_sec`），压缩计数器并无漏计；缺的是 fixed 阶段没有退化计数 | ✅ 修复方案已给出 | 按阶段输出 `degenerate_share`/`pinned_to_anchor` + 交付 gate（净新增 >1% 不出片）；见 `stage_lineage_attribution()` |
+| B10 | 分诊带（illegal >35% re-decode / >15% repair+review / >5% review / else ship-ok）：中文 16 首中 **仅 1 首需重解码**（画下灯塔水母 38.9%，135 单元钉锚点），4 首复核，11 首可发布；其余问题只是零长单元需 ≥50ms 下限（联合求解中位位移恰 0.05s） | ✅ | `runs/20260912_structural_compliance/mandarin_triage_list.csv.gz` |
 | F4b | 统一自检入口已就绪：`scripts/evaluation/audit_batch.py`（可归因性 + 结构合法性 + 阶段归因 + 钉锚点 + 修复可行性 + 可选配对门，含 gate 默认值） | ✅ | `runs/...` 无产物；测试 3 项 |
-| F4 | 批处理链路补齐 `identity.window` 规划标志与 `identity.audio`/`request_hash`；把同一性门接入批次收尾 | ✅ 可纯 CPU 做 | 门已实现：`evidence_identity_audit.audit_pair()`（duplicate_configuration / not_comparable / not_identified / identified 四类裁定）+ `gtsinger_multiview.factor_content_audit()`；待接入批次收尾 |
+| F4a | **已落地（第 14 轮）**：`stage_degeneracy_audit()` 接入两个写入器的 `summary.degeneracy_audit`（additive、无行为变化，20 项既有 pipeline 测试通过） ⇒ fixed(processor_decoded) 阶段的退化计数与钉锚点检测从此可见 | ✅ | `src/lyricalign/demo/alignment_artifacts.py` |
+| F4 | 批处理链路补齐 `identity.window` 规划标志与 `identity.audio`/`request_hash`；把同一性门接入批次收尾 | ⛔ 仍需（标志记录属写入器配置项，本会话只做了退化观测） | 门已实现：`evidence_identity_audit.audit_pair()`（duplicate_configuration / not_comparable / not_identified / identified 四类裁定）+ `gtsinger_multiview.factor_content_audit()`；待接入批次收尾 |
 | F5 | 3 项 HEAD 自带失败测试（冻结主线语义） | ⛔ 需主线裁定 | 不属于本会话范围，未触碰 |
 
 ## G. 会话累计产物（可复用资产）
@@ -92,7 +94,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：`tests/evaluation/` 96 项（本会话新增），全量 `1538 passed / 3 pre-existing failed`
+- 测试：`tests/evaluation/` + artifacts 共 102 项（本会话新增），全量 `1544 passed / 3 pre-existing failed`
+- 阶段名对照：生产 `processor_decoded` == 本索引/分析模块所称 `fixed`（同一个 `fixed_global_*` 阶段）
 - 自检入口：`PYTHONPATH=src python scripts/evaluation/audit_batch.py --batch <dir> [--compare-batch <dir>]`
 - 报告：`reports/progress/20260912_*.md` 共 7 份 + 本索引
 - 纪律：全程零 GPU 前向、realign 仍 shadow-only、未改任何生产实现、MIR-1K/PJS 仅 test-only 报告用途

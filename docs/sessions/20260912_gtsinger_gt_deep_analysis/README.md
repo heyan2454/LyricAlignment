@@ -753,3 +753,41 @@ pairwise -> DUPLICATE_CONFIGURATION: 23/25 逐字节相同 ...
 
 gate 阈值写在 `GATES`（illegal 5% / 阶段净新增 1% / 钉锚点 2%），是**建议默认值**而非已裁定标准，
 调整需要在项目内讨论；本会话没有改动任何生产实现。测试 3 项（合成批次 + 子进程冒烟）。
+
+---
+
+# 第 14 轮：观测接入生产写入器 + 普通话逐歌分诊清单
+
+## 1) additive 观测（不改任何行为）
+`src/lyricalign/demo/alignment_artifacts.py::stage_degeneracy_audit(rows, window_trace)`：
+按生产阶段名（`raw / processor_decoded / selected / final`，其中 `processor_decoded` 就是我审计里叫的
+`fixed`）输出 `degenerate_share`、`net_added_degenerate_units`（跨阶段净值）、
+`pinned_to_window_anchor_units/rate`，并按阈值产出 `warnings`
+（`degeneracy_added_by_<a>-><b>`、`pinned_to_window_anchor`）。
+已接入两个写入器的 `summary`（键 `degeneracy_audit`）：
+`scripts/demo/run_qwen_fa_batch.py`、`scripts/demo/align_qwen_fa_serial_demo.py`。
+只做记录，不改任何边界；现有测试 `tests/test_qwen_fa_serial_demo.py` 20 项全过 ⇒ 无回归。
+
+这补上了第 13 轮定位的缺口：**fixed(processor_decoded) 阶段此前完全没有退化计数**。
+
+## 2) 逐歌分诊清单（`triage_by_song` + `audit_batch.py --triage-language`）
+分诊带：illegal >35% → re-decode；>15% → repair+review；>5% → review；否则 ship-ok。
+
+中文（`20260814_ktv_current_silence`，16 首 / 7,206 单元）：
+
+| 歌曲 | 单元 | 非法率 | 钉锚点 | fixed 净新造 | 修复位移中位 | 分诊 |
+|---|---:|---:|---:|---:|---:|---|
+| 画下灯塔水母 | 532 | **38.9%** | 135 | +93 | 1.175s | **re-decode** |
+| 梦良衣 | 112 | 14.3% | 0 | +6 | 0.05s | review |
+| TH讠NK | 450 | 7.1% | 0 | +16 | 0.05s | review |
+| 画下灯塔水母 - 副本 | 381 | 6.6% | 0 | +14 | 0.05s | review |
+| 四季折之羽 | 637 | 5.7% | 1 | +19 | 0.05s | review |
+| 其余 11 首 | ≤4.9% | 0 | — | 0.05s | ship-ok |
+
+⇒ **普通话侧只需处理 1 首重解码 + 4 首复核**；其余中文歌的问题都是"零长单元需要 ≥50ms 下限"，
+联合求解的中位位移恰为 0.05s（即恢复最短时长），代价极小。这也说明第 7 轮的最小_dur 约束
+正好命中真实痛点。
+清单：`runs/20260912_structural_compliance/mandarin_triage_list.csv.gz`（698 字节）。
+
+新增测试：`stage_degeneracy_audit` 4 项 + 分诊 2 项（tests/evaluation 与 tests 根目录各一份），
+`tests/evaluation` + artifacts 共 102 passed。

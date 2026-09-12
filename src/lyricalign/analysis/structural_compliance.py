@@ -428,3 +428,39 @@ def stage_lineage_attribution(batch: Path = DEFAULT_BATCH,
                       for r in sorted(per_song, key=lambda x: -int(x.get("pinned_to_window_input_units", 0)))[:5]],
     }
     return out
+
+TRIAGE_BANDS = ((0.35, "re-decode"), (0.15, "repair+review"), (0.05, "review"), (0.0, "ship-ok"))
+
+
+def triage_by_song(df: pd.DataFrame, lineage: dict[str, Any] | None = None,
+                   language: str | None = None) -> pd.DataFrame:
+    """Per-song structural verdict plus a suggested action, so review effort goes where it pays.
+
+    `df` must already carry violation flags and the repair columns (see flag_violations/repair).
+    Bands are deliberately coarse: the point is to separate "fixable by the solve" from
+    "the timeline is destroyed, re-decode it", not to rank songs finely.
+    """
+    sub = df if not language else df[df["language"] == language]
+    per = {r["song"]: r for r in (lineage or {}).get("per_song", [])}
+    rows: list[dict[str, Any]] = []
+    for song, g in sub.groupby("song", observed=True):
+        lin = per.get(str(song), {})
+        moved = g.loc[g["repair_moved"], "repair_shift_sec"].to_numpy(dtype=float) \
+            if "repair_moved" in g else np.array([])
+        illegal = float(g["is_illegal"].mean()) if len(g) else 0.0
+        action = next((label for lo, label in TRIAGE_BANDS if illegal > lo), "ship-ok")
+        rows.append({
+            "song": str(song), "language": str(g["language"].iloc[0]), "units": int(len(g)),
+            "illegal_share": round(illegal, 4),
+            "zero_share": round(float(g["flag_zero_or_negative"].mean()), 4),
+            "overlap_share": round(float(g["flag_overlaps_next"].mean()), 4),
+            "overshoot_share": round(float(g["flag_overshoot"].mean()), 4),
+            "max_duration_sec": round(float(g["duration_sec"].max()), 2),
+            "pinned_units": int(lin.get("pinned_to_window_input_units", 0)),
+            "net_added_by_fixed": int(lin.get("net_added_by_fixed", 0)),
+            "repair_moved_share": round(float(g["repair_moved"].mean()), 4)
+            if "repair_moved" in g else None,
+            "median_repair_shift_sec": round(float(np.median(moved)), 4) if moved.size else 0.0,
+            "triage": action,
+        })
+    return pd.DataFrame(rows).sort_values("illegal_share", ascending=False).reset_index(drop=True)

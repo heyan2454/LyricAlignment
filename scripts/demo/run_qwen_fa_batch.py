@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-from lyricalign.demo.alignment_artifacts import write_alignment_bundle  # noqa: E402
+from lyricalign.demo.alignment_artifacts import stage_degeneracy_audit, write_alignment_bundle  # noqa: E402
 from lyricalign.demo.batch import (  # noqa: E402
     AUDIO_INPUTS,
     ALIGNMENT_MODES,
@@ -665,6 +665,8 @@ def _write_alignment(
             "overlap_compressed_character_rate": len(overlap_compressed) / len(rows),
             "overlap_compression_collapsed_to_zero_count": len(overlap_collapsed),
             "overlap_compression_max_sec": overlap_max_sec,
+            # additive observability: attribute degeneracy to the stage that created it
+            "degeneracy_audit": stage_degeneracy_audit(rows, trace if mode_spec.mode == "windowed" else None),
             "window_policy": WINDOW_POLICY if mode_spec.mode == "windowed" else None,
             "window_count": len(trace) if mode_spec.mode == "windowed" else 1,
             "diagnostic_only": True,
