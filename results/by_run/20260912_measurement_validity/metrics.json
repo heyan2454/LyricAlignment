@@ -1,0 +1,308 @@
+{
+  "schema_version": "measurement_validity_metrics_v1",
+  "audit": {
+    "schema": "measurement_validity_v1",
+    "discipline": "re-reads existing panels only; canonical both_abs_err 口径 unchanged; no new forwards",
+    "panels": {
+      "gtsinger_official": {
+        "rows": 30600,
+        "stages": {
+          "model_raw_slots": {
+            "available": true,
+            "column": "raw_start_sec/raw_end_sec",
+            "n": 30600,
+            "negative_share": 0.00248,
+            "zero_share": 0.0102,
+            "negative_units": 76,
+            "zero_units": 312
+          },
+          "shipped_pred": {
+            "available": true,
+            "column": "pred_start_sec/pred_end_sec",
+            "n": 30600,
+            "negative_share": 0.0,
+            "zero_share": 0.04444,
+            "negative_units": 0,
+            "zero_units": 1360
+          }
+        },
+        "clamp": {
+          "available": true,
+          "upstream_negative_share": 0.00248,
+          "downstream_negative_share": 0.0,
+          "upstream_zero_share": 0.0102,
+          "downstream_zero_share": 0.04444,
+          "clamp_present": true,
+          "extra_zero_downstream_units": 1048
+        },
+        "impact": {
+          "available": true,
+          "n": 30600,
+          "hit_at_tol": 0.8037,
+          "mae_end_sec": 0.0722,
+          "tolerance_sec": 0.1,
+          "degenerate_units": 1360,
+          "degenerate_share": 0.0444,
+          "hit_at_tol_excluding_degenerate": 0.8368,
+          "mae_end_sec_excluding_degenerate": 0.0697,
+          "contamination_bound_pp": 3.31
+        },
+        "gt_shape": {
+          "available": true,
+          "column": "gt_start_sec/gt_end_sec",
+          "n": 30600,
+          "negative_share": 0.0,
+          "zero_share": 0.0,
+          "negative_units": 0,
+          "zero_units": 0
+        }
+      },
+      "gtsinger_raw": {
+        "rows": 33228,
+        "stages": {
+          "model_raw_slots": {
+            "available": true,
+            "column": "raw_start_sec/raw_end_sec",
+            "n": 33228,
+            "negative_share": 0.00229,
+            "zero_share": 0.01035,
+            "negative_units": 76,
+            "zero_units": 344
+          },
+          "shipped_pred": {
+            "available": true,
+            "column": "pred_start_sec/pred_end_sec",
+            "n": 33228,
+            "negative_share": 0.00114,
+            "zero_share": 0.0115,
+            "negative_units": 38,
+            "zero_units": 382
+          }
+        },
+        "clamp": {
+          "available": true,
+          "upstream_negative_share": 0.00229,
+          "downstream_negative_share": 0.00114,
+          "upstream_zero_share": 0.01035,
+          "downstream_zero_share": 0.0115,
+          "clamp_present": false,
+          "extra_zero_downstream_units": 38
+        },
+        "impact": {
+          "available": true,
+          "n": 33228,
+          "hit_at_tol": 0.8242,
+          "mae_end_sec": 0.0752,
+          "tolerance_sec": 0.1,
+          "degenerate_units": 382,
+          "degenerate_share": 0.0115,
+          "hit_at_tol_excluding_degenerate": 0.8313,
+          "mae_end_sec_excluding_degenerate": 0.0735,
+          "contamination_bound_pp": 0.71,
+          "inverted_units": 38,
+          "inverted_hit_at_tol": 0.0,
+          "inverted_mae_end_sec": 0.6546
+        },
+        "gt_shape": {
+          "available": true,
+          "column": "gt_start_sec/gt_end_sec",
+          "n": 33228,
+          "negative_share": 0.0,
+          "zero_share": 0.0,
+          "negative_units": 0,
+          "zero_units": 0
+        }
+      },
+      "mir1k": {
+        "rows": 12210,
+        "note": "panel stores shipped predictions only (no raw/fixed columns)",
+        "stages": {
+          "shipped_pred": {
+            "available": true,
+            "column": "pred_start_sec/pred_end_sec",
+            "n": 12210,
+            "negative_share": 0.0,
+            "zero_share": 0.04046,
+            "negative_units": 0,
+            "zero_units": 494
+          },
+          "human_gt": {
+            "available": true,
+            "column": "gt_start_sec/gt_end_sec",
+            "n": 12210,
+            "negative_share": 0.0,
+            "zero_share": 0.0,
+            "negative_units": 0,
+            "zero_units": 0
+          }
+        },
+        "impact": {
+          "available": true,
+          "n": 12210,
+          "hit_at_tol": 0.771,
+          "mae_end_sec": 0.1797,
+          "tolerance_sec": 0.1,
+          "degenerate_units": 494,
+          "degenerate_share": 0.0405,
+          "hit_at_tol_excluding_degenerate": 0.8031,
+          "mae_end_sec_excluding_degenerate": 0.143,
+          "contamination_bound_pp": 3.21
+        },
+        "by_predictor": {
+          "base_qwen_raw_v1": {
+            "available": true,
+            "n": 2035,
+            "hit_at_tol": 0.2231,
+            "mae_end_sec": 0.8372,
+            "tolerance_sec": 0.1,
+            "degenerate_units": 410,
+            "degenerate_share": 0.2015,
+            "hit_at_tol_excluding_degenerate": 0.2769,
+            "mae_end_sec_excluding_degenerate": 0.7409,
+            "contamination_bound_pp": 5.38
+          },
+          "r0_raw_20260724": {
+            "available": true,
+            "n": 2035,
+            "hit_at_tol": 0.744,
+            "mae_end_sec": 0.095,
+            "tolerance_sec": 0.1,
+            "degenerate_units": 48,
+            "degenerate_share": 0.0236,
+            "hit_at_tol_excluding_degenerate": 0.7614,
+            "mae_end_sec_excluding_degenerate": 0.0914,
+            "contamination_bound_pp": 1.74
+          },
+          "r1_full_20260724": {
+            "available": true,
+            "n": 2035,
+            "hit_at_tol": 0.9115,
+            "mae_end_sec": 0.0376,
+            "tolerance_sec": 0.1,
+            "degenerate_units": 9,
+            "degenerate_share": 0.0044,
+            "hit_at_tol_excluding_degenerate": 0.9156,
+            "mae_end_sec_excluding_degenerate": 0.0364,
+            "contamination_bound_pp": 0.41
+          },
+          "r2_full_20260723": {
+            "available": true,
+            "n": 2035,
+            "hit_at_tol": 0.9145,
+            "mae_end_sec": 0.0358,
+            "tolerance_sec": 0.1,
+            "degenerate_units": 12,
+            "degenerate_share": 0.0059,
+            "hit_at_tol_excluding_degenerate": 0.9199,
+            "mae_end_sec_excluding_degenerate": 0.0348,
+            "contamination_bound_pp": 0.54
+          },
+          "r2_ood_20260723": {
+            "available": true,
+            "n": 2035,
+            "hit_at_tol": 0.9204,
+            "mae_end_sec": 0.0374,
+            "tolerance_sec": 0.1,
+            "degenerate_units": 5,
+            "degenerate_share": 0.0025,
+            "hit_at_tol_excluding_degenerate": 0.9227,
+            "mae_end_sec_excluding_degenerate": 0.0372,
+            "contamination_bound_pp": 0.23
+          },
+          "r2_seed_20260724": {
+            "available": true,
+            "n": 2035,
+            "hit_at_tol": 0.9125,
+            "mae_end_sec": 0.0354,
+            "tolerance_sec": 0.1,
+            "degenerate_units": 10,
+            "degenerate_share": 0.0049,
+            "hit_at_tol_excluding_degenerate": 0.917,
+            "mae_end_sec_excluding_degenerate": 0.0346,
+            "contamination_bound_pp": 0.45
+          }
+        }
+      },
+      "m4_longform": {
+        "rows": 134538,
+        "stages": {
+          "model_raw_slots": {
+            "available": true,
+            "column": "raw_start_sec/raw_end_sec",
+            "n": 134538,
+            "negative_share": 0.01161,
+            "zero_share": 0.01003,
+            "negative_units": 1562,
+            "zero_units": 1350
+          }
+        },
+        "clamp": {
+          "available": false,
+          "upstream": {
+            "available": true,
+            "column": "raw_start_sec/raw_end_sec",
+            "n": 134538,
+            "negative_share": 0.01161,
+            "zero_share": 0.01003,
+            "negative_units": 1562,
+            "zero_units": 1350
+          },
+          "downstream": {
+            "available": false,
+            "column": "official_fixed_start_sec/official_fixed_end_sec"
+          }
+        },
+        "label_kind": "weak (rule_validated / rebuilt signed GT)"
+      },
+      "real_songs_33": {
+        "rows": 13735,
+        "note": "no ground truth: shape + clamp evidence only",
+        "stages": {
+          "model_raw_slots": {
+            "available": true,
+            "column": "raw_s/raw_e",
+            "n": 13735,
+            "negative_share": 0.06334,
+            "zero_share": 0.04463,
+            "negative_units": 870,
+            "zero_units": 613
+          },
+          "shipped_selected": {
+            "available": true,
+            "column": "start_sec/end_sec",
+            "n": 13735,
+            "negative_share": 0.0,
+            "zero_share": 0.1628,
+            "negative_units": 0,
+            "zero_units": 2236
+          }
+        },
+        "clamp": {
+          "available": true,
+          "upstream_negative_share": 0.06334,
+          "downstream_negative_share": 0.0,
+          "upstream_zero_share": 0.04463,
+          "downstream_zero_share": 0.1628,
+          "clamp_present": true,
+          "extra_zero_downstream_units": 1623
+        }
+      }
+    }
+  },
+  "headline": {
+    "gtsinger_official_bound_pp": 3.31,
+    "mir1k_overall_bound_pp": 3.21,
+    "base_predictor_bound_pp": 5.38,
+    "lora_predictors_bound_pp": {
+      "r0_raw_20260724": 1.74,
+      "r1_full_20260724": 0.41,
+      "r2_full_20260723": 0.54,
+      "r2_ood_20260723": 0.23,
+      "r2_seed_20260724": 0.45
+    },
+    "clamp_present_in_gtsinger_official": true,
+    "real_song_extra_zeros_from_clamp": 1623,
+    "ensemble_exclusion_conclusion_unchanged": true,
+    "conclusion": "reported absolute accuracies are conservative lower bounds inflated by degenerate units (up to +3.3pp GTSinger, +3.2pp MIR-1K overall, +5.4pp for the base predictor); cross-system gaps with differing degeneracy rates must be read with the companion column"
+  }
+}

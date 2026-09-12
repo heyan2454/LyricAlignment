@@ -40,6 +40,9 @@
 | C4a | **联合求解不伤末字**（GTSinger 人工真值：末单元 74.8% 持平、首单元 +2.78pp、总 MAE 77.6→68.3ms），但**长音末字三系统完全同分**（55.9%，MAE 372ms）⇒ 该层只能靠解码信息，与第 11 轮一致 | ✅ | `runs/20260912_last_unit_validation/LAST_UNIT.json` |
 | B9 | 分诊规则：交付非法率 >35% 的歌应重解码而非修复（I See Fire 88% 单元被压成同一时间戳 64.48，而其 raw 边界本不相同） | ✅ | 同上 §3 |
 
+| B11 | **测量有效性附注**：同一钳位也在评测链路里 ⇒ 本会话前几轮的绝对精度是**含退化单元的保守下界**（GTSinger official +3.31pp、MIR-1K +3.21pp、真实歌钳位净造 1,623 个零长）；且**跨预测器不等量**（base +5.38pp vs LoRA +0.23~0.54pp）⇒ 新规则：**两系统退化率差 >1pp 时，其 hit@100 差距不可直接归因于边界精度**；已复核第 4/5 轮的弱成员排除结论在此口径下**不变** | ✅ | `reports/progress/20260912_measurement_validity.md`、`results/by_run/20260912_measurement_validity/metrics.json` |
+| B12 | `pipeline=raw` 面板保留倒序（不经钳位），其 38 个倒序单元 hit@100 = **0.0%**、MAE(end) 654.6ms ⇒ 钳位没有把坏单元变好，只是把它们变成"没有时间长度的字" | ✅ | 同上 |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -100,8 +103,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 110 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1552 passed / 3 pre-existing failed`
+- 测试：本会话新增 115 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1557 passed / 3 pre-existing failed`
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
   window_anchor_pinning 2% / start_order_integrity 2% / repair_feasibility
 - 序列身份教训：**任何"逐序列"求解/统计的分组键必须含 `run`**（不同 run 的同名单元混在一个序列会让单调约束互相打乱）

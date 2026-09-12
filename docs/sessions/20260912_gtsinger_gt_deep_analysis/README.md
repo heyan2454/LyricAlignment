@@ -885,3 +885,40 @@ MAE(end) 全部 77.6→68.3ms、首单元 119.9→59.4ms；末单元 177.7→173
 `attributable_identity` / `structural_legality`(5%) / `stage_attribution`(1%) /
 `window_anchor_pinning`(2%) / **`start_order_integrity`(2%，本轮新增)** / `repair_feasibility`。
 对真实批次输出 `VERDICT=blocked`，blocking 含 `start_order_integrity: raw 6.33%, fixed/selected/final 0%`。
+
+---
+
+# 第 17 轮：测量有效性 —— 已报出的精度里有多少是在测钳位
+
+- 代码：`src/lyricalign/analysis/measurement_validity.py`（`stage_shape / clamp_signature / metric_impact`）
+- 入口：`scripts/evaluation/{run,report}_measurement_validity.py`；测试 5 项
+- 产物：`runs/20260912_measurement_validity/MEASUREMENT_VALIDITY.json`、
+  `reports/progress/20260912_measurement_validity.md`、`results/by_run/20260912_measurement_validity/metrics.json`
+- 只重读既有面板，**不改指标口径**（仍 canonical `both_abs_err`），零新增前向，历史数字不重算
+
+## 结果
+
+| 面板 | 阶段 | 倒序率 | 零长率 | 钳位在链路 | hit@100 | 剔除退化后 | 差 |
+|---|---|---:|---:|---|---:|---:|---:|
+| GTSinger official | raw slots | 0.248% | 1.02% | **是** | 80.37% | 83.68% | **+3.31pp** |
+| GTSinger official | shipped | 0% | 4.44% | | | | |
+| GTSinger raw pipeline | shipped | 0.114% | 1.15% | 否 | 82.42% | 83.13% | +0.71pp |
+| MIR-1K（6 预测器合计） | shipped | 0% | 4.05% | （面板无 raw 列） | 77.10% | 80.31% | **+3.21pp** |
+| M4 长时序 | raw slots | 1.161% | 1.003% | （面板无下游列） | | | |
+| 真实伴奏 33 首 | raw | 6.334% | 4.463% | **是**（交付 0% 倒序、16.28% 零长，钳位多造 1,623 个） | | | |
+
+要点：
+1. **同一处钳位确实在评测链路里**（GTSinger official 面板：raw 有倒序、交付恒无、零长 1.02%→4.44%）。
+   所以本会话前几轮的绝对精度数字应读作**含退化单元的保守下界**（GTSinger −3.31pp、MIR-1K −3.21pp）。
+2. **跨预测器不等量**：base（无 LoRA）退化率 20.15%，剔除后 hit@100 22.31%→27.69%（+5.38pp）；
+   LoRA 各检查点只有 +0.23~+0.54pp。⇒ 用 hit@100 判"弱成员排除"（第 4/5 轮方法）时，
+   被排除者同时背着退化率与边界误差两个原因；**但排除结论方向不变**（27.69% 仍 < 阈值 45.72%，
+   已在 metrics.headline.ensemble_exclusion_conclusion_unchanged 机判为 true）。
+3. `pipeline=raw` 的 38 个倒序单元 hit@100 = 0.0%、MAE(end) 654.6ms ⇒ 倒序单元本就是灾难单元，
+   钳位只是把它们变成"没有时间长度的字"，并没有让它们变对。
+4. 处置建议（不改历史数字，只加伴生列）：每个 `hit@tol` 配一列
+   `hit@tol_excluding_degenerate` + `degenerate_share`；并写死解释规则
+   **两系统退化率之差 >1pp 时，其 hit@100 差距不可直接归因于边界精度**。
+
+本轮自查：一版合成 fixture 里"退化单元与 GT 同点"造成口径歧义（0.75≠1.0），重排为 5 单元、
+方向明确的用例；`metric_impact` 成功分支漏 `available` 标志导致驱动少打印一段，已补。
