@@ -1,0 +1,2020 @@
+{
+  "schema_version": "separation_leakage_metrics_v1",
+  "audit": {
+    "schema": "separation_leakage_v1",
+    "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+    "songs_measured": 33,
+    "songs_skipped": 0,
+    "per_song": [
+      {
+        "song": "Camelia",
+        "language": "English",
+        "units": 334,
+        "gaps": {
+          "all_measurable": {
+            "units": 120,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.875,
+            "relative_residual_active_share": 0.6167,
+            "median_relative_residual": 0.9229,
+            "median_vocal_gap_rms": 0.14622,
+            "median_accomp_gap_rms": 0.1568,
+            "corr_vocal_gap_vs_accomp_gap": 0.3596
+          },
+          "long_units": {
+            "units": 20,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.75,
+            "relative_residual_active_share": 0.6,
+            "median_relative_residual": 0.9969,
+            "median_vocal_gap_rms": 0.12126,
+            "median_accomp_gap_rms": 0.15242,
+            "corr_vocal_gap_vs_accomp_gap": 0.4455
+          }
+        },
+        "gap_measurable_share": 0.3593,
+        "all_units": {
+          "units": 334,
+          "relative_residual_active_share": 0.7725,
+          "median_vocal_lead_over_core": 1.0016,
+          "median_accomp_lead_over_core": 0.9961,
+          "residual_active_share": 0.8533,
+          "median_residual_share_of_lead": 0.4734,
+          "corr_vocal_lead_vs_accomp_lead": 0.3303
+        },
+        "long_units": {
+          "units": 46,
+          "relative_residual_active_share": 0.9565,
+          "median_vocal_lead_over_core": 1.0403,
+          "median_accomp_lead_over_core": 0.9946,
+          "residual_active_share": 0.8478,
+          "median_residual_share_of_lead": 0.453,
+          "corr_vocal_lead_vs_accomp_lead": 0.4896
+        },
+        "short_units": {
+          "units": 211,
+          "relative_residual_active_share": 0.6635,
+          "median_vocal_lead_over_core": 0.9922,
+          "median_accomp_lead_over_core": 1.0064,
+          "residual_active_share": 0.8673,
+          "median_residual_share_of_lead": 0.4723,
+          "corr_vocal_lead_vs_accomp_lead": 0.2643
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.3303,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.050647972225640395,
+        "reconstruction_residual_ratio": 0.06666562938981886
+      },
+      {
+        "song": "I See Fire",
+        "language": "English",
+        "units": 311,
+        "gaps": {
+          "all_measurable": {
+            "units": 27,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.5926,
+            "relative_residual_active_share": 0.4444,
+            "median_relative_residual": 0.9042,
+            "median_vocal_gap_rms": 0.03118,
+            "median_accomp_gap_rms": 0.05422,
+            "corr_vocal_gap_vs_accomp_gap": -0.0096
+          },
+          "long_units": {
+            "units": 6,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.1667,
+            "relative_residual_active_share": 0.1667,
+            "median_relative_residual": 0.6281,
+            "median_vocal_gap_rms": 8e-05,
+            "median_accomp_gap_rms": 0.08754,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.0868,
+        "all_units": {
+          "units": 311,
+          "relative_residual_active_share": 0.1029,
+          "median_vocal_lead_over_core": 0.9441,
+          "median_accomp_lead_over_core": 0.992,
+          "residual_active_share": 0.9518,
+          "median_residual_share_of_lead": 0.7226,
+          "corr_vocal_lead_vs_accomp_lead": -0.4253
+        },
+        "long_units": {
+          "units": 12,
+          "relative_residual_active_share": 0.75,
+          "median_vocal_lead_over_core": 0.9467,
+          "median_accomp_lead_over_core": 0.7904,
+          "residual_active_share": 0.5,
+          "median_residual_share_of_lead": 0.1163,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 292,
+          "relative_residual_active_share": 0.0616,
+          "median_vocal_lead_over_core": 1.0223,
+          "median_accomp_lead_over_core": 1.4273,
+          "residual_active_share": 0.9829,
+          "median_residual_share_of_lead": 0.7226,
+          "corr_vocal_lead_vs_accomp_lead": -0.3031
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.4253,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.04004594387834216,
+        "reconstruction_residual_ratio": 0.1491061763900747
+      },
+      {
+        "song": "Immortals",
+        "language": "English",
+        "units": 200,
+        "gaps": {
+          "all_measurable": {
+            "units": 70,
+            "median_gap_sec": 0.168,
+            "vocal_active_share_in_gap": 0.9429,
+            "relative_residual_active_share": 0.8,
+            "median_relative_residual": 0.9359,
+            "median_vocal_gap_rms": 0.09823,
+            "median_accomp_gap_rms": 0.15509,
+            "corr_vocal_gap_vs_accomp_gap": 0.1493
+          },
+          "long_units": {
+            "units": 6,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 0.8333,
+            "median_relative_residual": 0.9739,
+            "median_vocal_gap_rms": 0.1068,
+            "median_accomp_gap_rms": 0.22468,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.35,
+        "all_units": {
+          "units": 200,
+          "relative_residual_active_share": 0.855,
+          "median_vocal_lead_over_core": 0.9819,
+          "median_accomp_lead_over_core": 0.9909,
+          "residual_active_share": 0.945,
+          "median_residual_share_of_lead": 0.3998,
+          "corr_vocal_lead_vs_accomp_lead": 0.2948
+        },
+        "long_units": {
+          "units": 17,
+          "relative_residual_active_share": 0.8824,
+          "median_vocal_lead_over_core": 0.9588,
+          "median_accomp_lead_over_core": 0.8881,
+          "residual_active_share": 0.8824,
+          "median_residual_share_of_lead": 0.3859,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 124,
+          "relative_residual_active_share": 0.7984,
+          "median_vocal_lead_over_core": 0.9723,
+          "median_accomp_lead_over_core": 1.0228,
+          "residual_active_share": 0.9435,
+          "median_residual_share_of_lead": 0.3986,
+          "corr_vocal_lead_vs_accomp_lead": 0.2571
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.2948,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.08223523311462494,
+        "reconstruction_residual_ratio": 0.159073133763417
+      },
+      {
+        "song": "Past Lives",
+        "language": "English",
+        "units": 162,
+        "gaps": {
+          "all_measurable": {
+            "units": 61,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.8689,
+            "relative_residual_active_share": 0.8033,
+            "median_relative_residual": 0.8626,
+            "median_vocal_gap_rms": 0.02879,
+            "median_accomp_gap_rms": 0.11031,
+            "corr_vocal_gap_vs_accomp_gap": -0.1699
+          },
+          "long_units": {
+            "units": 7,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.5714,
+            "relative_residual_active_share": 0.5714,
+            "median_relative_residual": 0.7025,
+            "median_vocal_gap_rms": 0.02328,
+            "median_accomp_gap_rms": 0.05842,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.3765,
+        "all_units": {
+          "units": 162,
+          "relative_residual_active_share": 0.9506,
+          "median_vocal_lead_over_core": 0.9398,
+          "median_accomp_lead_over_core": 0.9702,
+          "residual_active_share": 0.8395,
+          "median_residual_share_of_lead": 0.2273,
+          "corr_vocal_lead_vs_accomp_lead": -0.1793
+        },
+        "long_units": {
+          "units": 13,
+          "relative_residual_active_share": 1.0,
+          "median_vocal_lead_over_core": 0.7907,
+          "median_accomp_lead_over_core": 0.8517,
+          "residual_active_share": 0.7692,
+          "median_residual_share_of_lead": 0.2483,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 50,
+          "relative_residual_active_share": 0.86,
+          "median_vocal_lead_over_core": 0.9415,
+          "median_accomp_lead_over_core": 1.0375,
+          "residual_active_share": 0.88,
+          "median_residual_share_of_lead": 0.2246,
+          "corr_vocal_lead_vs_accomp_lead": -0.2327
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.1793,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.07022841243807208,
+        "reconstruction_residual_ratio": 0.04495721193507274
+      },
+      {
+        "song": "Renegade",
+        "language": "English",
+        "units": 671,
+        "gaps": {
+          "all_measurable": {
+            "units": 118,
+            "median_gap_sec": 0.16,
+            "vocal_active_share_in_gap": 0.9074,
+            "relative_residual_active_share": 0.6944,
+            "median_relative_residual": 0.9509,
+            "median_vocal_gap_rms": 0.10676,
+            "median_accomp_gap_rms": 0.24514,
+            "corr_vocal_gap_vs_accomp_gap": 0.2237
+          },
+          "long_units": {
+            "units": 5,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 1.0669,
+            "median_vocal_gap_rms": 0.11178,
+            "median_accomp_gap_rms": 0.26977,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1759,
+        "all_units": {
+          "units": 671,
+          "relative_residual_active_share": 0.8361,
+          "median_vocal_lead_over_core": 0.9972,
+          "median_accomp_lead_over_core": 1.0066,
+          "residual_active_share": 0.8972,
+          "median_residual_share_of_lead": 0.3112,
+          "corr_vocal_lead_vs_accomp_lead": 0.413
+        },
+        "long_units": {
+          "units": 11,
+          "relative_residual_active_share": 1.0,
+          "median_vocal_lead_over_core": 1.0557,
+          "median_accomp_lead_over_core": 1.1621,
+          "residual_active_share": 1.0,
+          "median_residual_share_of_lead": 0.3196,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 516,
+          "relative_residual_active_share": 0.8159,
+          "median_vocal_lead_over_core": 0.9964,
+          "median_accomp_lead_over_core": 1.0095,
+          "residual_active_share": 0.905,
+          "median_residual_share_of_lead": 0.3112,
+          "corr_vocal_lead_vs_accomp_lead": 0.4296
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.413,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.03721274707578482,
+        "reconstruction_residual_ratio": 0.12814766550903453
+      },
+      {
+        "song": "TH讠NK",
+        "language": "Chinese",
+        "units": 450,
+        "gaps": {
+          "all_measurable": {
+            "units": 79,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.8462,
+            "relative_residual_active_share": 0.7051,
+            "median_relative_residual": 0.8853,
+            "median_vocal_gap_rms": 0.15336,
+            "median_accomp_gap_rms": 0.12406,
+            "corr_vocal_gap_vs_accomp_gap": 0.0897
+          },
+          "long_units": {
+            "units": 10,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 0.952,
+            "median_vocal_gap_rms": 0.19452,
+            "median_accomp_gap_rms": 0.13305,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1756,
+        "all_units": {
+          "units": 450,
+          "relative_residual_active_share": 0.8933,
+          "median_vocal_lead_over_core": 1.0055,
+          "median_accomp_lead_over_core": 0.9955,
+          "residual_active_share": 0.9044,
+          "median_residual_share_of_lead": 0.605,
+          "corr_vocal_lead_vs_accomp_lead": 0.0328
+        },
+        "long_units": {
+          "units": 22,
+          "relative_residual_active_share": 0.9091,
+          "median_vocal_lead_over_core": 1.0326,
+          "median_accomp_lead_over_core": 0.9633,
+          "residual_active_share": 0.9091,
+          "median_residual_share_of_lead": 0.6222,
+          "corr_vocal_lead_vs_accomp_lead": 0.3775
+        },
+        "short_units": {
+          "units": 285,
+          "relative_residual_active_share": 0.8702,
+          "median_vocal_lead_over_core": 1.0058,
+          "median_accomp_lead_over_core": 0.9965,
+          "residual_active_share": 0.9088,
+          "median_residual_share_of_lead": 0.5993,
+          "corr_vocal_lead_vs_accomp_lead": 0.01
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.0328,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.09218861404886086,
+        "reconstruction_residual_ratio": 0.12894958619907684
+      },
+      {
+        "song": "Take Me To Church",
+        "language": "English",
+        "units": 430,
+        "gaps": {
+          "all_measurable": {
+            "units": 94,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.8444,
+            "relative_residual_active_share": 0.7444,
+            "median_relative_residual": 0.9596,
+            "median_vocal_gap_rms": 0.1137,
+            "median_accomp_gap_rms": 0.16351,
+            "corr_vocal_gap_vs_accomp_gap": 0.1897
+          },
+          "long_units": {
+            "units": 13,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.9231,
+            "relative_residual_active_share": 0.9231,
+            "median_relative_residual": 0.7943,
+            "median_vocal_gap_rms": 0.10112,
+            "median_accomp_gap_rms": 0.14934,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.2186,
+        "all_units": {
+          "units": 430,
+          "relative_residual_active_share": 0.8814,
+          "median_vocal_lead_over_core": 0.9991,
+          "median_accomp_lead_over_core": 0.9857,
+          "residual_active_share": 0.8093,
+          "median_residual_share_of_lead": 0.4091,
+          "corr_vocal_lead_vs_accomp_lead": 0.2326
+        },
+        "long_units": {
+          "units": 27,
+          "relative_residual_active_share": 0.8889,
+          "median_vocal_lead_over_core": 0.8838,
+          "median_accomp_lead_over_core": 0.9841,
+          "residual_active_share": 0.9259,
+          "median_residual_share_of_lead": 0.4548,
+          "corr_vocal_lead_vs_accomp_lead": 0.1707
+        },
+        "short_units": {
+          "units": 264,
+          "relative_residual_active_share": 0.8636,
+          "median_vocal_lead_over_core": 0.9866,
+          "median_accomp_lead_over_core": 1.0013,
+          "residual_active_share": 0.803,
+          "median_residual_share_of_lead": 0.4038,
+          "corr_vocal_lead_vs_accomp_lead": 0.2485
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.2326,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.04667758755906181,
+        "reconstruction_residual_ratio": 0.12902289684189697
+      },
+      {
+        "song": "p.h",
+        "language": "Japanese",
+        "units": 271,
+        "gaps": {
+          "all_measurable": {
+            "units": 135,
+            "median_gap_sec": 0.16,
+            "vocal_active_share_in_gap": 0.7407,
+            "relative_residual_active_share": 0.6222,
+            "median_relative_residual": 0.7994,
+            "median_vocal_gap_rms": 0.08457,
+            "median_accomp_gap_rms": 0.19955,
+            "corr_vocal_gap_vs_accomp_gap": -0.0489
+          },
+          "long_units": {
+            "units": 1,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 0.4238,
+            "median_vocal_gap_rms": 0.0388,
+            "median_accomp_gap_rms": 0.22485,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.4982,
+        "all_units": {
+          "units": 271,
+          "relative_residual_active_share": 0.69,
+          "median_vocal_lead_over_core": 1.018,
+          "median_accomp_lead_over_core": 1.0617,
+          "residual_active_share": 0.8007,
+          "median_residual_share_of_lead": 0.3233,
+          "corr_vocal_lead_vs_accomp_lead": -0.2401
+        },
+        "long_units": {
+          "units": 11,
+          "relative_residual_active_share": 0.9091,
+          "median_vocal_lead_over_core": 0.836,
+          "median_accomp_lead_over_core": 1.0628,
+          "residual_active_share": 0.9091,
+          "median_residual_share_of_lead": 0.3305,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 208,
+          "relative_residual_active_share": 0.625,
+          "median_vocal_lead_over_core": 1.1959,
+          "median_accomp_lead_over_core": 1.086,
+          "residual_active_share": 0.8029,
+          "median_residual_share_of_lead": 0.3257,
+          "corr_vocal_lead_vs_accomp_lead": -0.2563
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.2401,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.07914215741474229,
+        "reconstruction_residual_ratio": 0.16721513216922887
+      },
+      {
+        "song": "为何入眠",
+        "language": "Chinese",
+        "units": 285,
+        "gaps": {
+          "all_measurable": {
+            "units": 98,
+            "median_gap_sec": 0.088,
+            "vocal_active_share_in_gap": 0.6526,
+            "relative_residual_active_share": 0.6211,
+            "median_relative_residual": 0.8808,
+            "median_vocal_gap_rms": 0.05419,
+            "median_accomp_gap_rms": 0.09839,
+            "corr_vocal_gap_vs_accomp_gap": 0.1033
+          },
+          "long_units": {
+            "units": 10,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.5556,
+            "relative_residual_active_share": 0.5556,
+            "median_relative_residual": 0.8808,
+            "median_vocal_gap_rms": 0.05419,
+            "median_accomp_gap_rms": 0.13141,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.3439,
+        "all_units": {
+          "units": 285,
+          "relative_residual_active_share": 0.8035,
+          "median_vocal_lead_over_core": 0.9512,
+          "median_accomp_lead_over_core": 0.9615,
+          "residual_active_share": 0.7333,
+          "median_residual_share_of_lead": 0.4494,
+          "corr_vocal_lead_vs_accomp_lead": 0.1554
+        },
+        "long_units": {
+          "units": 11,
+          "relative_residual_active_share": 0.7273,
+          "median_vocal_lead_over_core": 1.2469,
+          "median_accomp_lead_over_core": 1.1017,
+          "residual_active_share": 0.6364,
+          "median_residual_share_of_lead": 0.3587,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 186,
+          "relative_residual_active_share": 0.7957,
+          "median_vocal_lead_over_core": 0.9332,
+          "median_accomp_lead_over_core": 0.9628,
+          "residual_active_share": 0.7419,
+          "median_residual_share_of_lead": 0.4529,
+          "corr_vocal_lead_vs_accomp_lead": 0.2472
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.1554,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.07318702295243906,
+        "reconstruction_residual_ratio": 0.09299907828828176
+      },
+      {
+        "song": "乙女解剖",
+        "language": "Japanese",
+        "units": 341,
+        "gaps": {
+          "all_measurable": {
+            "units": 85,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.8235,
+            "relative_residual_active_share": 0.5765,
+            "median_relative_residual": 0.8361,
+            "median_vocal_gap_rms": 0.14952,
+            "median_accomp_gap_rms": 0.20889,
+            "corr_vocal_gap_vs_accomp_gap": -0.2711
+          },
+          "long_units": {
+            "units": 4,
+            "median_gap_sec": 0.23,
+            "vocal_active_share_in_gap": 0.75,
+            "relative_residual_active_share": 0.75,
+            "median_relative_residual": 0.8194,
+            "median_vocal_gap_rms": 0.15676,
+            "median_accomp_gap_rms": 0.23666,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.2493,
+        "all_units": {
+          "units": 341,
+          "relative_residual_active_share": 0.7566,
+          "median_vocal_lead_over_core": 0.9653,
+          "median_accomp_lead_over_core": 1.0168,
+          "residual_active_share": 0.8094,
+          "median_residual_share_of_lead": 0.4174,
+          "corr_vocal_lead_vs_accomp_lead": -0.2789
+        },
+        "long_units": {
+          "units": 9,
+          "relative_residual_active_share": 0.8889,
+          "median_vocal_lead_over_core": 1.0422,
+          "median_accomp_lead_over_core": 0.9692,
+          "residual_active_share": 1.0,
+          "median_residual_share_of_lead": 0.4789,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 237,
+          "relative_residual_active_share": 0.6667,
+          "median_vocal_lead_over_core": 0.9648,
+          "median_accomp_lead_over_core": 1.0178,
+          "residual_active_share": 0.7468,
+          "median_residual_share_of_lead": 0.4041,
+          "corr_vocal_lead_vs_accomp_lead": -0.3002
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.2789,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.05901456067317873,
+        "reconstruction_residual_ratio": 0.1545622184903084
+      },
+      {
+        "song": "人造卫星",
+        "language": "Chinese",
+        "units": 477,
+        "gaps": {
+          "all_measurable": {
+            "units": 75,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.76,
+            "relative_residual_active_share": 0.7333,
+            "median_relative_residual": 0.9831,
+            "median_vocal_gap_rms": 0.13203,
+            "median_accomp_gap_rms": 0.1561,
+            "corr_vocal_gap_vs_accomp_gap": -0.1416
+          },
+          "long_units": {
+            "units": 1,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.0,
+            "relative_residual_active_share": 0.0,
+            "median_relative_residual": 0.919,
+            "median_vocal_gap_rms": 0.00034,
+            "median_accomp_gap_rms": 0.15782,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1572,
+        "all_units": {
+          "units": 477,
+          "relative_residual_active_share": 0.9455,
+          "median_vocal_lead_over_core": 1.0035,
+          "median_accomp_lead_over_core": 0.9872,
+          "residual_active_share": 0.8092,
+          "median_residual_share_of_lead": 0.4779,
+          "corr_vocal_lead_vs_accomp_lead": -0.0065
+        },
+        "long_units": {
+          "units": 1,
+          "relative_residual_active_share": 1.0,
+          "median_vocal_lead_over_core": 0.919,
+          "median_accomp_lead_over_core": 1.1741,
+          "residual_active_share": 0.0,
+          "median_residual_share_of_lead": 0.0022,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 415,
+          "relative_residual_active_share": 0.947,
+          "median_vocal_lead_over_core": 1.0076,
+          "median_accomp_lead_over_core": 0.9942,
+          "residual_active_share": 0.8193,
+          "median_residual_share_of_lead": 0.4779,
+          "corr_vocal_lead_vs_accomp_lead": 0.0083
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.0065,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.05247977544836897,
+        "reconstruction_residual_ratio": 0.12737483203811006
+      },
+      {
+        "song": "伊卡洛斯奔向月亮",
+        "language": "Chinese",
+        "units": 537,
+        "gaps": {
+          "all_measurable": {
+            "units": 56,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.7455,
+            "relative_residual_active_share": 0.6727,
+            "median_relative_residual": 0.9533,
+            "median_vocal_gap_rms": 0.12952,
+            "median_accomp_gap_rms": 0.05381,
+            "corr_vocal_gap_vs_accomp_gap": -0.4342
+          },
+          "long_units": {
+            "units": 8,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.4286,
+            "relative_residual_active_share": 0.4286,
+            "median_relative_residual": 0.9822,
+            "median_vocal_gap_rms": 0.00021,
+            "median_accomp_gap_rms": 0.0463,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1043,
+        "all_units": {
+          "units": 537,
+          "relative_residual_active_share": 0.9143,
+          "median_vocal_lead_over_core": 0.9909,
+          "median_accomp_lead_over_core": 0.989,
+          "residual_active_share": 0.8156,
+          "median_residual_share_of_lead": 0.7245,
+          "corr_vocal_lead_vs_accomp_lead": -0.572
+        },
+        "long_units": {
+          "units": 9,
+          "relative_residual_active_share": 0.8889,
+          "median_vocal_lead_over_core": 0.9893,
+          "median_accomp_lead_over_core": 0.97,
+          "residual_active_share": 0.4444,
+          "median_residual_share_of_lead": 0.4914,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 394,
+          "relative_residual_active_share": 0.901,
+          "median_vocal_lead_over_core": 0.982,
+          "median_accomp_lead_over_core": 0.9954,
+          "residual_active_share": 0.8096,
+          "median_residual_share_of_lead": 0.7305,
+          "corr_vocal_lead_vs_accomp_lead": -0.5718
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.572,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.030882065728375804,
+        "reconstruction_residual_ratio": 0.06035715124673617
+      },
+      {
+        "song": "何时何地",
+        "language": "Chinese",
+        "units": 368,
+        "gaps": {
+          "all_measurable": {
+            "units": 52,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.5686,
+            "relative_residual_active_share": 0.5294,
+            "median_relative_residual": 0.8024,
+            "median_vocal_gap_rms": 0.05144,
+            "median_accomp_gap_rms": 0.09497,
+            "corr_vocal_gap_vs_accomp_gap": 0.2263
+          },
+          "long_units": {
+            "units": 13,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.5,
+            "relative_residual_active_share": 0.4167,
+            "median_relative_residual": 0.7518,
+            "median_vocal_gap_rms": 0.02144,
+            "median_accomp_gap_rms": 0.08545,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1413,
+        "all_units": {
+          "units": 368,
+          "relative_residual_active_share": 0.8967,
+          "median_vocal_lead_over_core": 0.9799,
+          "median_accomp_lead_over_core": 1.0068,
+          "residual_active_share": 0.7908,
+          "median_residual_share_of_lead": 0.5629,
+          "corr_vocal_lead_vs_accomp_lead": 0.0515
+        },
+        "long_units": {
+          "units": 24,
+          "relative_residual_active_share": 0.5833,
+          "median_vocal_lead_over_core": 0.543,
+          "median_accomp_lead_over_core": 1.0348,
+          "residual_active_share": 0.6667,
+          "median_residual_share_of_lead": 0.3875,
+          "corr_vocal_lead_vs_accomp_lead": 0.059
+        },
+        "short_units": {
+          "units": 240,
+          "relative_residual_active_share": 0.8917,
+          "median_vocal_lead_over_core": 1.0052,
+          "median_accomp_lead_over_core": 1.0175,
+          "residual_active_share": 0.7917,
+          "median_residual_share_of_lead": 0.5733,
+          "corr_vocal_lead_vs_accomp_lead": -0.0341
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.0515,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.05372446370573383,
+        "reconstruction_residual_ratio": 0.08886814965980229
+      },
+      {
+        "song": "六重不忠",
+        "language": "Chinese",
+        "units": 579,
+        "gaps": {
+          "all_measurable": {
+            "units": 98,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.9222,
+            "relative_residual_active_share": 0.8333,
+            "median_relative_residual": 0.9971,
+            "median_vocal_gap_rms": 0.11048,
+            "median_accomp_gap_rms": 0.23101,
+            "corr_vocal_gap_vs_accomp_gap": 0.2196
+          },
+          "long_units": {
+            "units": 3,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 1.229,
+            "median_vocal_gap_rms": 0.11563,
+            "median_accomp_gap_rms": 0.19827,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1693,
+        "all_units": {
+          "units": 579,
+          "relative_residual_active_share": 0.8256,
+          "median_vocal_lead_over_core": 0.997,
+          "median_accomp_lead_over_core": 0.9945,
+          "residual_active_share": 0.8169,
+          "median_residual_share_of_lead": 0.3367,
+          "corr_vocal_lead_vs_accomp_lead": 0.0793
+        },
+        "long_units": {
+          "units": 12,
+          "relative_residual_active_share": 0.9167,
+          "median_vocal_lead_over_core": 0.9077,
+          "median_accomp_lead_over_core": 1.065,
+          "residual_active_share": 1.0,
+          "median_residual_share_of_lead": 0.3518,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 439,
+          "relative_residual_active_share": 0.8223,
+          "median_vocal_lead_over_core": 0.9984,
+          "median_accomp_lead_over_core": 0.9969,
+          "residual_active_share": 0.8246,
+          "median_residual_share_of_lead": 0.3369,
+          "corr_vocal_lead_vs_accomp_lead": 0.1109
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.0793,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.03092307983239367,
+        "reconstruction_residual_ratio": 0.20706352393809307
+      },
+      {
+        "song": "冬之花",
+        "language": "Japanese",
+        "units": 222,
+        "gaps": {
+          "all_measurable": {
+            "units": 34,
+            "median_gap_sec": 0.27,
+            "vocal_active_share_in_gap": 0.9706,
+            "relative_residual_active_share": 0.6176,
+            "median_relative_residual": 0.8663,
+            "median_vocal_gap_rms": 0.16841,
+            "median_accomp_gap_rms": 0.12918,
+            "corr_vocal_gap_vs_accomp_gap": 0.3044
+          },
+          "long_units": {
+            "units": 3,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 0.6667,
+            "median_relative_residual": 1.233,
+            "median_vocal_gap_rms": 0.13037,
+            "median_accomp_gap_rms": 0.15668,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1532,
+        "all_units": {
+          "units": 222,
+          "relative_residual_active_share": 0.3559,
+          "median_vocal_lead_over_core": 1.0207,
+          "median_accomp_lead_over_core": 1.0315,
+          "residual_active_share": 0.9865,
+          "median_residual_share_of_lead": 0.5245,
+          "corr_vocal_lead_vs_accomp_lead": 0.4518
+        },
+        "long_units": {
+          "units": 11,
+          "relative_residual_active_share": 0.9091,
+          "median_vocal_lead_over_core": 0.8501,
+          "median_accomp_lead_over_core": 0.9528,
+          "residual_active_share": 1.0,
+          "median_residual_share_of_lead": 0.5725,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 185,
+          "relative_residual_active_share": 0.2378,
+          "median_vocal_lead_over_core": 0.98,
+          "median_accomp_lead_over_core": 1.0453,
+          "residual_active_share": 0.9838,
+          "median_residual_share_of_lead": 0.5245,
+          "corr_vocal_lead_vs_accomp_lead": 0.3469
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.4518,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.0766360064426619,
+        "reconstruction_residual_ratio": 0.06009448868663588
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "units": 561,
+        "gaps": {
+          "all_measurable": {
+            "units": 76,
+            "median_gap_sec": 0.224,
+            "vocal_active_share_in_gap": 0.9324,
+            "relative_residual_active_share": 0.5811,
+            "median_relative_residual": 0.6857,
+            "median_vocal_gap_rms": 0.19183,
+            "median_accomp_gap_rms": 0.21394,
+            "corr_vocal_gap_vs_accomp_gap": -0.2468
+          },
+          "long_units": {
+            "units": 2,
+            "median_gap_sec": 0.19,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 1.925,
+            "median_vocal_gap_rms": 0.28257,
+            "median_accomp_gap_rms": 0.18,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1355,
+        "all_units": {
+          "units": 561,
+          "relative_residual_active_share": 0.2264,
+          "median_vocal_lead_over_core": 1.0137,
+          "median_accomp_lead_over_core": 1.0103,
+          "residual_active_share": 0.9483,
+          "median_residual_share_of_lead": 0.5117,
+          "corr_vocal_lead_vs_accomp_lead": 0.3193
+        },
+        "long_units": {
+          "units": 15,
+          "relative_residual_active_share": 0.9333,
+          "median_vocal_lead_over_core": 1.0279,
+          "median_accomp_lead_over_core": 0.9925,
+          "residual_active_share": 0.8,
+          "median_residual_share_of_lead": 0.4908,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 523,
+          "relative_residual_active_share": 0.1759,
+          "median_vocal_lead_over_core": 1.0352,
+          "median_accomp_lead_over_core": 1.0241,
+          "residual_active_share": 0.9522,
+          "median_residual_share_of_lead": 0.514,
+          "corr_vocal_lead_vs_accomp_lead": 0.3538
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.3193,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.11734641933397065,
+        "reconstruction_residual_ratio": 0.2378997972899566
+      },
+      {
+        "song": "四季折之羽",
+        "language": "Chinese",
+        "units": 637,
+        "gaps": {
+          "all_measurable": {
+            "units": 78,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.8714,
+            "relative_residual_active_share": 0.7429,
+            "median_relative_residual": 0.942,
+            "median_vocal_gap_rms": 0.15182,
+            "median_accomp_gap_rms": 0.10853,
+            "corr_vocal_gap_vs_accomp_gap": 0.0962
+          },
+          "long_units": {
+            "units": 5,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.75,
+            "relative_residual_active_share": 0.75,
+            "median_relative_residual": 1.1968,
+            "median_vocal_gap_rms": 0.17129,
+            "median_accomp_gap_rms": 0.11537,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1224,
+        "all_units": {
+          "units": 637,
+          "relative_residual_active_share": 0.8477,
+          "median_vocal_lead_over_core": 0.9829,
+          "median_accomp_lead_over_core": 0.9831,
+          "residual_active_share": 0.8006,
+          "median_residual_share_of_lead": 0.6055,
+          "corr_vocal_lead_vs_accomp_lead": 0.2296
+        },
+        "long_units": {
+          "units": 22,
+          "relative_residual_active_share": 0.7727,
+          "median_vocal_lead_over_core": 0.9647,
+          "median_accomp_lead_over_core": 0.9602,
+          "residual_active_share": 0.6818,
+          "median_residual_share_of_lead": 0.6349,
+          "corr_vocal_lead_vs_accomp_lead": -0.1164
+        },
+        "short_units": {
+          "units": 453,
+          "relative_residual_active_share": 0.8366,
+          "median_vocal_lead_over_core": 0.9863,
+          "median_accomp_lead_over_core": 0.983,
+          "residual_active_share": 0.7947,
+          "median_residual_share_of_lead": 0.6013,
+          "corr_vocal_lead_vs_accomp_lead": 0.2338
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.2296,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.07850475746380722,
+        "reconstruction_residual_ratio": 0.07696590230075068
+      },
+      {
+        "song": "安全词",
+        "language": "Chinese",
+        "units": 411,
+        "gaps": {
+          "all_measurable": {
+            "units": 78,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.9254,
+            "relative_residual_active_share": 0.8507,
+            "median_relative_residual": 0.9938,
+            "median_vocal_gap_rms": 0.19083,
+            "median_accomp_gap_rms": 0.12985,
+            "corr_vocal_gap_vs_accomp_gap": 0.0712
+          },
+          "long_units": {
+            "units": 14,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.9167,
+            "relative_residual_active_share": 0.8333,
+            "median_relative_residual": 1.1103,
+            "median_vocal_gap_rms": 0.19046,
+            "median_accomp_gap_rms": 0.14326,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1898,
+        "all_units": {
+          "units": 411,
+          "relative_residual_active_share": 0.8418,
+          "median_vocal_lead_over_core": 1.0127,
+          "median_accomp_lead_over_core": 0.9923,
+          "residual_active_share": 0.8589,
+          "median_residual_share_of_lead": 0.5848,
+          "corr_vocal_lead_vs_accomp_lead": 0.1429
+        },
+        "long_units": {
+          "units": 37,
+          "relative_residual_active_share": 0.8919,
+          "median_vocal_lead_over_core": 0.9995,
+          "median_accomp_lead_over_core": 1.0556,
+          "residual_active_share": 0.9189,
+          "median_residual_share_of_lead": 0.588,
+          "corr_vocal_lead_vs_accomp_lead": 0.2329
+        },
+        "short_units": {
+          "units": 196,
+          "relative_residual_active_share": 0.8776,
+          "median_vocal_lead_over_core": 0.9932,
+          "median_accomp_lead_over_core": 1.0033,
+          "residual_active_share": 0.8878,
+          "median_residual_share_of_lead": 0.5854,
+          "corr_vocal_lead_vs_accomp_lead": 0.2172
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.1429,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.08235419505171257,
+        "reconstruction_residual_ratio": 0.15703025061407466
+      },
+      {
+        "song": "月半小夜曲",
+        "language": "Cantonese",
+        "units": 388,
+        "gaps": {
+          "all_measurable": {
+            "units": 128,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.7344,
+            "relative_residual_active_share": 0.5625,
+            "median_relative_residual": 0.7507,
+            "median_vocal_gap_rms": 0.09734,
+            "median_accomp_gap_rms": 0.14153,
+            "corr_vocal_gap_vs_accomp_gap": -0.2339
+          },
+          "long_units": {
+            "units": 19,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.7895,
+            "relative_residual_active_share": 0.7368,
+            "median_relative_residual": 0.8672,
+            "median_vocal_gap_rms": 0.10667,
+            "median_accomp_gap_rms": 0.15312,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.3299,
+        "all_units": {
+          "units": 388,
+          "relative_residual_active_share": 0.7655,
+          "median_vocal_lead_over_core": 0.9916,
+          "median_accomp_lead_over_core": 1.0033,
+          "residual_active_share": 0.6495,
+          "median_residual_share_of_lead": 0.3985,
+          "corr_vocal_lead_vs_accomp_lead": -0.4948
+        },
+        "long_units": {
+          "units": 31,
+          "relative_residual_active_share": 0.9677,
+          "median_vocal_lead_over_core": 1.058,
+          "median_accomp_lead_over_core": 0.951,
+          "residual_active_share": 0.7742,
+          "median_residual_share_of_lead": 0.4502,
+          "corr_vocal_lead_vs_accomp_lead": -0.2464
+        },
+        "short_units": {
+          "units": 279,
+          "relative_residual_active_share": 0.6882,
+          "median_vocal_lead_over_core": 1.0077,
+          "median_accomp_lead_over_core": 1.0056,
+          "residual_active_share": 0.5806,
+          "median_residual_share_of_lead": 0.3599,
+          "corr_vocal_lead_vs_accomp_lead": -0.5375
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.4948,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.052718460394643736,
+        "reconstruction_residual_ratio": 0.10063586900694756
+      },
+      {
+        "song": "本草纲目",
+        "language": "Chinese",
+        "units": 499,
+        "gaps": {
+          "all_measurable": {
+            "units": 119,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.8655,
+            "relative_residual_active_share": 0.7731,
+            "median_relative_residual": 0.9239,
+            "median_vocal_gap_rms": 0.07199,
+            "median_accomp_gap_rms": 0.1775,
+            "corr_vocal_gap_vs_accomp_gap": -0.0361
+          },
+          "long_units": {
+            "units": 0
+          }
+        },
+        "gap_measurable_share": 0.2385,
+        "all_units": {
+          "units": 499,
+          "relative_residual_active_share": 0.9679,
+          "median_vocal_lead_over_core": 1.04,
+          "median_accomp_lead_over_core": 1.0483,
+          "residual_active_share": 0.9158,
+          "median_residual_share_of_lead": 0.3061,
+          "corr_vocal_lead_vs_accomp_lead": -0.1708
+        },
+        "long_units": {
+          "units": 1,
+          "relative_residual_active_share": 1.0,
+          "median_vocal_lead_over_core": 0.7538,
+          "median_accomp_lead_over_core": 1.5165,
+          "residual_active_share": 1.0,
+          "median_residual_share_of_lead": 0.2362,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 479,
+          "relative_residual_active_share": 0.9708,
+          "median_vocal_lead_over_core": 1.041,
+          "median_accomp_lead_over_core": 1.0338,
+          "residual_active_share": 0.9228,
+          "median_residual_share_of_lead": 0.3072,
+          "corr_vocal_lead_vs_accomp_lead": -0.1817
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.1708,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.0653638333119153,
+        "reconstruction_residual_ratio": 0.20716039496238342
+      },
+      {
+        "song": "权御天下",
+        "language": "Chinese",
+        "units": 762,
+        "gaps": {
+          "all_measurable": {
+            "units": 43,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.7442,
+            "relative_residual_active_share": 0.6512,
+            "median_relative_residual": 0.9342,
+            "median_vocal_gap_rms": 0.12088,
+            "median_accomp_gap_rms": 0.23507,
+            "corr_vocal_gap_vs_accomp_gap": -0.5946
+          },
+          "long_units": {
+            "units": 4,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.5,
+            "relative_residual_active_share": 0.5,
+            "median_relative_residual": 0.9454,
+            "median_vocal_gap_rms": 0.05526,
+            "median_accomp_gap_rms": 0.2387,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.0564,
+        "all_units": {
+          "units": 762,
+          "relative_residual_active_share": 0.9462,
+          "median_vocal_lead_over_core": 0.9998,
+          "median_accomp_lead_over_core": 1.0076,
+          "residual_active_share": 0.7743,
+          "median_residual_share_of_lead": 0.344,
+          "corr_vocal_lead_vs_accomp_lead": -0.4149
+        },
+        "long_units": {
+          "units": 5,
+          "relative_residual_active_share": 1.0,
+          "median_vocal_lead_over_core": 1.0247,
+          "median_accomp_lead_over_core": 1.0143,
+          "residual_active_share": 0.6,
+          "median_residual_share_of_lead": 0.3631,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 717,
+          "relative_residual_active_share": 0.9428,
+          "median_vocal_lead_over_core": 1.0009,
+          "median_accomp_lead_over_core": 1.0077,
+          "residual_active_share": 0.7657,
+          "median_residual_share_of_lead": 0.3426,
+          "corr_vocal_lead_vs_accomp_lead": -0.4137
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.4149,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.040605668873271786,
+        "reconstruction_residual_ratio": 0.0919115325259576
+      },
+      {
+        "song": "梦良衣",
+        "language": "Chinese",
+        "units": 112,
+        "gaps": {
+          "all_measurable": {
+            "units": 30,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.7667,
+            "relative_residual_active_share": 0.6333,
+            "median_relative_residual": 0.9167,
+            "median_vocal_gap_rms": 0.06281,
+            "median_accomp_gap_rms": 0.19894,
+            "corr_vocal_gap_vs_accomp_gap": 0.5121
+          },
+          "long_units": {
+            "units": 7,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.8571,
+            "relative_residual_active_share": 0.8571,
+            "median_relative_residual": 1.0077,
+            "median_vocal_gap_rms": 0.13636,
+            "median_accomp_gap_rms": 0.20993,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.2679,
+        "all_units": {
+          "units": 112,
+          "relative_residual_active_share": 0.8036,
+          "median_vocal_lead_over_core": 0.99,
+          "median_accomp_lead_over_core": 0.9858,
+          "residual_active_share": 0.6786,
+          "median_residual_share_of_lead": 0.267,
+          "corr_vocal_lead_vs_accomp_lead": 0.3147
+        },
+        "long_units": {
+          "units": 13,
+          "relative_residual_active_share": 0.9231,
+          "median_vocal_lead_over_core": 1.0077,
+          "median_accomp_lead_over_core": 0.9489,
+          "residual_active_share": 0.8462,
+          "median_residual_share_of_lead": 0.3362,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 24,
+          "relative_residual_active_share": 0.5,
+          "median_vocal_lead_over_core": 0.9956,
+          "median_accomp_lead_over_core": 1.0373,
+          "residual_active_share": 0.6667,
+          "median_residual_share_of_lead": 0.2809,
+          "corr_vocal_lead_vs_accomp_lead": 0.5162
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.3147,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.06515982237161426,
+        "reconstruction_residual_ratio": 0.09398642152753847
+      },
+      {
+        "song": "此处通往天空",
+        "language": "Chinese",
+        "units": 286,
+        "gaps": {
+          "all_measurable": {
+            "units": 49,
+            "median_gap_sec": 0.16,
+            "vocal_active_share_in_gap": 0.8367,
+            "relative_residual_active_share": 0.7551,
+            "median_relative_residual": 1.01,
+            "median_vocal_gap_rms": 0.15123,
+            "median_accomp_gap_rms": 0.06023,
+            "corr_vocal_gap_vs_accomp_gap": -0.3277
+          },
+          "long_units": {
+            "units": 23,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.7826,
+            "relative_residual_active_share": 0.7826,
+            "median_relative_residual": 0.9988,
+            "median_vocal_gap_rms": 0.14847,
+            "median_accomp_gap_rms": 0.11035,
+            "corr_vocal_gap_vs_accomp_gap": -0.4111
+          }
+        },
+        "gap_measurable_share": 0.1713,
+        "all_units": {
+          "units": 286,
+          "relative_residual_active_share": 0.958,
+          "median_vocal_lead_over_core": 1.0128,
+          "median_accomp_lead_over_core": 0.9796,
+          "residual_active_share": 0.8846,
+          "median_residual_share_of_lead": 0.7128,
+          "corr_vocal_lead_vs_accomp_lead": -0.0438
+        },
+        "long_units": {
+          "units": 32,
+          "relative_residual_active_share": 0.9375,
+          "median_vocal_lead_over_core": 1.0176,
+          "median_accomp_lead_over_core": 0.974,
+          "residual_active_share": 0.7188,
+          "median_residual_share_of_lead": 0.5177,
+          "corr_vocal_lead_vs_accomp_lead": -0.2277
+        },
+        "short_units": {
+          "units": 125,
+          "relative_residual_active_share": 0.944,
+          "median_vocal_lead_over_core": 1.0168,
+          "median_accomp_lead_over_core": 0.9332,
+          "residual_active_share": 0.928,
+          "median_residual_share_of_lead": 0.7514,
+          "corr_vocal_lead_vs_accomp_lead": 0.0206
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.0438,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.05135320020025174,
+        "reconstruction_residual_ratio": 0.05693465378488859
+      },
+      {
+        "song": "浮夸",
+        "language": "Cantonese",
+        "units": 487,
+        "gaps": {
+          "all_measurable": {
+            "units": 145,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.9,
+            "relative_residual_active_share": 0.7857,
+            "median_relative_residual": 0.9604,
+            "median_vocal_gap_rms": 0.11116,
+            "median_accomp_gap_rms": 0.16032,
+            "corr_vocal_gap_vs_accomp_gap": 0.1841
+          },
+          "long_units": {
+            "units": 12,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.8,
+            "relative_residual_active_share": 0.8,
+            "median_relative_residual": 0.9274,
+            "median_vocal_gap_rms": 0.08245,
+            "median_accomp_gap_rms": 0.14051,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.2977,
+        "all_units": {
+          "units": 487,
+          "relative_residual_active_share": 0.8789,
+          "median_vocal_lead_over_core": 1.0229,
+          "median_accomp_lead_over_core": 0.9791,
+          "residual_active_share": 0.9138,
+          "median_residual_share_of_lead": 0.402,
+          "corr_vocal_lead_vs_accomp_lead": 0.2615
+        },
+        "long_units": {
+          "units": 18,
+          "relative_residual_active_share": 0.7778,
+          "median_vocal_lead_over_core": 1.0182,
+          "median_accomp_lead_over_core": 1.0406,
+          "residual_active_share": 0.7778,
+          "median_residual_share_of_lead": 0.3977,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 371,
+          "relative_residual_active_share": 0.8625,
+          "median_vocal_lead_over_core": 1.0261,
+          "median_accomp_lead_over_core": 0.9909,
+          "residual_active_share": 0.9111,
+          "median_residual_share_of_lead": 0.4043,
+          "corr_vocal_lead_vs_accomp_lead": 0.2927
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.2615,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.07880993259071731,
+        "reconstruction_residual_ratio": 0.0827521922421178
+      },
+      {
+        "song": "炉心融解",
+        "language": "Japanese",
+        "units": 326,
+        "gaps": {
+          "all_measurable": {
+            "units": 86,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.9412,
+            "relative_residual_active_share": 0.7647,
+            "median_relative_residual": 0.9448,
+            "median_vocal_gap_rms": 0.2011,
+            "median_accomp_gap_rms": 0.19813,
+            "corr_vocal_gap_vs_accomp_gap": 0.2089
+          },
+          "long_units": {
+            "units": 9,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 0.9767,
+            "median_vocal_gap_rms": 0.23943,
+            "median_accomp_gap_rms": 0.20237,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.2638,
+        "all_units": {
+          "units": 326,
+          "relative_residual_active_share": 0.5613,
+          "median_vocal_lead_over_core": 0.983,
+          "median_accomp_lead_over_core": 0.9758,
+          "residual_active_share": 0.9509,
+          "median_residual_share_of_lead": 0.4955,
+          "corr_vocal_lead_vs_accomp_lead": 0.0649
+        },
+        "long_units": {
+          "units": 21,
+          "relative_residual_active_share": 0.9524,
+          "median_vocal_lead_over_core": 0.9441,
+          "median_accomp_lead_over_core": 0.984,
+          "residual_active_share": 0.9524,
+          "median_residual_share_of_lead": 0.4979,
+          "corr_vocal_lead_vs_accomp_lead": -0.4564
+        },
+        "short_units": {
+          "units": 242,
+          "relative_residual_active_share": 0.4174,
+          "median_vocal_lead_over_core": 0.9726,
+          "median_accomp_lead_over_core": 0.9885,
+          "residual_active_share": 0.9463,
+          "median_residual_share_of_lead": 0.4955,
+          "corr_vocal_lead_vs_accomp_lead": 0.0851
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.0649,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.09210476812064951,
+        "reconstruction_residual_ratio": 0.29302215128597847
+      },
+      {
+        "song": "电灯胆",
+        "language": "Cantonese",
+        "units": 350,
+        "gaps": {
+          "all_measurable": {
+            "units": 142,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.8028,
+            "relative_residual_active_share": 0.5,
+            "median_relative_residual": 0.7052,
+            "median_vocal_gap_rms": 0.13154,
+            "median_accomp_gap_rms": 0.11334,
+            "corr_vocal_gap_vs_accomp_gap": -0.0102
+          },
+          "long_units": {
+            "units": 6,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.8333,
+            "relative_residual_active_share": 0.8333,
+            "median_relative_residual": 1.05,
+            "median_vocal_gap_rms": 0.12574,
+            "median_accomp_gap_rms": 0.11909,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.4057,
+        "all_units": {
+          "units": 350,
+          "relative_residual_active_share": 0.7486,
+          "median_vocal_lead_over_core": 0.981,
+          "median_accomp_lead_over_core": 0.9796,
+          "residual_active_share": 0.8571,
+          "median_residual_share_of_lead": 0.5181,
+          "corr_vocal_lead_vs_accomp_lead": -0.0605
+        },
+        "long_units": {
+          "units": 13,
+          "relative_residual_active_share": 0.9231,
+          "median_vocal_lead_over_core": 1.0014,
+          "median_accomp_lead_over_core": 0.9691,
+          "residual_active_share": 0.9231,
+          "median_residual_share_of_lead": 0.5218,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 267,
+          "relative_residual_active_share": 0.6854,
+          "median_vocal_lead_over_core": 0.9865,
+          "median_accomp_lead_over_core": 0.9769,
+          "residual_active_share": 0.8614,
+          "median_residual_share_of_lead": 0.5221,
+          "corr_vocal_lead_vs_accomp_lead": -0.1082
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.0605,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.06360095561956955,
+        "reconstruction_residual_ratio": 0.06707017658954594
+      },
+      {
+        "song": "画下灯塔水母",
+        "language": "Chinese",
+        "units": 532,
+        "gaps": {
+          "all_measurable": {
+            "units": 53,
+            "median_gap_sec": 0.208,
+            "vocal_active_share_in_gap": 0.8431,
+            "relative_residual_active_share": 0.6078,
+            "median_relative_residual": 0.8107,
+            "median_vocal_gap_rms": 0.15321,
+            "median_accomp_gap_rms": 0.13225,
+            "corr_vocal_gap_vs_accomp_gap": 0.3763
+          },
+          "long_units": {
+            "units": 8,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.8333,
+            "relative_residual_active_share": 0.8333,
+            "median_relative_residual": 0.9775,
+            "median_vocal_gap_rms": 0.14009,
+            "median_accomp_gap_rms": 0.09604,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.0996,
+        "all_units": {
+          "units": 532,
+          "relative_residual_active_share": 0.5733,
+          "median_vocal_lead_over_core": 1.0001,
+          "median_accomp_lead_over_core": 0.9424,
+          "residual_active_share": 0.9135,
+          "median_residual_share_of_lead": 0.5683,
+          "corr_vocal_lead_vs_accomp_lead": 0.1121
+        },
+        "long_units": {
+          "units": 13,
+          "relative_residual_active_share": 0.7692,
+          "median_vocal_lead_over_core": 0.9865,
+          "median_accomp_lead_over_core": 0.683,
+          "residual_active_share": 0.6154,
+          "median_residual_share_of_lead": 0.5336,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 388,
+          "relative_residual_active_share": 0.4485,
+          "median_vocal_lead_over_core": 1.0065,
+          "median_accomp_lead_over_core": 0.9533,
+          "residual_active_share": 0.9356,
+          "median_residual_share_of_lead": 0.6067,
+          "corr_vocal_lead_vs_accomp_lead": 0.0396
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.1121,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.06533103355525131,
+        "reconstruction_residual_ratio": 0.08667172479203637
+      },
+      {
+        "song": "画下灯塔水母 - 副本",
+        "language": "Chinese",
+        "units": 381,
+        "gaps": {
+          "all_measurable": {
+            "units": 67,
+            "median_gap_sec": 0.24,
+            "vocal_active_share_in_gap": 0.8154,
+            "relative_residual_active_share": 0.7077,
+            "median_relative_residual": 0.8731,
+            "median_vocal_gap_rms": 0.14448,
+            "median_accomp_gap_rms": 0.09872,
+            "corr_vocal_gap_vs_accomp_gap": 0.3759
+          },
+          "long_units": {
+            "units": 10,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.625,
+            "relative_residual_active_share": 0.625,
+            "median_relative_residual": 0.9969,
+            "median_vocal_gap_rms": 0.13133,
+            "median_accomp_gap_rms": 0.07769,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1759,
+        "all_units": {
+          "units": 381,
+          "relative_residual_active_share": 0.8635,
+          "median_vocal_lead_over_core": 0.9866,
+          "median_accomp_lead_over_core": 0.9387,
+          "residual_active_share": 0.8583,
+          "median_residual_share_of_lead": 0.5131,
+          "corr_vocal_lead_vs_accomp_lead": 0.4062
+        },
+        "long_units": {
+          "units": 11,
+          "relative_residual_active_share": 0.6364,
+          "median_vocal_lead_over_core": 0.9865,
+          "median_accomp_lead_over_core": 0.5858,
+          "residual_active_share": 0.5455,
+          "median_residual_share_of_lead": 0.5381,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 211,
+          "relative_residual_active_share": 0.8436,
+          "median_vocal_lead_over_core": 0.9946,
+          "median_accomp_lead_over_core": 0.9532,
+          "residual_active_share": 0.872,
+          "median_residual_share_of_lead": 0.5057,
+          "corr_vocal_lead_vs_accomp_lead": 0.392
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.4062,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.06533233173646263,
+        "reconstruction_residual_ratio": 0.08667069052281987
+      },
+      {
+        "song": "皱鳃鲨",
+        "language": "Japanese",
+        "units": 261,
+        "gaps": {
+          "all_measurable": {
+            "units": 56,
+            "median_gap_sec": 0.177,
+            "vocal_active_share_in_gap": 0.6786,
+            "relative_residual_active_share": 0.4821,
+            "median_relative_residual": 0.9831,
+            "median_vocal_gap_rms": 0.13646,
+            "median_accomp_gap_rms": 0.18917,
+            "corr_vocal_gap_vs_accomp_gap": 0.3926
+          },
+          "long_units": {
+            "units": 3,
+            "median_gap_sec": 0.16,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 1.0284,
+            "median_vocal_gap_rms": 0.16451,
+            "median_accomp_gap_rms": 0.24776,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.2146,
+        "all_units": {
+          "units": 261,
+          "relative_residual_active_share": 0.5364,
+          "median_vocal_lead_over_core": 0.9953,
+          "median_accomp_lead_over_core": 1.0661,
+          "residual_active_share": 0.4943,
+          "median_residual_share_of_lead": 0.0512,
+          "corr_vocal_lead_vs_accomp_lead": 0.4152
+        },
+        "long_units": {
+          "units": 9,
+          "relative_residual_active_share": 0.7778,
+          "median_vocal_lead_over_core": 0.9179,
+          "median_accomp_lead_over_core": 1.0248,
+          "residual_active_share": 0.7778,
+          "median_residual_share_of_lead": 0.399,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 216,
+          "relative_residual_active_share": 0.4583,
+          "median_vocal_lead_over_core": 0.9943,
+          "median_accomp_lead_over_core": 1.161,
+          "residual_active_share": 0.4259,
+          "median_residual_share_of_lead": 0.0236,
+          "corr_vocal_lead_vs_accomp_lead": 0.4782
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.4152,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.042201252997315336,
+        "reconstruction_residual_ratio": 0.14773941645188676
+      },
+      {
+        "song": "祈愿花开",
+        "language": "Chinese",
+        "units": 463,
+        "gaps": {
+          "all_measurable": {
+            "units": 86,
+            "median_gap_sec": 0.16,
+            "vocal_active_share_in_gap": 0.747,
+            "relative_residual_active_share": 0.6988,
+            "median_relative_residual": 0.908,
+            "median_vocal_gap_rms": 0.1555,
+            "median_accomp_gap_rms": 0.16392,
+            "corr_vocal_gap_vs_accomp_gap": -0.1697
+          },
+          "long_units": {
+            "units": 37,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.7778,
+            "relative_residual_active_share": 0.7778,
+            "median_relative_residual": 0.9736,
+            "median_vocal_gap_rms": 0.15799,
+            "median_accomp_gap_rms": 0.16756,
+            "corr_vocal_gap_vs_accomp_gap": 0.1258
+          }
+        },
+        "gap_measurable_share": 0.1857,
+        "all_units": {
+          "units": 463,
+          "relative_residual_active_share": 0.8553,
+          "median_vocal_lead_over_core": 0.9519,
+          "median_accomp_lead_over_core": 0.9923,
+          "residual_active_share": 0.7754,
+          "median_residual_share_of_lead": 0.4946,
+          "corr_vocal_lead_vs_accomp_lead": -0.0495
+        },
+        "long_units": {
+          "units": 42,
+          "relative_residual_active_share": 0.881,
+          "median_vocal_lead_over_core": 0.9595,
+          "median_accomp_lead_over_core": 0.9939,
+          "residual_active_share": 0.7619,
+          "median_residual_share_of_lead": 0.5003,
+          "corr_vocal_lead_vs_accomp_lead": 0.0754
+        },
+        "short_units": {
+          "units": 303,
+          "relative_residual_active_share": 0.8581,
+          "median_vocal_lead_over_core": 0.9519,
+          "median_accomp_lead_over_core": 0.9782,
+          "residual_active_share": 0.8053,
+          "median_residual_share_of_lead": 0.4936,
+          "corr_vocal_lead_vs_accomp_lead": -0.137
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.0495,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.03863297888358178,
+        "reconstruction_residual_ratio": 0.07944572836211873
+      },
+      {
+        "song": "红日",
+        "language": "Cantonese",
+        "units": 534,
+        "gaps": {
+          "all_measurable": {
+            "units": 185,
+            "median_gap_sec": 0.148,
+            "vocal_active_share_in_gap": 0.9622,
+            "relative_residual_active_share": 0.7189,
+            "median_relative_residual": 0.807,
+            "median_vocal_gap_rms": 0.06435,
+            "median_accomp_gap_rms": 0.11675,
+            "corr_vocal_gap_vs_accomp_gap": 0.0781
+          },
+          "long_units": {
+            "units": 7,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.8571,
+            "relative_residual_active_share": 0.8571,
+            "median_relative_residual": 0.716,
+            "median_vocal_gap_rms": 0.05231,
+            "median_accomp_gap_rms": 0.13868,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.3464,
+        "all_units": {
+          "units": 534,
+          "relative_residual_active_share": 0.8296,
+          "median_vocal_lead_over_core": 0.9967,
+          "median_accomp_lead_over_core": 0.9998,
+          "residual_active_share": 0.9757,
+          "median_residual_share_of_lead": 0.3533,
+          "corr_vocal_lead_vs_accomp_lead": 0.0482
+        },
+        "long_units": {
+          "units": 15,
+          "relative_residual_active_share": 1.0,
+          "median_vocal_lead_over_core": 1.0737,
+          "median_accomp_lead_over_core": 0.9435,
+          "residual_active_share": 1.0,
+          "median_residual_share_of_lead": 0.3321,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 446,
+          "relative_residual_active_share": 0.8027,
+          "median_vocal_lead_over_core": 0.9903,
+          "median_accomp_lead_over_core": 1.0105,
+          "residual_active_share": 0.9798,
+          "median_residual_share_of_lead": 0.3533,
+          "corr_vocal_lead_vs_accomp_lead": 0.0581
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.0482,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.07021869964317035,
+        "reconstruction_residual_ratio": 0.09114510269988699
+      },
+      {
+        "song": "若梦境来袭",
+        "language": "Chinese",
+        "units": 427,
+        "gaps": {
+          "all_measurable": {
+            "units": 85,
+            "median_gap_sec": 0.08,
+            "vocal_active_share_in_gap": 0.8471,
+            "relative_residual_active_share": 0.7882,
+            "median_relative_residual": 0.9852,
+            "median_vocal_gap_rms": 0.20497,
+            "median_accomp_gap_rms": 0.21003,
+            "corr_vocal_gap_vs_accomp_gap": -0.4048
+          },
+          "long_units": {
+            "units": 4,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 0.5,
+            "relative_residual_active_share": 0.5,
+            "median_relative_residual": 1.252,
+            "median_vocal_gap_rms": 0.08857,
+            "median_accomp_gap_rms": 0.22032,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.1991,
+        "all_units": {
+          "units": 427,
+          "relative_residual_active_share": 0.9485,
+          "median_vocal_lead_over_core": 0.9868,
+          "median_accomp_lead_over_core": 1.0028,
+          "residual_active_share": 0.8244,
+          "median_residual_share_of_lead": 0.4897,
+          "corr_vocal_lead_vs_accomp_lead": -0.3423
+        },
+        "long_units": {
+          "units": 9,
+          "relative_residual_active_share": 0.8889,
+          "median_vocal_lead_over_core": 0.9843,
+          "median_accomp_lead_over_core": 0.9572,
+          "residual_active_share": 0.5556,
+          "median_residual_share_of_lead": 0.4477,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 293,
+          "relative_residual_active_share": 0.9352,
+          "median_vocal_lead_over_core": 0.9935,
+          "median_accomp_lead_over_core": 1.0033,
+          "residual_active_share": 0.8123,
+          "median_residual_share_of_lead": 0.4855,
+          "corr_vocal_lead_vs_accomp_lead": -0.3998
+        },
+        "corr_vocal_lead_vs_accomp_lead": -0.3423,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.04694332499352532,
+        "reconstruction_residual_ratio": 0.1908479648615381
+      },
+      {
+        "song": "难念的经",
+        "language": "Cantonese",
+        "units": 680,
+        "gaps": {
+          "all_measurable": {
+            "units": 230,
+            "median_gap_sec": 0.16,
+            "vocal_active_share_in_gap": 0.7412,
+            "relative_residual_active_share": 0.6623,
+            "median_relative_residual": 0.913,
+            "median_vocal_gap_rms": 0.07641,
+            "median_accomp_gap_rms": 0.11373,
+            "corr_vocal_gap_vs_accomp_gap": 0.4461
+          },
+          "long_units": {
+            "units": 3,
+            "median_gap_sec": 0.3,
+            "vocal_active_share_in_gap": 1.0,
+            "relative_residual_active_share": 1.0,
+            "median_relative_residual": 1.6203,
+            "median_vocal_gap_rms": 0.06036,
+            "median_accomp_gap_rms": 0.07615,
+            "corr_vocal_gap_vs_accomp_gap": null
+          }
+        },
+        "gap_measurable_share": 0.3382,
+        "all_units": {
+          "units": 680,
+          "relative_residual_active_share": 0.8603,
+          "median_vocal_lead_over_core": 0.9826,
+          "median_accomp_lead_over_core": 0.9648,
+          "residual_active_share": 0.775,
+          "median_residual_share_of_lead": 0.4,
+          "corr_vocal_lead_vs_accomp_lead": 0.4807
+        },
+        "long_units": {
+          "units": 8,
+          "relative_residual_active_share": 0.875,
+          "median_vocal_lead_over_core": 1.262,
+          "median_accomp_lead_over_core": 1.1147,
+          "residual_active_share": 0.875,
+          "median_residual_share_of_lead": 0.4964,
+          "corr_vocal_lead_vs_accomp_lead": null
+        },
+        "short_units": {
+          "units": 633,
+          "relative_residual_active_share": 0.861,
+          "median_vocal_lead_over_core": 0.9892,
+          "median_accomp_lead_over_core": 0.9722,
+          "residual_active_share": 0.7741,
+          "median_residual_share_of_lead": 0.3994,
+          "corr_vocal_lead_vs_accomp_lead": 0.4914
+        },
+        "corr_vocal_lead_vs_accomp_lead": 0.4807,
+        "available": true,
+        "passed": true,
+        "vocals_vs_accompaniment_correlation": 0.08518392978082383,
+        "reconstruction_residual_ratio": 0.10524163895817451
+      }
+    ],
+    "pooled": {
+      "median_song_corr_vocal_vs_accomp_lead": 0.0649,
+      "median_song_corr_long_units": 0.0672,
+      "median_residual_active_share": 0.8395,
+      "median_long_residual_active_share": 0.8,
+      "separation_quality_all_passed": true,
+      "gap_restricted": {
+        "measurable_gap_share_median": 0.1991,
+        "vocal_active_share": 0.8431,
+        "relative_residual_active_share": 0.6944,
+        "relative_residual_active_share_long": 0.7913,
+        "median_relative_residual": 0.9167,
+        "median_relative_residual_long": 0.9771,
+        "vocal_active_share_long": 0.8167,
+        "median_vocal_gap_rms": 0.1295,
+        "median_accomp_gap_rms": 0.1551,
+        "corr_vocal_accomp_gap": 0.0897,
+        "corr_vocal_accomp_gap_long": 0.1258
+      }
+    },
+    "units_in_batch": 13735
+  },
+  "headline": {
+    "product_input_is_demucs_separated": true,
+    "separator": "demucs htdemucs_ft two_stems=vocals",
+    "separation_quality_gate_exists": true,
+    "separation_quality_all_passed": true,
+    "measurable_gap_share": 0.1991,
+    "vocal_active_in_gap_share": 0.8431,
+    "corr_vocal_vs_accomp_in_gap": 0.0897,
+    "leakage_not_supported": true,
+    "corrections_to_round22": [
+      "product path uses demucs separation, not channel selection",
+      "separation quality IS measured globally (audio_separation_quality_v1), only time-local leakage was missing",
+      "naive lead window is confounded by the next unit"
+    ]
+  }
+}

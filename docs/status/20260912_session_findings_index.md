@@ -59,6 +59,10 @@
 | B17 | **训练在抬这个上限**：长音端点不可达率 r0 **70.8%** → r1 27.5% → r2 **21.7%**（top-1 恰中 12.5%→55.0%），r1→r2 增益变小 ⇒ 该层预算应投训练侧且仍有余量；旁证 `pipeline=raw` 包含率一致（39.9% vs 40.0%）⇒ 上限来自解码器而非第 16/17 轮的钳位 | ✅ | 同上 |
 | B18 | 置信度可预示"真值是否可达"（无参考触发器基础）：AUC(top1_prob→真值在候选±1格内) 全体端点 0.792、末单元 0.955，但**长音只有 0.616** ⇒ 恰在最需要处变弱；另 GTSinger 末单元（硬切尾，可达 90.6%）≠ MIR-1K 末字（自然衰减长音），不可互相推断 | ✅ | 同上 |
 
+| B26 | **两处更正（读产物后）**：真实歌产品链路的输入是 **demucs 分离**（`htdemucs_ft`、`two_stems=vocals`，见 `vocals.identity.json`），不是声道选择（声道选择只在 MIR-1K 评测输入）；且项目**已有**全局分离质检 `audio_separation_quality_v1`（本批 33/33 `passed=true`，全局 v↔a 相关 0.04–0.12）⇒ 第 22 轮的"泄漏发生在产品输入上"不成立，未测的只是**时间局部泄漏** | ♻️ | `reports/progress/20260912_separation_leakage.md` §0 |
+| B27 | **泄漏强形式被反驳**：只在真字间隙（≥50ms，本批仅 19.9% 单元有）用**相对判据**测，间隙残余达单元核心能量 **0.917 倍**（长音 0.977）、活跃比例 69.4%，但**与伴奏 stem 不相关**（corr 0.090、长音 0.126）⇒ 残余不是伴奏泄漏镜像；三种剩余解释中 (b) 下一字起始、(c) **时间线截早** 比 (a) 混响更像主因；若 (c) 成立则产品也在截早（与 B23 录音室方向一致） | ✅ | 同上 §2–3 |
+| B28 | **方法纪律**：能量类判据必须尺度无关（除以该单元自身核心能量）且只在真间隙上计算——绝对 RMS 下限 + naive 引导窗会得出"84% 边界都有残余"的假发现（合成用例可复现：人声已停但绝对判据仍判活跃） | ✅ | `tests/evaluation/test_separation_leakage.py`、清单第 14 条 |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -119,8 +123,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 141 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1584 passed / 3 pre-existing failed`（第 22 轮后最新隔离复跑）。
+- 测试：本会话新增 145 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1588 passed / 3 pre-existing failed`（第 24 轮隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
