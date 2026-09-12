@@ -117,6 +117,9 @@
 
 | B49 | **gate 投影已接入批次自检**：`structural_compliance.gate_projection()` + `audit_batch.py` 的 `observations.gate_projection`（`--gate-accept-rate` 默认 0.763 = 第 38 轮工作点）；真实批输出 残余非法 in accepted **5.26%**、复核捕获 **76.0%**、复核负担按语言 粤 27.5 / 普 5.9 / 英 33.9 / 日 72.9，**与独立脚本逐位一致且不影响 verdict**（观察列不参与判定）⇒ 每条生产批次现在可自答"若上线此 gate 还有什么会被放行" | ✅ | `scripts/evaluation/audit_batch.py`、`src/lyricalign/analysis/structural_compliance.py` |
 
+| B50 | **零长度字是块状塌陷且被后处理放大 11 倍**（33 首真歌交付线）：2,236 个零长字只分布在 **734 段**，**最长连续 251 字**（原始阶段仅 22），**≥5 长度段占 59.3%**（原始 23.2%），孤立仅 23.3% ⇒ **修法必须段落级/重解码，不是逐字插值**；**6/33 首零长 >30%、3 首 >50%**（I See Fire 88.1%、初音未来的消失 76.5%、冬之花 62.6%），最健康四首全是普通话（1.2–1.9%）；**歌曲级密度与零长无关（ρ=−0.07）⇒ "歌词太密"假设否证**；位置效应真实（后段 24.3% vs 前段 11.0%，最后一字 18.2%） | ✅ | `reports/progress/20260912_zero_length_profile.md` |
+| B51 | 指标陷阱（本轮自查）：**"局部窗口密度"在含零长单元的窗口上是循环论证**（时长塌缩致密度虚高，原始阶段中位数顶到裁剪值 5000 字/秒）⇒ 只能作"扎堆证据"；非循环替代是**歌曲级密度**（用整首歌时间轴跨度，零长单元无法干扰） | ✅ | 同上 §3 |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -177,9 +180,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 188 项
+- 测试：本会话新增 190 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1627 passed / 3 pre-existing failed`（第 41 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1629 passed / 3 pre-existing failed`（第 43 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

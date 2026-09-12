@@ -96,3 +96,44 @@ def test_empty_batch_is_survivable(tmp_path: Path):
     assert F.profile(df)["units"] == 0
     assert F.predicts_collapse(df) == {"available": False}
     assert F.top_examples(df) == []
+
+
+def test_zero_runs_distinguishes_blocks_from_singletons():
+    import pandas as pd
+    from lyricalign.analysis import raw_degeneracy_forensics as RDF
+
+    # song a: one run of 5; song b: three singletons; the run must not cross the song boundary
+    rows = []
+    for i in range(8):
+        rows.append({"song": "a", "unit_index": i, "start_sec": i * 1.0,
+                     "end_sec": i * 1.0 + (0.0 if i < 5 else 0.5)})
+    for i in range(8):
+        rows.append({"song": "b", "unit_index": i, "start_sec": i * 1.0,
+                     "end_sec": i * 1.0 + (0.0 if i % 3 == 0 else 0.5)})
+    d = pd.DataFrame(rows)
+    d["flag_zero_or_negative"] = (d["end_sec"] - d["start_sec"]) <= 1e-6
+    out = RDF.zero_runs(d)
+    assert out["zero_units"] == 8
+    assert out["runs"] == 4                     # one block of 5 in a, three singletons in b
+    assert out["max_run_length"] == 5
+    assert out["share_of_zero_units_in_runs_of_5_plus"] == pytest.approx(5 / 8, abs=1e-4)
+    assert out["longest_runs"][0]["song"] == "a"
+
+
+def test_zero_length_profile_is_not_confounded_by_song_density():
+    """Song-level density must come from the timeline span, which degenerate units cannot shrink."""
+    import pandas as pd
+    from lyricalign.analysis import raw_degeneracy_forensics as RDF
+
+    rows = []
+    for i in range(60):
+        rows.append({"song": "dense", "unit_index": i, "start_sec": i * 0.5, "end_sec": i * 0.5 + 0.5})
+    for i in range(60):
+        rows.append({"song": "sparse", "unit_index": i, "start_sec": i * 2.0, "end_sec": i * 2.0 + 2.0})
+    d = pd.DataFrame(rows)
+    d["flag_zero_or_negative"] = False
+    cf = RDF.context_features(d)
+    dens = cf.groupby("song")["song_density_chars_per_sec"].median()
+    assert dens["dense"] > dens["sparse"]        # density tracks the real timing, not degeneracy
+    prof = RDF.zero_length_profile(d)
+    assert prof["zero_units"] == 0

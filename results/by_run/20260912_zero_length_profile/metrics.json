@@ -1,0 +1,791 @@
+{
+  "schema_version": "zero_length_profile_metrics_v1",
+  "audit": {
+    "schema": "zero_length_profile_v1",
+    "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+    "stages": {
+      "selected": {
+        "units": 13735,
+        "zero_units": 2236,
+        "zero_share": 0.1628,
+        "by_context": {
+          "duration_sec": {
+            "zero_median": 0.0,
+            "other_median": 0.32,
+            "zero_mean": 0.0,
+            "other_mean": 0.4053
+          },
+          "gap_prev_sec": {
+            "zero_median": 0.0,
+            "other_median": 0.0,
+            "zero_mean": 0.1209,
+            "other_mean": 0.1281
+          },
+          "local_window_chars_per_sec": {
+            "zero_median": 30.1599,
+            "other_median": 2.7174,
+            "zero_mean": 2418.2152,
+            "other_mean": 4.1782
+          },
+          "song_density_chars_per_sec": {
+            "zero_median": 2.1979,
+            "other_median": 2.3593,
+            "zero_mean": 2.2056,
+            "other_mean": 2.3839
+          },
+          "pos_in_song": {
+            "zero_median": 0.653,
+            "other_median": 0.4687,
+            "zero_mean": 0.594,
+            "other_mean": 0.4817
+          },
+          "idx_from_start": {
+            "zero_median": 235.0,
+            "other_median": 208.0,
+            "zero_mean": 254.5541,
+            "other_mean": 232.0767
+          },
+          "idx_from_end": {
+            "zero_median": 137.5,
+            "other_median": 228.0,
+            "zero_mean": 175.699,
+            "other_mean": 247.4102
+          }
+        },
+        "by_density_quintile": [
+          {
+            "quintile": 0,
+            "units": 2757,
+            "zero_share": 0.0773
+          },
+          {
+            "quintile": 1,
+            "units": 2920,
+            "zero_share": 0.0668
+          },
+          {
+            "quintile": 2,
+            "units": 2564,
+            "zero_share": 0.085
+          },
+          {
+            "quintile": 3,
+            "units": 2919,
+            "zero_share": 0.0798
+          },
+          {
+            "quintile": 4,
+            "units": 2575,
+            "zero_share": 0.5348
+          }
+        ],
+        "by_position_quartile": [
+          {
+            "quartile": 0,
+            "units": 3434,
+            "zero_share": 0.1104
+          },
+          {
+            "quartile": 1,
+            "units": 3442,
+            "zero_share": 0.1107
+          },
+          {
+            "quartile": 2,
+            "units": 3425,
+            "zero_share": 0.1877
+          },
+          {
+            "quartile": 3,
+            "units": 3434,
+            "zero_share": 0.2426
+          }
+        ],
+        "edge_effects": {
+          "first_unit_zero_share": 0.0606,
+          "last_unit_zero_share": 0.1818,
+          "middle_zero_share": 0.163
+        },
+        "auc_context_predicts_zero": {
+          "duration_sec": 0.0,
+          "gap_prev_sec": 0.4494,
+          "local_window_chars_per_sec": 0.7858,
+          "song_density_chars_per_sec": 0.4339,
+          "pos_in_song": 0.612,
+          "idx_from_start": 0.5483,
+          "idx_from_end": 0.3629
+        },
+        "runs": {
+          "zero_units": 2236,
+          "runs": 734,
+          "median_run_length": 1.0,
+          "max_run_length": 251,
+          "share_of_zero_units_in_runs_of_5_plus": 0.593,
+          "share_in_runs_of_1": 0.2326,
+          "longest_runs": [
+            {
+              "song": "初音未来的消失",
+              "length": 251
+            },
+            {
+              "song": "I See Fire",
+              "length": 199
+            },
+            {
+              "song": "画下灯塔水母",
+              "length": 135
+            },
+            {
+              "song": "冬之花",
+              "length": 113
+            },
+            {
+              "song": "初音未来的消失",
+              "length": 97
+            }
+          ]
+        },
+        "by_language": {
+          "Cantonese": {
+            "units": 2439,
+            "zero_share": 0.1468
+          },
+          "Chinese": {
+            "units": 7206,
+            "zero_share": 0.0627
+          },
+          "English": {
+            "units": 2108,
+            "zero_share": 0.2187
+          },
+          "Japanese": {
+            "units": 1982,
+            "zero_share": 0.4869
+          }
+        },
+        "per_song": {
+          "songs": 33,
+          "songs_over_30pct_zero": 6,
+          "songs_over_50pct_zero": 3,
+          "worst": [
+            {
+              "song": "I See Fire",
+              "language": "English",
+              "units": 311,
+              "zero_share": 0.881
+            },
+            {
+              "song": "初音未来的消失",
+              "language": "Japanese",
+              "units": 561,
+              "zero_share": 0.7647
+            },
+            {
+              "song": "冬之花",
+              "language": "Japanese",
+              "units": 222,
+              "zero_share": 0.6261
+            },
+            {
+              "song": "皱鳃鲨",
+              "language": "Japanese",
+              "units": 261,
+              "zero_share": 0.433
+            },
+            {
+              "song": "炉心融解",
+              "language": "Japanese",
+              "units": 326,
+              "zero_share": 0.4233
+            },
+            {
+              "song": "画下灯塔水母",
+              "language": "Chinese",
+              "units": 532,
+              "zero_share": 0.3853
+            }
+          ],
+          "best": [
+            {
+              "song": "安全词",
+              "language": "Chinese",
+              "units": 411,
+              "zero_share": 0.0122
+            },
+            {
+              "song": "祈愿花开",
+              "language": "Chinese",
+              "units": 463,
+              "zero_share": 0.0151
+            },
+            {
+              "song": "此处通往天空",
+              "language": "Chinese",
+              "units": 286,
+              "zero_share": 0.0175
+            },
+            {
+              "song": "人造卫星",
+              "language": "Chinese",
+              "units": 477,
+              "zero_share": 0.0189
+            }
+          ]
+        },
+        "song_density_vs_zero_share": {
+          "songs": 33,
+          "spearman_rho": -0.0699,
+          "density_tercile_zero_share": [
+            {
+              "tercile": 0,
+              "songs": 11,
+              "median_density": 1.561,
+              "median_zero_share": 0.0982
+            },
+            {
+              "tercile": 1,
+              "songs": 11,
+              "median_density": 2.005,
+              "median_zero_share": 0.0667
+            },
+            {
+              "tercile": 2,
+              "songs": 11,
+              "median_density": 2.966,
+              "median_zero_share": 0.1028
+            }
+          ]
+        }
+      },
+      "fixed": {
+        "units": 13735,
+        "zero_units": 2236,
+        "zero_share": 0.1628,
+        "by_context": {
+          "duration_sec": {
+            "zero_median": 0.0,
+            "other_median": 0.32,
+            "zero_mean": 0.0,
+            "other_mean": 0.4053
+          },
+          "gap_prev_sec": {
+            "zero_median": 0.0,
+            "other_median": 0.0,
+            "zero_mean": 0.1209,
+            "other_mean": 0.1281
+          },
+          "local_window_chars_per_sec": {
+            "zero_median": 30.1599,
+            "other_median": 2.7174,
+            "zero_mean": 2418.2152,
+            "other_mean": 4.1782
+          },
+          "song_density_chars_per_sec": {
+            "zero_median": 2.1979,
+            "other_median": 2.3593,
+            "zero_mean": 2.2056,
+            "other_mean": 2.3839
+          },
+          "pos_in_song": {
+            "zero_median": 0.653,
+            "other_median": 0.4687,
+            "zero_mean": 0.594,
+            "other_mean": 0.4817
+          },
+          "idx_from_start": {
+            "zero_median": 235.0,
+            "other_median": 208.0,
+            "zero_mean": 254.5541,
+            "other_mean": 232.0767
+          },
+          "idx_from_end": {
+            "zero_median": 137.5,
+            "other_median": 228.0,
+            "zero_mean": 175.699,
+            "other_mean": 247.4102
+          }
+        },
+        "by_density_quintile": [
+          {
+            "quintile": 0,
+            "units": 2757,
+            "zero_share": 0.0773
+          },
+          {
+            "quintile": 1,
+            "units": 2920,
+            "zero_share": 0.0668
+          },
+          {
+            "quintile": 2,
+            "units": 2564,
+            "zero_share": 0.085
+          },
+          {
+            "quintile": 3,
+            "units": 2919,
+            "zero_share": 0.0798
+          },
+          {
+            "quintile": 4,
+            "units": 2575,
+            "zero_share": 0.5348
+          }
+        ],
+        "by_position_quartile": [
+          {
+            "quartile": 0,
+            "units": 3434,
+            "zero_share": 0.1104
+          },
+          {
+            "quartile": 1,
+            "units": 3442,
+            "zero_share": 0.1107
+          },
+          {
+            "quartile": 2,
+            "units": 3425,
+            "zero_share": 0.1877
+          },
+          {
+            "quartile": 3,
+            "units": 3434,
+            "zero_share": 0.2426
+          }
+        ],
+        "edge_effects": {
+          "first_unit_zero_share": 0.0606,
+          "last_unit_zero_share": 0.1818,
+          "middle_zero_share": 0.163
+        },
+        "auc_context_predicts_zero": {
+          "duration_sec": 0.0,
+          "gap_prev_sec": 0.4494,
+          "local_window_chars_per_sec": 0.7858,
+          "song_density_chars_per_sec": 0.4339,
+          "pos_in_song": 0.612,
+          "idx_from_start": 0.5483,
+          "idx_from_end": 0.3629
+        },
+        "runs": {
+          "zero_units": 2236,
+          "runs": 734,
+          "median_run_length": 1.0,
+          "max_run_length": 251,
+          "share_of_zero_units_in_runs_of_5_plus": 0.593,
+          "share_in_runs_of_1": 0.2326,
+          "longest_runs": [
+            {
+              "song": "初音未来的消失",
+              "length": 251
+            },
+            {
+              "song": "I See Fire",
+              "length": 199
+            },
+            {
+              "song": "画下灯塔水母",
+              "length": 135
+            },
+            {
+              "song": "冬之花",
+              "length": 113
+            },
+            {
+              "song": "初音未来的消失",
+              "length": 97
+            }
+          ]
+        },
+        "by_language": {
+          "Cantonese": {
+            "units": 2439,
+            "zero_share": 0.1468
+          },
+          "Chinese": {
+            "units": 7206,
+            "zero_share": 0.0627
+          },
+          "English": {
+            "units": 2108,
+            "zero_share": 0.2187
+          },
+          "Japanese": {
+            "units": 1982,
+            "zero_share": 0.4869
+          }
+        },
+        "per_song": {
+          "songs": 33,
+          "songs_over_30pct_zero": 6,
+          "songs_over_50pct_zero": 3,
+          "worst": [
+            {
+              "song": "I See Fire",
+              "language": "English",
+              "units": 311,
+              "zero_share": 0.881
+            },
+            {
+              "song": "初音未来的消失",
+              "language": "Japanese",
+              "units": 561,
+              "zero_share": 0.7647
+            },
+            {
+              "song": "冬之花",
+              "language": "Japanese",
+              "units": 222,
+              "zero_share": 0.6261
+            },
+            {
+              "song": "皱鳃鲨",
+              "language": "Japanese",
+              "units": 261,
+              "zero_share": 0.433
+            },
+            {
+              "song": "炉心融解",
+              "language": "Japanese",
+              "units": 326,
+              "zero_share": 0.4233
+            },
+            {
+              "song": "画下灯塔水母",
+              "language": "Chinese",
+              "units": 532,
+              "zero_share": 0.3853
+            }
+          ],
+          "best": [
+            {
+              "song": "安全词",
+              "language": "Chinese",
+              "units": 411,
+              "zero_share": 0.0122
+            },
+            {
+              "song": "祈愿花开",
+              "language": "Chinese",
+              "units": 463,
+              "zero_share": 0.0151
+            },
+            {
+              "song": "此处通往天空",
+              "language": "Chinese",
+              "units": 286,
+              "zero_share": 0.0175
+            },
+            {
+              "song": "人造卫星",
+              "language": "Chinese",
+              "units": 477,
+              "zero_share": 0.0189
+            }
+          ]
+        },
+        "song_density_vs_zero_share": {
+          "songs": 33,
+          "spearman_rho": -0.0699,
+          "density_tercile_zero_share": [
+            {
+              "tercile": 0,
+              "songs": 11,
+              "median_density": 1.561,
+              "median_zero_share": 0.0982
+            },
+            {
+              "tercile": 1,
+              "songs": 11,
+              "median_density": 2.005,
+              "median_zero_share": 0.0667
+            },
+            {
+              "tercile": 2,
+              "songs": 11,
+              "median_density": 2.966,
+              "median_zero_share": 0.1028
+            }
+          ]
+        }
+      },
+      "raw": {
+        "units": 13735,
+        "zero_units": 1483,
+        "zero_share": 0.108,
+        "by_context": {
+          "duration_sec": {
+            "zero_median": -0.48,
+            "other_median": 0.32,
+            "zero_mean": -11.5044,
+            "other_mean": 1.6155
+          },
+          "gap_prev_sec": {
+            "zero_median": 0.0,
+            "other_median": 0.0,
+            "zero_mean": 3.3145,
+            "other_mean": -0.1109
+          },
+          "local_window_chars_per_sec": {
+            "zero_median": 5000.0,
+            "other_median": 2.6042,
+            "zero_mean": 2743.09,
+            "other_mean": 141.2684
+          },
+          "song_density_chars_per_sec": {
+            "zero_median": 1.9823,
+            "other_median": 2.0664,
+            "zero_mean": 1.9866,
+            "other_mean": 2.3293
+          },
+          "pos_in_song": {
+            "zero_median": 0.6129,
+            "other_median": 0.4854,
+            "zero_mean": 0.5836,
+            "other_mean": 0.4899
+          },
+          "idx_from_start": {
+            "zero_median": 211.0,
+            "other_median": 213.0,
+            "zero_mean": 238.8887,
+            "other_mean": 235.3543
+          },
+          "idx_from_end": {
+            "zero_median": 138.0,
+            "other_median": 223.0,
+            "zero_mean": 172.6777,
+            "other_mean": 243.3686
+          }
+        },
+        "by_density_quintile": [
+          {
+            "quintile": 0,
+            "units": 2750,
+            "zero_share": 0.0691
+          },
+          {
+            "quintile": 1,
+            "units": 2870,
+            "zero_share": 0.0394
+          },
+          {
+            "quintile": 2,
+            "units": 2716,
+            "zero_share": 0.0416
+          },
+          {
+            "quintile": 3,
+            "units": 2685,
+            "zero_share": 0.0391
+          },
+          {
+            "quintile": 4,
+            "units": 2714,
+            "zero_share": 0.3545
+          }
+        ],
+        "by_position_quartile": [
+          {
+            "quartile": 0,
+            "units": 3434,
+            "zero_share": 0.0699
+          },
+          {
+            "quartile": 1,
+            "units": 3442,
+            "zero_share": 0.0944
+          },
+          {
+            "quartile": 2,
+            "units": 3425,
+            "zero_share": 0.1069
+          },
+          {
+            "quartile": 3,
+            "units": 3434,
+            "zero_share": 0.1607
+          }
+        ],
+        "edge_effects": {
+          "first_unit_zero_share": 0.0,
+          "last_unit_zero_share": 0.1515,
+          "middle_zero_share": 0.1081
+        },
+        "auc_context_predicts_zero": {
+          "duration_sec": 0.0,
+          "gap_prev_sec": 0.5946,
+          "local_window_chars_per_sec": 0.7618,
+          "song_density_chars_per_sec": 0.3782,
+          "pos_in_song": 0.5935,
+          "idx_from_start": 0.5142,
+          "idx_from_end": 0.3662
+        },
+        "runs": {
+          "zero_units": 1483,
+          "runs": 828,
+          "median_run_length": 1.0,
+          "max_run_length": 22,
+          "share_of_zero_units_in_runs_of_5_plus": 0.232,
+          "share_in_runs_of_1": 0.3641,
+          "longest_runs": [
+            {
+              "song": "冬之花",
+              "length": 22
+            },
+            {
+              "song": "p.h",
+              "length": 20
+            },
+            {
+              "song": "I See Fire",
+              "length": 17
+            },
+            {
+              "song": "冬之花",
+              "length": 17
+            },
+            {
+              "song": "初音未来的消失",
+              "length": 16
+            }
+          ]
+        },
+        "by_language": {
+          "Cantonese": {
+            "units": 2439,
+            "zero_share": 0.1185
+          },
+          "Chinese": {
+            "units": 7206,
+            "zero_share": 0.0283
+          },
+          "English": {
+            "units": 2108,
+            "zero_share": 0.1352
+          },
+          "Japanese": {
+            "units": 1982,
+            "zero_share": 0.3557
+          }
+        },
+        "per_song": {
+          "songs": 33,
+          "songs_over_30pct_zero": 5,
+          "songs_over_50pct_zero": 1,
+          "worst": [
+            {
+              "song": "I See Fire",
+              "language": "English",
+              "units": 311,
+              "zero_share": 0.5145
+            },
+            {
+              "song": "初音未来的消失",
+              "language": "Japanese",
+              "units": 561,
+              "zero_share": 0.4742
+            },
+            {
+              "song": "p.h",
+              "language": "Japanese",
+              "units": 271,
+              "zero_share": 0.4502
+            },
+            {
+              "song": "冬之花",
+              "language": "Japanese",
+              "units": 222,
+              "zero_share": 0.4414
+            },
+            {
+              "song": "皱鳃鲨",
+              "language": "Japanese",
+              "units": 261,
+              "zero_share": 0.3295
+            },
+            {
+              "song": "炉心融解",
+              "language": "Japanese",
+              "units": 326,
+              "zero_share": 0.2423
+            }
+          ],
+          "best": [
+            {
+              "song": "祈愿花开",
+              "language": "Chinese",
+              "units": 463,
+              "zero_share": 0.0
+            },
+            {
+              "song": "人造卫星",
+              "language": "Chinese",
+              "units": 477,
+              "zero_share": 0.0021
+            },
+            {
+              "song": "此处通往天空",
+              "language": "Chinese",
+              "units": 286,
+              "zero_share": 0.0035
+            },
+            {
+              "song": "权御天下",
+              "language": "Chinese",
+              "units": 762,
+              "zero_share": 0.0066
+            }
+          ]
+        },
+        "song_density_vs_zero_share": {
+          "songs": 33,
+          "spearman_rho": -0.2517,
+          "density_tercile_zero_share": [
+            {
+              "tercile": 0,
+              "songs": 11,
+              "median_density": 1.491,
+              "median_zero_share": 0.0446
+            },
+            {
+              "tercile": 1,
+              "songs": 11,
+              "median_density": 1.969,
+              "median_zero_share": 0.0637
+            },
+            {
+              "tercile": 2,
+              "songs": 11,
+              "median_density": 2.756,
+              "median_zero_share": 0.0242
+            }
+          ]
+        }
+      }
+    }
+  },
+  "headline": {
+    "shipped_zero_units": 2236,
+    "shipped_zero_share": 0.1628,
+    "runs": 734,
+    "max_run_shipped": 251,
+    "max_run_raw": 22,
+    "amplification_factor": 11.4,
+    "share_in_runs_ge5_shipped": 0.593,
+    "share_in_runs_ge5_raw": 0.232,
+    "songs_over_30pct": 6,
+    "songs_over_50pct": 3,
+    "song_density_rho": -0.0699,
+    "last_unit_zero_share": 0.1818,
+    "zero_share_by_language": {
+      "Cantonese": 0.1468,
+      "Chinese": 0.0627,
+      "English": 0.2187,
+      "Japanese": 0.4869
+    },
+    "density_hypothesis_refuted": true,
+    "local_window_metric_is_circular": true,
+    "conclusion": "zero-length damage is blocky, not diffuse: 59.3 % of the affected units sit in runs of five or more and the longest shipped run is 251 units versus 22 raw, so post-processing amplifies collapses ~11x; damage concentrates in 6 of 33 songs and lyric density does not explain it"
+  }
+}

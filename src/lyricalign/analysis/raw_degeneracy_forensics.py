@@ -268,3 +268,130 @@ def inversion_clamp_accounting(df: pd.DataFrame) -> dict[str, Any]:
         by_lang[str(lang)] = {"inversions": int(len(sub)), "clamped_to_zero": int(z.sum())}
     out["by_language"] = by_lang
     return out
+
+
+def context_features(units: pd.DataFrame) -> pd.DataFrame:
+    """Per-unit local context, so degeneracy can be explained by where it sits, not just by stage.
+
+    Columns added: unit length, gap to the previous unit end, local lyric density (characters per
+    second over a 5-unit window), position in the song (0-1), index from the start and from the end,
+    and whether the unit is the first or last of its song.
+    """
+    d = units.sort_values(["song", "unit_index"]).reset_index(drop=True).copy()
+    dur = pd.to_numeric(d["end_sec"], errors="coerce") - pd.to_numeric(d["start_sec"], errors="coerce")
+    d["duration_sec"] = dur
+    prev_end = pd.to_numeric(d["end_sec"], errors="coerce").shift(1)
+    prev_song = d["song"].shift(1)
+    d["gap_prev_sec"] = np.where(d["song"].to_numpy() == prev_song.to_numpy(),
+                                 pd.to_numeric(d["start_sec"], errors="coerce").to_numpy()
+                                 - prev_end.to_numpy(dtype=float), np.nan)
+    start = pd.to_numeric(d["start_sec"], errors="coerce")
+    d["pos_in_song"] = d.groupby("song", observed=True)["unit_index"].transform(
+        lambda s: (s - s.min()) / max(s.max() - s.min(), 1))
+    d["idx_from_start"] = d.groupby("song", observed=True).cumcount()
+    d["idx_from_end"] = d.groupby("song", observed=True).cumcount(ascending=False)
+    d["is_first_unit"] = d["idx_from_start"] == 0
+    d["is_last_unit"] = d["idx_from_end"] == 0
+    # Local window density.  CAUTION: this is *circular* for the units we want to explain — a window
+    # containing zero-length units has a collapsed span, so its "density" explodes (verified: median
+    # 5000 chars/s at the raw stage, i.e. the clip value).  It is therefore reported as evidence that
+    # degenerate units *co-locate in runs*, never as a driver; `song_density` below is the
+    # non-circular counterpart.
+    win = 5
+    dur_win = dur.rolling(win, min_periods=1).sum()
+    span = (dur.rolling(win, min_periods=1).sum()
+            + d["gap_prev_sec"].fillna(0).rolling(win, min_periods=1).sum()).clip(lower=1e-3)
+    d["local_window_chars_per_sec"] = np.where(d["song"].notna(), win / span.to_numpy(), np.nan)
+    d.loc[dur_win.isna(), "local_window_chars_per_sec"] = np.nan
+    # song-level density uses the whole timeline span, which zero-length units cannot distort
+    span_song = d.groupby("song", observed=True)["end_sec"].transform("max") - d.groupby(
+        "song", observed=True)["start_sec"].transform("min")
+    n_song = d.groupby("song", observed=True)["unit_index"].transform("size")
+    d["song_density_chars_per_sec"] = n_song / span_song.clip(lower=1e-3)
+    return d
+
+
+def zero_runs(units: pd.DataFrame, *, zero_flag: str = "flag_zero_or_negative",
+              col: str = "song") -> dict[str, Any]:
+    """Are the degenerate units isolated accidents or contiguous runs?
+
+    Run length matters for repair: one isolated zero-length unit can be interpolated, a block of
+    thirty means the aligner lost the section and the fix is re-decoding, not patching.
+    """
+    d = units.sort_values([col, "unit_index"]) if "unit_index" in units.columns else units
+    z = (d[zero_flag].to_numpy(dtype=bool) if zero_flag in d.columns
+         else (pd.to_numeric(d["end_sec"], errors="coerce")
+               - pd.to_numeric(d["start_sec"], errors="coerce") <= 1e-6).to_numpy(dtype=bool))
+    songs = d[col].to_numpy()
+    runs: list[dict[str, Any]] = []
+    i = 0
+    n = len(z)
+    while i < n:
+        if not z[i]:
+            i += 1
+            continue
+        j = i
+        while j + 1 < n and z[j + 1] and songs[j + 1] == songs[i]:
+            j += 1
+        runs.append({"song": str(songs[i]), "length": j - i + 1})
+        i = j + 1
+    if not runs:
+        return {"zero_units": 0, "runs": 0}
+    lengths = np.array([r["length"] for r in runs], dtype=float)
+    return {"zero_units": int(z.sum()), "runs": len(runs),
+            "median_run_length": float(np.median(lengths)), "max_run_length": int(lengths.max()),
+            "share_of_zero_units_in_runs_of_5_plus": round(
+                float(lengths[lengths >= 5].sum() / lengths.sum()), 4),
+            "share_in_runs_of_1": round(float((lengths == 1).sum() / lengths.sum()), 4),
+            "longest_runs": sorted(runs, key=lambda r: -r["length"])[:5]}
+
+
+def zero_length_profile(units: pd.DataFrame, *, zero_flag: str = "flag_zero_or_negative"
+                         ) -> dict[str, Any]:
+    """Who are the zero-length units?  Compare their context against the rest of the batch."""
+    d = context_features(units)
+    flag = d[zero_flag].to_numpy(dtype=bool) if zero_flag in d.columns else (
+        d["duration_sec"] <= 1e-6).to_numpy(dtype=bool)
+    cols = ["duration_sec", "gap_prev_sec", "local_window_chars_per_sec",
+            "song_density_chars_per_sec", "pos_in_song", "idx_from_start", "idx_from_end"]
+    out: dict[str, Any] = {"units": int(len(d)), "zero_units": int(flag.sum()),
+                           "zero_share": round(float(flag.mean()), 4), "by_context": {}}
+    for c in cols:
+        v = pd.to_numeric(d[c], errors="coerce")
+        if v.notna().sum() < 10:
+            continue
+        out["by_context"][c] = {
+            "zero_median": round(float(np.nanmedian(v[flag])), 4) if flag.any() else None,
+            "other_median": round(float(np.nanmedian(v[~flag])), 4),
+            "zero_mean": round(float(np.nanmean(v[flag])), 4) if flag.any() else None,
+            "other_mean": round(float(np.nanmean(v[~flag])), 4)}
+    # density quintiles: how concentrated are the degeneracies?
+    q = pd.qcut(pd.to_numeric(d["local_window_chars_per_sec"], errors="coerce"), 5,
+                labels=False, duplicates="drop")
+    out["by_density_quintile"] = [
+        {"quintile": int(k), "units": int(len(g)),
+         "zero_share": round(float(flag[g.index.to_numpy()].mean()), 4)}
+        for k, g in d.assign(_q=q).groupby("_q", observed=True) if pd.notna(k)]
+    out["by_position_quartile"] = [
+        {"quartile": int(k), "units": int(len(g)),
+         "zero_share": round(float(flag[g.index.to_numpy()].mean()), 4)}
+        for k, g in d.assign(_p=pd.qcut(d["pos_in_song"], 4, labels=False, duplicates="drop"))
+        .groupby("_p", observed=True)]
+    out["edge_effects"] = {
+        "first_unit_zero_share": round(float(flag[d["is_first_unit"].to_numpy(dtype=bool)].mean()), 4),
+        "last_unit_zero_share": round(float(flag[d["is_last_unit"].to_numpy(dtype=bool)].mean()), 4),
+        "middle_zero_share": round(float(flag[(~d["is_first_unit"].to_numpy(dtype=bool))
+                                             & (~d["is_last_unit"].to_numpy(dtype=bool))].mean()), 4)}
+    # which context feature separates zero from non-zero best?
+    from lyricalign.realign_gate.gate_features import roc_auc
+    aucs = {}
+    for c in cols:
+        v = pd.to_numeric(d[c], errors="coerce")
+        ok = v.notna().to_numpy() & np.isfinite(flag.astype(float))
+        if ok.sum() < 100 or flag[ok].sum() in (0, ok.sum()):
+            continue
+        a = roc_auc(flag[ok].astype(float), v.to_numpy(dtype=float)[ok])
+        if a is not None:
+            aucs[c] = round(float(a), 4)
+    out["auc_context_predicts_zero"] = aucs
+    return out
