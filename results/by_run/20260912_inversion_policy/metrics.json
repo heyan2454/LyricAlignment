@@ -1,0 +1,425 @@
+{
+  "schema_version": "inversion_policy_metrics_v1",
+  "brief": {
+    "schema": "inversion_policy_brief_v1",
+    "discipline": "per-unit policy application on inverted units only; shadow-only, no production behaviour changed",
+    "panels": {
+      "gtsinger_raw_human_gt": {
+        "units": 33228,
+        "inverted_units": 76,
+        "inverted_share": 0.00229,
+        "tolerance_sec": 0.1,
+        "policies": {
+          "P0_shipped_clamp_to_zero": {
+            "inverted_units_only": {
+              "n": 76,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 0.6136,
+              "mae_end_sec": 0.4652,
+              "bias_end_sec": -0.3662,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 33228,
+              "hit_at_tol": 0.8242,
+              "mae_start_sec": 0.0587,
+              "mae_end_sec": 0.0752,
+              "bias_end_sec": -0.0202,
+              "zero_length_share": 0.0126,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 76,
+              "flag_share": 0.00229
+            }
+          },
+          "P1_swap_endpoints": {
+            "inverted_units_only": {
+              "n": 76,
+              "hit_at_tol": 0.1053,
+              "mae_start_sec": 0.6836,
+              "mae_end_sec": 0.4652,
+              "bias_end_sec": -0.3662,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 33228,
+              "hit_at_tol": 0.8245,
+              "mae_start_sec": 0.0589,
+              "mae_end_sec": 0.0752,
+              "bias_end_sec": -0.0202,
+              "zero_length_share": 0.0104,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 76,
+              "flag_share": 0.00229
+            }
+          },
+          "P2_midpoint": {
+            "inverted_units_only": {
+              "n": 76,
+              "hit_at_tol": 0.0526,
+              "mae_start_sec": 0.6478,
+              "mae_end_sec": 0.5452,
+              "bias_end_sec": -0.5073,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 33228,
+              "hit_at_tol": 0.1015,
+              "mae_start_sec": 0.2194,
+              "mae_end_sec": 0.228,
+              "bias_end_sec": -0.2148,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 76,
+              "flag_share": 0.00229
+            }
+          },
+          "P3_min_duration_floor": {
+            "inverted_units_only": {
+              "n": 76,
+              "hit_at_tol": 0.1053,
+              "mae_start_sec": 0.6836,
+              "mae_end_sec": 0.6183,
+              "bias_end_sec": -0.5983,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 33228,
+              "hit_at_tol": 0.0627,
+              "mae_start_sec": 0.0589,
+              "mae_end_sec": 0.366,
+              "bias_end_sec": -0.3594,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 76,
+              "flag_share": 0.00229
+            }
+          },
+          "P4_floor_from_previous_end": {
+            "inverted_units_only": {
+              "n": 76,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 1.2394,
+              "mae_end_sec": 1.1725,
+              "bias_end_sec": 0.3927,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 33228,
+              "hit_at_tol": 0.2725,
+              "mae_start_sec": 0.4875,
+              "mae_end_sec": 0.6353,
+              "bias_end_sec": 0.245,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 76,
+              "flag_share": 0.00229
+            }
+          }
+        },
+        "decision": {
+          "available": true,
+          "ranking": [
+            {
+              "policy": "P1_swap_endpoints",
+              "hit_at_tol": 0.1053,
+              "mae_end_sec": 0.4652,
+              "bias_end_sec": -0.3662,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P3_min_duration_floor",
+              "hit_at_tol": 0.1053,
+              "mae_end_sec": 0.6183,
+              "bias_end_sec": -0.5983,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P2_midpoint",
+              "hit_at_tol": 0.0526,
+              "mae_end_sec": 0.5452,
+              "bias_end_sec": -0.5073,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P0_shipped_clamp_to_zero",
+              "hit_at_tol": 0.0,
+              "mae_end_sec": 0.4652,
+              "bias_end_sec": -0.3662,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P4_floor_from_previous_end",
+              "hit_at_tol": 0.0,
+              "mae_end_sec": 1.1725,
+              "bias_end_sec": 0.3927,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            }
+          ],
+          "best_policy": "P1_swap_endpoints",
+          "best_hit_at_tol": 0.1053,
+          "gain_vs_shipped_pp": 10.53,
+          "shipped_zero_length_share_after": 1.0,
+          "trigger_cost_share": 0.00229
+        }
+      },
+      "m4_longform_weak_gt": {
+        "units": 134538,
+        "inverted_units": 1562,
+        "inverted_share": 0.01161,
+        "tolerance_sec": 0.1,
+        "policies": {
+          "P0_shipped_clamp_to_zero": {
+            "inverted_units_only": {
+              "n": 1562,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 4.065,
+              "mae_end_sec": 4.0554,
+              "bias_end_sec": 1.2631,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 134538,
+              "hit_at_tol": 0.0523,
+              "mae_start_sec": 0.6761,
+              "mae_end_sec": 0.6763,
+              "bias_end_sec": -0.2179,
+              "zero_length_share": 0.0216,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 1562,
+              "flag_share": 0.01161
+            }
+          },
+          "P1_swap_endpoints": {
+            "inverted_units_only": {
+              "n": 1562,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 4.9882,
+              "mae_end_sec": 4.0554,
+              "bias_end_sec": 1.2631,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 134538,
+              "hit_at_tol": 0.0523,
+              "mae_start_sec": 0.6868,
+              "mae_end_sec": 0.6763,
+              "bias_end_sec": -0.2179,
+              "zero_length_share": 0.01,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 1562,
+              "flag_share": 0.01161
+            }
+          },
+          "P2_midpoint": {
+            "inverted_units_only": {
+              "n": 1562,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 4.3352,
+              "mae_end_sec": 4.4398,
+              "bias_end_sec": -0.3114,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 134538,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 0.624,
+              "mae_end_sec": 0.8296,
+              "bias_end_sec": -0.5037,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 1562,
+              "flag_share": 0.01161
+            }
+          },
+          "P3_min_duration_floor": {
+            "inverted_units_only": {
+              "n": 1562,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 4.9882,
+              "mae_end_sec": 5.1428,
+              "bias_end_sec": -1.8359,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 134538,
+              "hit_at_tol": 0.0,
+              "mae_start_sec": 0.6868,
+              "mae_end_sec": 1.0097,
+              "bias_end_sec": -0.7396,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 1562,
+              "flag_share": 0.01161
+            }
+          },
+          "P4_floor_from_previous_end": {
+            "inverted_units_only": {
+              "n": 1562,
+              "hit_at_tol": 0.0109,
+              "mae_start_sec": 4.2686,
+              "mae_end_sec": 4.3287,
+              "bias_end_sec": 0.6186,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "all_units": {
+              "n": 134538,
+              "hit_at_tol": 0.0303,
+              "mae_start_sec": 0.9198,
+              "mae_end_sec": 1.0969,
+              "bias_end_sec": -0.4627,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            "trigger": {
+              "flagged_units": 1562,
+              "flag_share": 0.01161
+            }
+          }
+        },
+        "decision": {
+          "available": true,
+          "ranking": [
+            {
+              "policy": "P4_floor_from_previous_end",
+              "hit_at_tol": 0.0109,
+              "mae_end_sec": 4.3287,
+              "bias_end_sec": 0.6186,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P0_shipped_clamp_to_zero",
+              "hit_at_tol": 0.0,
+              "mae_end_sec": 4.0554,
+              "bias_end_sec": 1.2631,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P1_swap_endpoints",
+              "hit_at_tol": 0.0,
+              "mae_end_sec": 4.0554,
+              "bias_end_sec": 1.2631,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P2_midpoint",
+              "hit_at_tol": 0.0,
+              "mae_end_sec": 4.4398,
+              "bias_end_sec": -0.3114,
+              "zero_length_share": 1.0,
+              "duration_violation_share": 0.0
+            },
+            {
+              "policy": "P3_min_duration_floor",
+              "hit_at_tol": 0.0,
+              "mae_end_sec": 5.1428,
+              "bias_end_sec": -1.8359,
+              "zero_length_share": 0.0,
+              "duration_violation_share": 0.0
+            }
+          ],
+          "best_policy": "P4_floor_from_previous_end",
+          "best_hit_at_tol": 0.0109,
+          "gain_vs_shipped_pp": 1.09,
+          "shipped_zero_length_share_after": 1.0,
+          "trigger_cost_share": 0.01161
+        },
+        "label_kind": "weak (signed GT rebuilt from segment labels, 80 ms quantised)",
+        "by_split": {
+          "test": 258,
+          "train": 1056,
+          "validation": 248
+        }
+      }
+    }
+  },
+  "structural": {
+    "units": 13735,
+    "inverted_units": 870,
+    "inverted_share": 0.0633,
+    "inversion_gap_median_sec": 2.48,
+    "inversion_gap_p90_sec": 65.52,
+    "policies": {
+      "P0_shipped": {
+        "degenerate_share": 0.1628,
+        "overlap_share": 0.001,
+        "regression_share": 0.0007,
+        "overshoot_share": 0.0037,
+        "illegal_share": 0.1672,
+        "flag_share_for_redecode": 0.0633
+      },
+      "P1_swap": {
+        "degenerate_share": 0.1195,
+        "overlap_share": 0.0619,
+        "regression_share": 0.0328,
+        "overshoot_share": 0.0325,
+        "illegal_share": 0.1964,
+        "flag_share_for_redecode": 0.0633
+      },
+      "P3_min_floor": {
+        "degenerate_share": 0.1195,
+        "overlap_share": 0.0523,
+        "regression_share": 0.0328,
+        "overshoot_share": 0.0031,
+        "illegal_share": 0.1902,
+        "flag_share_for_redecode": 0.0633
+      },
+      "P1_swap_then_joint_solve": {
+        "degenerate_share": 0.0,
+        "overlap_share": 0.0,
+        "regression_share": 0.0,
+        "overshoot_share": 0.0001,
+        "illegal_share": 0.0001,
+        "median_shift_vs_shipped_sec": 0.0
+      }
+    },
+    "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence"
+  },
+  "headline": {
+    "gtsinger_best_policy": "P1_swap_endpoints",
+    "gtsinger_best_hit": 0.1053,
+    "gtsinger_gain_vs_shipped_pp": 10.53,
+    "m4_all_policies_hit_zero": true,
+    "illegal_share_P0": 0.1672,
+    "illegal_share_swap": 0.1964,
+    "illegal_share_swap_then_solve": 0.0001,
+    "inversion_gap_median_sec": 2.48,
+    "redecode_trigger_share_real_songs": 0.0633,
+    "conclusion": "no local policy recovers inverted units and swapping worsens structure; use inversion as a re-decode trigger plus the global solve for legality"
+  }
+}

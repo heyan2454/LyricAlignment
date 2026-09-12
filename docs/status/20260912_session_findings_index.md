@@ -43,6 +43,10 @@
 | B11 | **测量有效性附注**：同一钳位也在评测链路里 ⇒ 本会话前几轮的绝对精度是**含退化单元的保守下界**（GTSinger official +3.31pp、MIR-1K +3.21pp、真实歌钳位净造 1,623 个零长）；且**跨预测器不等量**（base +5.38pp vs LoRA +0.23~0.54pp）⇒ 新规则：**两系统退化率差 >1pp 时，其 hit@100 差距不可直接归因于边界精度**；已复核第 4/5 轮的弱成员排除结论在此口径下**不变** | ✅ | `reports/progress/20260912_measurement_validity.md`、`results/by_run/20260912_measurement_validity/metrics.json` |
 | B12 | `pipeline=raw` 面板保留倒序（不经钳位），其 38 个倒序单元 hit@100 = **0.0%**、MAE(end) 654.6ms ⇒ 钳位没有把坏单元变好，只是把它们变成"没有时间长度的字" | ✅ | 同上 |
 
+| B13 | **倒序单元无法局部挽救**：人工真值上最好的策略（交换端点）hit@100 仅 10.5%（现状 0.0%），弱真值 M4 上所有策略 0.0%（MAE 4–5s）；且 M4 倒序在 train/val/test 都有（1056/248/**258**）⇒ 不是可忽略噪声 | ✅ | `reports/progress/20260912_inversion_policy.md` |
+| B14 | **交换端点是结构净亏**：真实歌非法率 16.72%→**19.64%**（重叠 0.10%→6.19%、回退 0.07%→3.28%），因倒序幅度中位 2.48s、p90 65.5s 会吞掉邻居；**邻居顺延(P4)最差**（MAE 1.17s、偏置转正）⇒ 不要用局部修补代替重解码 | ❌（否证了直观修法） | 同上 §2 |
+| B15 | 可行组合 = **倒序作重解码触发器**（代价：真实歌 6.33%、M4 1.161%、GTSinger 0.229% 单元）**+ 全局联合求解保结构**（swap 后求解非法率 0.01%） | ✅ | 同上 |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -103,8 +107,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 115 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1557 passed / 3 pre-existing failed`
+- 测试：本会话新增 120 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1563 passed / 3 pre-existing failed`（以最新一次隔离复跑为准）
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
   window_anchor_pinning 2% / start_order_integrity 2% / repair_feasibility
 - 序列身份教训：**任何"逐序列"求解/统计的分组键必须含 `run`**（不同 run 的同名单元混在一个序列会让单调约束互相打乱）
