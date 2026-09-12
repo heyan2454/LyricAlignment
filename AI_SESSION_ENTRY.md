@@ -11,7 +11,7 @@ reports/progress/20260912_gtsinger_gt_deep_analysis.md
 results/by_run/20260912_gtsinger_gt_deep/metrics.json
 ```
 
-Twelve things later rounds must not re-assume:
+Thirteen things later rounds must not re-assume:
 
 1. The 3x2x2 evaluation matrix is degenerate — `mix`/`vocal` were fed the same wav and
    `full`/`windowed` coincide on short clips, so those runs contain no audio-input or planning-mode
@@ -71,7 +71,17 @@ Twelve things later rounds must not re-assume:
     gap) while entropy/margin add only +0.09/+0.16 pp, and *placing the unit centrally in its window is
     1.15 pp worse* — which undercuts "re-crop to centre the hard unit" realign designs. See
     `reports/progress/20260912_cross_window_selection.md`.
-12. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
+12. For long-form, the deployable output should be the **cross-window consensus** (median boundary over
+    the windows covering a unit): +2.14 pp hit@100 over an arbitrary single window (86.60% vs 84.46%) and
+    MAE 271->117 ms, free of cost. Adding the round-7 joint solve on top yields zero degenerate/overlap/
+    regression units and the best deployable MAE (102.4 ms) for −0.53 pp. **Only 40% of units have ≥2
+    attempts**, so consensus needs deliberate multi-view generation to cover everything.
+13. Cross-window *disagreement* is a poor realign trigger (AUC 0.584 for >100 ms, 0.705 for ≥250 ms; its
+    error-capture curve is near random: 20% budget catches 26.9% of errors) — **boundary entropy remains the
+    best trigger** (0.779 / 0.881), reproducing rounds 1/3/5. Also corrected this round: the −0.5 pp cost of
+    the joint solve is *not* the 3 s duration cap (3/6/12 s give 86.07/86.08/86.08%) but the non-overlap and
+    monotone constraints themselves.
+14. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
    ground truth: joining predictions to it yields hit@100 = 5.3% where the frozen real-GT labels give
    87.9%. Any reuse of `research_v7_detector_v2` evidence must reconcile recomputed errors against
    that run's frozen `LABELS.jsonl` before believing a number (see `uniform_axis_trap`), and run1's
