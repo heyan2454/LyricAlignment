@@ -37,6 +37,7 @@
 | B9d | **根因落地**：`karaoke.py::append_strict_core_commits` 在压缩前钳位 `end := max(end, start)` ⇒ 解码器起止倒序被**静默转成零长单元**（870 中 595=68.4%，解释 fixed 阶段净 +807 的 73.7%），且因此**同时骗过 `overlap_compressed` 与 `collapsed_to_zero` 两个计数器**；已用生产函数复现（3 项测试）并加 `start_after_end_at_<stage>` 警告 + `start_order_integrity` gate | ✅ | `tests/test_inversion_clamp_observability.py`、`RAW_DEGENERACY.json.inversion_clamp` |
 | B9e | 「raw_classes 槽位整体错位 k=1」假设**被否证**：若成立则 `e[i]==s[i+1]` 应≈100%，实测 0.31–0.68（相邻单元天然连续）⇒ 负时长确为解码器输出倒序；另 GPU 路径有 `2*len(selected)` 断言而 raw 路径没有（可选加固点） | ❌ | `run_raw_degeneracy_forensics` 位移检验 |
 | B9c | 中文 raw 负时长仅 **1.1%**（cjk_character 3.0%），日文词 22.6%、英文 word 8.2% ⇒ 普通话侧解码质量明显更好 | ✅ | 同上 |
+| C5 | **口径提示**：本会话所有"后处理可挽回 X pp"的数字都应理解为**在可达单元上**的上界；对 40% 不可达的长音端点，任何后处理都无法计分（见 B16） | ✅ | `20260912_decodability_ceiling` |
 | C4a | **联合求解不伤末字**（GTSinger 人工真值：末单元 74.8% 持平、首单元 +2.78pp、总 MAE 77.6→68.3ms），但**长音末字三系统完全同分**（55.9%，MAE 372ms）⇒ 该层只能靠解码信息，与第 11 轮一致 | ✅ | `runs/20260912_last_unit_validation/LAST_UNIT.json` |
 | B9 | 分诊规则：交付非法率 >35% 的歌应重解码而非修复（I See Fire 88% 单元被压成同一时间戳 64.48，而其 raw 边界本不相同） | ✅ | 同上 §3 |
 
@@ -46,6 +47,10 @@
 | B13 | **倒序单元无法局部挽救**：人工真值上最好的策略（交换端点）hit@100 仅 10.5%（现状 0.0%），弱真值 M4 上所有策略 0.0%（MAE 4–5s）；且 M4 倒序在 train/val/test 都有（1056/248/**258**）⇒ 不是可忽略噪声 | ✅ | `reports/progress/20260912_inversion_policy.md` |
 | B14 | **交换端点是结构净亏**：真实歌非法率 16.72%→**19.64%**（重叠 0.10%→6.19%、回退 0.07%→3.28%），因倒序幅度中位 2.48s、p90 65.5s 会吞掉邻居；**邻居顺延(P4)最差**（MAE 1.17s、偏置转正）⇒ 不要用局部修补代替重解码 | ❌（否证了直观修法） | 同上 §2 |
 | B15 | 可行组合 = **倒序作重解码触发器**（代价：真实歌 6.33%、M4 1.161%、GTSinger 0.229% 单元）**+ 全局联合求解保结构**（swap 后求解非法率 0.01%） | ✅ | 同上 |
+
+| B16 | **可解码上限（新发现，解释本会话所有"后处理只有个位数 pp"）**：长音（≥1s）端点有 **40.0%** 的 GT 格点**不在模型 top-2 候选内**（全体 15.7%、首单元 44.0%）⇒ 这些单元上任何基于本次解码的选择/共识/门控在原理上都不可能选对 | ✅ | `reports/progress/20260912_decodability_ceiling.md`、`runs/20260912_decodability_ceiling/CEILING.json` |
+| B17 | **训练在抬这个上限**：长音端点不可达率 r0 **70.8%** → r1 27.5% → r2 **21.7%**（top-1 恰中 12.5%→55.0%），r1→r2 增益变小 ⇒ 该层预算应投训练侧且仍有余量；旁证 `pipeline=raw` 包含率一致（39.9% vs 40.0%）⇒ 上限来自解码器而非第 16/17 轮的钳位 | ✅ | 同上 |
+| B18 | 置信度可预示"真值是否可达"（无参考触发器基础）：AUC(top1_prob→真值在候选±1格内) 全体端点 0.792、末单元 0.955，但**长音只有 0.616** ⇒ 恰在最需要处变弱；另 GTSinger 末单元（硬切尾，可达 90.6%）≠ MIR-1K 末字（自然衰减长音），不可互相推断 | ✅ | 同上 |
 
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
@@ -107,8 +112,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 120 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1563 passed / 3 pre-existing failed`（以最新一次隔离复跑为准）
+- 测试：本会话新增 126 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1569 passed / 3 pre-existing failed`（最新一次隔离复跑；同一命令内并发写盘会额外触发 LP 用例的负载敏感失败）
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
   window_anchor_pinning 2% / start_order_integrity 2% / repair_feasibility
 - 序列身份教训：**任何"逐序列"求解/统计的分组键必须含 `run`**（不同 run 的同名单元混在一个序列会让单调约束互相打乱）

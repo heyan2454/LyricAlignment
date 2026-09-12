@@ -1,0 +1,1072 @@
+{
+  "schema_version": "decodability_ceiling_metrics_v1",
+  "ceiling": {
+    "schema": "decodability_ceiling_v1",
+    "pipeline": "official",
+    "timestamp_step_sec": 0.08,
+    "units": 30600,
+    "items": 159,
+    "note": "exact containment is measurable for k=1 and k=2 only (the panel stores the runner-up class, not the full posterior); k>=3 is reported as unknown",
+    "strata": {
+      "all_units": {
+        "units": 30600,
+        "gt_dur_median_sec": 0.41,
+        "start": {
+          "units": 30600,
+          "top1_within_0bins": 0.7037,
+          "top2_within_0bins": 0.2048,
+          "in_top2_union_within_0bins": 0.9044,
+          "outside_top2_within_0bins": 0.0956,
+          "top1_within_1bins": 0.9285,
+          "top2_within_1bins": 0.8515,
+          "in_top2_union_within_1bins": 0.9552,
+          "outside_top2_within_1bins": 0.0448,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 31.0,
+            "mean": 0.31
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.749,
+          "top1_prob_when_gt_outside_candidates": 0.4555,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.8486,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 30600,
+          "top1_within_0bins": 0.6452,
+          "top2_within_0bins": 0.1996,
+          "in_top2_union_within_0bins": 0.8427,
+          "outside_top2_within_0bins": 0.1573,
+          "top1_within_1bins": 0.8863,
+          "top2_within_1bins": 0.7723,
+          "in_top2_union_within_1bins": 0.9396,
+          "outside_top2_within_1bins": 0.0604,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 1.0,
+            "max": 27.0,
+            "mean": 0.42
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.08
+          },
+          "top1_prob_when_gt_in_candidates": 0.7118,
+          "top1_prob_when_gt_outside_candidates": 0.4684,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.792,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "long_note": {
+        "units": 1440,
+        "gt_dur_median_sec": 1.48,
+        "start": {
+          "units": 1440,
+          "top1_within_0bins": 0.6028,
+          "top2_within_0bins": 0.2389,
+          "in_top2_union_within_0bins": 0.8389,
+          "outside_top2_within_0bins": 0.1611,
+          "top1_within_1bins": 0.8556,
+          "top2_within_1bins": 0.825,
+          "in_top2_union_within_1bins": 0.9111,
+          "outside_top2_within_1bins": 0.0889,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 1.0,
+            "max": 31.0,
+            "mean": 0.93
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.08
+          },
+          "top1_prob_when_gt_in_candidates": 0.6309,
+          "top1_prob_when_gt_outside_candidates": 0.4176,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7877,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 1440,
+          "top1_within_0bins": 0.4028,
+          "top2_within_0bins": 0.1972,
+          "in_top2_union_within_0bins": 0.6,
+          "outside_top2_within_0bins": 0.4,
+          "top1_within_1bins": 0.6778,
+          "top2_within_1bins": 0.6333,
+          "in_top2_union_within_1bins": 0.7944,
+          "outside_top2_within_1bins": 0.2056,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 10.0,
+            "max": 23.0,
+            "mean": 2.16
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.8
+          },
+          "top1_prob_when_gt_in_candidates": 0.4913,
+          "top1_prob_when_gt_outside_candidates": 0.4008,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.6161,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "last_unit": {
+        "units": 159,
+        "gt_dur_median_sec": 0.554,
+        "start": {
+          "units": 159,
+          "top1_within_0bins": 0.7421,
+          "top2_within_0bins": 0.2138,
+          "in_top2_union_within_0bins": 0.956,
+          "outside_top2_within_0bins": 0.044,
+          "top1_within_1bins": 0.9623,
+          "top2_within_1bins": 0.9623,
+          "in_top2_union_within_1bins": 0.9874,
+          "outside_top2_within_1bins": 0.0126,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 5.0,
+            "mean": 0.08
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.7121,
+          "top1_prob_when_gt_outside_candidates": 0.3321,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.9777,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 159,
+          "top1_within_0bins": 0.673,
+          "top2_within_0bins": 0.2327,
+          "in_top2_union_within_0bins": 0.9057,
+          "outside_top2_within_0bins": 0.0943,
+          "top1_within_1bins": 0.9748,
+          "top2_within_1bins": 0.9182,
+          "in_top2_union_within_1bins": 0.9874,
+          "outside_top2_within_1bins": 0.0126,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 3.0,
+            "mean": 0.11
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.5839,
+          "top1_prob_when_gt_outside_candidates": 0.4249,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.9554,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "first_unit": {
+        "units": 159,
+        "gt_dur_median_sec": 0.47,
+        "start": {
+          "units": 159,
+          "top1_within_0bins": 0.7107,
+          "top2_within_0bins": 0.0755,
+          "in_top2_union_within_0bins": 0.7799,
+          "outside_top2_within_0bins": 0.2201,
+          "top1_within_1bins": 0.7233,
+          "top2_within_1bins": 0.522,
+          "in_top2_union_within_1bins": 0.7799,
+          "outside_top2_within_1bins": 0.2201,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 6.200000000000017,
+            "max": 15.0,
+            "mean": 1.42
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.496
+          },
+          "top1_prob_when_gt_in_candidates": 0.9237,
+          "top1_prob_when_gt_outside_candidates": 0.4927,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.9224,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 159,
+          "top1_within_0bins": 0.3836,
+          "top2_within_0bins": 0.1761,
+          "in_top2_union_within_0bins": 0.5597,
+          "outside_top2_within_0bins": 0.4403,
+          "top1_within_1bins": 0.6101,
+          "top2_within_1bins": 0.4214,
+          "in_top2_union_within_1bins": 0.7799,
+          "outside_top2_within_1bins": 0.2201,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 3.200000000000017,
+            "max": 8.0,
+            "mean": 1.07
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.256
+          },
+          "top1_prob_when_gt_in_candidates": 0.6434,
+          "top1_prob_when_gt_outside_candidates": 0.4593,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7127,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "middle_units": {
+        "units": 30282,
+        "gt_dur_median_sec": 0.41,
+        "start": {
+          "units": 30282,
+          "top1_within_0bins": 0.7034,
+          "top2_within_0bins": 0.2055,
+          "in_top2_union_within_0bins": 0.9048,
+          "outside_top2_within_0bins": 0.0952,
+          "top1_within_1bins": 0.9294,
+          "top2_within_1bins": 0.8527,
+          "in_top2_union_within_1bins": 0.9559,
+          "outside_top2_within_1bins": 0.0441,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 31.0,
+            "mean": 0.3
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.7485,
+          "top1_prob_when_gt_outside_candidates": 0.4551,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.8487,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 30282,
+          "top1_within_0bins": 0.6465,
+          "top2_within_0bins": 0.1996,
+          "in_top2_union_within_0bins": 0.8439,
+          "outside_top2_within_0bins": 0.1561,
+          "top1_within_1bins": 0.8873,
+          "top2_within_1bins": 0.7734,
+          "in_top2_union_within_1bins": 0.9402,
+          "outside_top2_within_1bins": 0.0598,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 1.0,
+            "max": 27.0,
+            "mean": 0.42
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.08
+          },
+          "top1_prob_when_gt_in_candidates": 0.7128,
+          "top1_prob_when_gt_outside_candidates": 0.4686,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7928,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "short_note": {
+        "units": 14340,
+        "gt_dur_median_sec": 0.24,
+        "start": {
+          "units": 14340,
+          "top1_within_0bins": 0.704,
+          "top2_within_0bins": 0.2167,
+          "in_top2_union_within_0bins": 0.9172,
+          "outside_top2_within_0bins": 0.0828,
+          "top1_within_1bins": 0.9512,
+          "top2_within_1bins": 0.8438,
+          "in_top2_union_within_1bins": 0.9702,
+          "outside_top2_within_1bins": 0.0298,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 17.0,
+            "mean": 0.16
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.7723,
+          "top1_prob_when_gt_outside_candidates": 0.5006,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.8318,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 14340,
+          "top1_within_0bins": 0.6993,
+          "top2_within_0bins": 0.2,
+          "in_top2_union_within_0bins": 0.8974,
+          "outside_top2_within_0bins": 0.1026,
+          "top1_within_1bins": 0.9456,
+          "top2_within_1bins": 0.8117,
+          "in_top2_union_within_1bins": 0.971,
+          "outside_top2_within_1bins": 0.029,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 1.0,
+            "max": 10.0,
+            "mean": 0.18
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.08
+          },
+          "top1_prob_when_gt_in_candidates": 0.7567,
+          "top1_prob_when_gt_outside_candidates": 0.4988,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7929,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      }
+    },
+    "by_checkpoint": {
+      "r0": {
+        "units": 10200,
+        "all_units": {
+          "units": 10200,
+          "end_top1_exact": 0.5051,
+          "end_in_top2_exact": 0.7047,
+          "end_outside_top2_exact": 0.2953,
+          "end_top1_within1": 0.7769,
+          "end_in_top2_within1": 0.889,
+          "start_top1_exact": 0.62,
+          "start_in_top2_exact": 0.858
+        },
+        "long_note": {
+          "units": 480,
+          "end_top1_exact": 0.125,
+          "end_in_top2_exact": 0.2917,
+          "end_outside_top2_exact": 0.7083,
+          "end_top1_within1": 0.325,
+          "end_in_top2_within1": 0.5333,
+          "start_top1_exact": 0.525,
+          "start_in_top2_exact": 0.7583
+        },
+        "last_unit": {
+          "units": 159,
+          "end_top1_exact": 0.3333,
+          "end_in_top2_exact": 0.5786,
+          "end_outside_top2_exact": 0.4214,
+          "end_top1_within1": 0.5786,
+          "end_in_top2_within1": 0.7799,
+          "start_top1_exact": 0.6352,
+          "start_in_top2_exact": 0.8805
+        },
+        "first_unit": {
+          "units": 159,
+          "end_top1_exact": 0.3836,
+          "end_in_top2_exact": 0.5597,
+          "end_outside_top2_exact": 0.4403,
+          "end_top1_within1": 0.6101,
+          "end_in_top2_within1": 0.7799,
+          "start_top1_exact": 0.7107,
+          "start_in_top2_exact": 0.7799
+        },
+        "middle_units": {
+          "units": 9882,
+          "end_top1_exact": 0.5098,
+          "end_in_top2_exact": 0.7091,
+          "end_outside_top2_exact": 0.2909,
+          "end_top1_within1": 0.7827,
+          "end_in_top2_within1": 0.8925,
+          "start_top1_exact": 0.6183,
+          "start_in_top2_exact": 0.8589
+        },
+        "short_note": {
+          "units": 4780,
+          "end_top1_exact": 0.6067,
+          "end_in_top2_exact": 0.8276,
+          "end_outside_top2_exact": 0.1724,
+          "end_top1_within1": 0.9255,
+          "end_in_top2_within1": 0.9607,
+          "start_top1_exact": 0.6075,
+          "start_in_top2_exact": 0.8653
+        }
+      },
+      "r1": {
+        "units": 10200,
+        "all_units": {
+          "units": 10200,
+          "end_top1_exact": 0.7086,
+          "end_in_top2_exact": 0.9059,
+          "end_outside_top2_exact": 0.0941,
+          "end_top1_within1": 0.9345,
+          "end_in_top2_within1": 0.9596,
+          "start_top1_exact": 0.731,
+          "start_in_top2_exact": 0.9224
+        },
+        "long_note": {
+          "units": 480,
+          "end_top1_exact": 0.5333,
+          "end_in_top2_exact": 0.725,
+          "end_outside_top2_exact": 0.275,
+          "end_top1_within1": 0.8083,
+          "end_in_top2_within1": 0.9,
+          "start_top1_exact": 0.6167,
+          "start_in_top2_exact": 0.8583
+        },
+        "last_unit": {
+          "units": 159,
+          "end_top1_exact": 0.6226,
+          "end_in_top2_exact": 0.8679,
+          "end_outside_top2_exact": 0.1321,
+          "end_top1_within1": 0.9434,
+          "end_in_top2_within1": 0.9748,
+          "start_top1_exact": 0.7547,
+          "start_in_top2_exact": 0.9434
+        },
+        "first_unit": {
+          "units": 159,
+          "end_top1_exact": 0.6038,
+          "end_in_top2_exact": 0.7358,
+          "end_outside_top2_exact": 0.2642,
+          "end_top1_within1": 0.7547,
+          "end_in_top2_within1": 0.7925,
+          "start_top1_exact": 0.7233,
+          "start_in_top2_exact": 0.7736
+        },
+        "middle_units": {
+          "units": 9882,
+          "end_top1_exact": 0.7117,
+          "end_in_top2_exact": 0.9092,
+          "end_outside_top2_exact": 0.0908,
+          "end_top1_within1": 0.9373,
+          "end_in_top2_within1": 0.9621,
+          "start_top1_exact": 0.7307,
+          "start_in_top2_exact": 0.9244
+        },
+        "short_note": {
+          "units": 4780,
+          "end_top1_exact": 0.7406,
+          "end_in_top2_exact": 0.9255,
+          "end_outside_top2_exact": 0.0745,
+          "end_top1_within1": 0.9523,
+          "end_in_top2_within1": 0.9715,
+          "start_top1_exact": 0.7414,
+          "start_in_top2_exact": 0.9364
+        }
+      },
+      "r2": {
+        "units": 10200,
+        "all_units": {
+          "units": 10200,
+          "end_top1_exact": 0.722,
+          "end_in_top2_exact": 0.9176,
+          "end_outside_top2_exact": 0.0824,
+          "end_top1_within1": 0.9475,
+          "end_in_top2_within1": 0.9702,
+          "start_top1_exact": 0.76,
+          "start_in_top2_exact": 0.9329
+        },
+        "long_note": {
+          "units": 480,
+          "end_top1_exact": 0.55,
+          "end_in_top2_exact": 0.7833,
+          "end_outside_top2_exact": 0.2167,
+          "end_top1_within1": 0.9,
+          "end_in_top2_within1": 0.95,
+          "start_top1_exact": 0.6667,
+          "start_in_top2_exact": 0.9
+        },
+        "last_unit": {
+          "units": 159,
+          "end_top1_exact": 0.673,
+          "end_in_top2_exact": 0.9057,
+          "end_outside_top2_exact": 0.0943,
+          "end_top1_within1": 0.9748,
+          "end_in_top2_within1": 0.9874,
+          "start_top1_exact": 0.7421,
+          "start_in_top2_exact": 0.956
+        },
+        "first_unit": {
+          "units": 159,
+          "end_top1_exact": 0.5912,
+          "end_in_top2_exact": 0.761,
+          "end_outside_top2_exact": 0.239,
+          "end_top1_within1": 0.7547,
+          "end_in_top2_within1": 0.8428,
+          "start_top1_exact": 0.7484,
+          "start_in_top2_exact": 0.7673
+        },
+        "middle_units": {
+          "units": 9882,
+          "end_top1_exact": 0.7249,
+          "end_in_top2_exact": 0.9204,
+          "end_outside_top2_exact": 0.0796,
+          "end_top1_within1": 0.9501,
+          "end_in_top2_within1": 0.972,
+          "start_top1_exact": 0.7605,
+          "start_in_top2_exact": 0.9352
+        },
+        "short_note": {
+          "units": 4780,
+          "end_top1_exact": 0.7506,
+          "end_in_top2_exact": 0.9389,
+          "end_outside_top2_exact": 0.0611,
+          "end_top1_within1": 0.959,
+          "end_in_top2_within1": 0.9808,
+          "start_top1_exact": 0.7632,
+          "start_in_top2_exact": 0.9498
+        }
+      }
+    }
+  },
+  "ceiling_raw_pipeline": {
+    "schema": "decodability_ceiling_v1",
+    "pipeline": "raw",
+    "timestamp_step_sec": 0.08,
+    "units": 33228,
+    "items": 159,
+    "note": "exact containment is measurable for k=1 and k=2 only (the panel stores the runner-up class, not the full posterior); k>=3 is reported as unknown",
+    "strata": {
+      "all_units": {
+        "units": 33228,
+        "gt_dur_median_sec": 0.39,
+        "start": {
+          "units": 33228,
+          "top1_within_0bins": 0.6993,
+          "top2_within_0bins": 0.2043,
+          "in_top2_union_within_0bins": 0.9001,
+          "outside_top2_within_0bins": 0.0999,
+          "top1_within_1bins": 0.9243,
+          "top2_within_1bins": 0.8456,
+          "in_top2_union_within_1bins": 0.9506,
+          "outside_top2_within_1bins": 0.0494,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 31.0,
+            "mean": 0.34
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.7526,
+          "top1_prob_when_gt_outside_candidates": 0.4653,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.8431,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 33228,
+          "top1_within_0bins": 0.6426,
+          "top2_within_0bins": 0.2016,
+          "in_top2_union_within_0bins": 0.8423,
+          "outside_top2_within_0bins": 0.1577,
+          "top1_within_1bins": 0.8882,
+          "top2_within_1bins": 0.772,
+          "in_top2_union_within_1bins": 0.9391,
+          "outside_top2_within_1bins": 0.0609,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 1.0,
+            "max": 27.0,
+            "mean": 0.41
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.08
+          },
+          "top1_prob_when_gt_in_candidates": 0.7184,
+          "top1_prob_when_gt_outside_candidates": 0.4731,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7941,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "long_note": {
+        "units": 1452,
+        "gt_dur_median_sec": 1.472,
+        "start": {
+          "units": 1452,
+          "top1_within_0bins": 0.595,
+          "top2_within_0bins": 0.2342,
+          "in_top2_union_within_0bins": 0.8264,
+          "outside_top2_within_0bins": 0.1736,
+          "top1_within_1bins": 0.8402,
+          "top2_within_1bins": 0.8127,
+          "in_top2_union_within_1bins": 0.8953,
+          "outside_top2_within_1bins": 0.1047,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 2.0,
+            "max": 31.0,
+            "mean": 1.11
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.16
+          },
+          "top1_prob_when_gt_in_candidates": 0.6308,
+          "top1_prob_when_gt_outside_candidates": 0.4132,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7912,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 1452,
+          "top1_within_0bins": 0.3994,
+          "top2_within_0bins": 0.2011,
+          "in_top2_union_within_0bins": 0.6006,
+          "outside_top2_within_0bins": 0.3994,
+          "top1_within_1bins": 0.6804,
+          "top2_within_1bins": 0.6309,
+          "in_top2_union_within_1bins": 0.7934,
+          "outside_top2_within_1bins": 0.2066,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 10.0,
+            "max": 23.0,
+            "mean": 2.16
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.8
+          },
+          "top1_prob_when_gt_in_candidates": 0.4884,
+          "top1_prob_when_gt_outside_candidates": 0.3991,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.6269,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "last_unit": {
+        "units": 159,
+        "gt_dur_median_sec": 0.554,
+        "start": {
+          "units": 159,
+          "top1_within_0bins": 0.7421,
+          "top2_within_0bins": 0.2138,
+          "in_top2_union_within_0bins": 0.956,
+          "outside_top2_within_0bins": 0.044,
+          "top1_within_1bins": 0.9623,
+          "top2_within_1bins": 0.9623,
+          "in_top2_union_within_1bins": 0.9874,
+          "outside_top2_within_1bins": 0.0126,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 5.0,
+            "mean": 0.08
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.7121,
+          "top1_prob_when_gt_outside_candidates": 0.3321,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.9777,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 159,
+          "top1_within_0bins": 0.673,
+          "top2_within_0bins": 0.2327,
+          "in_top2_union_within_0bins": 0.9057,
+          "outside_top2_within_0bins": 0.0943,
+          "top1_within_1bins": 0.9748,
+          "top2_within_1bins": 0.9182,
+          "in_top2_union_within_1bins": 0.9874,
+          "outside_top2_within_1bins": 0.0126,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 3.0,
+            "mean": 0.11
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.5839,
+          "top1_prob_when_gt_outside_candidates": 0.4249,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.9554,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "first_unit": {
+        "units": 159,
+        "gt_dur_median_sec": 0.47,
+        "start": {
+          "units": 159,
+          "top1_within_0bins": 0.7107,
+          "top2_within_0bins": 0.0755,
+          "in_top2_union_within_0bins": 0.7799,
+          "outside_top2_within_0bins": 0.2201,
+          "top1_within_1bins": 0.7233,
+          "top2_within_1bins": 0.522,
+          "in_top2_union_within_1bins": 0.7799,
+          "outside_top2_within_1bins": 0.2201,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 6.200000000000017,
+            "max": 15.0,
+            "mean": 1.42
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.496
+          },
+          "top1_prob_when_gt_in_candidates": 0.9237,
+          "top1_prob_when_gt_outside_candidates": 0.4927,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.9224,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 159,
+          "top1_within_0bins": 0.3836,
+          "top2_within_0bins": 0.1761,
+          "in_top2_union_within_0bins": 0.5597,
+          "outside_top2_within_0bins": 0.4403,
+          "top1_within_1bins": 0.6101,
+          "top2_within_1bins": 0.4214,
+          "in_top2_union_within_1bins": 0.7799,
+          "outside_top2_within_1bins": 0.2201,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 3.200000000000017,
+            "max": 8.0,
+            "mean": 1.07
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.256
+          },
+          "top1_prob_when_gt_in_candidates": 0.6434,
+          "top1_prob_when_gt_outside_candidates": 0.4593,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7127,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "middle_units": {
+        "units": 32910,
+        "gt_dur_median_sec": 0.39,
+        "start": {
+          "units": 32910,
+          "top1_within_0bins": 0.699,
+          "top2_within_0bins": 0.2049,
+          "in_top2_union_within_0bins": 0.9004,
+          "outside_top2_within_0bins": 0.0996,
+          "top1_within_1bins": 0.9251,
+          "top2_within_1bins": 0.8466,
+          "in_top2_union_within_1bins": 0.9513,
+          "outside_top2_within_1bins": 0.0487,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 31.0,
+            "mean": 0.34
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.7522,
+          "top1_prob_when_gt_outside_candidates": 0.4652,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.843,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 32910,
+          "top1_within_0bins": 0.6437,
+          "top2_within_0bins": 0.2016,
+          "in_top2_union_within_0bins": 0.8434,
+          "outside_top2_within_0bins": 0.1566,
+          "top1_within_1bins": 0.8891,
+          "top2_within_1bins": 0.773,
+          "in_top2_union_within_1bins": 0.9396,
+          "outside_top2_within_1bins": 0.0604,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 1.0,
+            "max": 27.0,
+            "mean": 0.41
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.08
+          },
+          "top1_prob_when_gt_in_candidates": 0.7193,
+          "top1_prob_when_gt_outside_candidates": 0.4734,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.7949,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      },
+      "short_note": {
+        "units": 16824,
+        "gt_dur_median_sec": 0.23,
+        "start": {
+          "units": 16824,
+          "top1_within_0bins": 0.7035,
+          "top2_within_0bins": 0.2159,
+          "in_top2_union_within_0bins": 0.9168,
+          "outside_top2_within_0bins": 0.0832,
+          "top1_within_1bins": 0.9515,
+          "top2_within_1bins": 0.8428,
+          "in_top2_union_within_1bins": 0.9693,
+          "outside_top2_within_1bins": 0.0307,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 0.0,
+            "max": 17.0,
+            "mean": 0.17
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.0
+          },
+          "top1_prob_when_gt_in_candidates": 0.7765,
+          "top1_prob_when_gt_outside_candidates": 0.5113,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.8229,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        },
+        "end": {
+          "units": 16824,
+          "top1_within_0bins": 0.6945,
+          "top2_within_0bins": 0.203,
+          "in_top2_union_within_0bins": 0.8959,
+          "outside_top2_within_0bins": 0.1041,
+          "top1_within_1bins": 0.9463,
+          "top2_within_1bins": 0.8107,
+          "in_top2_union_within_1bins": 0.9693,
+          "outside_top2_within_1bins": 0.0307,
+          "distance_to_nearest_candidate_bins": {
+            "median": 0.0,
+            "p90": 1.0,
+            "max": 10.0,
+            "mean": 0.19
+          },
+          "distance_to_nearest_candidate_sec": {
+            "median": 0.0,
+            "p90": 0.08
+          },
+          "top1_prob_when_gt_in_candidates": 0.7644,
+          "top1_prob_when_gt_outside_candidates": 0.4994,
+          "auc_top1_prob_predicts_gt_within_1bin_of_candidate": 0.8088,
+          "auc_orientation": "label=1 means the GT bin is within one bin of the top-1 or top-2 candidate; higher AUC = confidence tracks reachability"
+        }
+      }
+    },
+    "by_checkpoint": {
+      "r0": {
+        "units": 11076,
+        "all_units": {
+          "units": 11076,
+          "end_top1_exact": 0.5081,
+          "end_in_top2_exact": 0.7114,
+          "end_outside_top2_exact": 0.2886,
+          "end_top1_within1": 0.788,
+          "end_in_top2_within1": 0.8935,
+          "start_top1_exact": 0.615,
+          "start_in_top2_exact": 0.8534
+        },
+        "long_note": {
+          "units": 484,
+          "end_top1_exact": 0.124,
+          "end_in_top2_exact": 0.2893,
+          "end_outside_top2_exact": 0.7107,
+          "end_top1_within1": 0.3306,
+          "end_in_top2_within1": 0.5455,
+          "start_top1_exact": 0.5207,
+          "start_in_top2_exact": 0.7521
+        },
+        "last_unit": {
+          "units": 159,
+          "end_top1_exact": 0.3333,
+          "end_in_top2_exact": 0.5786,
+          "end_outside_top2_exact": 0.4214,
+          "end_top1_within1": 0.5786,
+          "end_in_top2_within1": 0.7799,
+          "start_top1_exact": 0.6352,
+          "start_in_top2_exact": 0.8805
+        },
+        "first_unit": {
+          "units": 159,
+          "end_top1_exact": 0.3836,
+          "end_in_top2_exact": 0.5597,
+          "end_outside_top2_exact": 0.4403,
+          "end_top1_within1": 0.6101,
+          "end_in_top2_within1": 0.7799,
+          "start_top1_exact": 0.7107,
+          "start_in_top2_exact": 0.7799
+        },
+        "middle_units": {
+          "units": 10758,
+          "end_top1_exact": 0.5125,
+          "end_in_top2_exact": 0.7157,
+          "end_outside_top2_exact": 0.2843,
+          "end_top1_within1": 0.7937,
+          "end_in_top2_within1": 0.8968,
+          "start_top1_exact": 0.6133,
+          "start_in_top2_exact": 0.8541
+        },
+        "short_note": {
+          "units": 5608,
+          "end_top1_exact": 0.602,
+          "end_in_top2_exact": 0.8267,
+          "end_outside_top2_exact": 0.1733,
+          "end_top1_within1": 0.9287,
+          "end_in_top2_within1": 0.9601,
+          "start_top1_exact": 0.6041,
+          "start_in_top2_exact": 0.8631
+        }
+      },
+      "r1": {
+        "units": 11076,
+        "all_units": {
+          "units": 11076,
+          "end_top1_exact": 0.7031,
+          "end_in_top2_exact": 0.9029,
+          "end_outside_top2_exact": 0.0971,
+          "end_top1_within1": 0.9325,
+          "end_in_top2_within1": 0.9567,
+          "start_top1_exact": 0.7281,
+          "start_in_top2_exact": 0.9184
+        },
+        "long_note": {
+          "units": 484,
+          "end_top1_exact": 0.5289,
+          "end_in_top2_exact": 0.7273,
+          "end_outside_top2_exact": 0.2727,
+          "end_top1_within1": 0.8099,
+          "end_in_top2_within1": 0.8926,
+          "start_top1_exact": 0.6116,
+          "start_in_top2_exact": 0.843
+        },
+        "last_unit": {
+          "units": 159,
+          "end_top1_exact": 0.6226,
+          "end_in_top2_exact": 0.8679,
+          "end_outside_top2_exact": 0.1321,
+          "end_top1_within1": 0.9434,
+          "end_in_top2_within1": 0.9748,
+          "start_top1_exact": 0.7547,
+          "start_in_top2_exact": 0.9434
+        },
+        "first_unit": {
+          "units": 159,
+          "end_top1_exact": 0.6038,
+          "end_in_top2_exact": 0.7358,
+          "end_outside_top2_exact": 0.2642,
+          "end_top1_within1": 0.7547,
+          "end_in_top2_within1": 0.7925,
+          "start_top1_exact": 0.7233,
+          "start_in_top2_exact": 0.7736
+        },
+        "middle_units": {
+          "units": 10758,
+          "end_top1_exact": 0.7058,
+          "end_in_top2_exact": 0.9058,
+          "end_outside_top2_exact": 0.0942,
+          "end_top1_within1": 0.9349,
+          "end_in_top2_within1": 0.9588,
+          "start_top1_exact": 0.7277,
+          "start_in_top2_exact": 0.9202
+        },
+        "short_note": {
+          "units": 5608,
+          "end_top1_exact": 0.7354,
+          "end_in_top2_exact": 0.9265,
+          "end_outside_top2_exact": 0.0735,
+          "end_top1_within1": 0.9522,
+          "end_in_top2_within1": 0.9693,
+          "start_top1_exact": 0.7439,
+          "start_in_top2_exact": 0.9379
+        }
+      },
+      "r2": {
+        "units": 11076,
+        "all_units": {
+          "units": 11076,
+          "end_top1_exact": 0.7165,
+          "end_in_top2_exact": 0.9126,
+          "end_outside_top2_exact": 0.0874,
+          "end_top1_within1": 0.944,
+          "end_in_top2_within1": 0.9671,
+          "start_top1_exact": 0.7548,
+          "start_in_top2_exact": 0.9285
+        },
+        "long_note": {
+          "units": 484,
+          "end_top1_exact": 0.5455,
+          "end_in_top2_exact": 0.7851,
+          "end_outside_top2_exact": 0.2149,
+          "end_top1_within1": 0.9008,
+          "end_in_top2_within1": 0.9421,
+          "start_top1_exact": 0.6529,
+          "start_in_top2_exact": 0.8843
+        },
+        "last_unit": {
+          "units": 159,
+          "end_top1_exact": 0.673,
+          "end_in_top2_exact": 0.9057,
+          "end_outside_top2_exact": 0.0943,
+          "end_top1_within1": 0.9748,
+          "end_in_top2_within1": 0.9874,
+          "start_top1_exact": 0.7421,
+          "start_in_top2_exact": 0.956
+        },
+        "first_unit": {
+          "units": 159,
+          "end_top1_exact": 0.5912,
+          "end_in_top2_exact": 0.761,
+          "end_outside_top2_exact": 0.239,
+          "end_top1_within1": 0.7547,
+          "end_in_top2_within1": 0.8428,
+          "start_top1_exact": 0.7484,
+          "start_in_top2_exact": 0.7673
+        },
+        "middle_units": {
+          "units": 10758,
+          "end_top1_exact": 0.719,
+          "end_in_top2_exact": 0.9149,
+          "end_outside_top2_exact": 0.0851,
+          "end_top1_within1": 0.9464,
+          "end_in_top2_within1": 0.9687,
+          "start_top1_exact": 0.7551,
+          "start_in_top2_exact": 0.9305
+        },
+        "short_note": {
+          "units": 5608,
+          "end_top1_exact": 0.7461,
+          "end_in_top2_exact": 0.9344,
+          "end_outside_top2_exact": 0.0656,
+          "end_top1_within1": 0.9579,
+          "end_in_top2_within1": 0.9786,
+          "start_top1_exact": 0.7625,
+          "start_in_top2_exact": 0.9494
+        }
+      }
+    }
+  },
+  "headline": {
+    "long_note_end_outside_top2": 0.4,
+    "all_units_end_outside_top2": 0.1573,
+    "first_unit_end_outside_top2": 0.4403,
+    "checkpoint_progression_long_note_unreachable": {
+      "r0": 0.7083,
+      "r1": 0.275,
+      "r2": 0.2167
+    },
+    "auc_confidence_reachability_end": {
+      "all_units": 0.792,
+      "long_note": 0.6161,
+      "last_unit": 0.9554,
+      "first_unit": 0.7127,
+      "middle_units": 0.7928,
+      "short_note": 0.7929
+    },
+    "conclusion": "on long notes 40% of GT end bins are not even in the top-2 candidates, so post-selection cannot reach them; training moved that from 70.8% to 21.7%"
+  }
+}
