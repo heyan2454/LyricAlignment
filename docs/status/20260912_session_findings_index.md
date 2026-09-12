@@ -26,6 +26,9 @@
 | B4 | 精度与**项时长无关**（r=0.003），与**字密度正相关**（r=+0.31）⇒ "长音频更难"不成立 | ✅ | `mir1k_natural_panel` §3 |
 | B5 | 真实伴奏歌上退化（零/负时长）单元比例远高于录音室：中 7.2%、英 23.2%、日 45–53%（GTSinger 2–4%）；word 单元路径最差（日词 raw 负时长 25.1%） | ✅ | `20260912_real_song_cross_views.md` §3/§3b |
 
+| B6a | **归因修正（第 13 轮）**：退化实际由 **fixed 阶段（窗口→全局回映射）**造成（+807/+697/+426 三批一致；`selected_*` 恒等于 `fixed_*`，压缩只加 4/2/0）；第 12 轮基于 r=0.92 相关性的「压缩造成」归因**作废** | ❌→♻️ | `runs/20260912_structural_compliance/STAGE_LINEAGE.json`、报告 §0b |
+| B6b | 机制签名：整块单元在 fixed 阶段被钉到所属窗口 `input_start_sec`（I See Fire 262/311=84.2% 恰为 64.48=core 66.48−左上下文 2.0，而其 raw 起点 64.48–119.28 正常递增）；规模 33 首批次 946 单元（6.89%，10 首）、B4 832（7.63%，8 首） | ✅ | 同上 + `stage_lineage_attribution()` |
+| B6c | 观测缺口的正确位置：**fixed 阶段完全没有退化计数**（压缩计数器对自身定义自洽）；另解码器侧 raw 有 870 个负时长单元 | ✅ | 同上 |
 | B6 | **后处理自己制造零长单元，且自检计数器失明**：33 首批次 raw 1,483 (10.80%) → 交付 2,236 (16.28%)，新造 1,112（8.10%）、同时修复 359；产物自带的 `overlap_compression_collapsed_to_zero_count` 只报 **4** ⇒ 失明 99.6%。逐歌交付零长与 seam/overlap-compressed 率相关 **r=0.9216** ⇒ 定位在接缝修复/重叠压缩步骤 | ✅ | `reports/progress/20260912_structural_compliance.md`、`runs/20260912_structural_compliance/COMPLIANCE.json` |
 | B7 | 结构合规按语言分层：Chinese 6.58% 非法（最健康）、Cantonese 15.09%、English 22.68%、**Japanese 49.29%**；三批独立一致 ⇒ 结构治理优先级在非中文 word 单元路径，普通话侧集中在个别歌（画下灯塔水母 38.9%） | ✅ | 同上 |
 | B8 | 联合求解逐歌施加后两批 zero/overlap/overshoot/regression 全为 0.00%；位移必须分层报（剔除超长单元后中位 0.1s），否则被 40+s 异常区间钳制主导 | ✅ | 同上 |
@@ -77,7 +80,7 @@
 | F1 | 同一**最好 checkpoint + 多个不同裁窗**能否吃到 +3.4pp（长时序跨窗 oracle 与现装的差） | ⛔ 需 GPU | 对 17 首 MIR-1K 或 GTSinger 整曲加跑 windowed 计划；先过 D7 门 |
 | F2 | 真实整曲 ≥180s 的自然长音频 + 人工 GT（当前 MIR-1K 最长 126.7s） | ⛔ 需标注 | GTSinger 整曲试点（25 连续段、wav==labels，2026-08-21 记录） |
 | F3 | 末字拖长音尾边界判据 | ❌ **REFUTED（第 11 轮）** | 相对 RMS 衰减与「人声/伴奏能量比」两条事后声学判据均不可用：前者在末字上几乎不触发（MIR-1K 1/17、GTSinger 6/168），导出阈值迁移后 −13.4pp；后者覆盖 88–99% 但 hit@100 仅 6–62%（同单元模型 95.8%）。oracle 界末字 +0.00pp ⇒ 需模型侧改动 |
-| F6 | 压缩步骤的 collapsed-to-zero 计数为何只报 4（实际 1,112）？需要读实现定位并补真实计数与告警 | ✅ 可纯 CPU 做 | 从 `seam_repaired/overlap_compressed` 代码路径入手；本会话已给出测量口径与回归测试 |
+| F6 | **已定位（第 13 轮）**：塌陷来自 fixed 阶段的窗口→全局回映射（块被钉到 `window.input_start_sec`），压缩计数器并无漏计；缺的是 fixed 阶段没有退化计数 | ✅ 修复方案已给出 | 按阶段输出 `degenerate_share`/`pinned_to_anchor` + 交付 gate（净新增 >1% 不出片）；见 `stage_lineage_attribution()` |
 | F4 | 批处理链路补齐 `identity.window` 规划标志与 `identity.audio`/`request_hash`；把同一性门接入批次收尾 | ✅ 可纯 CPU 做 | 门已实现：`evidence_identity_audit.audit_pair()`（duplicate_configuration / not_comparable / not_identified / identified 四类裁定）+ `gtsinger_multiview.factor_content_audit()`；待接入批次收尾 |
 | F5 | 3 项 HEAD 自带失败测试（冻结主线语义） | ⛔ 需主线裁定 | 不属于本会话范围，未触碰 |
 
@@ -88,6 +91,6 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：`tests/evaluation/` 87 项（本会话新增），全量 `1529 passed / 3 pre-existing failed`
+- 测试：`tests/evaluation/` 93 项（本会话新增），全量 `1535 passed / 3 pre-existing failed`
 - 报告：`reports/progress/20260912_*.md` 共 7 份 + 本索引
 - 纪律：全程零 GPU 前向、realign 仍 shadow-only、未改任何生产实现、MIR-1K/PJS 仅 test-only 报告用途

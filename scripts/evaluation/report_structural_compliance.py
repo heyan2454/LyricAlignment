@@ -24,6 +24,7 @@ def main() -> int:
                     default=REPO / "results/by_run/20260912_structural_compliance/metrics.json")
     args = ap.parse_args()
     data = json.loads((args.run / "COMPLIANCE.json").read_text(encoding="utf-8"))
+    lin_path = args.run / "STAGE_LINEAGE.json"
     batches = {k: v for k, v in data["batches"].items() if v.get("overall")}
 
     L: list[str] = []
@@ -65,6 +66,49 @@ def main() -> int:
               f"{pct(r['shipped_zero_share'],1)} | {r['created_by_postprocess']} | "
               f"{r['counter_collapsed_to_zero']} | "
               f"{pct(r['seam_repaired_rate'],1)} |")
+        w("")
+    lin_path = args.run / "STAGE_LINEAGE.json"
+    if lin_path.exists():
+        lin = json.loads(lin_path.read_text(encoding="utf-8"))
+        w("## 0b. **本轮修正上一条归因**：塌陷是 fixed 阶段造的，不是重叠压缩")
+        w("")
+        w("上一节按逐歌相关（r=0.92）把责任指向 seam/overlap-compression。逐阶段核对产物里的四个阶段"
+          "（raw → fixed → selected → final）后，这个归因是**错的**："
+          "相关性只是「同一批既坏又常被修的歌」的共因。真实归属：")
+        w("")
+        w("| 批次 | raw 退化 | fixed 退化 | selected | final | **fixed 阶段新造** | 压缩阶段新造 |")
+        w("|---|---:|---:|---:|---:|---:|---:|")
+        for name, r in lin.items():
+            tt = r["totals"]
+            add = r["sum_of_positive_net_additions_by_stage"]
+            w(f"| `{name}` | {pct(tt['raw']['degenerate_share'])} | {pct(tt['fixed']['degenerate_share'])} | "
+              f"{pct(tt['selected']['degenerate_share'])} | {pct(tt['final']['degenerate_share'])} | "
+              f"**+{add.get('net_added_by_fixed', 0):,}** | +{add.get('net_added_by_final', 0):,} |")
+        w("")
+        w(f"- 三批一致：**退化是 fixed（官方边界修正 / 窗口全局时间映射）阶段制造的**，"
+          "而 `selected_*` 就等于 `fixed_*`（该步骤不再变），重叠压缩只贡献个位数（4/2/0）。")
+        w("- 机制签名（可复核）：被弄坏的一整块单元在 fixed 阶段被**钉到所属窗口的 `input_start_sec`**。"
+          "以 `I See Fire` 为例：window 0 的 `core_start=66.48`、左上下文 2.0 ⇒ `input_start=64.48`；"
+          "该歌 262/311 单元（84.2%）的 `fixed_global_*` 恰好等于 64.48，"
+          "而它们的 `raw_global_start_sec` 在 64.48–119.28 之间**正常递增** ⇒ 单元自己的预测是好的，"
+          "是回映射把一个块整体钳到了窗口锚点。")
+        w("")
+        w("| 批次 | 钉到窗口锚点的单元 | 占比 | 受影响歌曲数 |")
+        w("|---|---:|---:|---:|")
+        for name, r in lin.items():
+            pw = r.get("pinned_to_window_input", {})
+            w(f"| `{name}` | {pw.get('units', 0):,} | {pct(pw.get('share'))} | {pw.get('songs_affected', 0)} |")
+        w("")
+        w(f"- 最严重（33 首批次）：" + "、".join(
+            f"{r['song']} {r['pinned']:,} 单元（{pct(r['share'],1)}）"
+            for r in lin[next(iter(lin))]["pinned_to_window_input"]["top_songs"][:4]))
+        w("- ⇒ **两个独立缺陷**（不要混为一谈）：(1) 解码器自身在 raw 阶段就有 10.8–12.4% 退化"
+          "（其中 870 个是**负时长**，end 早于 start）；(2) fixed 阶段的窗口回映射把块钉到锚点，"
+          "额外造成 +426~+807 单元。")
+        w("- ⇒ **观测缺口的位置也要修正**：不是「压缩计数器漏计」，而是**fixed 阶段完全没有退化计数器**"
+          "（压缩那个计数器对自己的定义是自洽的，只漏掉了「上游已经坏了」这件事）。"
+          "最小修复因此是：给每个阶段补 `degenerate_share` 与「块被钉到同一时间戳」的检测，"
+          "并把交付 gate 设在阶段谱系上（任一阶段新增退化 > 1% 即拒绝出片并定位到该阶段）。")
         w("")
     w("## 1. 联合求解作为合规检查器：修复后非法单元归零")
     w("")
@@ -169,6 +213,11 @@ def main() -> int:
                    "counter_blind_share": t0.get("counter_blind_share"),
                    "correlation_zero_share_vs_seam_rate":
                        batches[name0].get("compression_damage", {}).get("correlation_zero_share_vs_seam_repaired_rate"),
+                   "attribution_correction": ("degeneracy is created by the fixed stage "
+                                              "(window->global remap pinning blocks to "
+                                              "window input_start_sec), not by overlap compression"),
+                   "stage_lineage": (json.loads(lin_path.read_text(encoding="utf-8"))
+                                     if lin_path.exists() else None),
                    "mandarin_illegal_share": batches[name0]["by_language"].get("Chinese", {}).get("illegal_share"),
                    "japanese_illegal_share": batches[name0]["by_language"].get("Japanese", {}).get("illegal_share"),
                    "english_illegal_share": batches[name0]["by_language"].get("English", {}).get("illegal_share"),

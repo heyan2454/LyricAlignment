@@ -301,3 +301,130 @@ def compression_damage(batch: Path = DEFAULT_BATCH, relpath: Path = ALIGN_RELPAT
         out["worst_songs"] = df.sort_values("created_by_postprocess", ascending=False) \
             .head(6).to_dict(orient="records")
     return out
+
+# each stage keeps its own candidate key lists for the two boundaries; conflating them (as an earlier
+# version did) silently reported the whole `fixed` stage as missing
+STAGE_KEYS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "raw": (("raw_global_start_sec",), ("raw_global_end_sec",)),
+    "fixed": (("fixed_global_start_sec", "official_fixed_start_sec"),
+              ("fixed_global_end_sec", "official_fixed_end_sec")),
+    "selected": (("selected_start_sec",), ("selected_end_sec",)),
+    "final": (("start_sec",), ("end_sec",)),
+}
+
+
+def _first_present(char: dict[str, Any], keys: tuple[str, ...]) -> float | None:
+    for k in keys:
+        if char.get(k) is not None:
+            return _f(char.get(k))
+    return None
+
+
+def _stage_bounds(char: dict[str, Any], stage: str) -> tuple[float | None, float | None]:
+    start_keys, end_keys = STAGE_KEYS[stage]
+    return _first_present(char, start_keys), _first_present(char, end_keys)
+
+
+def stage_lineage_attribution(batch: Path = DEFAULT_BATCH,
+                              relpath: Path = ALIGN_RELPATH) -> dict[str, Any]:
+    """Which pipeline stage creates the degenerate intervals?
+
+    The shipped artifacts record four stages per unit (raw / fixed / selected / final), but only the
+    overlap-compression step carries a degenerate-output counter — and its definition is narrow by
+    design (it counts collapses *it* caused).  Attributing the zero/negative rate per stage shows
+    where the damage actually enters, which no existing summary reports.
+    """
+    per_song: list[dict[str, Any]] = []
+    totals = {st: {"zero": 0, "negative": 0, "known": 0} for st in STAGE_KEYS}
+    order = list(STAGE_KEYS)
+    for d in sorted(pth for pth in batch.iterdir()
+                    if pth.is_dir() and not pth.name.startswith(("_", "."))):
+        path = d / relpath
+        if not path.exists():
+            continue
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        chars = doc.get("characters") or []
+        if not chars:
+            continue
+        row: dict[str, Any] = {"song": d.name,
+                               "language": str((doc.get("summary") or {}).get("language") or ""),
+                               "units": int(len(chars))}
+        # "pinned to the owning window's input boundary" is the signature of the remap defect that
+        # turns a whole block of units into one identical timestamp; measure it explicitly.
+        trace = doc.get("window_trace") or []
+        anchors: dict[int, float] = {}
+        for i, w in enumerate(trace):
+            if isinstance(w, dict) and w.get("input_start_sec") is not None:
+                anchors[i] = float(w["input_start_sec"])
+        pinned = 0
+        if anchors:
+            for c in chars:
+                fx = _f(c.get("fixed_global_start_sec", c.get("official_fixed_start_sec")))
+                if fx is None:
+                    continue
+                if any(abs(fx - a) <= 1e-6 for a in anchors.values()):
+                    pinned += 1
+        row["pinned_to_window_input_units"] = int(pinned)
+        row["pinned_to_window_input_share"] = round(pinned / len(chars), 4)
+        for st in order:
+            zero = neg = known = 0
+            for c in chars:
+                a, b = _stage_bounds(c, st)
+                if a is None or b is None:
+                    continue
+                known += 1
+                dur = b - a
+                if dur < -1e-6:
+                    neg += 1
+                elif dur <= 1e-6:
+                    zero += 1
+            totals[st]["zero"] += zero
+            totals[st]["negative"] += neg
+            totals[st]["known"] += known
+            row[f"{st}_degenerate_share"] = round((zero + neg) / known, 4) if known else None
+            row[f"{st}_degenerate_units"] = int(zero + neg)
+        for prev, nxt in zip(order, order[1:]):
+            a, b = row.get(f"{prev}_degenerate_units"), row.get(f"{nxt}_degenerate_units")
+            if a is not None and b is not None:
+                # NET change for this song: within a song, units created and units healed cancel,
+                # so the unit-level "created" count lives in compression_damage(), not here.
+                row[f"net_added_by_{nxt}"] = int(b - a)
+        per_song.append(row)
+    out: dict[str, Any] = {"schema": "stage_lineage_attribution_v1", "per_song": per_song,
+                           "stages": order}
+    grand = sum(v["known"] for v in totals.values()) / max(len(totals), 1)
+    out["totals"] = {st: {"known_units": v["known"], "zero_units": v["zero"],
+                          "negative_units": v["negative"],
+                          "degenerate_share": round((v["zero"] + v["negative"]) / v["known"], 4)
+                          if v["known"] else None}
+                     for st, v in totals.items()}
+    deltas = {}
+    for prev, nxt in zip(order, order[1:]):
+        a = out["totals"][prev]
+        b = out["totals"][nxt]
+        if a["known_units"] and b["known_units"]:
+            deltas[f"{prev}->{nxt}"] = round(
+                (b["degenerate_share"] or 0.0) - (a["degenerate_share"] or 0.0), 4)
+    out["stage_transitions_degenerate_share_delta"] = deltas
+    agg: dict[str, int] = {}
+    for r in per_song:
+        for k, v in r.items():
+            if k.startswith("net_added_by_") and isinstance(v, int):
+                agg[k] = agg.get(k, 0) + max(v, 0)
+    out["sum_of_positive_net_additions_by_stage"] = agg
+    tot_units = sum(int(r["units"]) for r in per_song)
+    tot_pinned = sum(int(r.get("pinned_to_window_input_units", 0)) for r in per_song)
+    out["pinned_to_window_input"] = {
+        "units": int(tot_pinned), "of_units": int(tot_units),
+        "share": round(tot_pinned / max(tot_units, 1), 4),
+        "songs_affected": int(sum(1 for r in per_song if r.get("pinned_to_window_input_units", 0) > 0)),
+        "top_songs": [{"song": r["song"], "language": r["language"],
+                       "pinned": int(r.get("pinned_to_window_input_units", 0)),
+                       "share": r.get("pinned_to_window_input_share"),
+                       "net_added_by_fixed": r.get("net_added_by_fixed")}
+                      for r in sorted(per_song, key=lambda x: -int(x.get("pinned_to_window_input_units", 0)))[:5]],
+    }
+    return out
