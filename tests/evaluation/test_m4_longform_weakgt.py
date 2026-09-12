@@ -131,7 +131,10 @@ def test_text_error_collateral_detects_contamination_radius():
                      "source_unit_index": cid, "segment_start_sec": 0.0, "gt_start_sec": float(cid),
                      "gt_end_sec": float(cid) + 0.5, "raw_dur": 0.5, "final_dur": 0.5,
                      "raw_start_sec": float(cid), "raw_end_sec": float(cid) + 0.5,
-                     "off_start_sec": float(cid), "off_end_sec": float(cid) + 0.5})
+                     "off_start_sec": float(cid), "off_end_sec": float(cid) + 0.5,
+                     "start_entropy": 0.4, "end_entropy": 0.9,
+                     "start_margin": 0.6, "end_margin": 0.2,
+                     "repair_start_shift_sec": 0.0, "repair_end_shift_sec": 0.0})
     for cid in range(20):
         err = 1.0 if cid < 3 else 0.02
         rows.append({"run": "r", "request_identity": "mut", "view_id": "full", "song": "s",
@@ -142,7 +145,10 @@ def test_text_error_collateral_detects_contamination_radius():
                      "source_unit_index": cid, "segment_start_sec": 0.0, "gt_start_sec": float(cid),
                      "gt_end_sec": float(cid) + 0.5, "raw_dur": 0.5, "final_dur": 0.5,
                      "raw_start_sec": float(cid), "raw_end_sec": float(cid) + 0.5,
-                     "off_start_sec": float(cid), "off_end_sec": float(cid) + 0.5})
+                     "off_start_sec": float(cid), "off_end_sec": float(cid) + 0.5,
+                     "start_entropy": 0.4, "end_entropy": 0.9,
+                     "start_margin": 0.6, "end_margin": 0.2,
+                     "repair_start_shift_sec": 0.0, "repair_end_shift_sec": 0.0})
     df = P.frame_from_rows(rows)
     out = P.analyse_text_error_collateral(df)
     prof = {r["bucket"]: r for r in out["tail_mutations_survivors"]["profile"]}

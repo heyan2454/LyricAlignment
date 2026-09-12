@@ -355,10 +355,14 @@ def _derive(df: pd.DataFrame) -> pd.DataFrame:
                               if "source_unit_index" in df.columns else np.nan)
     # position inside the source phrase *on the fabricated uniform axis* (coarse rank only)
     df["dist_into_segment_uniformaxis"] = df["gt_start_sec"] - df["segment_start_sec"]
-    df["max_ent"] = df[["start_entropy", "end_entropy"]].max(axis=1)
-    df["min_ent"] = df[["start_entropy", "end_entropy"]].min(axis=1)
-    df["min_margin"] = df[["start_margin", "end_margin"]].min(axis=1)
-    df["ent_mean"] = df[["start_entropy", "end_entropy"]].mean(axis=1)
+    ent_cols = [c for c in ("start_entropy", "end_entropy") if c in df.columns]
+    if ent_cols:
+        df["max_ent"] = df[ent_cols].max(axis=1)
+        df["min_ent"] = df[ent_cols].min(axis=1)
+        df["ent_mean"] = df[ent_cols].mean(axis=1)
+    mar_cols = [c for c in ("start_margin", "end_margin") if c in df.columns]
+    if mar_cols:
+        df["min_margin"] = df[mar_cols].min(axis=1)
     return df
 
 
