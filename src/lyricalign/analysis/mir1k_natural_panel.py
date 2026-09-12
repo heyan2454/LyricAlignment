@@ -491,3 +491,133 @@ def analyse(df: pd.DataFrame, audit: dict[str, Any]) -> dict[str, Any]:
         "bad_rate": None if ref_hit is None else round(float(1 - ref_hit), 4),
     }
     return out
+
+# ---------------------------------------------------------------------------
+# follow-ups raised by the first pass on this panel
+# ---------------------------------------------------------------------------
+
+def analyse_last_character(df: pd.DataFrame, ref_pred: str) -> dict[str, Any]:
+    """Attribute the last-character deficit: truncation, duration, or onset-only shift?"""
+    d = df[df["predictor"] == ref_pred]
+    last = d[d["is_last_char"] == 1]
+    mid = d[(d["frac_pos"] > 0.1) & (d["frac_pos"] < 0.9)]
+    if last.empty:
+        return {"available": False}
+    out: dict[str, Any] = {"available": True, "reference_predictor": ref_pred,
+                           "n_last": int(len(last)), "n_middle": int(len(mid))}
+    out["last_signature"] = {
+        "hit100": round(float(last["hit100"].mean()), 4),
+        "mae_start": round(float(last["start_err"].mean()), 4),
+        "mae_end": round(float(last["end_err"].mean()), 4),
+        "signed_end_mean": round(float(last["end_signed"].mean()), 4),
+        "signed_end_median": round(float(last["end_signed"].median()), 4),
+        "signed_start_mean": round(float(last["start_signed"].mean()), 4),
+        "start_hit100_only": round(float((last["start_err"] <= 0.1).mean()), 4),
+        "end_hit100_only": round(float((last["end_err"] <= 0.1).mean()), 4),
+        "pred_end_beyond_item_share": round(float(
+            (last["pred_end_sec"] > last["item_duration_sec"]).mean()), 4),
+        "gt_end_beyond_item_share": round(float(
+            (last["gt_end_sec"] > last["item_duration_sec"]).mean()), 4),
+        "mean_gt_dur": round(float(last["gt_dur_sec"].mean()), 4),
+        "mean_pred_dur": round(float((last["pred_end_sec"] - last["pred_start_sec"]).mean()), 4),
+    }
+    out["middle_signature"] = {
+        "hit100": round(float(mid["hit100"].mean()), 4),
+        "start_hit100_only": round(float((mid["start_err"] <= 0.1).mean()), 4),
+        "end_hit100_only": round(float((mid["end_err"] <= 0.1).mean()), 4),
+        "mean_gt_dur": round(float(mid["gt_dur_sec"].mean()), 4),
+    }
+    # is the deficit explained by long final notes (melisma-like tail) or by item truncation?
+    long_tail = last[last["gt_dur_sec"] >= last["gt_dur_sec"].median()]
+    short_tail = last[last["gt_dur_sec"] < last["gt_dur_sec"].median()]
+    out["by_gt_duration_of_last_char"] = {
+        "longer_half": {"n": int(len(long_tail)),
+                        "hit100": round(float(long_tail["hit100"].mean()), 4),
+                        "mae_end": round(float(long_tail["end_err"].mean()), 4),
+                        "signed_end_mean": round(float(long_tail["end_signed"].mean()), 4)},
+        "shorter_half": {"n": int(len(short_tail)),
+                         "hit100": round(float(short_tail["hit100"].mean()), 4),
+                         "mae_end": round(float(short_tail["end_err"].mean()), 4),
+                         "signed_end_mean": round(float(short_tail["end_signed"].mean()), 4)}}
+    # how many last-char failures are shared across predictors (systematic vs random)?
+    per_unit = df.pivot_table(index=["item_id", "character_index"], columns="predictor",
+                             values="hit100", aggfunc="first")
+    last_idx = last.set_index(["item_id", "character_index"]).index
+    sel = per_unit.loc[per_unit.index.isin(last_idx)]
+    if not sel.empty:
+        ok_share = sel.mean(axis=1)
+        out["last_char_failure_concordance"] = {
+            "n_last_units": int(len(sel)),
+            "share_all_predictors_fail": round(float((ok_share == 0).mean()), 4),
+            "share_at_least_half_fail": round(float((ok_share <= 0.5).mean()), 4),
+            "share_all_pass": round(float((ok_share == 1).mean()), 4)}
+    return out
+
+
+def analyse_unstable_units(df: pd.DataFrame, strong: list[str],
+                           min_agree_ms: float = 20.0) -> dict[str, Any]:
+    """Cross-predictor instability census: a deployable, GT-free candidate list.
+
+    Units whose predicted boundary moves by more than ``min_agree_ms`` across strong predictors
+    are the cheapest realign candidates: no ground truth is needed to find them, and the panel can
+    already measure how well they actually predict error.
+    """
+    present = [x for x in strong if x in set(df["predictor"])]
+    if len(present) < 2:
+        return {"available": False, "reason": "need >=2 strong predictors"}
+    wide = df[df["predictor"].isin(present)].pivot_table(
+        index=["item_id", "character_index"], columns="predictor",
+        values=["pred_start_sec", "pred_end_sec", "both_err", "hit100"], aggfunc="first")
+    starts = wide["pred_start_sec"][present]
+    ends = wide["pred_end_sec"][present]
+    spread = np.maximum(starts.max(axis=1) - starts.min(axis=1),
+                        ends.max(axis=1) - ends.min(axis=1)).to_numpy(dtype=float)
+    err = wide["both_err"][present].mean(axis=1).to_numpy(dtype=float)
+    hit = wide["hit100"][present].mean(axis=1).to_numpy(dtype=float)
+    thresh = min_agree_ms / 1000.0
+    unstable = spread > thresh
+    out: dict[str, Any] = {
+        "available": True, "predictors": present, "threshold_sec": thresh,
+        "n_units": int(len(spread)),
+        "unstable_share": round(float(unstable.mean()), 4),
+        "unstable_n": int(unstable.sum()),
+        "mean_error_unstable_sec": round(float(err[unstable].mean()), 4) if unstable.any() else None,
+        "mean_error_stable_sec": round(float(err[~unstable].mean()), 4) if (~unstable).any() else None,
+        "hit100_unstable": round(float(hit[unstable].mean()), 4) if unstable.any() else None,
+        "hit100_stable": round(float(hit[~unstable].mean()), 4) if (~unstable).any() else None,
+        "lift_overall_unstable": (round(float(hit[unstable].mean()), 4) if unstable.any() else None),
+    }
+    a = _auc((err > 0.1).astype(float), spread)
+    b = _auc((err > 0.25).astype(float), spread)
+    out["auc_spread_vs_bad100"] = None if a is None else round(a, 4)
+    out["auc_spread_vs_bad250"] = None if b is None else round(b, 4)
+    if unstable.any():
+        out["recall_of_bad250_by_unstable"] = round(float(
+            ((err > 0.25) & unstable).sum() / max((err > 0.25).sum(), 1)), 4)
+        out["precision_of_unstable"] = round(float((err[unstable] > 0.25).mean()), 4)
+    # where do unstable units sit?  (position + item)
+    pos = wide.index.get_level_values(1).to_numpy(dtype=float)
+    idx = pd.MultiIndex.from_tuples(list(wide.index))
+    idx = idx.set_names(["item_id", "character_index"])
+    frame = pd.DataFrame({"spread": spread, "err": err, "unstable": unstable}, index=idx)
+    joined = frame.join(df[df["predictor"] == present[0]].set_index(
+        ["item_id", "character_index"])[["frac_pos", "is_last_char", "is_first_char"]], how="left")
+    if "frac_pos" in joined:
+        b2 = pd.qcut(joined["frac_pos"].dropna(), 5, duplicates="drop")
+        tab = joined.assign(bk=b2).groupby("bk", observed=True).agg(
+            n=("unstable", "size"), unstable=("unstable", "mean"),
+            err=("err", "mean")).reset_index()
+        out["unstable_by_position"] = [{"bucket": str(r.bk), "n": int(r.n),
+                                        "unstable_share": round(float(r.unstable), 4),
+                                        "mean_err_sec": round(float(r.err), 4)}
+                                       for r in tab.itertuples()]
+        out["unstable_share_last_char"] = round(float(
+            joined[joined["is_last_char"] == 1]["unstable"].mean()), 4)
+        out["unstable_share_first_char"] = round(float(
+            joined[joined["is_first_char"] == 1]["unstable"].mean()), 4)
+        top = joined.sort_values("spread", ascending=False).head(10)
+        out["top_10_unstable_units"] = [{"item": str(i[0]), "char_index": int(i[1]),
+                                         "spread_sec": round(float(r.spread), 3),
+                                         "mean_err_sec": round(float(r.err), 3)}
+                                        for i, r in top.iterrows()]
+    return out

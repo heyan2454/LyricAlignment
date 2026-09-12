@@ -988,6 +988,171 @@
       "pearson_hit100_vs_char_count": 0.3096
     }
   },
+  "last_character": {
+    "available": true,
+    "reference_predictor": "r2_full_20260723",
+    "n_last": 17,
+    "n_middle": 1617,
+    "last_signature": {
+      "hit100": 0.8235,
+      "mae_start": 0.0389,
+      "mae_end": 0.1221,
+      "signed_end_mean": 0.1014,
+      "signed_end_median": 0.02,
+      "signed_start_mean": -0.0262,
+      "start_hit100_only": 0.9412,
+      "end_hit100_only": 0.8824,
+      "pred_end_beyond_item_share": 0.0,
+      "gt_end_beyond_item_share": 0.0,
+      "mean_gt_dur": 1.4253,
+      "mean_pred_dur": 1.5529
+    },
+    "middle_signature": {
+      "hit100": 0.9109,
+      "start_hit100_only": 0.9561,
+      "end_hit100_only": 0.9493,
+      "mean_gt_dur": 0.4334
+    },
+    "by_gt_duration_of_last_char": {
+      "longer_half": {
+        "n": 9,
+        "hit100": 0.8889,
+        "mae_end": 0.1152,
+        "signed_end_mean": 0.0899
+      },
+      "shorter_half": {
+        "n": 8,
+        "hit100": 0.75,
+        "mae_end": 0.1297,
+        "signed_end_mean": 0.1144
+      }
+    },
+    "last_char_failure_concordance": {
+      "n_last_units": 17,
+      "share_all_predictors_fail": 0.1176,
+      "share_at_least_half_fail": 0.2941,
+      "share_all_pass": 0.0
+    }
+  },
+  "unstable_units": {
+    "available": true,
+    "predictors": [
+      "r0_raw_20260724",
+      "r1_full_20260724",
+      "r2_full_20260723",
+      "r2_seed_20260724",
+      "r2_ood_20260723"
+    ],
+    "threshold_sec": 0.02,
+    "n_units": 2035,
+    "unstable_share": 0.6948,
+    "unstable_n": 1414,
+    "mean_error_unstable_sec": 0.0804,
+    "mean_error_stable_sec": 0.0433,
+    "hit100_unstable": 0.8515,
+    "hit100_stable": 0.9581,
+    "lift_overall_unstable": 0.8515,
+    "auc_spread_vs_bad100": 0.8407,
+    "auc_spread_vs_bad250": 0.9277,
+    "recall_of_bad250_by_unstable": 0.963,
+    "precision_of_unstable": 0.0368,
+    "unstable_by_position": [
+      {
+        "bucket": "(-0.001, 0.196]",
+        "n": 408,
+        "unstable_share": 0.7083,
+        "mean_err_sec": 0.0645
+      },
+      {
+        "bucket": "(0.196, 0.4]",
+        "n": 406,
+        "unstable_share": 0.6847,
+        "mean_err_sec": 0.0703
+      },
+      {
+        "bucket": "(0.4, 0.6]",
+        "n": 407,
+        "unstable_share": 0.7076,
+        "mean_err_sec": 0.0704
+      },
+      {
+        "bucket": "(0.6, 0.804]",
+        "n": 408,
+        "unstable_share": 0.6544,
+        "mean_err_sec": 0.0657
+      },
+      {
+        "bucket": "(0.804, 1.0]",
+        "n": 406,
+        "unstable_share": 0.7192,
+        "mean_err_sec": 0.0745
+      }
+    ],
+    "unstable_share_last_char": 0.9412,
+    "unstable_share_first_char": 0.9412,
+    "top_10_unstable_units": [
+      {
+        "item": "heycat_1",
+        "char_index": 54,
+        "spread_sec": 3.6,
+        "mean_err_sec": 0.74
+      },
+      {
+        "item": "stool_1",
+        "char_index": 71,
+        "spread_sec": 3.44,
+        "mean_err_sec": 0.772
+      },
+      {
+        "item": "davidson_1",
+        "char_index": 95,
+        "spread_sec": 2.64,
+        "mean_err_sec": 1.051
+      },
+      {
+        "item": "bug_1",
+        "char_index": 47,
+        "spread_sec": 2.24,
+        "mean_err_sec": 1.186
+      },
+      {
+        "item": "fdps_1",
+        "char_index": 0,
+        "spread_sec": 2.08,
+        "mean_err_sec": 0.479
+      },
+      {
+        "item": "geniusturtle_1",
+        "char_index": 104,
+        "spread_sec": 1.68,
+        "mean_err_sec": 0.36
+      },
+      {
+        "item": "annar_1",
+        "char_index": 84,
+        "spread_sec": 1.6,
+        "mean_err_sec": 0.339
+      },
+      {
+        "item": "Ani_1",
+        "char_index": 87,
+        "spread_sec": 1.52,
+        "mean_err_sec": 0.32
+      },
+      {
+        "item": "geniusturtle_1",
+        "char_index": 66,
+        "spread_sec": 1.44,
+        "mean_err_sec": 0.316
+      },
+      {
+        "item": "ariel_1",
+        "char_index": 69,
+        "spread_sec": 1.44,
+        "mean_err_sec": 0.297
+      }
+    ]
+  },
   "disagreement_signal_natural": {
     "reference_predictor": "r2_full_20260723",
     "membership": {

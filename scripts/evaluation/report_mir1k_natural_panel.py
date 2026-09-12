@@ -140,6 +140,33 @@ def main() -> int:
       "旧口径只看整项均值时 hit@100 只差 9pp 的这件事被平摊掉了）。")
     w("")
 
+    lcf_path = args.analysis_dir / "LAST_CHAR.json"
+    if lcf_path.exists():
+        lc = json.loads(lcf_path.read_text(encoding="utf-8"))
+        if lc.get("available"):
+            ls, ms = lc["last_signature"], lc["middle_signature"]
+            w("## 2b. 末字失效的归因：长音保持的**尾边界**问题，不是截断")
+            w("")
+            w(f"- 末字（n={lc['n_last']}）：hit@100 {pct(ls['hit100'],1)}，但 **start 侧几乎不坏**"
+              f"（{pct(ls['start_hit100_only'],1)}），坏在 end（{pct(ls['end_hit100_only'],1)}）："
+              f"MAE end {sec(ls['mae_end'])} vs MAE start {sec(ls['mae_start'])}。")
+            w(f"- **原因不是音频截断**：末字预测 end 超出音频长度的比例 {pct(ls['pred_end_beyond_item_share'],1)}、"
+              f"GT end 超出比例 {pct(ls['gt_end_beyond_item_share'],1)}（都是 0）。")
+            w(f"- 真正的相关量是**时值**：末字 GT 平均时长 {ls['mean_gt_dur']:.2f} s，"
+              f"而中间位置只有 {ms['mean_gt_dur']:.2f} s ⇒ 每项最后一个字几乎都是拖长音，"
+              "尾边界本身缺乏可判定的声学结束点。")
+            w(f"- 偏移量级小但右偏：end 有符号中位 {sec(ls['signed_end_median'])}、"
+              f"均值 {sec(ls['signed_end_mean'])} ⇒ 少数长尾错例拉高均值（不是系统性偏晚）。")
+            cc = lc["last_char_failure_concordance"]
+            w(f"- 跨预测器一致性：末字失败**只有 {pct(cc['share_all_predictors_fail'],1)} 是全预测器共犯**，"
+              f"{pct(cc['share_at_least_half_fail'],1)} 至少半数预测器失败，全部通过 "
+              f"{pct(cc['share_all_pass'],1)} ⇒ 末字难度里约一半是模型间随机不稳健，"
+              "这既是 realign 的机会（多视角投票可能救回一部分），也是它的不确定性来源。")
+            bydur = lc["by_gt_duration_of_last_char"]
+            w(f"- 按末字时值分组：较长一半 hit@100 {pct(bydur['longer_half']['hit100'],1)} vs "
+              f"较短一半 {pct(bydur['shorter_half']['hit100'],1)}（n={bydur['longer_half']['n']}/"
+              f"{bydur['shorter_half']['n']}，样本太小不足以定方向，只登记不下结论）。")
+            w("")
     w("## 3. 长度不是因素，密度才是（自然录音上的反直觉结果）")
     w("")
     lr = leng[ref]
@@ -184,6 +211,29 @@ def main() -> int:
       "⇒ 集成/多视角信号必须先按能力门筛选成员，不能只按『配置不同』凑数。")
     w("")
 
+    uu_path = args.analysis_dir / "UNSTABLE_UNITS.json"
+    if uu_path.exists():
+        uu = json.loads(uu_path.read_text(encoding="utf-8"))
+        if uu.get("available"):
+            w("## 4b. 跨 checkpoint 不稳定单元普查（可直接投产的 no-GT 候选清单）")
+            w("")
+            w(f"- 以 {len(uu['predictors'])} 个强预测器的边界跨度（max−min）>"
+              f"{uu['threshold_sec'] * 1000:.0f}ms 定义\u300c不稳定\u300d："
+              f"**{pct(uu['unstable_share'], 1)}**（{uu['unstable_n']:,}/{uu['n_units']:,}）单元不稳定。")
+            w(f"- 不稳定单元的 hit@100 {pct(uu['hit100_unstable'], 1)} vs 稳定单元 "
+              f"{pct(uu['hit100_stable'], 1)}；平均误差 {sec(uu['mean_error_unstable_sec'])} vs "
+              f"{sec(uu['mean_error_stable_sec'])}。")
+            w(f"- 判别力：跨度对 **>100ms 误差 AUC {uu['auc_spread_vs_bad100']}**、"
+              f"对 ≥250ms AUC {uu['auc_spread_vs_bad250']}；"
+              f"以 20ms 阈值为代价可覆盖 {pct(uu['recall_of_bad250_by_unstable'], 1)} 的 gross 错误"
+              f"（精度仅 {pct(uu['precision_of_unstable'], 1)} ⇒ 阈值必须按预算取分位数，不能用固定 20ms）。")
+            w(f"- 位置：首字与末字的不稳定率都是 {pct(uu['unstable_share_first_char'], 1)}"
+              f"（n=17 各），段内五等分的不稳定率 "
+              + "、".join(f"{pct(r['unstable_share'], 0)}" for r in uu["unstable_by_position"])
+              + "（几乎平坦 ⇒ 不稳健是全曲均匀分布的，不是接缝局部现象）。")
+            w("- 意义：**不需要真值**就能圈出一批高错误概率单元；但 20ms 阈值太宽，"
+              "工程上应改成\u300c跨度分位数 + 复核预算\u300d（与 §4 的 flag 曲线一致）。")
+            w("")
     w("## 5. 误差聚簇在自然录音上明显减弱（对第 1 轮的定量修正）")
     w("")
     w(f"- `{ref}`：坏率 {pct(runs['bad_rate'], 1)}，坏单元落长度≥2 游程的占比 "
@@ -279,6 +329,10 @@ def main() -> int:
             "r2_runs_hit100_delta_pp": pairs[key]["hit100_delta_pp"],
         },
         "position_effects": pos, "length_effect": leng,
+        "last_character": (json.loads((args.analysis_dir / "LAST_CHAR.json").read_text(encoding="utf-8"))
+                           if (args.analysis_dir / "LAST_CHAR.json").exists() else None),
+        "unstable_units": (json.loads((args.analysis_dir / "UNSTABLE_UNITS.json").read_text(encoding="utf-8"))
+                           if (args.analysis_dir / "UNSTABLE_UNITS.json").exists() else None),
         "disagreement_signal_natural": disq, "predictor_pairs": pairs,
         "structural_defects_by_predictor": defects, "error_runs_natural": runs,
         "per_item_variance": var, "panel": panel, "join_audit": audit["predictors"],

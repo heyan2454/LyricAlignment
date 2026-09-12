@@ -143,6 +143,29 @@ def test_defect_counts_match_synthetic_geometry(tiny_dataset: Path):
     assert runs["share_bad_in_runs_ge2"] == 1.0
 
 
+def test_last_character_and_unstable_census(tiny_dataset: Path):
+    """Two follow-up analyses added after the first pass: the last-character attribution and the
+    cross-predictor instability census must run and expose their guard rails."""
+    df, audit = M.build_panel()
+    last = M.analyse_last_character(df, "pred_a")
+    assert last["available"] is True
+    assert last["n_last"] == 2                                  # one per item
+    assert set(last["last_signature"]) >= {"hit100", "mae_end", "pred_end_beyond_item_share",
+                                           "mean_gt_dur"}
+    # songB's late-shifted final note does run past its item duration -> detects truncation risk
+    assert last["last_signature"]["pred_end_beyond_item_share"] == pytest.approx(0.5)
+    assert last["last_signature"]["gt_end_beyond_item_share"] == 0.0
+    assert last["middle_signature"]["hit100"] == 1.0
+
+    uns = M.analyse_unstable_units(df, ["pred_a", "pred_b"])
+    assert uns["available"] is True
+    assert uns["n_units"] == 6
+    assert 0.0 <= uns["unstable_share"] <= 1.0
+    assert uns["auc_spread_vs_bad100"] is None or 0.0 <= uns["auc_spread_vs_bad100"] <= 1.0
+    # a single peer is enough here, but zero or one predictor must bail out
+    assert M.analyse_unstable_units(df, ["pred_a"])["available"] is False
+
+
 def test_auc_and_ci_helpers():
     y = np.array([0, 0, 1, 1] * 20, dtype=float)
     s = np.array([-1.0, -0.5, 0.5, 1.0] * 20, dtype=float)
