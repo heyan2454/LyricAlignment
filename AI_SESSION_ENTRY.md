@@ -1,5 +1,25 @@
 # AI Session Entry
 
+## 2026-09-12 GTSinger Ground-Truth Deep Analysis — Addendum (not an override)
+
+A CPU-only round re-read the already-produced `evaluation_v1` GTSinger runs at unit level
+(no new GPU forward, no new training, ~8 MB added to the data dir):
+
+```text
+docs/sessions/20260912_gtsinger_gt_deep_analysis/README.md
+reports/progress/20260912_gtsinger_gt_deep_analysis.md
+results/by_run/20260912_gtsinger_gt_deep/metrics.json
+```
+
+Two things later rounds must not re-assume: (1) the 3x2x2 evaluation matrix is degenerate —
+`mix`/`vocal` were fed the same wav and `full`/`windowed` coincide on short clips, so those runs
+contain no audio-input or planning-mode evidence at all; (2) `official` post-processing is net
+negative against real ground truth at the 100 ms tolerance (overlap resolution pins a start to the
+previous end in 98% of moved cases), while cross-configuration disagreement plus decoder entropy
+give a real-GT-validated no-GT error signal (grouped-CV AUC 0.913). This addendum does not rule on
+which session is the mainline; it only supersedes the *numbers* in the older shallow GTSinger
+summary tables wherever they conflict.
+
 ## 2026-08-16 Lyric Align Dataset Acquisition & No-Training Evaluation — Newer Session
 
 A newer 2026-08-16 session exists and is the current focus:
