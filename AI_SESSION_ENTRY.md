@@ -11,7 +11,7 @@ reports/progress/20260912_gtsinger_gt_deep_analysis.md
 results/by_run/20260912_gtsinger_gt_deep/metrics.json
 ```
 
-Seven things later rounds must not re-assume:
+Eight things later rounds must not re-assume:
 
 1. The 3x2x2 evaluation matrix is degenerate — `mix`/`vocal` were fed the same wav and
    `full`/`windowed` coincide on short clips, so those runs contain no audio-input or planning-mode
@@ -42,7 +42,13 @@ Seven things later rounds must not re-assume:
 6. The last-character deficit is a *long-note tail* problem, not truncation: last characters average
    1.43 s of ground-truth duration (middle: 0.43 s), start sides are fine (94.1%), ends are not
    (88.2%), and only 11.8% of last-char failures are shared by every predictor.
-7. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
+7. The retained 2026-08-14/15 real-song "B4 vs Current" pair is **not an identified contrast**: their
+   window plans are field-for-field identical and 99.92% of the 10,909 units agree within 100 ms, while the
+   only genuinely different view (`full_slot`) drifts on 23.6% of its indices and records no audio hash or
+   schema version. Cross-view work on natural long songs therefore has **no usable evidence base** yet, and a
+   comparability gate (same text per index + same audio sha + different plan) is now implemented in
+   `src/lyricalign/analysis/real_song_views.py`.
+8. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
    ground truth: joining predictions to it yields hit@100 = 5.3% where the frozen real-GT labels give
    87.9%. Any reuse of `research_v7_detector_v2` evidence must reconcile recomputed errors against
    that run's frozen `LABELS.jsonl` before believing a number (see `uniform_axis_trap`), and run1's

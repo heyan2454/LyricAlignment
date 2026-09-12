@@ -253,3 +253,31 @@ MIR-1K 是 test-only：本轮全部数字只做报告，未用于任何 checkpoi
 
 S6 原为"支持度加权平均"，单个 gross outlier 仍带 1/N 权重（实测可把边界拖偏 ~0.5s）；
 改为**最大一致簇内取均值**后与中位数一致 ⇒ 结论对选择规则不敏感（也说明这不是规则设计问题）。
+
+---
+
+# 第 5 轮续：真实长歌跨视图普查（25 首 · 无真值）——又一个"假因子"，而且带身份记录缺口
+
+- 代码：`src/lyricalign/analysis/real_song_views.py`；入口 `scripts/evaluation/report_real_song_views.py`；
+  测试 `tests/evaluation/test_real_song_views.py`（4 项）
+- 产物：`runs/20260912_real_song_views/{real_song_views.jsonl.gz,VIEWS_PANEL_SUMMARY.json,VIEWS_ANALYSIS.json}`（964 KB）、
+  `reports/progress/20260912_real_song_cross_views.md`、`results/by_run/20260912_real_song_views/metrics.json`
+
+## 结论
+
+1. **三个视图只有一个配对可按索引比较**：`full_slot` 有 **23.6%** 的位置落在不同字符上
+   （该 run 跳过/重复单元造成索引漂移），且音频 sha 与 B4 完全不同（同 sha 占比 0%）⇒ 不可逐单元比较。
+   （第一版普查没做这个检查，得出 p90 分歧 7s、max 114s 的假结论——是本目录**第二次**因索引/坐标不一致而险些误判。）
+2. **唯一可比的配对 B4 vs current_silence 输出几乎完全相同**：>100ms 分歧只有 **0.08%**（9/10,909 单元），
+   窗口计划逐字段一致（同 policy、60s core、10s 左上下文、同 committed 区间）
+   ⇒ 2026-08-14 交付的 `B4 vs Current` 对照视频**不构成已识别的因子对比**。
+3. **身份记录缺口**：三个视图由三个不同写入器产出——
+   B4=`qwen_fa_serial_demo_v7_silence_aware_windows`（记录 22 个窗口标志，含 skip_silent/silence_aware/anchor）、
+   批处理视图=`qwen_fa_batch_alignment_v4_forward_overlap_compression`（记录 12 个，**不含任何 silence 标志**）、
+   `full_slot`=identity.schema_version **为空**。
+   ⇒ 批处理链路上即使传了 skip-silent/边界保护标志，产物里也无法核对；
+   这是 AGENTS"缓存身份须并入配置"要求在长歌 demo 链路上的破口。
+4. 顺带得到一个**可靠**的单视图事实：真实伴奏流行歌上零时长/退化单元比例远高于录音室
+   （中文 7.2%、英文 23.2%、日文 45-53%，GTSinger 干净数据只有 2-4%）
+   ⇒ 产品化首要结构 gate 是消灭退化区间，而不是继续打磨边界。
+5. 熵仍能预测"哪个单元跨视图不稳"（AUC 0.776–0.780），与第 1/3 轮同向。

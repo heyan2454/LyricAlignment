@@ -1,0 +1,520 @@
+{
+  "schema_version": "real_song_views_metrics_v1",
+  "run": "20260912_real_song_views",
+  "source": "/home/hyan/Data/lyricalign/runs/20260912_real_song_views",
+  "no_ground_truth": true,
+  "panel": {
+    "units": 10909,
+    "songs": 25,
+    "languages": {
+      "Chinese": 5980,
+      "English": 1946,
+      "Cantonese": 1564,
+      "Japanese": 1419
+    },
+    "audio_identical_b4_vs_cur_share": 0.9257,
+    "audio_identical_b4_vs_slot_share": 0.0,
+    "windows_b4": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "windows_cur": [
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "comparability": {
+    "units_total": 10909,
+    "share_b4_cur_character_identical": 1.0,
+    "share_b4_slot_character_identical": 0.7637,
+    "audio_sha_identical_b4_cur": 0.9257,
+    "audio_sha_identical_b4_slot": 0.0,
+    "decision": "quantitative cross-view numbers use b4 vs current_silence_aware only; full_slot is excluded because 23.6% of its indices hold a different character (that run skips/repeats units) and its audio hash is unrecorded"
+  },
+  "pair_disagreement": {
+    "b4_vs_cur": {
+      "comparable_units": 10909,
+      "median_sec": 0.0,
+      "p90_sec": 0.0,
+      "p99_sec": 0.0,
+      "share_gt_100ms": 0.0008,
+      "share_gt_250ms": 0.0006
+    },
+    "b4_vs_slot": {
+      "comparable_units": 8331,
+      "median_sec": 0.0,
+      "p90_sec": 0.7,
+      "p99_sec": 65.04,
+      "share_gt_100ms": 0.1558,
+      "share_gt_250ms": 0.1282
+    }
+  },
+  "identity_provenance": {
+    "b4_60s_windowed": {
+      "schema_versions": {
+        "qwen_fa_serial_demo_v7_silence_aware_windows": 25
+      },
+      "songs_recording_silence_flags": 25,
+      "n_songs": 25,
+      "window_flag_names": [
+        "allows_zero_duration_after_compression",
+        "core_sec",
+        "future_character_ratio",
+        "future_line_padding",
+        "leading_silence_min_sec",
+        "left_context_sec",
+        "legacy_boundary_start_tolerance_sec_ignored",
+        "legacy_seam_tolerance_sec_diagnostic_only",
+        "max_candidate_expansions",
+        "minimum_core_sec",
+        "minimum_forward_characters",
+        "overlap_resolution",
+        "policy",
+        "right_context_sec",
+        "silence_aware_window_plan",
+        "silence_boundary_min_sec",
+        "silence_boundary_search_sec",
+        "silent_active_ratio_max",
+        "silent_peak_margin_db",
+        "skip_silent_windows",
+        "strong_silence_anchor_sec",
+        "tail_min_core_sec"
+      ]
+    },
+    "current_silence_aware": {
+      "schema_versions": {
+        "qwen_fa_batch_alignment_v4_forward_overlap_compression": 25
+      },
+      "songs_recording_silence_flags": 0,
+      "n_songs": 33,
+      "window_flag_names": [
+        "allows_zero_duration_after_compression",
+        "core_sec",
+        "future_character_ratio",
+        "future_line_padding",
+        "left_context_sec",
+        "legacy_boundary_start_tolerance_sec_ignored",
+        "legacy_seam_tolerance_sec_diagnostic_only",
+        "max_candidate_expansions",
+        "minimum_forward_characters",
+        "overlap_resolution",
+        "policy",
+        "right_context_sec"
+      ]
+    },
+    "full_slot": {
+      "schema_versions": {
+        "": 25
+      },
+      "songs_recording_silence_flags": 0,
+      "n_songs": 33,
+      "window_flag_names": []
+    }
+  },
+  "by_language": [
+    {
+      "language": "Cantonese",
+      "units": 1564,
+      "songs": 3,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "share_gt250": 0.0,
+      "zero_dur_b4": 0.1522,
+      "zero_dur_slot": 0.1784
+    },
+    {
+      "language": "Chinese",
+      "units": 5980,
+      "songs": 13,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0003,
+      "share_gt250": 0.0,
+      "zero_dur_b4": 0.0719,
+      "zero_dur_slot": 0.058
+    },
+    {
+      "language": "English",
+      "units": 1946,
+      "songs": 5,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0036,
+      "share_gt250": 0.0036,
+      "zero_dur_b4": 0.2318,
+      "zero_dur_slot": 0.2205
+    },
+    {
+      "language": "Japanese",
+      "units": 1419,
+      "songs": 4,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "share_gt250": 0.0,
+      "zero_dur_b4": 0.5285,
+      "zero_dur_slot": 0.4496
+    }
+  ],
+  "per_song": [
+    {
+      "song": "Take Me To Church",
+      "language": "English",
+      "units": 430,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0163,
+      "zero_dur_b4": 0.0419,
+      "zero_dur_cur": 0.0488,
+      "zero_dur_slot": 0.193
+    },
+    {
+      "song": "画下灯塔水母 - 副本",
+      "language": "Chinese",
+      "units": 381,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0052,
+      "zero_dur_b4": 0.0551,
+      "zero_dur_cur": 0.0577,
+      "zero_dur_slot": 0.0525
+    },
+    {
+      "song": "Camelia",
+      "language": "English",
+      "units": 334,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.1976,
+      "zero_dur_cur": 0.1976,
+      "zero_dur_slot": 0.1976
+    },
+    {
+      "song": "Renegade",
+      "language": "English",
+      "units": 671,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.1028,
+      "zero_dur_cur": 0.1028,
+      "zero_dur_slot": 0.0984
+    },
+    {
+      "song": "I See Fire",
+      "language": "English",
+      "units": 311,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.881,
+      "zero_dur_cur": 0.881,
+      "zero_dur_slot": 0.6367
+    },
+    {
+      "song": "TH讠NK",
+      "language": "Chinese",
+      "units": 450,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0667,
+      "zero_dur_cur": 0.0667,
+      "zero_dur_slot": 0.0556
+    },
+    {
+      "song": "p.h",
+      "language": "Japanese",
+      "units": 271,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.2583,
+      "zero_dur_cur": 0.2583,
+      "zero_dur_slot": 0.2214
+    },
+    {
+      "song": "为何入眠",
+      "language": "Chinese",
+      "units": 285,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0491,
+      "zero_dur_cur": 0.0491,
+      "zero_dur_slot": 0.0807
+    },
+    {
+      "song": "Immortals",
+      "language": "English",
+      "units": 200,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.12,
+      "zero_dur_cur": 0.12,
+      "zero_dur_slot": 0.08
+    },
+    {
+      "song": "伊卡洛斯奔向月亮",
+      "language": "Chinese",
+      "units": 537,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0447,
+      "zero_dur_cur": 0.0447,
+      "zero_dur_slot": 0.0428
+    },
+    {
+      "song": "何时何地",
+      "language": "Chinese",
+      "units": 368,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0272,
+      "zero_dur_cur": 0.0272,
+      "zero_dur_slot": 0.038
+    },
+    {
+      "song": "初音未来的消失",
+      "language": "Japanese",
+      "units": 561,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.7647,
+      "zero_dur_cur": 0.7647,
+      "zero_dur_slot": 0.533
+    },
+    {
+      "song": "六重不忠",
+      "language": "Chinese",
+      "units": 579,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0432,
+      "zero_dur_cur": 0.0432,
+      "zero_dur_slot": 0.0587
+    },
+    {
+      "song": "安全词",
+      "language": "Chinese",
+      "units": 411,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0122,
+      "zero_dur_cur": 0.0122,
+      "zero_dur_slot": 0.0097
+    },
+    {
+      "song": "本草纲目",
+      "language": "Chinese",
+      "units": 499,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.022,
+      "zero_dur_cur": 0.022,
+      "zero_dur_slot": 0.0361
+    },
+    {
+      "song": "权御天下",
+      "language": "Chinese",
+      "units": 762,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0381,
+      "zero_dur_cur": 0.0381,
+      "zero_dur_slot": 0.0433
+    },
+    {
+      "song": "四季折之羽",
+      "language": "Chinese",
+      "units": 637,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0518,
+      "zero_dur_cur": 0.0518,
+      "zero_dur_slot": 0.0392
+    },
+    {
+      "song": "梦良衣",
+      "language": "Chinese",
+      "units": 112,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0982,
+      "zero_dur_cur": 0.0982,
+      "zero_dur_slot": 0.125
+    },
+    {
+      "song": "炉心融解",
+      "language": "Japanese",
+      "units": 326,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.4233,
+      "zero_dur_cur": 0.4233,
+      "zero_dur_slot": 0.3804
+    },
+    {
+      "song": "电灯胆",
+      "language": "Cantonese",
+      "units": 350,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.2286,
+      "zero_dur_cur": 0.2286,
+      "zero_dur_slot": 0.2457
+    },
+    {
+      "song": "画下灯塔水母",
+      "language": "Chinese",
+      "units": 532,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.3853,
+      "zero_dur_cur": 0.3853,
+      "zero_dur_slot": 0.1974
+    },
+    {
+      "song": "皱鳃鲨",
+      "language": "Japanese",
+      "units": 261,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.433,
+      "zero_dur_cur": 0.433,
+      "zero_dur_slot": 0.5939
+    },
+    {
+      "song": "红日",
+      "language": "Cantonese",
+      "units": 534,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.161,
+      "zero_dur_cur": 0.161,
+      "zero_dur_slot": 0.1498
+    },
+    {
+      "song": "若梦境来袭",
+      "language": "Chinese",
+      "units": 427,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.0281,
+      "zero_dur_cur": 0.0281,
+      "zero_dur_slot": 0.0211
+    },
+    {
+      "song": "难念的经",
+      "language": "Cantonese",
+      "units": 680,
+      "median_spread_sec": 0.0,
+      "p90_spread_sec": 0.0,
+      "share_gt100": 0.0,
+      "zero_dur_b4": 0.1059,
+      "zero_dur_cur": 0.1059,
+      "zero_dur_slot": 0.1662
+    }
+  ],
+  "seam_head_profile": [
+    {
+      "bucket": "1st unit of window",
+      "n": 91,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "2nd",
+      "n": 91,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "3rd",
+      "n": 91,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "4th-5th",
+      "n": 182,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "later",
+      "n": 10454,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0009
+    }
+  ],
+  "seam_tail_profile": [
+    {
+      "bucket": "last unit of window",
+      "n": 91,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "2nd last",
+      "n": 91,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "3rd",
+      "n": 91,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "4th-5th",
+      "n": 182,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0
+    },
+    {
+      "bucket": "earlier",
+      "n": 10454,
+      "median_spread_sec": 0.0,
+      "share_gt100": 0.0009
+    }
+  ],
+  "posterior_predicts_disagreement_auc": {
+    "ent_max_b4": 0.7766,
+    "b4_60s_windowed__ent_s": 0.7773,
+    "b4_60s_windowed__ent_e": 0.7802,
+    "current_silence_aware__ent_s": 0.778,
+    "current_silence_aware__ent_e": 0.7795
+  },
+  "headline": {
+    "comparable_pair_units": 10909,
+    "comparable_pair_share_gt100ms": 0.0008,
+    "full_slot_index_mismatch_share": 0.2363,
+    "views_recording_silence_flags": {
+      "b4_60s_windowed": "25/25",
+      "current_silence_aware": "0/33",
+      "full_slot": "0/33"
+    },
+    "zero_duration_worst_language_b4": "Japanese",
+    "conclusion": "B4 vs current_silence is not an identified contrast; no usable multi-view evidence exists on natural long songs"
+  }
+}
