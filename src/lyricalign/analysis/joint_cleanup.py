@@ -58,6 +58,39 @@ def _weights(ent: np.ndarray, alpha: float) -> np.ndarray:
     return w
 
 
+def _legal_sweep(s_t: np.ndarray, e_t: np.ndarray, min_dur: float, max_dur: float,
+                 audio_dur: float | None) -> tuple[np.ndarray, np.ndarray]:
+    """Deterministic legality fallback: min/max duration, non-decreasing starts, no overlap.
+
+    Used when the LP cannot be solved (resource pressure makes HiGHS return non-optimal).  The
+    structural guarantee must not depend on the solver's luck, so this sweep is legal by
+    construction; what the LP buys on top is *quality*, not legality.
+    """
+    n = int(s_t.size)
+    S = np.array(s_t, dtype=float, copy=True)
+    E = np.array(e_t, dtype=float, copy=True)
+    hi = float(audio_dur) if audio_dur else float("inf")
+    prev_s = prev_e = None
+    for i in range(n):
+        s_i = float(S[i]) if np.isfinite(S[i]) else 0.0
+        if prev_s is not None:
+            s_i = max(s_i, prev_s)
+        e_i = float(E[i]) if np.isfinite(E[i]) else s_i + min_dur
+        e_i = min(max(e_i, s_i + min_dur), s_i + max_dur)
+        if prev_e is not None and s_i < prev_e:            # no overlap: push the unit forward
+            s_i = prev_e
+            e_i = min(max(s_i + min_dur, e_i), s_i + max_dur)
+        if np.isfinite(hi):
+            s_i = min(s_i, max(0.0, hi - min_dur))
+            e_i = min(max(e_i, s_i + min_dur), hi)
+            if e_i <= s_i:
+                s_i = max(0.0, hi - min_dur)
+                e_i = min(s_i + min_dur, hi)
+        S[i], E[i] = s_i, e_i
+        prev_s, prev_e = s_i, e_i
+    return S, E
+
+
 def solve_block(s: Sequence[float], e: Sequence[float], *, ent_start: Sequence[float] | None = None,
                 ent_end: Sequence[float] | None = None, min_dur: float = MIN_DUR_SEC,
                 max_dur: float = MAX_DUR_SEC, audio_dur: float | None = None,
@@ -129,12 +162,22 @@ def solve_block(s: Sequence[float], e: Sequence[float], *, ent_start: Sequence[f
         if audio_dur:
             add({n + i: 1.0}, audio_dur)                  # E_i <= audio_dur
 
-    from scipy.optimize import linprog
-    res = linprog(c, A_ub=np.asarray(rows, dtype=float), b_ub=np.asarray(rhs, dtype=float),
-                  bounds=bounds, method="highs")
-    if not res.success:
-        S, E = s_t.copy(), e_t.copy()
-        return S, E, SolveReport(n, f"lp_failed:{res.message}", 0.0, 0.0, fallback=True)
+    try:
+        from scipy.optimize import linprog
+        res = linprog(c, A_ub=np.asarray(rows, dtype=float), b_ub=np.asarray(rhs, dtype=float),
+                      bounds=bounds, method="highs")
+    except Exception as exc:                      # solver unavailable/interrupted
+        res = None
+        reason = f"lp_raised:{type(exc).__name__}"
+    else:
+        reason = f"lp_failed:{res.message}" if not res.success else "ok"
+    if res is None or not res.success:
+        # The structural guarantee must not depend on the solver's luck: under resource pressure
+        # HiGHS can return non-optimal, and a silent fallback to the clipped targets would drop
+        # overlaps/regressions back in.  Sweep into a legal timeline instead (legality by
+        # construction; quality is what the LP buys, not legality).
+        S, E = _legal_sweep(s_t, e_t, min_dur, max_dur, audio_dur)
+        return S, E, SolveReport(n, reason, 0.0, 0.0, fallback=True)
     S = np.clip(res.x[:n], 0.0, None)
     E = np.clip(res.x[n:2 * n], S + min_dur, None)
     moved = float(np.mean(np.maximum(np.abs(S - s), np.abs(E - e)) > 1e-3))
