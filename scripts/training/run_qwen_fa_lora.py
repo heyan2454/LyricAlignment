@@ -122,14 +122,20 @@ def write_run_identity(run_dir: Path, cfg: dict, args: Any, execution_identity: 
         (run_dir / "command.sh").write_text(command, encoding="utf-8")
 
 
-def checkpoint(run_dir: Path, model: Any, optimizer: Any, scheduler: Any, step: int, epoch: int, next_offset: int) -> Path:
+def checkpoint(run_dir: Path, model: Any, optimizer: Any, scheduler: Any, step: int, epoch: int, next_offset: int,
+               *, save_optimizer_state: bool = True) -> Path:
     import torch
     path = run_dir / "checkpoints" / f"step-{step:06d}"
     path.mkdir(parents=True, exist_ok=True)
     trainable = {name: value.detach().cpu() for name, value in model.named_parameters() if value.requires_grad}
-    torch.save({"trainable_state": trainable, "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
-                "step": step, "epoch": epoch, "next_offset": next_offset,
-                "torch_rng": torch.get_rng_state(), "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None}, path / "trainer_state.pt")
+    payload = {"trainable_state": trainable, "step": step, "epoch": epoch, "next_offset": next_offset,
+               "torch_rng": torch.get_rng_state(),
+               "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+               "optimizer_state_saved": bool(save_optimizer_state)}
+    if save_optimizer_state:
+        payload["optimizer"] = optimizer.state_dict()
+        payload["scheduler"] = scheduler.state_dict()
+    torch.save(payload, path / "trainer_state.pt")
     projector = {name: value.detach().cpu() for name, value in model.named_parameters() if "multi_modal_projector" in name}
     if projector: torch.save(projector, path / "projector.pt")
     if hasattr(model, "peft_config"): model.save_pretrained(path / "adapter")
@@ -145,7 +151,13 @@ def restore(path: Path, model: Any, optimizer: Any, scheduler: Any) -> tuple[int
     missing = set(state["trainable_state"]) - set(current)
     if missing: raise RuntimeError(f"checkpoint parameters unavailable: {sorted(missing)[:3]}")
     for name, value in state["trainable_state"].items(): current[name].data.copy_(value.to(current[name].device, current[name].dtype))
-    optimizer.load_state_dict(state["optimizer"]); scheduler.load_state_dict(state["scheduler"])
+    if "optimizer" in state and "scheduler" in state:
+        optimizer.load_state_dict(state["optimizer"]); scheduler.load_state_dict(state["scheduler"])
+    else:
+        raise RuntimeError(
+            "checkpoint has no optimizer state (written in weights-only mode): resume from a "
+            "full-state checkpoint, or start a fresh run rather than silently restarting Adam"
+        )
     torch.set_rng_state(state["torch_rng"])
     if state["cuda_rng"] is not None and torch.cuda.is_available(): torch.cuda.set_rng_state_all(state["cuda_rng"])
     return int(state["step"]), int(state["epoch"]), int(state.get("next_offset", 0))
@@ -260,7 +272,30 @@ def main() -> None:
     max_steps = configured_max_steps
     run_until_step = min(max_steps, int(args.stop_after_step)) if args.stop_after_step is not None else max_steps
     if run_until_step < 1: raise ValueError("run target must be positive")
-    scheduler = get_cosine_schedule_with_warmup(optimizer, int(max_steps * float(cfg["training"]["warmup_ratio"])), max_steps)
+    lr_cfg = dict((cfg.get("training") or {}).get("lr_schedule") or {})
+    if str(lr_cfg.get("type", "cosine")) == "cyclic_cosine":
+        from lyricalign.training.eval_funnel_loop import CyclicCosineScheduler
+        scheduler = CyclicCosineScheduler(
+            optimizer, cycle_len=int(lr_cfg.get("cycle_len", 2000)),
+            warmup_ratio=float(cfg["training"]["warmup_ratio"]),
+            cycle_peak_decay=float(lr_cfg.get("cycle_peak_decay", 1.0)))
+    else:
+        scheduler = get_cosine_schedule_with_warmup(optimizer, int(max_steps * float(cfg["training"]["warmup_ratio"])), max_steps)
+    # funnelled validation: cheap screen for many candidates, full set for few, each level once
+    funnel_cfg = dict((cfg.get("training") or {}).get("eval_funnel") or {})
+    funnel_enabled = bool(funnel_cfg.get("enabled"))
+    planner = subsets = funnel_selection = None
+    l3_rounds: list[dict[str, Any]] = []
+
+    def _log_funnel(record: dict[str, Any]) -> None:
+        with (run_dir / "funnel_evals.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    if funnel_enabled:
+        from lyricalign.training.eval_funnel_loop import build_funnel, early_stop_decision, run_pending_evals
+        planner, subsets, funnel_meta = build_funnel(cfg, valid, run_dir)
+        funnel_selection = funnel_meta["selection"]
+        atomic_json(run_dir / "FUNNEL_CONFIG.json", funnel_meta)
     step, epoch, resume_offset = (0, 0, 0) if not args.resume else restore(args.resume, model, optimizer, scheduler)
     micro = int(cfg["training"]["micro_batch_size"]); accum = int(cfg["training"]["gradient_accumulation"]); metrics_path = run_dir / "metrics.jsonl"; started = time.time(); model.train()
     best_path = run_dir / "best_checkpoint.json"
@@ -279,7 +314,30 @@ def main() -> None:
             accumulated_loss = 0.0
             next_offset = offset + micro
             if step % int(cfg["training"]["save_steps"]) == 0 or step == max_steps or step == run_until_step:
-                checkpoint(run_dir, model, optimizer, scheduler, step, epoch, next_offset)
+                free_gb = shutil.disk_usage(run_dir).free / 1e9
+                keep_full = bool(cfg["training"].get("save_full_state", True)) and free_gb >= float(
+                    cfg["training"].get("disk_floor_gb", 20.0))
+                checkpoint(run_dir, model, optimizer, scheduler, step, epoch, next_offset,
+                           save_optimizer_state=keep_full)
+                if funnel_enabled and planner.register(step):
+                    funnel_done = run_pending_evals(
+                        planner, step=step, model=model, processor=processor, collator=collator,
+                        subsets=subsets, references=references, device=args.device, dtype=dtype,
+                        batch_size=evaluation_batch,
+                        segment_sec=float(cfg["training"].get("timestamp_segment_sec", 0.08)),
+                        selection=funnel_selection, run_dir=run_dir, log=_log_funnel)
+                    l3_now = [d for d in funnel_done if d["level"] == "l3"]
+                    if l3_now:
+                        best_row = max(l3_now, key=lambda d: d["value"])
+                        l3_rounds.append({"step": step, "best": best_row["value"],
+                                          "best_se": best_row["se"]})
+                        decision = early_stop_decision(
+                            l3_rounds, patience_cycles=int(funnel_cfg.get("patience_cycles", 2)),
+                            min_gain_se=float(funnel_cfg.get("min_gain_se", 1.0)))
+                        atomic_json(run_dir / "EARLY_STOP.json",
+                                    {"history": l3_rounds, "decision": decision})
+                        if decision["stop"]:
+                            run_until_step = step
             if step % int(cfg["training"]["eval_steps"]) == 0:
                 validation = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
                 validation["evaluation_step"] = step

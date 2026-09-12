@@ -1,0 +1,58 @@
+model:
+  id: Qwen/Qwen3-ForcedAligner-0.6B-hf
+  revision: c07281df297b9905d24a508279258cccf987a064
+data:
+  labels: /home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/labels/m4singer_qwen_fa_labels.jsonl
+  split_manifest: /home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/split/m4singer_accepted_split_manifest.jsonl
+  characters: /home/hyan/Data/lyricalign/derived/20260722_m4singer_pinyin_validated_v4/prepare/m4singer_character_annotations.jsonl
+  audio_root: /home/hyan/Data/datasets/m4singer/raw/extracted/m4singer
+  language: Chinese
+training:
+  dtype: bfloat16
+  seed: 20260724
+  micro_batch_size: 4
+  evaluation_micro_batch_size: 8
+  gradient_accumulation: 8
+  projector_lr: 2.0e-5
+  lora_lr: 5.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  max_grad_norm: 1.0
+  timestamp_segment_sec: 0.08
+  eval_steps: 5000
+  save_steps: 50
+  save_full_state: true
+  disk_floor_gb: 20.0
+  lr_schedule:
+    type: cyclic_cosine
+    cycle_len: 2000
+    cycle_peak_decay: 0.8
+  eval_funnel:
+    enabled: true
+    l1_every: 50
+    l1_fraction: 0.25
+    l2_max: 16
+    l2_fraction: 0.5
+    l3_every: 1000
+    l3_top_k: 8
+    ucb_scale: 1.5
+    selection_variant: fixed
+    selection_metric: macro_song_within_primary
+    patience_cycles: 2
+    min_gain_se: 1.0
+stages:
+  overfit:
+    train_items: 32
+    validation_items: 16
+    max_steps: 100
+  r0:
+    train_items: 0
+  r1:
+    train_items: 0
+    max_steps: 12000
+  r2:
+    train_items: 0
+    max_steps: 12000
+  r3:
+    train_items: 2000
+    max_steps: 500
