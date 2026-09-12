@@ -32,6 +32,10 @@
 | B6 | **后处理自己制造零长单元，且自检计数器失明**：33 首批次 raw 1,483 (10.80%) → 交付 2,236 (16.28%)，新造 1,112（8.10%）、同时修复 359；产物自带的 `overlap_compression_collapsed_to_zero_count` 只报 **4** ⇒ 失明 99.6%。逐歌交付零长与 seam/overlap-compressed 率相关 **r=0.9216** ⇒ 定位在接缝修复/重叠压缩步骤 | ✅ | `reports/progress/20260912_structural_compliance.md`、`runs/20260912_structural_compliance/COMPLIANCE.json` |
 | B7 | 结构合规按语言分层：Chinese 6.58% 非法（最健康）、Cantonese 15.09%、English 22.68%、**Japanese 49.29%**；三批独立一致 ⇒ 结构治理优先级在非中文 word 单元路径，普通话侧集中在个别歌（画下灯塔水母 38.9%） | ✅ | 同上 |
 | B8 | 联合求解逐歌施加后两批 zero/overlap/overshoot/regression 全为 0.00%；位移必须分层报（剔除超长单元后中位 0.1s），否则被 40+s 异常区间钳制主导 | ✅ | 同上 |
+| B9a | **raw 起止倒序是后续塌陷的强前兆**：钉锚点 lift 10.1×、fixed 退化 lift 8.3×、25/25 首歌内部方向一致（符号检验）；最终塌陷单元中 **50.3% 在 raw 阶段已退化** ⇒ 免费的 raw 顺序自检可提前拦下一半塌陷（无需真值/前向） | ✅ | `runs/20260912_raw_degeneracy/RAW_DEGENERACY.json`、报告 §1 |
+| B9b | raw 负时长有两个子群：同窗口小幅倒序（多数，中位 2.5s，可由约束解码/单调化消除）与**跨窗口起止混配**（23.1%，最大 105.5s，属窗口→全局组装索引 bug，必须改代码）；且不是量化格点抖动（70.6% >1s）、不是接缝现象（窗口内位置平坦） | ✅ | 同上 |
+| B9c | 中文 raw 负时长仅 **1.1%**（cjk_character 3.0%），日文词 22.6%、英文 word 8.2% ⇒ 普通话侧解码质量明显更好 | ✅ | 同上 |
+| C4a | **联合求解不伤末字**（GTSinger 人工真值：末单元 74.8% 持平、首单元 +2.78pp、总 MAE 77.6→68.3ms），但**长音末字三系统完全同分**（55.9%，MAE 372ms）⇒ 该层只能靠解码信息，与第 11 轮一致 | ✅ | `runs/20260912_last_unit_validation/LAST_UNIT.json` |
 | B9 | 分诊规则：交付非法率 >35% 的歌应重解码而非修复（I See Fire 88% 单元被压成同一时间戳 64.48，而其 raw 边界本不相同） | ✅ | 同上 §3 |
 
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
@@ -94,7 +98,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：`tests/evaluation/` + artifacts 共 102 项（本会话新增），全量 `1544 passed / 3 pre-existing failed`
+- 测试：`tests/evaluation/` + artifacts 共 107 项（本会话新增），全量 `1549 passed / 3 pre-existing failed`
+- 序列身份教训：**任何"逐序列"求解/统计的分组键必须含 `run`**（不同 run 的同名单元混在一个序列会让单调约束互相打乱）
 - 阶段名对照：生产 `processor_decoded` == 本索引/分析模块所称 `fixed`（同一个 `fixed_global_*` 阶段）
 - 自检入口：`PYTHONPATH=src python scripts/evaluation/audit_batch.py --batch <dir> [--compare-batch <dir>]`
 - 报告：`reports/progress/20260912_*.md` 共 7 份 + 本索引

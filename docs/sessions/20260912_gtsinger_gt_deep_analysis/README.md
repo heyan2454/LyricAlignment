@@ -791,3 +791,53 @@ gate 阈值写在 `GATES`（illegal 5% / 阶段净新增 1% / 钉锚点 2%），
 
 新增测试：`stage_degeneracy_audit` 4 项 + 分诊 2 项（tests/evaluation 与 tests 根目录各一份），
 `tests/evaluation` + artifacts 共 102 passed。
+
+---
+
+# 第 15 轮：raw 负时长取证 + 末字分层的真值验证
+
+- 代码：`src/lyricalign/analysis/raw_degeneracy_forensics.py`（`load_all_stages / profile / predicts_collapse / top_examples`）
+- 入口：`scripts/evaluation/{run_raw_degeneracy_forensics,run_last_unit_validation,report_raw_degeneracy}.py`
+- 产物：`runs/20260912_raw_degeneracy/RAW_DEGENERACY.json`、`runs/20260912_last_unit_validation/LAST_UNIT.json`、
+  `reports/progress/20260915_raw_degeneracy_and_last_unit.md`、`results/by_run/20260912_raw_degeneracy/metrics.json`
+- 测试：`tests/evaluation/test_raw_degeneracy_forensics.py`（5 项）；报告另有 1 处数字口径 bug 被自己抓到并修正
+
+## 1. raw 负时长（33 首、13,735 单元、870 个负时长）
+
+| 语言 | 单元 | 负时长率 | 幅度中位 | 最坏 | 后来被钉锚点 |
+|---|---:|---:|---:|---:|---:|
+| **Chinese** | 7,206 | **1.1%** | 2.16s | −67.1s | 29.1% |
+| Cantonese | 2,439 | 7.5% | 1.04s | −68.8s | 0.0% |
+| English | 2,108 | 8.2% | 2.96s | −71.8s | 43.4% |
+| Japanese | 1,982 | 21.9% | 5.2s | −105.5s | 33.8% |
+
+按单元类型：japanese_word 22.6% / word 8.2% / **cjk_character 3.0%**。
+- 不是量化格点抖动：70.6% 幅度 >1s（中位 2.48s、p90 65.5s），仅 2.8% 在 0.08s 格点内；
+- 不是接缝现象：按窗口内位置分组负时长率 5.9% / 4.3% / 2.9% / 6.5%（平坦）。
+- **否证我自己的上一版假设**：「起终点来自不同窗口」只解释 **23.1%**（201/870）⇒ 多数是同窗口内起止倒序，
+  少数是跨窗口混配（最大 105.5s）。⇒ 两个子群要分开治理：①约束解码/单调化可消除；②窗口→全局组装的索引 bug 必须改代码。
+
+## 2. raw 退化是后续塌陷的强前兆（这决定能否少花 GPU）
+
+- 钉锚点率：raw 退化 34.9% vs raw 干净 3.5% ⇒ **lift 10.1×**；
+- 到 fixed 变退化：75.8% vs 9.1% ⇒ **lift 8.3×**；
+- **符号检验 25/25 首歌内部方向一致**（无跨歌混杂）；
+- 反向覆盖：最终 2,236 个塌陷单元里 **50.3% 在 raw 阶段已退化**
+  ⇒ **只做 raw 起止顺序自检（免费、无需真值）就能提前拦下一半塌陷**。
+
+## 3. 末字分层的真值验证（GTSinger 人工真值，30,600 单元 / 2,016 序列）
+
+| 系统 | 全部 | 首单元 | 中间 | 末单元 | 末单元·长音(n=708) |
+|---|---:|---:|---:|---:|---:|
+| raw | 82.1% | 64.1% | 84.0% | 74.8% | 55.9% |
+| 现装 official | 80.4% | 64.1% | 82.0% | 74.6% | 55.9% |
+| **联合求解** | **82.4%** | **66.9%** | 84.1% | 74.8% | 55.9% |
+
+MAE(end) 全部 77.6→68.3ms、首单元 119.9→59.4ms；末单元 177.7→173.4ms。
+⇒ **联合求解不伤末字**（持平），改善首字与整体；但**长音末字三系统完全同分**（55.9%、MAE 372ms）
+⇒ 再次证明那一层只能靠解码信息（右上下文 / 长音 offset 训练信号），与第 11 轮声学否证一致。
+
+## 本轮自查纠正三处
+1. 序列键漏 `run`（不同 run 的同名单元混进一条序列，单调约束互相打乱）⇒ 第一版误报 joint 只有 77.5%；修正后 82.4%；
+2. `raw_negative_share` 误算为负时长集合内的比例（显示 100%）⇒ 改为全单元比例并加断言；
+3. 「跨窗口错配是大头」这一自我假设被数据否证（只 23.1%）。

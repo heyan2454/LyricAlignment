@@ -1,0 +1,573 @@
+{
+  "schema_version": "raw_degeneracy_metrics_v1",
+  "forensics": {
+    "schema": "raw_degeneracy_forensics_v1",
+    "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+    "profile": {
+      "units": 13735,
+      "songs": 33,
+      "raw_negative_units": 870,
+      "raw_zero_units": 613,
+      "raw_negative_share": 0.0633,
+      "by_language": {
+        "Cantonese": {
+          "units": 2439,
+          "negative": 183,
+          "share": 0.075,
+          "median_magnitude_sec": 1.04,
+          "worst_sec": -68.8,
+          "pinned_share": 0.0,
+          "songs_affected": 5
+        },
+        "Chinese": {
+          "units": 7206,
+          "negative": 79,
+          "share": 0.011,
+          "median_magnitude_sec": 2.16,
+          "worst_sec": -67.12,
+          "pinned_share": 0.2911,
+          "songs_affected": 10
+        },
+        "English": {
+          "units": 2108,
+          "negative": 173,
+          "share": 0.0821,
+          "median_magnitude_sec": 2.96,
+          "worst_sec": -71.76,
+          "pinned_share": 0.4335,
+          "songs_affected": 6
+        },
+        "Japanese": {
+          "units": 1982,
+          "negative": 435,
+          "share": 0.2195,
+          "median_magnitude_sec": 5.2,
+          "worst_sec": -105.52,
+          "pinned_share": 0.3379,
+          "songs_affected": 6
+        }
+      },
+      "by_unit_type": {
+        "cjk_character": {
+          "units": 9850,
+          "negative_share": 0.0301,
+          "zero_share": 0.0261
+        },
+        "japanese_word": {
+          "units": 1772,
+          "negative_share": 0.2263,
+          "zero_share": 0.1377
+        },
+        "word": {
+          "units": 2113,
+          "negative_share": 0.0819,
+          "zero_share": 0.053
+        }
+      },
+      "by_inference_source": {
+        "strict_serial_core": {
+          "units": 13735,
+          "negative_share": 0.0633
+        }
+      },
+      "magnitude": {
+        "le_grid_share": 0.0276,
+        "le_0.5s_share": 0.1713,
+        "gt_1s_share": 0.7057,
+        "median_sec": 2.48,
+        "p90_sec": 65.52,
+        "max_sec": 105.52,
+        "share_on_0.08s_grid": 1.0
+      },
+      "negative_by_window_position": {
+        "window 1st unit": {
+          "negatives": 7,
+          "units": 118,
+          "share": 0.0593
+        },
+        "2nd-3rd": {
+          "negatives": 10,
+          "units": 235,
+          "share": 0.0426
+        },
+        "4th-6th": {
+          "negatives": 10,
+          "units": 350,
+          "share": 0.0286
+        },
+        "later": {
+          "negatives": 843,
+          "units": 13032,
+          "share": 0.0647
+        }
+      },
+      "posteriors": {
+        "ent_s": {
+          "raw_negative": {
+            "n": 870,
+            "median": 5.4946,
+            "mean": 5.3436
+          },
+          "clean": {
+            "n": 12252,
+            "median": 1.2648,
+            "mean": 1.9386
+          }
+        },
+        "ent_e": {
+          "raw_negative": {
+            "n": 870,
+            "median": 5.6403,
+            "mean": 5.4935
+          },
+          "clean": {
+            "n": 12252,
+            "median": 1.488,
+            "mean": 2.0711
+          }
+        },
+        "mar_s": {
+          "raw_negative": {
+            "n": 870,
+            "median": 0.0067,
+            "mean": 0.0253
+          },
+          "clean": {
+            "n": 12252,
+            "median": 0.3317,
+            "mean": 0.3772
+          }
+        },
+        "mar_e": {
+          "raw_negative": {
+            "n": 870,
+            "median": 0.005,
+            "mean": 0.0162
+          },
+          "clean": {
+            "n": 12252,
+            "median": 0.2641,
+            "mean": 0.3398
+          }
+        },
+        "top1_s": {
+          "raw_negative": {
+            "n": 870,
+            "median": 0.0392,
+            "mean": 0.0673
+          },
+          "clean": {
+            "n": 12252,
+            "median": 0.5783,
+            "mean": 0.5415
+          }
+        },
+        "top1_e": {
+          "raw_negative": {
+            "n": 870,
+            "median": 0.0304,
+            "mean": 0.0516
+          },
+          "clean": {
+            "n": 12252,
+            "median": 0.5242,
+            "mean": 0.5029
+          }
+        }
+      }
+    },
+    "predicts_collapse": {
+      "available": true,
+      "units": 13735,
+      "raw_degenerate": {
+        "units": 1483,
+        "pinned_share": 0.3486,
+        "fixed_degenerate_share": 0.7579
+      },
+      "raw_clean": {
+        "units": 12252,
+        "pinned_share": 0.0346,
+        "fixed_degenerate_share": 0.0908
+      },
+      "raw_negative_only": {
+        "units": 870,
+        "pinned_share": 0.2816,
+        "fixed_degenerate_share": 0.6839
+      },
+      "lift_pinned": 10.075,
+      "lift_fixed_degenerate": 8.347,
+      "collapse_explained_by_raw_degeneracy": {
+        "collapsed_units": 2236,
+        "were_already_raw_degenerate": 1124,
+        "share": 0.5027
+      },
+      "per_song_direction": {
+        "songs_tested": 25,
+        "songs_where_degenerate_worse": 25,
+        "share": 1.0
+      }
+    },
+    "examples": [
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 494,
+        "text": "そこ",
+        "unit_type": "japanese_word",
+        "raw": [
+          238.8,
+          133.28
+        ],
+        "raw_dur_sec": -105.52,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 6.423
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 476,
+        "text": "の",
+        "unit_type": "japanese_word",
+        "raw": [
+          236.4,
+          133.28
+        ],
+        "raw_dur_sec": -103.12,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 5.957
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 498,
+        "text": "残せ",
+        "unit_type": "japanese_word",
+        "raw": [
+          236.24,
+          133.28
+        ],
+        "raw_dur_sec": -102.96,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 7.008
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 470,
+        "text": "で",
+        "unit_type": "japanese_word",
+        "raw": [
+          235.52,
+          133.28
+        ],
+        "raw_dur_sec": -102.24,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 5.934
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 524,
+        "text": "の",
+        "unit_type": "japanese_word",
+        "raw": [
+          235.52,
+          133.28
+        ],
+        "raw_dur_sec": -102.24,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 6.54
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 469,
+        "text": "ここ",
+        "unit_type": "japanese_word",
+        "raw": [
+          235.36,
+          133.28
+        ],
+        "raw_dur_sec": -102.08,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 5.956
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 443,
+        "text": "と",
+        "unit_type": "japanese_word",
+        "raw": [
+          235.36,
+          133.28
+        ],
+        "raw_dur_sec": -102.08,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 6.486
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 508,
+        "text": "記憶",
+        "unit_type": "japanese_word",
+        "raw": [
+          235.12,
+          133.28
+        ],
+        "raw_dur_sec": -101.84,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 7.293
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 523,
+        "text": "こと",
+        "unit_type": "japanese_word",
+        "raw": [
+          235.04000000000002,
+          133.28
+        ],
+        "raw_dur_sec": -101.76,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 6.663
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 471,
+        "text": "お",
+        "unit_type": "japanese_word",
+        "raw": [
+          235.04000000000002,
+          133.28
+        ],
+        "raw_dur_sec": -101.76,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 5.661
+      },
+      {
+        "song": "初音未来的消失",
+        "language": "Japanese",
+        "unit_index": 481,
+        "text": "て",
+        "unit_type": "japanese_word",
+        "raw": [
+          234.96,
+          133.28
+        ],
+        "raw_dur_sec": -101.68,
+        "sel": [
+          133.28,
+          133.28
+        ],
+        "pinned": true,
+        "ent_max": 6.286
+      },
+      {
+        "song": "冬之花",
+        "language": "Japanese",
+        "unit_index": 218,
+        "text": "も",
+        "unit_type": "japanese_word",
+        "raw": [
+          159.84,
+          58.480000000000004
+        ],
+        "raw_dur_sec": -101.36,
+        "sel": [
+          58.480000000000004,
+          58.480000000000004
+        ],
+        "pinned": true,
+        "ent_max": 5.446
+      }
+    ]
+  },
+  "last_unit_validation": {
+    "schema": "last_unit_validation_v1",
+    "gtsinger": {
+      "panel": {
+        "units": 30600,
+        "sequences": 2016,
+        "reference": "human GTSinger word-level GT",
+        "last_units": 2016,
+        "long_last_units": 708
+      },
+      "systems": {
+        "raw_none": {
+          "all_units": {
+            "n": 30600,
+            "hit100": 0.8212,
+            "hit250": 0.8949,
+            "mae_end_sec": 0.0776,
+            "median_signed_end_sec": -0.0035
+          },
+          "first_unit": {
+            "n": 2016,
+            "hit100": 0.6409,
+            "hit250": 0.7004,
+            "mae_end_sec": 0.1199,
+            "median_signed_end_sec": 0.01
+          },
+          "last_unit": {
+            "n": 2016,
+            "hit100": 0.748,
+            "hit250": 0.8274,
+            "mae_end_sec": 0.1777,
+            "median_signed_end_sec": -0.03
+          },
+          "last_unit_long_note": {
+            "n": 708,
+            "hit100": 0.5593,
+            "hit250": 0.6949,
+            "mae_end_sec": 0.3722,
+            "median_signed_end_sec": -0.068
+          },
+          "middle_units": {
+            "n": 26568,
+            "hit100": 0.8404,
+            "hit250": 0.9148,
+            "mae_end_sec": 0.0668,
+            "median_signed_end_sec": 0.0
+          }
+        },
+        "shipped_official": {
+          "all_units": {
+            "n": 30600,
+            "hit100": 0.8037,
+            "hit250": 0.8907,
+            "mae_end_sec": 0.0722,
+            "median_signed_end_sec": -0.01
+          },
+          "first_unit": {
+            "n": 2016,
+            "hit100": 0.6409,
+            "hit250": 0.7103,
+            "mae_end_sec": 0.0746,
+            "median_signed_end_sec": 0.0
+          },
+          "last_unit": {
+            "n": 2016,
+            "hit100": 0.746,
+            "hit250": 0.8294,
+            "mae_end_sec": 0.1755,
+            "median_signed_end_sec": -0.03
+          },
+          "last_unit_long_note": {
+            "n": 708,
+            "hit100": 0.5593,
+            "hit250": 0.6949,
+            "mae_end_sec": 0.3718,
+            "median_signed_end_sec": -0.068
+          },
+          "middle_units": {
+            "n": 26568,
+            "hit100": 0.8204,
+            "hit250": 0.9091,
+            "mae_end_sec": 0.0641,
+            "median_signed_end_sec": 0.0
+          }
+        },
+        "joint_solve_alpha0": {
+          "all_units": {
+            "n": 30600,
+            "hit100": 0.8238,
+            "hit250": 0.8996,
+            "mae_end_sec": 0.0683,
+            "median_signed_end_sec": -0.0095
+          },
+          "first_unit": {
+            "n": 2016,
+            "hit100": 0.6687,
+            "hit250": 0.7321,
+            "mae_end_sec": 0.0594,
+            "median_signed_end_sec": 0.01
+          },
+          "last_unit": {
+            "n": 2016,
+            "hit100": 0.748,
+            "hit250": 0.8274,
+            "mae_end_sec": 0.1734,
+            "median_signed_end_sec": -0.03
+          },
+          "last_unit_long_note": {
+            "n": 708,
+            "hit100": 0.5593,
+            "hit250": 0.6949,
+            "mae_end_sec": 0.3714,
+            "median_signed_end_sec": -0.068
+          },
+          "middle_units": {
+            "n": 26568,
+            "hit100": 0.8413,
+            "hit250": 0.9178,
+            "mae_end_sec": 0.061,
+            "median_signed_end_sec": 0.0
+          }
+        }
+      }
+    }
+  },
+  "headline": {
+    "raw_negative_share": 0.0633,
+    "chinese_negative_share": 0.011,
+    "japanese_word_negative_share": 0.2263,
+    "share_gt_1s": 0.7057,
+    "cross_window_explained_share": 0.231,
+    "lift_pinned": 10.075,
+    "lift_fixed_degenerate": 8.347,
+    "per_song_sign_test": {
+      "songs_tested": 25,
+      "songs_where_degenerate_worse": 25,
+      "share": 1.0
+    },
+    "collapse_covered_by_raw_check": 0.5027,
+    "joint_solve_last_unit_hit100": 0.748,
+    "joint_solve_first_unit_gain_pp": 2.78,
+    "long_note_last_unit_identical_across_systems": true,
+    "conclusion": "raw start/end inversion is a free 8-10x trigger covering half the later collapses; the long-note tail layer is not fixable by post-processing"
+  }
+}
