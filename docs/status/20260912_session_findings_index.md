@@ -122,6 +122,8 @@
 
 | B52 | **超长塌陷的唯一归因：`fixed`（processor_decoded）阶段**（6 个 ≥50 字块逐阶段取证）：`raw` 时块内只坏一半且仍有真实跨度（如 I See Fire 199 字块：107/199 退化、79 个不同起点、79.2s），到 `fixed` 变成 **199/199 退化、1 个起点、0.0s**；`selected`/`final` 逐阶段净增**全为 0**；**0/6 个块在 raw 就是全塌陷** ⇒ 塌陷是下游破坏性做出来的，不是模型原始输出的必然结果。总量：2,236 个零长字中 **641（28.7%）位于 16 个"起点完全相同"的块**（最大 199 字）。⇒ **修法第一步是修 fixed 的整块钳位/钉锚，其次才是重解码** | ✅ | `reports/progress/20260912_degenerate_run_lineage.md` |
 
+| B53 | **零长度塌陷的根因＝上游 `_fix_timestamps` 的常数填充**（可复现）：交付 `fixed_*` 原样抄自 `transformers.models.qwen3_asr.processing_qwen3_asr._fix_timestamps`（由 `decode_forced_alignment` 调用）；该函数对"不在最长递增子序列"的整块做修补，**当块触到序列任一端或两侧好值相等时用单常数填满整块** ⇒ 时长全零；最小复现 `[0,50,40,30,20,10,0] → [0,50,50,50,50,50,50]`（两侧好值不同时改走线性插值、不塌陷）；**真实数据复现：6 首歌按窗口离线重算，槽位吻合率中位 98.7%**，零长 707→1137（×1.6），最极端窗口 I See Fire 窗口 2（199 字）107→**199 全零长且整窗仅剩 1 个不同时间戳** | ✅ | `reports/progress/20260912_fixed_stage_root_cause.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -182,9 +184,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 192 项
+- 测试：本会话新增 195 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1631 passed / 3 pre-existing failed`（第 44 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1634 passed / 3 pre-existing failed`（第 45 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

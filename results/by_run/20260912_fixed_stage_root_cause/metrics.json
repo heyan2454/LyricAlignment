@@ -1,0 +1,375 @@
+{
+  "schema_version": "fixed_stage_root_cause_metrics_v1",
+  "audit": {
+    "schema": "fixed_stage_root_cause_v1",
+    "claim": "shipped fixed_* timestamps are the upstream processor's _fix_timestamps output, and that repair collapses whole outlier blocks onto one constant timestamp",
+    "upstream": {
+      "module": "transformers.models.qwen3_asr.processing_qwen3_asr",
+      "function": "_fix_timestamps",
+      "caller": "Qwen3ASRProcessor.decode_forced_alignment",
+      "transformers_version": "5.15.0.dev0",
+      "upstream_reference": "QwenLM/Qwen3-ASR qwen_asr/inference/qwen3_forced_aligner.py L147 (per docstring)",
+      "mechanism": "outlier blocks (not in the longest increasing subsequence) are filled: blocks of <=2 snap to a neighbour (duplicates), longer blocks interpolate when both bounding values exist, but a block touching either end -- or whose two bounding good values are equal -- is filled with a single constant, which makes every timestamp in the block identical"
+    },
+    "minimal_reproduction": {
+      "decreasing_tail_input": [
+        0,
+        50,
+        40,
+        30,
+        20,
+        10,
+        0
+      ],
+      "decreasing_tail_output": [
+        0,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50
+      ],
+      "decreasing_tail_distinct_before_after": [
+        6,
+        2
+      ],
+      "bounded_block_input_distinct": 24,
+      "bounded_block_output_distinct": 26,
+      "bounded_block_stays_distinct": true
+    },
+    "songs": [
+      {
+        "song": "初音未来的消失",
+        "units": 561,
+        "windows": 4,
+        "slot_match_share": 0.9759,
+        "zero_length_raw": 266,
+        "zero_length_fixed": 429,
+        "collapse_multiplier": 1.613,
+        "worst_window": {
+          "window_index": 2,
+          "units": 221,
+          "slot_match_share": 0.9412,
+          "zero_raw": 113,
+          "zero_fixed": 221,
+          "distinct_predicted_values": 11
+        },
+        "per_window": [
+          {
+            "window_index": 0,
+            "units": 118,
+            "slot_match_share": 1.0,
+            "zero_raw": 64,
+            "zero_fixed": 103,
+            "distinct_predicted_values": 25
+          },
+          {
+            "window_index": 1,
+            "units": 186,
+            "slot_match_share": 0.9973,
+            "zero_raw": 64,
+            "zero_fixed": 70,
+            "distinct_predicted_values": 220
+          },
+          {
+            "window_index": 2,
+            "units": 221,
+            "slot_match_share": 0.9412,
+            "zero_raw": 113,
+            "zero_fixed": 221,
+            "distinct_predicted_values": 11
+          },
+          {
+            "window_index": 3,
+            "units": 36,
+            "slot_match_share": 1.0,
+            "zero_raw": 25,
+            "zero_fixed": 35,
+            "distinct_predicted_values": 4
+          }
+        ]
+      },
+      {
+        "song": "I See Fire",
+        "units": 311,
+        "windows": 4,
+        "slot_match_share": 0.9646,
+        "zero_length_raw": 160,
+        "zero_length_fixed": 274,
+        "collapse_multiplier": 1.712,
+        "worst_window": {
+          "window_index": 2,
+          "units": 199,
+          "slot_match_share": 1.0,
+          "zero_raw": 107,
+          "zero_fixed": 199,
+          "distinct_predicted_values": 1
+        },
+        "per_window": [
+          {
+            "window_index": 0,
+            "units": 87,
+            "slot_match_share": 0.9713,
+            "zero_raw": 42,
+            "zero_fixed": 71,
+            "distinct_predicted_values": 26
+          },
+          {
+            "window_index": 1,
+            "units": 20,
+            "slot_match_share": 0.575,
+            "zero_raw": 10,
+            "zero_fixed": 3,
+            "distinct_predicted_values": 22
+          },
+          {
+            "window_index": 2,
+            "units": 199,
+            "slot_match_share": 1.0,
+            "zero_raw": 107,
+            "zero_fixed": 199,
+            "distinct_predicted_values": 1
+          },
+          {
+            "window_index": 3,
+            "units": 5,
+            "slot_match_share": 1.0,
+            "zero_raw": 1,
+            "zero_fixed": 1,
+            "distinct_predicted_values": 9
+          }
+        ]
+      },
+      {
+        "song": "画下灯塔水母",
+        "units": 532,
+        "windows": 4,
+        "slot_match_share": 0.9981,
+        "zero_length_raw": 112,
+        "zero_length_fixed": 205,
+        "collapse_multiplier": 1.83,
+        "worst_window": {
+          "window_index": 3,
+          "units": 148,
+          "slot_match_share": 1.0,
+          "zero_raw": 83,
+          "zero_fixed": 135,
+          "distinct_predicted_values": 18
+        },
+        "per_window": [
+          {
+            "window_index": 0,
+            "units": 118,
+            "slot_match_share": 1.0,
+            "zero_raw": 0,
+            "zero_fixed": 1,
+            "distinct_predicted_values": 133
+          },
+          {
+            "window_index": 1,
+            "units": 94,
+            "slot_match_share": 0.9894,
+            "zero_raw": 13,
+            "zero_fixed": 27,
+            "distinct_predicted_values": 80
+          },
+          {
+            "window_index": 2,
+            "units": 172,
+            "slot_match_share": 1.0,
+            "zero_raw": 16,
+            "zero_fixed": 42,
+            "distinct_predicted_values": 160
+          },
+          {
+            "window_index": 3,
+            "units": 148,
+            "slot_match_share": 1.0,
+            "zero_raw": 83,
+            "zero_fixed": 135,
+            "distinct_predicted_values": 18
+          }
+        ]
+      },
+      {
+        "song": "冬之花",
+        "units": 222,
+        "windows": 2,
+        "slot_match_share": 0.9167,
+        "zero_length_raw": 98,
+        "zero_length_fixed": 139,
+        "collapse_multiplier": 1.418,
+        "worst_window": {
+          "window_index": 1,
+          "units": 112,
+          "slot_match_share": 1.0,
+          "zero_raw": 66,
+          "zero_fixed": 112,
+          "distinct_predicted_values": 1
+        },
+        "per_window": [
+          {
+            "window_index": 0,
+            "units": 110,
+            "slot_match_share": 0.8318,
+            "zero_raw": 32,
+            "zero_fixed": 27,
+            "distinct_predicted_values": 119
+          },
+          {
+            "window_index": 1,
+            "units": 112,
+            "slot_match_share": 1.0,
+            "zero_raw": 66,
+            "zero_fixed": 112,
+            "distinct_predicted_values": 1
+          }
+        ]
+      },
+      {
+        "song": "Camelia",
+        "units": 334,
+        "windows": 4,
+        "slot_match_share": 0.997,
+        "zero_length_raw": 57,
+        "zero_length_fixed": 66,
+        "collapse_multiplier": 1.158,
+        "worst_window": {
+          "window_index": 0,
+          "units": 76,
+          "slot_match_share": 1.0,
+          "zero_raw": 17,
+          "zero_fixed": 22,
+          "distinct_predicted_values": 84
+        },
+        "per_window": [
+          {
+            "window_index": 0,
+            "units": 76,
+            "slot_match_share": 1.0,
+            "zero_raw": 17,
+            "zero_fixed": 22,
+            "distinct_predicted_values": 84
+          },
+          {
+            "window_index": 1,
+            "units": 94,
+            "slot_match_share": 1.0,
+            "zero_raw": 21,
+            "zero_fixed": 25,
+            "distinct_predicted_values": 107
+          },
+          {
+            "window_index": 2,
+            "units": 77,
+            "slot_match_share": 0.987,
+            "zero_raw": 11,
+            "zero_fixed": 11,
+            "distinct_predicted_values": 96
+          },
+          {
+            "window_index": 3,
+            "units": 87,
+            "slot_match_share": 1.0,
+            "zero_raw": 8,
+            "zero_fixed": 8,
+            "distinct_predicted_values": 107
+          }
+        ]
+      },
+      {
+        "song": "Immortals",
+        "units": 200,
+        "windows": 3,
+        "slot_match_share": 1.0,
+        "zero_length_raw": 14,
+        "zero_length_fixed": 24,
+        "collapse_multiplier": 1.714,
+        "worst_window": {
+          "window_index": 1,
+          "units": 77,
+          "slot_match_share": 1.0,
+          "zero_raw": 5,
+          "zero_fixed": 9,
+          "distinct_predicted_values": 93
+        },
+        "per_window": [
+          {
+            "window_index": 0,
+            "units": 104,
+            "slot_match_share": 1.0,
+            "zero_raw": 5,
+            "zero_fixed": 7,
+            "distinct_predicted_values": 137
+          },
+          {
+            "window_index": 1,
+            "units": 77,
+            "slot_match_share": 1.0,
+            "zero_raw": 5,
+            "zero_fixed": 9,
+            "distinct_predicted_values": 93
+          },
+          {
+            "window_index": 2,
+            "units": 19,
+            "slot_match_share": 1.0,
+            "zero_raw": 4,
+            "zero_fixed": 8,
+            "distinct_predicted_values": 19
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "songs": 6,
+      "median_slot_match_share": 0.9865,
+      "total_zero_raw": 707,
+      "total_zero_fixed": 1137
+    }
+  },
+  "headline": {
+    "upstream_function": "transformers.models.qwen3_asr.processing_qwen3_asr._fix_timestamps",
+    "transformers_version": "5.15.0.dev0",
+    "minimal_repro_input": [
+      0,
+      50,
+      40,
+      30,
+      20,
+      10,
+      0
+    ],
+    "minimal_repro_output": [
+      0,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50
+    ],
+    "bounded_block_stays_distinct": true,
+    "median_slot_match_share": 0.9865,
+    "zero_units_raw_vs_fixed": [
+      707,
+      1137
+    ],
+    "worst_window": {
+      "song": "初音未来的消失",
+      "window_index": 2,
+      "units": 221,
+      "slot_match_share": 0.9412,
+      "zero_raw": 113,
+      "zero_fixed": 221,
+      "distinct_predicted_values": 11
+    },
+    "root_cause": "the upstream processor's _fix_timestamps fills an outlier block with a single constant when the block touches either end of the sequence (or its two bounding good values are equal), collapsing whole windows onto one timestamp; shipped fixed_* is that output verbatim (median slot agreement 98.7 % when re-run offline)",
+    "fix_options": [
+      "bypass the repair on the product path and use raw_* with a non-collapsing monotone repair",
+      "patch the upstream constant-fill branch",
+      "gate: warn when shipped spans share one timestamp"
+    ]
+  }
+}

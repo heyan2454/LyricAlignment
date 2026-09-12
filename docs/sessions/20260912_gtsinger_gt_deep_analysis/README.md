@@ -1789,3 +1789,39 @@ MIR-1K：hit@50 ±47.9pp、hit@100 ±40.5pp、hit@200 ±2.0pp、hit@250 ±0.7pp�
 ## 自查
 `flag_violations` 属 `structural_compliance`，在新函数里直接调用会 `NameError` ⇒ 改为函数内局部导入
 （避免两个分析模块在 import 期互相耦合）；新增 2 项测试覆盖"块的生长阶段归因"与"短块忽略"。
+
+---
+
+# 第 45 轮：零长度塌陷的根因落到具体函数（上游 `_fix_timestamps` 的常数填充）
+
+- 代码/入口：`scripts/evaluation/{run,report}_fixed_stage_root_cause.py`；
+  测试 `tests/evaluation/test_fix_timestamps_collapse.py`（3 项，**故意锁上游行为**）
+- 产物：`runs/20260912_fixed_stage_root_cause/FIXED_STAGE_ROOT_CAUSE.json`、
+  `reports/progress/20260912_fixed_stage_root_cause.md`、`results/by_run/20260912_fixed_stage_root_cause/metrics.json`
+
+## 根因（可复现）
+1. 交付的 `fixed_*` 时间戳**原样抄自上游**：`transformers.models.qwen3_asr.processing_qwen3_asr._fix_timestamps`
+   （`Qwen3ASRProcessor.decode_forced_alignment` 调用；上游出处见其 docstring 指向 Qwen3-ASR 仓库同一函数）；
+2. 该函数把"不属于最长递增子序列"的整块时间戳修补掉；**当该块触到序列任一端（或两侧好值相等）时，
+   用同一常数填满整块** ⇒ 块内时间戳全同 ⇒ 时长全为零。最小复现：
+   `[0,50,40,30,20,10,0] → [0,50,50,50,50,50,50]`；而两侧好值不同时它做线性插值、**不塌陷**；
+3. **真实数据复现**：按窗口把记录里的原始时间戳喂给同一函数，与交付值比对，
+   6 首歌槽位吻合率中位 **98.7%**（91.7–100%）⇒ 交付阶段确实就是该函数的输出；
+   零长单元合计 **707 → 1137**（×1.6）；最极端窗口（I See Fire 窗口 2，199 字）
+   **107 → 199 全零长，整窗只剩 1 个不同时间戳**。
+
+## 与前几轮的关系（修正而非推翻）
+- 第 43 轮"放大 11 倍"、第 44 轮"只在 fixed 阶段放大"成立；
+  **但根因不在我们的后处理**，而在上游修补——我们只是继承了它的输出；
+- 第 15–17 轮的"我们自己的预钳位把倒序变零长"是**另一条**独立机制（真实存在），
+  本轮把两条区分开：预钳位解释小部分，上游常数填充解释数量级更大的部分；
+- 原始阶段（我们自己 argmax、不修补）保留了真实跨度与更多不同取值 ⇒ **信息在修补前存在**。
+
+## 修法选项（清单 26，P0；本会话不改上游代码）
+1. 产品链路**绕开该修补**：改用 `raw_global_*` + 一个**不产生零长度**的单调化（逐槽夹取 / 保证 `end > start`）；
+2. 给上游打**局部 patch**：把"邻居缺失/相等"分支从填常数改为分摊或夹取，并加回归测试；
+3. **兜底告警**：`audit_batch.py` 增加"同一时刻连续块 ≥ N"告警，避免整窗塌陷静默出厂。
+
+## 自查
+测试首版把 list 传给 `_fix_timestamps`（其内部调 `raw.tolist()`）导致三例 `AttributeError`
+⇒ 增加 `_fix()` 适配器传 ndarray；报告生成器又一次（第 11 次）内嵌 ASCII 引号语法错误 ⇒ 统一改「」。
