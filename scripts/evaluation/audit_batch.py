@@ -32,7 +32,7 @@ GATES = {
 }
 
 
-def audit(batch: Path) -> dict[str, object]:
+def audit(batch: Path, accept_rate: float = 0.763) -> dict[str, object]:
     df, meta = SC.load_batch(batch)
     out: dict[str, object] = {"batch": str(batch), "present": bool(meta.get("songs")),
                               "songs": int(meta.get("songs", 0)), "units": int(meta.get("units", 0)),
@@ -111,6 +111,11 @@ def audit(batch: Path) -> dict[str, object]:
         "pass": bool(post["illegal_share"] == 0.0),
     }
     out["checks"] = checks
+    # observation only: a rate-matched confidence-gate projection.  It never affects the verdict —
+    # absolute entropy thresholds do not transfer between corpora, so this answers "if we gated at
+    # this accept rate for THIS batch, what structural risk would still ship?" without pretending
+    # to be an accuracy claim.
+    out["observations"] = {"gate_projection": SC.gate_projection(df, accept_rate=accept_rate)}
     out["per_song_worst"] = sorted(summ["per_song"], key=lambda r: -r["illegal_share"])[:8]
     failing = [k for k, v in checks.items() if not v["pass"]]
     out["verdict"] = "ship_ok" if not failing else "blocked"
@@ -128,9 +133,13 @@ def main() -> int:
     ap.add_argument("--triage-language", default=None,
                     help="also emit a per-song triage table for this language (e.g. Chinese)")
     ap.add_argument("--triage-out", type=Path, default=None)
+    ap.add_argument("--gate-accept-rate", type=float, default=0.763,
+                    help="acceptance rate for the observational gate projection (default 0.763, "
+                         "the GTSinger 200 ms / 5 % false-safe operating point)")
     args = ap.parse_args()
     result: dict[str, object] = {"schema": "batch_audit_v1", "gates": GATES,
-                                 "batches": [audit(args.batch)]}
+                                 "gate_accept_rate": args.gate_accept_rate,
+                                 "batches": [audit(args.batch, args.gate_accept_rate)]}
     if args.compare_batch:
         result["pairwise"] = EIA.audit_pair(
             f"{args.batch.name}__vs__{args.compare_batch.name}",
@@ -168,6 +177,17 @@ def main() -> int:
               + (f"  blocking={b['blocking_checks']}" if b.get("blocking_checks") else ""))
         for k, v in b.get("checks", {}).items():
             print(f"   [{'OK ' if v['pass'] else 'FAIL'}] {k:24s} {json.dumps(v['value'], ensure_ascii=False)[:150]}")
+        gp = (b.get("observations") or {}).get("gate_projection") or {}
+        if gp.get("available"):
+            print(f"   [OBS ] gate_projection@accept={100 * gp['accept_share']:.1f}%: "
+                  f"residual illegal in accepted={100 * (gp['illegal_in_accepted_share'] or 0):.2f}%, "
+                  f"illegal captured by review={100 * gp['illegal_capture_of_all_illegal']:.1f}%, "
+                  f"units without score={gp['units_without_score']}, "
+                  f"review share by language="
+                  + json.dumps({k: round(100 * v, 1) for k, v in gp["review_share_by_language"].items()},
+                               ensure_ascii=False))
+        elif gp:
+            print(f"   [OBS ] gate_projection unavailable: {gp.get('reason')}")
     if "pairwise" in result:
         pw = result["pairwise"]
         print(f"pairwise -> {pw['verdict'].upper()}: {pw.get('reason')}")

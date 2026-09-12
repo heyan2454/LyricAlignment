@@ -497,3 +497,36 @@ def policy_audit(accepted: "np.ndarray", violations: pd.DataFrame, langs: pd.Ser
             for k in sorted(langs.dropna().unique())},
     }
     return out
+
+
+def gate_projection(units: pd.DataFrame, *, accept_rate: float = 0.763,
+                    score_col: str = "ent_end") -> dict[str, Any]:
+    """Project what a confidence gate would ship for *this* batch, using structural evidence only.
+
+    Production batches have no ground truth, and an absolute entropy threshold does not transfer
+    between corpora (a threshold sane on GTSinger flagged 68.7 % of the product batch), so the only
+    honest projection is **rate-matched**: accept the least-suspicious ``accept_rate`` fraction of
+    this batch by within-batch entropy percentile, then report the residual structural risk inside
+    the accepted set, how much of the batch's illegality the review queue would catch, and how the
+    review burden lands per language.  It is a self-check on the shipped timeline, not an accuracy
+    estimate — and it deliberately shows the uncomfortable case (a batch whose accepted set still
+    carries illegal units) instead of hiding it behind a pass/fail gate.
+    """
+    if score_col not in units.columns or units[score_col].isna().all():
+        return {"available": False, "reason": f"no usable {score_col} in batch"}
+    frame = units.reset_index(drop=True)
+    score = pd.to_numeric(frame[score_col], errors="coerce").rank(pct=True).to_numpy(dtype=float)
+    if np.count_nonzero(np.isfinite(score)) < 20:
+        return {"available": False, "reason": "too few units with a confidence score"}
+    viol = flag_violations(frame)
+    langs = frame["language"].astype(str) if "language" in frame.columns else pd.Series(
+        ["unknown"] * len(frame))
+    rate = float(np.clip(accept_rate, 0.0, 1.0))
+    cut = float(np.nanquantile(score[np.isfinite(score)], rate))
+    accepted = np.isfinite(score) & (score <= cut)
+    out = policy_audit(accepted, viol, langs)
+    out.update({"available": True, "policy": "rate_matched_entropy_percentile",
+                "target_accept_rate": round(rate, 4), "threshold_within_batch": round(cut, 4),
+                "score_col": score_col,
+                "units_without_score": int((~np.isfinite(score)).sum())})
+    return out

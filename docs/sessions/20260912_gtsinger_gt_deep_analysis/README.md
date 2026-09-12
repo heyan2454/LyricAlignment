@@ -1689,3 +1689,29 @@ MIR-1K：hit@50 ±47.9pp、hit@100 ±40.5pp、hit@200 ±2.0pp、hit@250 ±0.7pp�
 自查：审计逻辑起初只写在脚本里（违反"逻辑进 src、脚本只做入口"的项目约定）⇒ 上移为
 `policy_audit()` 并加 2 项测试；我两个测试断言自己算错（ja 复核率 1.0 应为 0.5、
 第二例 accepted 非法率 0.5 应为 2/3），修正后 8 项全通过；脚本里一处标签把"复核率"写成"放行率"，已改。
+
+---
+
+# 第 41 轮：把 gate 投影接进批次自检 `audit_batch.py`（观察列，不参与判定）
+
+- 代码：`structural_compliance.gate_projection()`（批内分位 rate-matched 熵策略 + `policy_audit`）
+- 接线：`scripts/evaluation/audit_batch.py` 新增 `observations.gate_projection` 与 `--gate-accept-rate`
+  （默认 0.763 = 第 38 轮 GTSinger 200ms / 5% 误放工作点）
+- 测试：`test_structural_compliance.py` 增 2 项（合计 10 项）
+
+## 真实批输出（33 首 / 13,735 单元，VERDICT=blocked，与接线前同一组 4 项 blocking）
+```
+[OBS ] gate_projection@accept=76.3%: residual illegal in accepted=5.26%,
+       illegal captured by review=76.0%, units without score=0,
+       review share by language={"Cantonese":27.5,"Chinese":5.9,"English":33.9,"Japanese":72.9}
+```
+与第 39/40 轮独立脚本算出的数字**逐位一致** ⇒ 接线没有改变语义，也没有污染 verdict
+（观察列永远 `pass`-无关，因为它不是 gate）。
+
+## 为什么放在自检里
+生产批次没有真值，而绝对熵阈值不跨域 ⇒ 唯一诚实的投影是"按本批分位放行 X%"，
+然后把**残余结构风险**与**复核负担的语言分配**直接打在批次结论旁边，
+让每条批次都能自答"若上线这个 gate，还有什么会被放行"。
+
+自查：夹具第一版自相矛盾（120 单元里 33% 非法却只拦 25%，断言不可能成立）
+⇒ 改为 14% 非法且全部落在最高熵段；并改为**先打印实测语义再写断言**（这一条已连续三轮帮我抓出算错的期望值）。

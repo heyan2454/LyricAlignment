@@ -115,6 +115,8 @@
 
 | B48 | **gate 的三策略前沿**（同一总放行率、无真值结构审计；整批非法率按语言差异巨大：日 49.3% / 英 22.7% / 粤 15.1% / 普 6.6%）：76.3% 放行档下 **全局分位捕获 76.0% 非法单元（复核 23.7%，队列复核率 普 5.9%、日 72.9%）**；**按语言等放行率捕获掉到 55.0%（−21.0pp）且三档一致损失 16.3~21.6pp ⇒ 被严格支配，不要采用**；**按语言等风险**（对齐全局放行集合非法率 8.11%）需多花 6.4pp 复核量、捕获 63.4%、并把日语推到 99.2% 复核 ⇒ 若产品要"各语言风险相当"必须是**知情选择**而非全局阈值的隐性副作用 | ✅ | `runs/20260912_gate_language_calibration/LANGUAGE_CALIBRATION.json`、`structural_compliance.policy_audit` |
 
+| B49 | **gate 投影已接入批次自检**：`structural_compliance.gate_projection()` + `audit_batch.py` 的 `observations.gate_projection`（`--gate-accept-rate` 默认 0.763 = 第 38 轮工作点）；真实批输出 残余非法 in accepted **5.26%**、复核捕获 **76.0%**、复核负担按语言 粤 27.5 / 普 5.9 / 英 33.9 / 日 72.9，**与独立脚本逐位一致且不影响 verdict**（观察列不参与判定）⇒ 每条生产批次现在可自答"若上线此 gate 还有什么会被放行" | ✅ | `scripts/evaluation/audit_batch.py`、`src/lyricalign/analysis/structural_compliance.py` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -175,9 +177,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 186 项
+- 测试：本会话新增 188 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1625 passed / 3 pre-existing failed`（第 40 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1627 passed / 3 pre-existing failed`（第 41 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

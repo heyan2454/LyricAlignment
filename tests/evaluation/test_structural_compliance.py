@@ -188,3 +188,34 @@ def test_policy_audit_capture_drops_when_illegal_units_are_accepted():
     out = SC.policy_audit(accepted, viol, langs)
     assert out["illegal_capture_of_all_illegal"] == 0.0        # both illegal units were shipped
     assert out["illegal_in_accepted_share"] == pytest.approx(2 / 3, abs=1e-4)  # 2 of 3 accepted
+
+
+def test_gate_projection_rate_matches_and_reports_residual_risk():
+    import numpy as np
+    import pandas as pd
+    from lyricalign.analysis import structural_compliance as SC
+
+    n = 120
+    # 17 of 120 units (~14 %) are zero-length *and* carry the highest entropy, so a 25 % review
+    # queue can hold every one of them; the earlier version made 33 % illegal, which is not
+    # catchable with a 25 % budget and made the assertions self-contradictory
+    rows = [{"song": "a", "language": "zh", "unit_index": i,
+             "start_sec": i * 1.0, "end_sec": i * 1.0 + (0.0 if i % 7 == 0 else 0.4),
+             "ent_end": 2.0 if i % 7 == 0 else 0.2 + 0.01 * i} for i in range(n)]
+    units = pd.DataFrame(rows)
+    out = SC.gate_projection(units, accept_rate=0.75)
+    assert out["available"] is True
+    assert out["accept_share"] == pytest.approx(0.75, abs=0.02)
+    # every zero-length unit in the fixture is also the high-entropy one, so a good gate holds them
+    assert out["illegal_in_accepted_share"] == 0.0
+    assert out["illegal_capture_of_all_illegal"] == 1.0
+    assert out["review_share_by_language"]["zh"] == pytest.approx(0.25, abs=0.02)
+
+
+def test_gate_projection_is_explicit_when_scores_are_missing():
+    import pandas as pd
+    from lyricalign.analysis import structural_compliance as SC
+    units = pd.DataFrame([{"song": "a", "language": "zh", "start_sec": 0.0, "end_sec": 1.0,
+                           "ent_end": None}] * 40)
+    out = SC.gate_projection(units)
+    assert out["available"] is False and "reason" in out
