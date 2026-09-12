@@ -127,3 +127,141 @@ def compare_checkpoints(frame: pd.DataFrame, *, by: str = "model") -> dict[str, 
             }
         out[str(label)] = entry
     return out
+
+
+def unreachable_geometry(frame: pd.DataFrame, *, pred_sec: str, top2cls: str, gt_sec: str,
+                         entropy_col: str | None = None, margin_col: str | None = None,
+                         tol_bins: int = 1) -> dict[str, Any]:
+    """Split the unreachable cases into *between the two candidates* and *outside their span*.
+
+    This is the decision-relevant refinement of `containment`: if the ground-truth bin lies between
+    the top-1 and the runner-up, a constrained/monotone decode (or an interpolation over the two
+    candidate classes) can still reach it without new evidence; if it lies outside the span, no
+    reshuffling of these candidates helps and the fix must produce new candidates (longer right
+    context, a different window split, or more training signal).
+
+    Distance is measured in bins of ``TIMESTAMP_STEP_SEC``; ``tol_bins`` widens "reachable by span"
+    by that many bins on each side to absorb grid rounding.
+    """
+    pred_bin = _bin_index(pd.to_numeric(frame[pred_sec], errors="coerce").to_numpy(dtype=float))
+    # top2cls is already a bin/class index; converting it again (as an earlier draft did) inflates
+    # the candidate span by 1/step and makes every GT look "left" of the span
+    second = pd.to_numeric(frame[top2cls], errors="coerce").to_numpy(dtype=float)
+    gt_bin = _bin_index(pd.to_numeric(frame[gt_sec], errors="coerce").to_numpy(dtype=float))
+    ok = np.isfinite(pred_bin) & np.isfinite(second) & np.isfinite(gt_bin)
+    if not ok.any():
+        return {"available": False}
+    pb, sb, gb = pred_bin[ok], second[ok], gt_bin[ok]
+    lo, hi = np.minimum(pb, sb), np.maximum(pb, sb)
+    exact_hit = (np.abs(pb - gb) <= 1e-9) | (np.abs(sb - gb) <= 1e-9)
+    within_tol = (np.abs(pb - gb) <= tol_bins) | (np.abs(sb - gb) <= tol_bins)
+    unreachable = ~within_tol
+    between = unreachable & (gb >= lo - tol_bins) & (gb <= hi + tol_bins)
+    left = unreachable & (gb < lo - tol_bins)
+    right = unreachable & (gb > hi + tol_bins)
+    n = int(unreachable.sum())
+    out: dict[str, Any] = {
+        "available": True, "units": int(ok.sum()), "tol_bins": tol_bins,
+        "exact_hit_share": round(float(exact_hit.mean()), 4),
+        "within_tol_share": round(float(within_tol.mean()), 4),
+        "unreachable_units": n, "unreachable_share": round(n / max(int(ok.sum()), 1), 4),
+        "between_candidates_share_of_unreachable": round(float(between.sum() / n), 4) if n else None,
+        "outside_span_share_of_unreachable": round(float((left.sum() + right.sum()) / n), 4) if n else None,
+        "outside_left_share_of_unreachable": round(float(left.sum() / n), 4) if n else None,
+        "outside_right_share_of_unreachable": round(float(right.sum() / n), 4) if n else None,
+        "candidate_span_bins_when_unreachable": {},
+        "distance_outside_bins": {},
+    }
+    span = (hi - lo)[unreachable]
+    if span.size:
+        out["candidate_span_bins_when_unreachable"] = {
+            "median": float(np.median(span)), "p90": float(np.percentile(span, 90)),
+            "median_sec": round(float(np.median(span)) * TIMESTAMP_STEP_SEC, 3)}
+    dist = np.where(left, lo - gb, np.where(right, gb - hi, 0.0))[unreachable]
+    if dist.size:
+        out["distance_outside_bins"] = {"median_when_outside": float(np.median(dist[dist > 0]))
+                                        if (dist > 0).any() else 0.0,
+                                        "p90_when_outside": float(np.percentile(dist[dist > 0], 90))
+                                        if (dist > 0).any() else 0.0,
+                                        "median_sec_when_outside": round(
+                                            float(np.median(dist[dist > 0])) * TIMESTAMP_STEP_SEC, 3)
+                                        if (dist > 0).any() else 0.0}
+    # can the decoder's own uncertainty tell "interpolate" from "re-decode"?
+    for col, key in ((entropy_col, "entropy"), (margin_col, "margin")):
+        if not col or col not in frame.columns:
+            continue
+        v = pd.to_numeric(frame[col], errors="coerce").to_numpy(dtype=float)[ok]
+        good = np.isfinite(v)
+        if good.sum() < 40 and (between | (left | right)).sum() == 0:
+            continue
+        b, o = v[good & between[good] if len(v[good]) == good.sum() else good], None
+        # index the label arrays with the same mask used for v
+        labels_bt = between & good
+        labels_ot = (left | right) & good
+        vb, vo = v[labels_bt], v[labels_ot]
+        if vb.size >= 20 and vo.size >= 20:
+            out[f"{key}_between_candidates_median"] = round(float(np.median(vb)), 4)
+            out[f"{key}_outside_span_median"] = round(float(np.median(vo)), 4)
+            from lyricalign.realign_gate.gate_features import roc_auc
+            lab = np.zeros(int(labels_bt.sum() + labels_ot.sum()))
+            sc = np.concatenate([vb, vo])
+            lab[: int(labels_bt.sum())] = 1.0
+            auc = roc_auc(lab, sc)
+            if auc is not None:
+                out[f"auc_{key}_predicts_between_candidates"] = round(auc, 4)
+    return out
+
+
+def signed_bias(frame: pd.DataFrame, *, pred_col: str, gt_col: str) -> dict[str, Any]:
+    """Median/mean signed error (prediction minus reference) and the share of late predictions."""
+    d = (pd.to_numeric(frame[pred_col], errors="coerce")
+         - pd.to_numeric(frame[gt_col], errors="coerce")).to_numpy(dtype=float)
+    ok = np.isfinite(d)
+    if not ok.any():
+        return {"available": False}
+    d = d[ok]
+    return {"available": True, "n": int(d.size),
+            "median_ms": round(float(np.median(d)) * 1000, 1),
+            "mean_ms": round(float(np.mean(d)) * 1000, 1),
+            "late_share": round(float(np.mean(d > 0)), 4),
+            "abs_median_ms": round(abs(float(np.median(d))) * 1000, 1)}
+
+
+def bias_by_stratum(frame: pd.DataFrame, *, strata: dict[str, "np.ndarray"],
+                    end_pred: str = "pred_end_sec", end_gt: str = "gt_end_sec",
+                    start_pred: str = "pred_start_sec", start_gt: str = "gt_start_sec"
+                    ) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for name, mask in strata.items():
+        sub = frame[mask]
+        if not len(sub):
+            continue
+        out[name] = {"units": int(len(sub)),
+                     "end": signed_bias(sub, pred_col=end_pred, gt_col=end_gt),
+                     "start": signed_bias(sub, pred_col=start_pred, gt_col=start_gt)}
+    return out
+
+
+def transfer_direction_check(studio: dict[str, Any], target: dict[str, Any],
+                            stratum: str = "long_note") -> dict[str, Any]:
+    """Would a bias correction calibrated on one domain help the other?  Compare signs, not sizes.
+
+    A global offset correction can only transfer when the two domains err in the same direction.  If
+    the signs disagree, a studio-calibrated shift actively hurts real accompanied recordings — which
+    is exactly what was measured on 2026-09-12 and why that idea is recorded as closed.
+    """
+    a = (studio.get(stratum) or {}).get("end", {})
+    b = (target.get(stratum) or {}).get("end", {})
+    if not a.get("available") or not b.get("available"):
+        return {"available": False}
+    direction_a = np.sign(a["median_ms"]) if abs(a["median_ms"]) > 1.0 else 0.0
+    direction_b = np.sign(b["median_ms"]) if abs(b["median_ms"]) > 1.0 else 0.0
+    late_a, late_b = a["late_share"], b["late_share"]
+    return {"available": True, "stratum": stratum,
+            "studio_median_ms": a["median_ms"], "target_median_ms": b["median_ms"],
+            "studio_late_share": late_a, "target_late_share": late_b,
+            "same_direction": bool(direction_a == direction_b and direction_a != 0.0),
+            "late_share_gap": round(abs(late_a - late_b), 4),
+            "verdict": ("transferable" if direction_a == direction_b and direction_a != 0.0
+                        else "NOT transferable: the two domains err in opposite directions, "
+                             "so a global offset calibrated on one would hurt the other")}

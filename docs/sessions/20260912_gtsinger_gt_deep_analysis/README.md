@@ -1058,3 +1058,47 @@ long_note 84.82% → 95.54%（**+10.71pp**，corr 仅 0.414）；last_char 82.35
 
 自查修正：`best_single_view_hit` 第一版写成 `m.any(axis=0).max()`（恒 1.0）⇒ 改为 `m.mean(axis=0).max()`；
 GTSinger 的 unit_key 误用 `UNIT_KEY[:-1]`（漏 unit_index）导致塌成 item 级（假 100%）⇒ 修正后单元数 2,415。
+
+---
+
+# 第 21 轮：不可达真值的几何 + 偏置可否跨域（又关掉两条省算力幻想）
+
+- 代码：`decodability_ceiling.unreachable_geometry / signed_bias / bias_by_stratum / transfer_direction_check`
+- 入口：`scripts/evaluation/{run,report}_decodability_geometry.py`；测试 5 项
+- 产物：`runs/20260912_decodability_ceiling/GEOMETRY.json`、`reports/progress/20260912_decodability_geometry.md`、
+  `results/by_run/20260912_decodability_geometry/metrics.json`
+
+## 结论 (a)：插值/重排不可行
+不可达时**候选跨度中位数 = 0.08s（1 格）** ⇒ top-1 与 top-2 是相邻格点，真值几乎不可能落在它们之间：
+全体不可达里只有 9.7% 在跨度内、**长音只有 4.0%**；长音的 **96.0% 落在跨度之外**（外移中位 0.8s）。
+
+| 层 | 单元 | 不可达率 | 在跨度之间 | 在跨度之外 | 偏左 | 偏右 |
+|---|---:|---:|---:|---:|---:|---:|
+| all | 30,600 | 6.04% | 9.7% | 90.3% | 44.2% | 46.1% |
+| long_note | 1,440 | 20.56% | 4.0% | **96.0%** | 10.8% | **85.1%** |
+| first_unit | 2,016 | 18.45% | 11.8% | 88.2% | **78.5%** | 9.7% |
+| last_unit | 2,016 | 9.92% | 0.0% | **100.0%** | 0.0% | **100.0%** |
+
+## 结论 (b)：全局偏置修正不可跨域
+端点偏置（pred − 人工真值）：
+
+| 域 | 层 | 中位 | 偏晚比例 |
+|---|---|---:|---:|
+| GTSinger r2（录音室清唱） | long_note | **−40.0ms** | 0.239（截早） |
+| GTSinger r2 | last_unit | −30.0ms | 0.096 |
+| MIR-1K r2_full（真实伴奏） | long_note | **+32.4ms** | 0.741（拖晚） |
+| MIR-1K r2_full | last_char | +20.0ms | 0.706 |
+
+机判 `same_direction=false`、late-share 差 0.502 ⇒ **一个域上校准的整体偏移会伤害另一个域**。
+这同时**回收了第 11 轮的疑问**：当时声学衰减阈值最优 θ 不可迁移（迁移后 −13.4pp），
+根因不是阈值选错，而是**两个域端点误差方向本身相反**。
+
+## 合起来的路线含义
+长音尾边界不是"选错了"而是"候选里根本没有、且两域错向相反"⇒
+可往前走的两件事仍是 (i) **训练信号**（已证可把长音不可达率 70.8%→21.7%）、
+(ii) **产生新候选的重解码**（更长右上下文；且必须按域分别验证，不能共用修正规则）。
+另注意：真实伴奏输入目前来自**声道选择**而非源分离（第 10 轮已证 GTSinger 面板的 mix/vocal 是同一文件），
+"分离质量"这个变量在普通话链路上**从未被真正测试过**。
+
+自查修正：`unreachable_geometry` 初版对 `raw_top2cls_*` 又除了一次格点步长（它本来就是格点索引），
+导致候选跨度被夸大成 42–99s、且"偏右"恒为 0%；修正后跨度中位 0.08s 并与第 19 轮包含率自洽。

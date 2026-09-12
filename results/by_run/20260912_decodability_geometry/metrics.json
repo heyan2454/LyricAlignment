@@ -1,0 +1,508 @@
+{
+  "schema_version": "decodability_geometry_metrics_v1",
+  "audit": {
+    "schema": "decodability_geometry_v1",
+    "discipline": "GTSinger (human GT, not test) drives the conclusion; MIR-1K is test-only and is used here only to report the *direction* of its own bias, never to calibrate anything",
+    "timestamp_step_sec": 0.08,
+    "geometry": {
+      "all_units": {
+        "units": 30600,
+        "end": {
+          "available": true,
+          "units": 30600,
+          "tol_bins": 1,
+          "exact_hit_share": 0.8427,
+          "within_tol_share": 0.9396,
+          "unreachable_units": 1848,
+          "unreachable_share": 0.0604,
+          "between_candidates_share_of_unreachable": 0.0974,
+          "outside_span_share_of_unreachable": 0.9026,
+          "outside_left_share_of_unreachable": 0.4416,
+          "outside_right_share_of_unreachable": 0.461,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 9.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 4.0,
+            "p90_when_outside": 12.0,
+            "median_sec_when_outside": 0.32
+          },
+          "entropy_between_candidates_median": 2.0301,
+          "entropy_outside_span_median": 1.822,
+          "auc_entropy_predicts_between_candidates": 0.5575,
+          "margin_between_candidates_median": 0.1453,
+          "margin_outside_span_median": 0.218,
+          "auc_margin_predicts_between_candidates": 0.4571
+        },
+        "start": {
+          "available": true,
+          "units": 30600,
+          "tol_bins": 1,
+          "exact_hit_share": 0.9044,
+          "within_tol_share": 0.9552,
+          "unreachable_units": 1372,
+          "unreachable_share": 0.0448,
+          "between_candidates_share_of_unreachable": 0.102,
+          "outside_span_share_of_unreachable": 0.898,
+          "outside_left_share_of_unreachable": 0.793,
+          "outside_right_share_of_unreachable": 0.105,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 8.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 5.0,
+            "p90_when_outside": 11.0,
+            "median_sec_when_outside": 0.4
+          },
+          "entropy_between_candidates_median": 2.3018,
+          "entropy_outside_span_median": 1.8016,
+          "auc_entropy_predicts_between_candidates": 0.6327,
+          "margin_between_candidates_median": 0.2189,
+          "margin_outside_span_median": 0.2015,
+          "auc_margin_predicts_between_candidates": 0.485
+        }
+      },
+      "long_note": {
+        "units": 1440,
+        "end": {
+          "available": true,
+          "units": 1440,
+          "tol_bins": 1,
+          "exact_hit_share": 0.6,
+          "within_tol_share": 0.7944,
+          "unreachable_units": 296,
+          "unreachable_share": 0.2056,
+          "between_candidates_share_of_unreachable": 0.0405,
+          "outside_span_share_of_unreachable": 0.9595,
+          "outside_left_share_of_unreachable": 0.1081,
+          "outside_right_share_of_unreachable": 0.8514,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 15.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 10.0,
+            "p90_when_outside": 18.0,
+            "median_sec_when_outside": 0.8
+          }
+        },
+        "start": {
+          "available": true,
+          "units": 1440,
+          "tol_bins": 1,
+          "exact_hit_share": 0.8389,
+          "within_tol_share": 0.9111,
+          "unreachable_units": 128,
+          "unreachable_share": 0.0889,
+          "between_candidates_share_of_unreachable": 0.1875,
+          "outside_span_share_of_unreachable": 0.8125,
+          "outside_left_share_of_unreachable": 0.6875,
+          "outside_right_share_of_unreachable": 0.125,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 9.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 10.5,
+            "p90_when_outside": 30.0,
+            "median_sec_when_outside": 0.84
+          },
+          "entropy_between_candidates_median": 2.0935,
+          "entropy_outside_span_median": 2.3626,
+          "auc_entropy_predicts_between_candidates": 0.4359,
+          "margin_between_candidates_median": 0.259,
+          "margin_outside_span_median": 0.1895,
+          "auc_margin_predicts_between_candidates": 0.5449
+        }
+      },
+      "short_note": {
+        "units": 14340,
+        "end": {
+          "available": true,
+          "units": 14340,
+          "tol_bins": 1,
+          "exact_hit_share": 0.8974,
+          "within_tol_share": 0.971,
+          "unreachable_units": 416,
+          "unreachable_share": 0.029,
+          "between_candidates_share_of_unreachable": 0.0769,
+          "outside_span_share_of_unreachable": 0.9231,
+          "outside_left_share_of_unreachable": 0.7981,
+          "outside_right_share_of_unreachable": 0.125,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 5.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 3.0,
+            "p90_when_outside": 7.0,
+            "median_sec_when_outside": 0.24
+          },
+          "entropy_between_candidates_median": 1.7297,
+          "entropy_outside_span_median": 1.642,
+          "auc_entropy_predicts_between_candidates": 0.5026,
+          "margin_between_candidates_median": 0.3431,
+          "margin_outside_span_median": 0.2205,
+          "auc_margin_predicts_between_candidates": 0.6315
+        },
+        "start": {
+          "available": true,
+          "units": 14340,
+          "tol_bins": 1,
+          "exact_hit_share": 0.9172,
+          "within_tol_share": 0.9702,
+          "unreachable_units": 428,
+          "unreachable_share": 0.0298,
+          "between_candidates_share_of_unreachable": 0.0935,
+          "outside_span_share_of_unreachable": 0.9065,
+          "outside_left_share_of_unreachable": 0.8224,
+          "outside_right_share_of_unreachable": 0.0841,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 5.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 3.0,
+            "p90_when_outside": 5.0,
+            "median_sec_when_outside": 0.24
+          },
+          "entropy_between_candidates_median": 2.3154,
+          "entropy_outside_span_median": 1.4843,
+          "auc_entropy_predicts_between_candidates": 0.8,
+          "margin_between_candidates_median": 0.1576,
+          "margin_outside_span_median": 0.2651,
+          "auc_margin_predicts_between_candidates": 0.3186
+        }
+      },
+      "first_unit": {
+        "units": 2016,
+        "end": {
+          "available": true,
+          "units": 2016,
+          "tol_bins": 1,
+          "exact_hit_share": 0.7024,
+          "within_tol_share": 0.8155,
+          "unreachable_units": 372,
+          "unreachable_share": 0.1845,
+          "between_candidates_share_of_unreachable": 0.1183,
+          "outside_span_share_of_unreachable": 0.8817,
+          "outside_left_share_of_unreachable": 0.7849,
+          "outside_right_share_of_unreachable": 0.0968,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 6.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 4.0,
+            "p90_when_outside": 6.0,
+            "median_sec_when_outside": 0.32
+          },
+          "entropy_between_candidates_median": 2.3753,
+          "entropy_outside_span_median": 1.9675,
+          "auc_entropy_predicts_between_candidates": 0.6452,
+          "margin_between_candidates_median": 0.1328,
+          "margin_outside_span_median": 0.2169,
+          "auc_margin_predicts_between_candidates": 0.4457
+        },
+        "start": {
+          "available": true,
+          "units": 2016,
+          "tol_bins": 1,
+          "exact_hit_share": 0.7857,
+          "within_tol_share": 0.7877,
+          "unreachable_units": 428,
+          "unreachable_share": 0.2123,
+          "between_candidates_share_of_unreachable": 0.0,
+          "outside_span_share_of_unreachable": 1.0,
+          "outside_left_share_of_unreachable": 1.0,
+          "outside_right_share_of_unreachable": 0.0,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 1.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 6.0,
+            "p90_when_outside": 11.0,
+            "median_sec_when_outside": 0.48
+          }
+        }
+      },
+      "last_unit": {
+        "units": 2016,
+        "end": {
+          "available": true,
+          "units": 2016,
+          "tol_bins": 1,
+          "exact_hit_share": 0.7599,
+          "within_tol_share": 0.9008,
+          "unreachable_units": 200,
+          "unreachable_share": 0.0992,
+          "between_candidates_share_of_unreachable": 0.0,
+          "outside_span_share_of_unreachable": 1.0,
+          "outside_left_share_of_unreachable": 0.0,
+          "outside_right_share_of_unreachable": 1.0,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 16.799999999999955,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 5.0,
+            "p90_when_outside": 18.099999999999994,
+            "median_sec_when_outside": 0.4
+          }
+        },
+        "start": {
+          "available": true,
+          "units": 2016,
+          "tol_bins": 1,
+          "exact_hit_share": 0.9246,
+          "within_tol_share": 0.9821,
+          "unreachable_units": 36,
+          "unreachable_share": 0.0179,
+          "between_candidates_share_of_unreachable": 0.2222,
+          "outside_span_share_of_unreachable": 0.7778,
+          "outside_left_share_of_unreachable": 0.6667,
+          "outside_right_share_of_unreachable": 0.1111,
+          "candidate_span_bins_when_unreachable": {
+            "median": 1.0,
+            "p90": 9.0,
+            "median_sec": 0.08
+          },
+          "distance_outside_bins": {
+            "median_when_outside": 4.0,
+            "p90_when_outside": 20.0,
+            "median_sec_when_outside": 0.32
+          }
+        }
+      }
+    },
+    "studio_end_bias_gtsinger": {
+      "all_units": {
+        "units": 30600,
+        "end": {
+          "available": true,
+          "n": 30600,
+          "median_ms": -10.0,
+          "mean_ms": -30.1,
+          "late_share": 0.398,
+          "abs_median_ms": 10.0
+        },
+        "start": {
+          "available": true,
+          "n": 30600,
+          "median_ms": 0.0,
+          "mean_ms": 22.1,
+          "late_share": 0.4633,
+          "abs_median_ms": 0.0
+        }
+      },
+      "long_note": {
+        "units": 1440,
+        "end": {
+          "available": true,
+          "n": 1440,
+          "median_ms": -40.0,
+          "mean_ms": -273.4,
+          "late_share": 0.2389,
+          "abs_median_ms": 40.0
+        },
+        "start": {
+          "available": true,
+          "n": 1440,
+          "median_ms": 11.0,
+          "mean_ms": 71.3,
+          "late_share": 0.6028,
+          "abs_median_ms": 11.0
+        }
+      },
+      "short_note": {
+        "units": 14340,
+        "end": {
+          "available": true,
+          "n": 14340,
+          "median_ms": -10.0,
+          "mean_ms": -4.3,
+          "late_share": 0.3838,
+          "abs_median_ms": 10.0
+        },
+        "start": {
+          "available": true,
+          "n": 14340,
+          "median_ms": 0.0,
+          "mean_ms": 9.1,
+          "late_share": 0.4053,
+          "abs_median_ms": 0.0
+        }
+      },
+      "first_unit": {
+        "units": 2016,
+        "end": {
+          "available": true,
+          "n": 2016,
+          "median_ms": 0.0,
+          "mean_ms": -2.4,
+          "late_share": 0.4583,
+          "abs_median_ms": 0.0
+        },
+        "start": {
+          "available": true,
+          "n": 2016,
+          "median_ms": 0.0,
+          "mean_ms": 137.0,
+          "late_share": 0.2579,
+          "abs_median_ms": 0.0
+        }
+      },
+      "last_unit": {
+        "units": 2016,
+        "end": {
+          "available": true,
+          "n": 2016,
+          "median_ms": -30.0,
+          "mean_ms": -171.2,
+          "late_share": 0.0962,
+          "abs_median_ms": 30.0
+        },
+        "start": {
+          "available": true,
+          "n": 2016,
+          "median_ms": 10.0,
+          "mean_ms": 9.6,
+          "late_share": 0.5437,
+          "abs_median_ms": 10.0
+        }
+      }
+    },
+    "target_end_bias_mir1k": {
+      "all_units": {
+        "units": 2035,
+        "end": {
+          "available": true,
+          "n": 2035,
+          "median_ms": 2.6,
+          "mean_ms": 7.7,
+          "late_share": 0.5194,
+          "abs_median_ms": 2.6
+        },
+        "start": {
+          "available": true,
+          "n": 2035,
+          "median_ms": -17.9,
+          "mean_ms": -17.5,
+          "late_share": 0.3017,
+          "abs_median_ms": 17.9
+        }
+      },
+      "long_note": {
+        "units": 112,
+        "end": {
+          "available": true,
+          "n": 112,
+          "median_ms": 32.4,
+          "mean_ms": 45.2,
+          "late_share": 0.7411,
+          "abs_median_ms": 32.4
+        },
+        "start": {
+          "available": true,
+          "n": 112,
+          "median_ms": -8.5,
+          "mean_ms": -4.0,
+          "late_share": 0.3929,
+          "abs_median_ms": 8.5
+        }
+      },
+      "short_note": {
+        "units": 1246,
+        "end": {
+          "available": true,
+          "n": 1246,
+          "median_ms": 0.0,
+          "mean_ms": 1.9,
+          "late_share": 0.4831,
+          "abs_median_ms": 0.0
+        },
+        "start": {
+          "available": true,
+          "n": 1246,
+          "median_ms": -20.0,
+          "mean_ms": -22.5,
+          "late_share": 0.2689,
+          "abs_median_ms": 20.0
+        }
+      },
+      "last_unit": {
+        "units": 17,
+        "end": {
+          "available": true,
+          "n": 17,
+          "median_ms": 20.0,
+          "mean_ms": 101.4,
+          "late_share": 0.7059,
+          "abs_median_ms": 20.0
+        },
+        "start": {
+          "available": true,
+          "n": 17,
+          "median_ms": -18.8,
+          "mean_ms": -26.2,
+          "late_share": 0.2941,
+          "abs_median_ms": 18.8
+        }
+      },
+      "first_unit": {
+        "units": 17,
+        "end": {
+          "available": true,
+          "n": 17,
+          "median_ms": 2.9,
+          "mean_ms": 7.7,
+          "late_share": 0.5294,
+          "abs_median_ms": 2.9
+        },
+        "start": {
+          "available": true,
+          "n": 17,
+          "median_ms": -40.0,
+          "mean_ms": -29.5,
+          "late_share": 0.2353,
+          "abs_median_ms": 40.0
+        }
+      }
+    },
+    "transfer_check_long_note_end": {
+      "available": true,
+      "stratum": "long_note",
+      "studio_median_ms": -40.0,
+      "target_median_ms": 32.4,
+      "studio_late_share": 0.2389,
+      "target_late_share": 0.7411,
+      "same_direction": false,
+      "late_share_gap": 0.5022,
+      "verdict": "NOT transferable: the two domains err in opposite directions, so a global offset calibrated on one would hurt the other"
+    }
+  },
+  "headline": {
+    "long_note_unreachable_share": 0.2056,
+    "long_note_outside_span_share": 0.9595,
+    "long_note_between_share": 0.0405,
+    "candidate_span_median_sec_when_unreachable": 0.08,
+    "studio_long_note_end_median_ms": -40.0,
+    "studio_long_note_late_share": 0.2389,
+    "accompanied_long_note_end_median_ms": 32.4,
+    "accompanied_long_note_late_share": 0.7411,
+    "bias_transferable": false,
+    "conclusion": "top-1 and top-2 are adjacent bins so interpolation cannot reach the truth, and the long-note end bias has opposite sign in studio vs accompanied singing so a global offset cannot transfer"
+  }
+}
