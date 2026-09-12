@@ -558,3 +558,28 @@ raw 阶段同向（现装 89.74%，共识 −0.46pp，oracle +2.93pp）。
    它回答"这个单元可不可信"，不回答"哪个视图对它更好"。
 5. 流程：`factor_content_audit()` 是第 2 轮就提议的**配置矩阵同一性门**的最小实现，
    应挂进批次收尾（内容哈希相同而标签不同 ⇒ `not_identified`，拒绝出对比结论）。
+
+---
+
+# 第 11 轮：末字尾边界的声学锚点实验（两条简单判据均被否证）
+
+- 代码：`src/lyricalign/analysis/tail_acoustics.py`（RMS 衰减锚点、人声/伴奏比值锚点、混合规则、结构化对照）
+- 入口：`scripts/evaluation/{run,report}_tail_acoustics.py`；测试 `tests/evaluation/test_tail_acoustics.py`（5 项）
+- 产物：`runs/20260912_tail_acoustics/TAIL_ACOUSTICS.json`、`reports/progress/20260912_tail_acoustics.md`、
+  `results/by_run/20260912_tail_acoustics/metrics.json`
+- 纪律：阈值只在 GTSinger（人工真值）上导出，冻结迁移到 MIR-1K（test-only）；ρ 族整族报告不选点；零 GPU、音频只读。
+
+## 结果
+
+1. **RMS 衰减锚点在末字上几乎不触发**：GTSinger 末字 168 单元中最多 6 个有锚点；MIR-1K 末字 17 单元中**只有 1 个**
+   ⇒ 它没有机会修我们已定位的失效层（末字多为拖到片段结束的长音，区间内不存在可判定的相对衰减）。
+2. **阈值不可迁移**：GTSinger 长音最优 θ=0.15（+3.69pp）冻结到 MIR-1K 长音后 **−13.37pp**（全单元 −22.08pp）。
+3. **人声/伴奏比值锚点覆盖极高但完全不够准**：覆盖 88–99%（含全部 17 个末字），
+   hit@100 最好 61.5% vs 同一批单元上模型 95.8%；末字子集 29.4% vs 模型 88.2%。
+4. **oracle 界**（模型 vs 各锚点逐单元用真值挑最优）：GTSinger 全单元 +0.75pp、**末字 +0.00pp**；
+   MIR-1K 全单元 +1.67pp、**末字 +0.00pp**。长音 +7.14pp 属 test 上的事后观察，不构成可部署结论。
+5. 模型自身端点已很强：GTSinger MAE(end) 38.9ms、MIR-1K 35.8ms（长音 69/74ms，末字 33/122ms）。
+
+⇒ **关闭 F3 的简单版本**：末字/长音残余误差**不能**用事后声学阈值判据修复；需要模型侧改动
+（更长右上下文、拖长音 offset 的训练信号）。与文献结论一致（歌声音符 offset 无稳健通用解）。
+另记：本轮再次印证第 10 轮根因——GTSinger 的 mix/vocal `audio_path` 指向同一个文件。

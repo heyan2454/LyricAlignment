@@ -62,6 +62,7 @@
 | E2 | 顺序 if-else 式清理增强（单调钳位、只修尾端） | ❌ | C1/C2/C3、C4（联合求解在三个域都更好） |
 | E3 | 用"把困难单元重新裁窗居中"来救 realign | ❌ | 第 8 轮：居中选择器 −1.15pp；第 9 轮：窗口中央无优势 |
 | E4 | 用分歧度作为唯一 realign 触发器 | ❌ | C10 |
+| E6 | 事后声学阈值判据修末字/长音尾边界（RMS 衰减、人声/伴奏比值） | ❌ | `20260912_tail_acoustics`：末字 oracle 界 +0.00pp、迁移 −13.4pp、比值锚点 61.5% vs 模型 95.8% |
 | E5 | 日语（PJS）线 | ⛔（已按指示降级，未继续） | 用户指示：优先普通话 |
 
 ## F. 仍未解决（需要新前向或新数据）
@@ -70,7 +71,7 @@
 |---|---|---|---|
 | F1 | 同一**最好 checkpoint + 多个不同裁窗**能否吃到 +3.4pp（长时序跨窗 oracle 与现装的差） | ⛔ 需 GPU | 对 17 首 MIR-1K 或 GTSinger 整曲加跑 windowed 计划；先过 D7 门 |
 | F2 | 真实整曲 ≥180s 的自然长音频 + 人工 GT（当前 MIR-1K 最长 126.7s） | ⛔ 需标注 | GTSinger 整曲试点（25 连续段、wav==labels，2026-08-21 记录） |
-| F3 | 末字拖长音尾边界判据（更长右上下文 / 能量衰减） | ⛔ 需新解码 | 在 MIR-1K 的 17 项 × 末字上做小样本消融 |
+| F3 | 末字拖长音尾边界判据 | ❌ **REFUTED（第 11 轮）** | 相对 RMS 衰减与「人声/伴奏能量比」两条事后声学判据均不可用：前者在末字上几乎不触发（MIR-1K 1/17、GTSinger 6/168），导出阈值迁移后 −13.4pp；后者覆盖 88–99% 但 hit@100 仅 6–62%（同单元模型 95.8%）。oracle 界末字 +0.00pp ⇒ 需模型侧改动 |
 | F4 | 批处理链路补齐 `identity.window` 规划标志；配置矩阵同一性门接入批次收尾 | ✅ 可纯 CPU 做 | 已有最小实现 `factor_content_audit()`，待接入 |
 | F5 | 3 项 HEAD 自带失败测试（冻结主线语义） | ⛔ 需主线裁定 | 不属于本会话范围，未触碰 |
 
@@ -81,5 +82,6 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：`tests/evaluation/` 74 项（本会话新增），全量 `1513 passed / 3 pre-existing failed`
+- 测试：`tests/evaluation/` 76 项（本会话新增），全量 `1518 passed / 3 pre-existing failed`
+- 报告：`reports/progress/20260912_*.md` 共 7 份 + 本索引
 - 纪律：全程零 GPU 前向、realign 仍 shadow-only、未改任何生产实现、MIR-1K/PJS 仅 test-only 报告用途
