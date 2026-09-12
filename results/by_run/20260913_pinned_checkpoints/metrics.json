@@ -1,0 +1,201 @@
+{
+  "schema_version": "pinned_checkpoint_inventory_v1",
+  "checkpoint": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750",
+  "run_dir": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724",
+  "total_bytes": 50009419,
+  "files": [
+    {
+      "path": "adapter/README.md",
+      "bytes": 5188,
+      "sha256": "116df803b116e878a117632e6e4df1efe5edfc47f581573af1a98f6b9b1d3351"
+    },
+    {
+      "path": "adapter/adapter_config.json",
+      "bytes": 1102,
+      "sha256": "fbb489d9d84dce87e6b6d3b683d002a30ef0fb5ac53814339b344b2a990f3286"
+    },
+    {
+      "path": "adapter/adapter_model.safetensors",
+      "bytes": 13399672,
+      "sha256": "5605b6dcaa19d1b84f587518b4bda0f3722b12c14b216801d0f4607389bc439c"
+    },
+    {
+      "path": "checkpoint_identity.json",
+      "bytes": 161,
+      "sha256": "c702ea332be43e9700e51129c276d1bd3aef71b942e293d1d9489cdbcd77095e"
+    },
+    {
+      "path": "projector.pt",
+      "bytes": 4201009,
+      "sha256": "92d88b9b975cc51079e7e4876f2822c50b057240e047762a50e21ff20a100f4b"
+    },
+    {
+      "path": "trainer_state.pt",
+      "bytes": 32402287,
+      "sha256": "2db0b7651736c514136e6897960bf1657bcc32f0a2a3c156d6e83cdd35984458"
+    }
+  ],
+  "validation_curve": {
+    "step_250": {
+      "song_macro_boundary_mae_sec": 0.050984832507581165,
+      "train_loss": 0.6973175617439724
+    },
+    "step_500": {
+      "song_macro_boundary_mae_sec": 0.04751132618292308,
+      "train_loss": 0.6724797265134125
+    },
+    "step_750": {
+      "song_macro_boundary_mae_sec": 0.04715958845875161,
+      "train_loss": 0.6618395885713747
+    },
+    "step_1,000": {
+      "song_macro_boundary_mae_sec": 0.04837222699319582,
+      "train_loss": 0.6594446376662388
+    }
+  },
+  "best_from_run_record": {
+    "step": 750,
+    "checkpoint": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750",
+    "song_macro_boundary_mae_sec": 0.04715958845875161
+  },
+  "stage_config": {
+    "stages": {
+      "overfit": {
+        "max_steps": 100,
+        "train_items": 32,
+        "validation_items": 16
+      },
+      "r0": {
+        "train_items": 0
+      },
+      "r1": {
+        "max_steps": 1110,
+        "train_items": 0
+      },
+      "r2": {
+        "max_steps": 1110,
+        "train_items": 0
+      },
+      "r3": {
+        "max_steps": 500,
+        "train_items": 2000
+      }
+    },
+    "training": {
+      "eval_steps": 250,
+      "gradient_accumulation": 8,
+      "lora_lr": 0.0001,
+      "micro_batch_size": 4,
+      "projector_lr": 5e-05,
+      "save_steps": 250,
+      "seed": 20260724,
+      "warmup_ratio": 0.05,
+      "weight_decay": 0.01
+    }
+  },
+  "references_in_repo": [
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/demo/demo_realign_overnight_env.sh",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/demo/inline_realign_env.sh",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/evaluation/run_productization_alignment.sh",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/evaluation/run_regression_rawdec_compare.sh",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/realign_recovery/visualization/batch_b4_dual.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/realign_recovery/visualization/batch_remaining_current.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/realign_recovery/visualization/rerun_current_silence.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/realign_recovery/visualization/run_ktv_b4_backfill.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research/research_v6_env.sh",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/collect_evidence_v3.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/collect_pr_mild.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/collect_propagation.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/preflight.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/recollect_evidence_v3.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/run_demo_analysis.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/run_full_song_baseline.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/run_mir_transfer.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/run_oracle_recovery.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/run_recovery_decomposition.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/run_transition_formal.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/run_transition_smoke.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/scripts/research_transition_recovery_detector/train_detector.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/src/lyricalign/realign_gate/identity.py",
+      "count": 1
+    },
+    {
+      "path": "/home/hyan/LyricAlignment/src/lyricalign/realign_recovery/frozen_baseline.py",
+      "count": 1
+    }
+  ],
+  "batches_referencing_projector_sha": [
+    "20260814_b4review",
+    "20260814_ktv_B4",
+    "20260814_ktv_current_silence",
+    "20260814_viz_B4"
+  ],
+  "policy": "training reruns must keep this checkpoint byte-identical; if it changes, every batch pinned to it is no longer reproducible"
+}
