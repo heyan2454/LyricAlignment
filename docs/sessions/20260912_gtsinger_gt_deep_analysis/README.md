@@ -583,3 +583,26 @@ raw 阶段同向（现装 89.74%，共识 −0.46pp，oracle +2.93pp）。
 ⇒ **关闭 F3 的简单版本**：末字/长音残余误差**不能**用事后声学阈值判据修复；需要模型侧改动
 （更长右上下文、拖长音 offset 的训练信号）。与文献结论一致（歌声音符 offset 无稳健通用解）。
 另记：本轮再次印证第 10 轮根因——GTSinger 的 mix/vocal `audio_path` 指向同一个文件。
+
+## 第 11 轮续：可复用的证据同一性门 + 历史批次审计
+
+- 代码：`src/lyricalign/analysis/evidence_identity_audit.py`（`collect/audit_pair/audit_identity_hygiene`）
+- 入口：`scripts/evaluation/{audit_evidence_identity,report_evidence_identity_audit}.py`
+- 产物：`runs/20260912_evidence_identity_audit/IDENTITY_AUDIT.json`、`reports/progress/20260912_evidence_identity_audit.md`、
+  `results/by_run/20260912_evidence_identity_audit/metrics.json`；测试 5 项（tests/evaluation 81 passed）
+
+门把批次两两比较归为四类裁定：`identified` / `not_identified` / `duplicate_configuration` / `not_comparable`，
+关键改进是**「输出不同只在输入字节也不同的歌上发生」单独成类**，于是第 5 轮的结论被收紧为机器可判定的形式：
+
+| 比较对 | 裁定 |
+|---|---|
+| ktv_B4 vs current_silence | **同一配置的重复运行**：25/25 窗口计划相同、23/25 歌曲输出逐字节相同，剩余 2 首差异全部落在音频 sha 也不同的歌上 |
+| current_silence vs slot_align | **不可比**：33/33 首单元数相同但逐索引文本不同（索引漂移） |
+| ktv_B4 vs slot_align | **不可比**：25/25 同上 |
+| current_silence vs textmode3 | **不可比**：33/33 首单元数不同（word vs char 单元化） |
+
+身份卫生表另给出一个硬事实：`20260815_slot*` 两批的
+`identity.schema_version` / `audio_sha256` / `request_hash` **100% 缺失** ⇒ **不可归因**（连用了哪份音频都无法证明）；
+四批的退化单元比例 16.7%–19.7%，与第 6 轮 17.1% 一致（独立复核）。
+
+⇒ 2026-08-14/15 那套真实歌对比套件**不能支撑任何机制结论**；同时门已可用，建议接入批次收尾（F4）。

@@ -1,0 +1,5000 @@
+{
+  "schema_version": "evidence_identity_audit_metrics_v1",
+  "audit": {
+    "schema": "evidence_identity_audit_v1",
+    "batches": {
+      "ktv_B4": {
+        "root": "/home/hyan/Data/lyricalign/runs/20260814_ktv_B4",
+        "songs_with_artifacts": 25
+      },
+      "ktv_current_silence": {
+        "root": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+        "songs_with_artifacts": 33
+      },
+      "slot_vs_b4_align": {
+        "root": "/home/hyan/Data/lyricalign/runs/20260815_slot_vs_b4/align",
+        "songs_with_artifacts": 33
+      },
+      "slot_v2_textmode3": {
+        "root": "/home/hyan/Data/lyricalign/runs/20260815_slot_v2/align_textmode3",
+        "songs_with_artifacts": 33
+      }
+    },
+    "identity_hygiene": {
+      "ktv_B4": {
+        "present": true,
+        "songs": 25,
+        "share_missing_schema_version": 0.0,
+        "share_missing_audio_sha": 0.0,
+        "share_missing_request_hash": 0.0,
+        "share_recording_silence_flags": 1.0,
+        "median_window_flags_recorded": 22.0,
+        "degenerate_share": 0.1856,
+        "overlap_share": 0.001
+      },
+      "ktv_current_silence": {
+        "present": true,
+        "songs": 33,
+        "share_missing_schema_version": 0.0,
+        "share_missing_audio_sha": 0.0,
+        "share_missing_request_hash": 0.0,
+        "share_recording_silence_flags": 0.0,
+        "median_window_flags_recorded": 12.0,
+        "degenerate_share": 0.1783,
+        "overlap_share": 0.0011
+      },
+      "slot_vs_b4_align": {
+        "present": true,
+        "songs": 33,
+        "share_missing_schema_version": 1.0,
+        "share_missing_audio_sha": 1.0,
+        "share_missing_request_hash": 1.0,
+        "share_recording_silence_flags": 0.0,
+        "median_window_flags_recorded": 0.0,
+        "degenerate_share": 0.1667,
+        "overlap_share": 0.0466
+      },
+      "slot_v2_textmode3": {
+        "present": true,
+        "songs": 33,
+        "share_missing_schema_version": 1.0,
+        "share_missing_audio_sha": 1.0,
+        "share_missing_request_hash": 1.0,
+        "share_recording_silence_flags": 0.0,
+        "median_window_flags_recorded": 0.0,
+        "degenerate_share": 0.1973,
+        "overlap_share": 0.0047
+      }
+    },
+    "pairs": [
+      {
+        "pair": "ktv_B4__vs__current_silence",
+        "songs": 25,
+        "verdict": "duplicate_configuration",
+        "reason": "23/25 songs byte-identical, identical window plan on all songs, and every output difference occurs on a song whose audio content also changed (2 songs) => the batches are the same configuration re-run, not two mechanisms",
+        "same_audio_sha_share": 0.92,
+        "same_request_hash_share": 0.0,
+        "same_window_plan_share": 1.0,
+        "outputs_identical_share": 0.92,
+        "output_differences_on_identical_audio": 0,
+        "unit_count_mismatch_songs": 0,
+        "text_mismatch_songs": 0,
+        "median_max_shift_sec": 0.0,
+        "p90_max_shift_sec": 0.0,
+        "per_song": [
+          {
+            "song": "Camelia",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "2efd71cca551985a31f6291016f9925102732cc69348d7b5a764beb7165fab8a",
+                "b": "0c3c32067b257e67f8d5fef7f06fb81e21a0483f3358d3a17d77296c0332d0fc"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "I See Fire",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "55238888bcd98aac00c3c12a215276f1b0d552e9ef348289ea043b8cffe04d55",
+                "b": "58f1e41369ff024ce18007c3dc6b322544897ad2dba71275a15fd554f1867728"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Immortals",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "1e3a2da5cfcd68744899c39115fdfb0d17ed9a73708ec461320f7b84c4db2976",
+                "b": "d226cbab4fc4f1d550116d9ecc713feeef0d5dd72a25faee5f3f03d4b8f08700"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Renegade",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "11f67acccabd1f4a50335e51f45fa16d891df7bfcc6389f821e5a37c6b50fb07",
+                "b": "df6890d00d1ebdc914202fb0f865d5be7e820efabe2e713f7110e09de526af6e"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "TH讠NK",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "a111efdbc3d77425816eb23f4a3f0366795bedacc2899133e402e99739ddd2e2",
+                "b": "c13296d34841739d2166c31548352ee9445db1d3e43ecaf1f53a107f940569bc"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Take Me To Church",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": 3.04,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "fed0d11c6ce3068f8693ecb3ff1ba330cae81bd96ff2f95ffe4c249430262c51",
+                "b": "e6317eaed7cad61f9623093beb4717299bcdc07f8c807e30418328991d201148"
+              },
+              "request_hash": {
+                "a": "fe3dbd27dfcf84d798032e50e9ef0a9c37e206f39bdba54bdb307bb3e73309f5",
+                "b": "2a43a571c1cce924542c3b2aedabf76f3715defc7fe2b925368e8ab8603148af"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "p.h",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "e8309b658d96892f6527e2b26d8c7d65fb19c99e34c45618101cc871c2b9977d",
+                "b": "7dce6dcd5bae2e1d3a0dfed7a25a25e9d09d835539cc60aabbd302d6a0b4537e"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "为何入眠",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "f259266280628f72ba2c87a4d411daa1275ca6df0210344deb4969495caca341",
+                "b": "53809c061d80621eeae6f3a3e39843b8af200675efc329f388a4b81b3d9a5c7a"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "伊卡洛斯奔向月亮",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "3e4ce483e6e49729374ab8eeeefe9e6ccfdd15b30ee432c73c45f5898823f683",
+                "b": "ac87053b4309a2d73c941b67f17e8a1a5d191f6615b3ae10a493c632c757b7a0"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "何时何地",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "2c22925da35560bed077efaf28f79572ecd8e131d4674617a5e80d0b1e68a449",
+                "b": "20c7124ffbe381d0356c1b88f8a1e630099c65a635f65abb6a07f1adec36722f"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "六重不忠",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "a6012e6b32424feeef7ea01b5dd6017d20aef334776d20c2c8c91bd638565a81",
+                "b": "4e94782c9fc3bbe97ebb450ec1c478e0f211ef2eec03e8b87447e215ecb67a66"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "初音未来的消失",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "14f008bff81424457501b4fc13e50c5cee9ec33b6a1094af58c5798f07ed191d",
+                "b": "ad276f0cbcbd5656288876c105b2f20139cef46c5a2a7af30ff4ff54829a3ba8"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "四季折之羽",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "b3ea41977d41f887a6496c7cac8211b1b1d254b578ae3126985e58680f693639",
+                "b": "f7373d005ceadb85d3bf47fa1e982a86099aa0ed407a4f377dac00b6083fd395"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "安全词",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "941bc2168aaf1542942fb50f219812f7bd04fa56705c6b714c5f3b77d96dba63",
+                "b": "70d29ce68b78be5476250581015571c80efb077c91549bb2759cb9d9fae22214"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "本草纲目",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "5a8fa3faf395ac731530e9c59a585f562356cee5939e3bd847ba4858afbfea79",
+                "b": "94df84f74b5029f5b94870a8c06c1afdad819203c743f421c0a9bf7ba1fa0ad8"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "权御天下",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "d7cea8306d45463852c379e6ef6671d709b6774fc76dc09c56d8a22fb8fe4977",
+                "b": "7a4158562bba7860ce201734c406f25a0a9e19238d0a6d8cd35e5aeb500e90bf"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "梦良衣",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "5d61b187c8fb552d3332afc265010b44c4496188d83db2730d3928ed2c4b86bb",
+                "b": "3f022f1a2c659f72e4f977fd99935a3583b0960bcfffd3d2b68bca2faf21b09c"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "炉心融解",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "83c3c51a6ddc073250d58ab9249f26f11aa40a49d1aab456b8f506ef1c9a0279",
+                "b": "297c2e65c1b1e101e2176e3afc3cc3e92262396e17317f11bc7aa825e7ca230e"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "电灯胆",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "17d2eeee5f6cf93dac551d7ec054c3226a07e3f7091c76b4bbf5832abb49d7b1",
+                "b": "d90c76619f01acd122be390c9ca470f6a085093b08af64ddf078081c245e3fb1"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "207a2a129666dd5278ba2b99f3942f0334c495425567672151a556b8e92c8f39",
+                "b": "10eeb8352606b687ac7452f5dd824e073409ce7f84ba669e8d32c8027d7141fe"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母 - 副本",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": 0.16,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5414490f5435b1cd7fbb46b1e291754639d1895203744b9c6832d5a39706306e",
+                "b": "61d72efe4938dd822cf696aaff993e96fffd6ed8cf63505be925b4f2c4f84595"
+              },
+              "request_hash": {
+                "a": "8d0b2deba6214e5ad84f7b43cefcf2e9fb6f7496fb092272f37caff07f5104df",
+                "b": "3251c8e3d64d1c375d415302d19b387d81c190b8f21bb820600a5f8ed7bb44b3"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "皱鳃鲨",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "91e7a1b43538de87ec922abfd5cb62f2eda9b44d88c8f593c64d5c287d32ba12",
+                "b": "ea28a132b8d4c154f2dc8001ac45f6c96f63305d63fc360ce72e2fd69e52fbd0"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "红日",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "831ab3ab359fd2b19cc94ea3a9f1ec1aac0078ceba5926cfea187a77690c6a53",
+                "b": "d9c6650c09849809496b26876b4fb408537efd33499a48b14b209e282fb34af1"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "若梦境来袭",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "8d6a90f1d9208c0fc9bcea9c798d81d0df1de63542dd3a778797fce8d1f448bc",
+                "b": "ffe050f6520534804075044385443565dc3af4de1aa48116e38357996ab546f9"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "难念的经",
+            "same_audio_sha": 1,
+            "same_request_hash": 0,
+            "same_window_plan": 1,
+            "same_unit_count": 1,
+            "same_text": 1,
+            "outputs_identical": 1,
+            "max_boundary_shift_sec": 0.0,
+            "identity_diff": {
+              "request_hash": {
+                "a": "d72dd4ddb6906ae9610f18e99b3c561c7c199167a6a38edd022da0c20fc72218",
+                "b": "a1b33634cd817c0a085264e0108d6533f1fe0136013e661dc00f4a1b38a915fb"
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": "qwen_fa_batch_alignment_v4_forward_overlap_compression"
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              }
+            }
+          }
+        ]
+      },
+      {
+        "pair": "current_silence__vs__slot_align",
+        "songs": 33,
+        "verdict": "not_comparable",
+        "reason": "0 songs differ in unit count, 33 have the same count but different characters at the same index (index drift)",
+        "same_audio_sha_share": 0.0,
+        "same_request_hash_share": 0.0,
+        "same_window_plan_share": 0.0,
+        "outputs_identical_share": 0.0,
+        "output_differences_on_identical_audio": 0,
+        "unit_count_mismatch_songs": 0,
+        "text_mismatch_songs": 33,
+        "median_max_shift_sec": null,
+        "p90_max_shift_sec": null,
+        "per_song": [
+          {
+            "song": "Camelia",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b735bedc55879b06b6a80e2d61473a57365289ce9e366671c2d68bd2e4facac1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "0c3c32067b257e67f8d5fef7f06fb81e21a0483f3358d3a17d77296c0332d0fc",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 287.8506875,
+                "b": 258.19
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "I See Fire",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "43759ea3d79a606216ca364785bf12f3f293a982875d674eba2397b7fd53bf80",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "58f1e41369ff024ce18007c3dc6b322544897ad2dba71275a15fd554f1867728",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 316.866375,
+                "b": 273.03
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Immortals",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "04511b4bc08845cf4cf101fb877c7f9b32e03591683458203b934bac98666582",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d226cbab4fc4f1d550116d9ecc713feeef0d5dd72a25faee5f3f03d4b8f08700",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 195.0266875,
+                "b": 145.5
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Past Lives",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "d86591a6d9e24da9665936b35b111d9baf4d07c420a18e382a7071f26fbcb801",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "2f7995520223a24270e33c232f45918fe6a9f8f396eb15be5557a4c604447a40",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 134.6989375,
+                "b": 100.56
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Renegade",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "9cfa73557f826804669074dc6d6207c908607991d58e617b1daac1df79deaed0",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "df6890d00d1ebdc914202fb0f865d5be7e820efabe2e713f7110e09de526af6e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 238.1226875,
+                "b": 231.06
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "TH讠NK",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5810f6955c96508ba4d6e90c7121ffaff0e51f40cd292cb251e64abc1073c9e2",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "c13296d34841739d2166c31548352ee9445db1d3e43ecaf1f53a107f940569bc",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 249.2308125,
+                "b": 234.52
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Take Me To Church",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e6317eaed7cad61f9623093beb4717299bcdc07f8c807e30418328991d201148",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "2a43a571c1cce924542c3b2aedabf76f3715defc7fe2b925368e8ab8603148af",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 253.8860625,
+                "b": 236.11
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "p.h",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "46f9a41175b94c70d5d2d0839de430f296ffbcb2acb7f96415cb1308b5e97ace",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "7dce6dcd5bae2e1d3a0dfed7a25a25e9d09d835539cc60aabbd302d6a0b4537e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 155.52,
+                "b": 132.01
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "为何入眠",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "d53814ba9ad99cbb21d9b1a502d19233497950711d6a7dfbe5c1f2799bb30652",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "53809c061d80621eeae6f3a3e39843b8af200675efc329f388a4b81b3d9a5c7a",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 206.8266875,
+                "b": 196.9
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "乙女解剖",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "23bff966efe629a4b8a802bb56f65364883e551dac4e5281c1cc6bfb9612a7bc",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "448bd36cb52a534a6d5e440e656272fe64d847023d91802101e866936d2f1ab7",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 229.5525,
+                "b": 181.87
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "人造卫星",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "877f0d9519bbaae92c248fccc38ced9c094558f4f11896ecdfbf896d1bfc19b9",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "057e02416abb425778561caa470e049149bd96f69763ed64d07ad7d51f51cd5e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 192.384,
+                "b": 173.83
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "伊卡洛斯奔向月亮",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "4a9f664c26d340c4340db6a7ee429d1e07140f95d05ee8edc18c5cd2bf4c97c1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ac87053b4309a2d73c941b67f17e8a1a5d191f6615b3ae10a493c632c757b7a0",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 250.901375,
+                "b": 232.79
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "何时何地",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "1e7dddc79f1b1f550b3c7cf3dd8a9f00fbb98085f36dd526a0dfb7f1ddf554e6",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "20c7124ffbe381d0356c1b88f8a1e630099c65a635f65abb6a07f1adec36722f",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 222.848,
+                "b": 205.67
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "六重不忠",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "2b99464e5ca3271084b7ae948bf1fe3049f55d91fde742c54f464e9c7d438535",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "4e94782c9fc3bbe97ebb450ec1c478e0f211ef2eec03e8b87447e215ecb67a66",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 269.1406875,
+                "b": 266.34
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "冬之花",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "206254b1ff0f2018ca6b829ac02fcd3bd3c0966e146ab0ee9e5e7ad24bbf9e43",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "781e33927f777c743b39161c1e3a132d8f38f3b3240f8cbb841e703bf9e198c2",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 266.901375,
+                "b": 132.16
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "初音未来的消失",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "4b11880d7e7671ae847d4895dea31be656a44ecd5315b4f8f4127d4a3f2fcb52",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ad276f0cbcbd5656288876c105b2f20139cef46c5a2a7af30ff4ff54829a3ba8",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 288.264,
+                "b": 276.525
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "四季折之羽",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "ae0be097e9105759f29ea522ce4c2734824c1c64d3c8b61525239891930f94de",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "f7373d005ceadb85d3bf47fa1e982a86099aa0ed407a4f377dac00b6083fd395",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 286.3716875,
+                "b": 283.04
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "安全词",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e4594f834d3d96ad9e09068faadcacd6459cfdf78a4c0fdd1461c5fdab105a46",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "70d29ce68b78be5476250581015571c80efb077c91549bb2759cb9d9fae22214",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 262.8963125,
+                "b": 261.0032
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "月半小夜曲",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "c0f8b756db48ef20b21eef3617aead00d289f687da308e3462bfc5bd56e6b4ec",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "4b95a025af6c61a338d607d9151233b09bbc9f3dce158e6eb0c59bb64b2d8403",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 263.8293125,
+                "b": 240.18
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "本草纲目",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b428b2c567a3dfe2810bf47a3a739b7ce4c7c4639bf604f3d63bfa71b97aa1b9",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "94df84f74b5029f5b94870a8c06c1afdad819203c743f421c0a9bf7ba1fa0ad8",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 209.9210625,
+                "b": 152.28
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "权御天下",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b1b855a8ee0ca466c117ea2038ef2e0e50cd254ddf60c1ba98dde27069b2cbb1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "7a4158562bba7860ce201734c406f25a0a9e19238d0a6d8cd35e5aeb500e90bf",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 249.9406875,
+                "b": 224.1
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "梦良衣",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e0325a927777a77a454dac3cc3d3eec3a22a47a253a484b6d64aa300dc135940",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "3f022f1a2c659f72e4f977fd99935a3583b0960bcfffd3d2b68bca2faf21b09c",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 187.40825,
+                "b": 164.04
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "此处通往天空",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "a0d592760c219c3f1b3637679cb9658522805e8ac5b1c66bc1ef53c6da5829e0",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "81c2e2ac42e74d98a120892fa3a722e77d067dcfe82539de0ef457c6602b31ff",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 203.8186875,
+                "b": 184.36
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "浮夸",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e771dffc6804ea95378cd738137161c0db380c3cd17a5fa567ff274e9597d055",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "5edfc733b0ba047521fd24f1e29728a0570e58ce2ed5d982f9a68416bd28836a",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 287.0186875,
+                "b": 271.04
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "炉心融解",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "1b8f7db7bf53125ad5f5e0e7c9ebf4cf936500e02f0d914d56f0d6e6db3d8a2f",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "297c2e65c1b1e101e2176e3afc3cc3e92262396e17317f11bc7aa825e7ca230e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 332.324,
+                "b": 283.02
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "电灯胆",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "ddabd38e4a28f67ba782580d192a5dd8e9666e6286ead0e037f30a96c1be4a77",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d90c76619f01acd122be390c9ca470f6a085093b08af64ddf078081c245e3fb1",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 213.9486875,
+                "b": 192.36
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5414490f5435b1cd7fbb46b1e291754639d1895203744b9c6832d5a39706306e",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "10eeb8352606b687ac7452f5dd824e073409ce7f84ba669e8d32c8027d7141fe",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 230.7626875,
+                "b": 218.0
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母 - 副本",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "61d72efe4938dd822cf696aaff993e96fffd6ed8cf63505be925b4f2c4f84595",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "3251c8e3d64d1c375d415302d19b387d81c190b8f21bb820600a5f8ed7bb44b3",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 230.7626875,
+                "b": 218.0
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "皱鳃鲨",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "9f7fca49b86ee66d48b78544fc27543d79b4d8ce12e3f7495d1314fdd3d8dd5f",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ea28a132b8d4c154f2dc8001ac45f6c96f63305d63fc360ce72e2fd69e52fbd0",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 185.344,
+                "b": 135.04
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "祈愿花开",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "0a298eb083a1aa8f145b9634db50f164959b4136aea5244fbe5fe8e5d4a10f1a",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "69d7f22835388bbce1d199e6b5f07d5e145e6d04e565a93c2b99feba6032f290",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 271.3251875,
+                "b": 255.84
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "红日",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5db2e4bb818ca3c34f059aaaaacb489262782c2c36fc2931addefe955d24e9c4",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d9c6650c09849809496b26876b4fb408537efd33499a48b14b209e282fb34af1",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 291.328,
+                "b": 222.8
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "若梦境来袭",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "c81f468125451f7fa9c600ee473c761890a3c73652c5c42239470a66d5dc5587",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ffe050f6520534804075044385443565dc3af4de1aa48116e38357996ab546f9",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 268.565375,
+                "b": 227.06
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "难念的经",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "66bd8febac3b00455b4521000ec31c5ef24b05483728a43ca19c3bbcb9f0608e",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "a1b33634cd817c0a085264e0108d6533f1fe0136013e661dc00f4a1b38a915fb",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "audio_duration_sec": {
+                "a": 288.597375,
+                "b": 269.18
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          }
+        ]
+      },
+      {
+        "pair": "ktv_B4__vs__slot_align",
+        "songs": 25,
+        "verdict": "not_comparable",
+        "reason": "0 songs differ in unit count, 25 have the same count but different characters at the same index (index drift)",
+        "same_audio_sha_share": 0.0,
+        "same_request_hash_share": 0.0,
+        "same_window_plan_share": 0.0,
+        "outputs_identical_share": 0.0,
+        "output_differences_on_identical_audio": 0,
+        "unit_count_mismatch_songs": 0,
+        "text_mismatch_songs": 25,
+        "median_max_shift_sec": null,
+        "p90_max_shift_sec": null,
+        "per_song": [
+          {
+            "song": "Camelia",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b735bedc55879b06b6a80e2d61473a57365289ce9e366671c2d68bd2e4facac1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "2efd71cca551985a31f6291016f9925102732cc69348d7b5a764beb7165fab8a",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 287.8506875,
+                "b": 258.19
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "I See Fire",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "43759ea3d79a606216ca364785bf12f3f293a982875d674eba2397b7fd53bf80",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "55238888bcd98aac00c3c12a215276f1b0d552e9ef348289ea043b8cffe04d55",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 316.866375,
+                "b": 273.03
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Immortals",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "04511b4bc08845cf4cf101fb877c7f9b32e03591683458203b934bac98666582",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "1e3a2da5cfcd68744899c39115fdfb0d17ed9a73708ec461320f7b84c4db2976",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 195.0266875,
+                "b": 145.5
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Renegade",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "9cfa73557f826804669074dc6d6207c908607991d58e617b1daac1df79deaed0",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "11f67acccabd1f4a50335e51f45fa16d891df7bfcc6389f821e5a37c6b50fb07",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 238.1226875,
+                "b": 231.06
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "TH讠NK",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5810f6955c96508ba4d6e90c7121ffaff0e51f40cd292cb251e64abc1073c9e2",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "a111efdbc3d77425816eb23f4a3f0366795bedacc2899133e402e99739ddd2e2",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 249.2308125,
+                "b": 234.52
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Take Me To Church",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "fed0d11c6ce3068f8693ecb3ff1ba330cae81bd96ff2f95ffe4c249430262c51",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "fe3dbd27dfcf84d798032e50e9ef0a9c37e206f39bdba54bdb307bb3e73309f5",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 253.8860625,
+                "b": 236.11
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "p.h",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "46f9a41175b94c70d5d2d0839de430f296ffbcb2acb7f96415cb1308b5e97ace",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "e8309b658d96892f6527e2b26d8c7d65fb19c99e34c45618101cc871c2b9977d",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 155.52,
+                "b": 132.01
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "为何入眠",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "d53814ba9ad99cbb21d9b1a502d19233497950711d6a7dfbe5c1f2799bb30652",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "f259266280628f72ba2c87a4d411daa1275ca6df0210344deb4969495caca341",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 206.8266875,
+                "b": 196.9
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "伊卡洛斯奔向月亮",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "4a9f664c26d340c4340db6a7ee429d1e07140f95d05ee8edc18c5cd2bf4c97c1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "3e4ce483e6e49729374ab8eeeefe9e6ccfdd15b30ee432c73c45f5898823f683",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 250.901375,
+                "b": 232.79
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "何时何地",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "1e7dddc79f1b1f550b3c7cf3dd8a9f00fbb98085f36dd526a0dfb7f1ddf554e6",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "2c22925da35560bed077efaf28f79572ecd8e131d4674617a5e80d0b1e68a449",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 222.848,
+                "b": 205.67
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "六重不忠",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "2b99464e5ca3271084b7ae948bf1fe3049f55d91fde742c54f464e9c7d438535",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "a6012e6b32424feeef7ea01b5dd6017d20aef334776d20c2c8c91bd638565a81",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 269.1406875,
+                "b": 266.34
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "初音未来的消失",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "4b11880d7e7671ae847d4895dea31be656a44ecd5315b4f8f4127d4a3f2fcb52",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "14f008bff81424457501b4fc13e50c5cee9ec33b6a1094af58c5798f07ed191d",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 288.264,
+                "b": 276.525
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "四季折之羽",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "ae0be097e9105759f29ea522ce4c2734824c1c64d3c8b61525239891930f94de",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "b3ea41977d41f887a6496c7cac8211b1b1d254b578ae3126985e58680f693639",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 286.3716875,
+                "b": 283.04
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "安全词",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e4594f834d3d96ad9e09068faadcacd6459cfdf78a4c0fdd1461c5fdab105a46",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "941bc2168aaf1542942fb50f219812f7bd04fa56705c6b714c5f3b77d96dba63",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 262.8963125,
+                "b": 261.0032
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "本草纲目",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b428b2c567a3dfe2810bf47a3a739b7ce4c7c4639bf604f3d63bfa71b97aa1b9",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "5a8fa3faf395ac731530e9c59a585f562356cee5939e3bd847ba4858afbfea79",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 209.9210625,
+                "b": 152.28
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "权御天下",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b1b855a8ee0ca466c117ea2038ef2e0e50cd254ddf60c1ba98dde27069b2cbb1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d7cea8306d45463852c379e6ef6671d709b6774fc76dc09c56d8a22fb8fe4977",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 249.9406875,
+                "b": 224.1
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "梦良衣",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e0325a927777a77a454dac3cc3d3eec3a22a47a253a484b6d64aa300dc135940",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "5d61b187c8fb552d3332afc265010b44c4496188d83db2730d3928ed2c4b86bb",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 187.40825,
+                "b": 164.04
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "炉心融解",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "1b8f7db7bf53125ad5f5e0e7c9ebf4cf936500e02f0d914d56f0d6e6db3d8a2f",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "83c3c51a6ddc073250d58ab9249f26f11aa40a49d1aab456b8f506ef1c9a0279",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 332.324,
+                "b": 283.02
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "电灯胆",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "ddabd38e4a28f67ba782580d192a5dd8e9666e6286ead0e037f30a96c1be4a77",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "17d2eeee5f6cf93dac551d7ec054c3226a07e3f7091c76b4bbf5832abb49d7b1",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 213.9486875,
+                "b": 192.36
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5414490f5435b1cd7fbb46b1e291754639d1895203744b9c6832d5a39706306e",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "207a2a129666dd5278ba2b99f3942f0334c495425567672151a556b8e92c8f39",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 230.7626875,
+                "b": 218.0
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母 - 副本",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5414490f5435b1cd7fbb46b1e291754639d1895203744b9c6832d5a39706306e",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "8d0b2deba6214e5ad84f7b43cefcf2e9fb6f7496fb092272f37caff07f5104df",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 230.7626875,
+                "b": 218.0
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "皱鳃鲨",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "9f7fca49b86ee66d48b78544fc27543d79b4d8ce12e3f7495d1314fdd3d8dd5f",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "91e7a1b43538de87ec922abfd5cb62f2eda9b44d88c8f593c64d5c287d32ba12",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 185.344,
+                "b": 135.04
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "红日",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5db2e4bb818ca3c34f059aaaaacb489262782c2c36fc2931addefe955d24e9c4",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "831ab3ab359fd2b19cc94ea3a9f1ec1aac0078ceba5926cfea187a77690c6a53",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 291.328,
+                "b": 222.8
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "若梦境来袭",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "c81f468125451f7fa9c600ee473c761890a3c73652c5c42239470a66d5dc5587",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "8d6a90f1d9208c0fc9bcea9c798d81d0df1de63542dd3a778797fce8d1f448bc",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 268.565375,
+                "b": 227.06
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "难念的经",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 1,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "66bd8febac3b00455b4521000ec31c5ef24b05483728a43ca19c3bbcb9f0608e",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d72dd4ddb6906ae9610f18e99b3c561c7c199167a6a38edd022da0c20fc72218",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_serial_demo_v7_silence_aware_windows",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "decoder_kind": {
+                "a": "official",
+                "b": ""
+              },
+              "audio_duration_sec": {
+                "a": 288.597375,
+                "b": 269.18
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          }
+        ]
+      },
+      {
+        "pair": "current_silence__vs__textmode3",
+        "songs": 33,
+        "verdict": "not_comparable",
+        "reason": "33 songs differ in unit count, 0 have the same count but different characters at the same index (index drift)",
+        "same_audio_sha_share": 0.0,
+        "same_request_hash_share": 0.0,
+        "same_window_plan_share": 0.0,
+        "outputs_identical_share": 0.0,
+        "output_differences_on_identical_audio": 0,
+        "unit_count_mismatch_songs": 33,
+        "text_mismatch_songs": 0,
+        "median_max_shift_sec": null,
+        "p90_max_shift_sec": null,
+        "per_song": [
+          {
+            "song": "Camelia",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b735bedc55879b06b6a80e2d61473a57365289ce9e366671c2d68bd2e4facac1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "0c3c32067b257e67f8d5fef7f06fb81e21a0483f3358d3a17d77296c0332d0fc",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 334,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 287.8506875,
+                "b": 218.83
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "I See Fire",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "43759ea3d79a606216ca364785bf12f3f293a982875d674eba2397b7fd53bf80",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "58f1e41369ff024ce18007c3dc6b322544897ad2dba71275a15fd554f1867728",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 311,
+                "b": 89
+              },
+              "audio_duration_sec": {
+                "a": 316.866375,
+                "b": 273.03
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Immortals",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "04511b4bc08845cf4cf101fb877c7f9b32e03591683458203b934bac98666582",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d226cbab4fc4f1d550116d9ecc713feeef0d5dd72a25faee5f3f03d4b8f08700",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 200,
+                "b": 83
+              },
+              "audio_duration_sec": {
+                "a": 195.0266875,
+                "b": 145.5
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Past Lives",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "d86591a6d9e24da9665936b35b111d9baf4d07c420a18e382a7071f26fbcb801",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "2f7995520223a24270e33c232f45918fe6a9f8f396eb15be5557a4c604447a40",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 162,
+                "b": 64
+              },
+              "audio_duration_sec": {
+                "a": 134.6989375,
+                "b": 79.76
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Renegade",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "9cfa73557f826804669074dc6d6207c908607991d58e617b1daac1df79deaed0",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "df6890d00d1ebdc914202fb0f865d5be7e820efabe2e713f7110e09de526af6e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 671,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 238.1226875,
+                "b": 207.86
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "TH讠NK",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5810f6955c96508ba4d6e90c7121ffaff0e51f40cd292cb251e64abc1073c9e2",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "c13296d34841739d2166c31548352ee9445db1d3e43ecaf1f53a107f940569bc",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 450,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 249.2308125,
+                "b": 203.8
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "Take Me To Church",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e6317eaed7cad61f9623093beb4717299bcdc07f8c807e30418328991d201148",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "2a43a571c1cce924542c3b2aedabf76f3715defc7fe2b925368e8ab8603148af",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 430,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 253.8860625,
+                "b": 216.35
+              },
+              "language": {
+                "a": "English",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "p.h",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "46f9a41175b94c70d5d2d0839de430f296ffbcb2acb7f96415cb1308b5e97ace",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "7dce6dcd5bae2e1d3a0dfed7a25a25e9d09d835539cc60aabbd302d6a0b4537e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 271,
+                "b": 64
+              },
+              "audio_duration_sec": {
+                "a": 155.52,
+                "b": 93.13
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "为何入眠",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "d53814ba9ad99cbb21d9b1a502d19233497950711d6a7dfbe5c1f2799bb30652",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "53809c061d80621eeae6f3a3e39843b8af200675efc329f388a4b81b3d9a5c7a",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 285,
+                "b": 96
+              },
+              "audio_duration_sec": {
+                "a": 206.8266875,
+                "b": 182.1
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "乙女解剖",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "23bff966efe629a4b8a802bb56f65364883e551dac4e5281c1cc6bfb9612a7bc",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "448bd36cb52a534a6d5e440e656272fe64d847023d91802101e866936d2f1ab7",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 341,
+                "b": 98
+              },
+              "audio_duration_sec": {
+                "a": 229.5525,
+                "b": 181.87
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "人造卫星",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "877f0d9519bbaae92c248fccc38ced9c094558f4f11896ecdfbf896d1bfc19b9",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "057e02416abb425778561caa470e049149bd96f69763ed64d07ad7d51f51cd5e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 477,
+                "b": 96
+              },
+              "audio_duration_sec": {
+                "a": 192.384,
+                "b": 152.39
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "伊卡洛斯奔向月亮",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "4a9f664c26d340c4340db6a7ee429d1e07140f95d05ee8edc18c5cd2bf4c97c1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ac87053b4309a2d73c941b67f17e8a1a5d191f6615b3ae10a493c632c757b7a0",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 537,
+                "b": 96
+              },
+              "audio_duration_sec": {
+                "a": 250.901375,
+                "b": 181.91
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "何时何地",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "1e7dddc79f1b1f550b3c7cf3dd8a9f00fbb98085f36dd526a0dfb7f1ddf554e6",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "20c7124ffbe381d0356c1b88f8a1e630099c65a635f65abb6a07f1adec36722f",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 368,
+                "b": 96
+              },
+              "audio_duration_sec": {
+                "a": 222.848,
+                "b": 157.03
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "六重不忠",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "2b99464e5ca3271084b7ae948bf1fe3049f55d91fde742c54f464e9c7d438535",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "4e94782c9fc3bbe97ebb450ec1c478e0f211ef2eec03e8b87447e215ecb67a66",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 579,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 269.1406875,
+                "b": 244.58
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "冬之花",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "206254b1ff0f2018ca6b829ac02fcd3bd3c0966e146ab0ee9e5e7ad24bbf9e43",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "781e33927f777c743b39161c1e3a132d8f38f3b3240f8cbb841e703bf9e198c2",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 222,
+                "b": 64
+              },
+              "audio_duration_sec": {
+                "a": 266.901375,
+                "b": 85.36
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "初音未来的消失",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "4b11880d7e7671ae847d4895dea31be656a44ecd5315b4f8f4127d4a3f2fcb52",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ad276f0cbcbd5656288876c105b2f20139cef46c5a2a7af30ff4ff54829a3ba8",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 561,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 288.264,
+                "b": 216.125
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "四季折之羽",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "ae0be097e9105759f29ea522ce4c2734824c1c64d3c8b61525239891930f94de",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "f7373d005ceadb85d3bf47fa1e982a86099aa0ed407a4f377dac00b6083fd395",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 637,
+                "b": 160
+              },
+              "audio_duration_sec": {
+                "a": 286.3716875,
+                "b": 262.72
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "安全词",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e4594f834d3d96ad9e09068faadcacd6459cfdf78a4c0fdd1461c5fdab105a46",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "70d29ce68b78be5476250581015571c80efb077c91549bb2759cb9d9fae22214",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 411,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 262.8963125,
+                "b": 217.0032
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "月半小夜曲",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "c0f8b756db48ef20b21eef3617aead00d289f687da308e3462bfc5bd56e6b4ec",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "4b95a025af6c61a338d607d9151233b09bbc9f3dce158e6eb0c59bb64b2d8403",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 388,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 263.8293125,
+                "b": 196.82
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "本草纲目",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b428b2c567a3dfe2810bf47a3a739b7ce4c7c4639bf604f3d63bfa71b97aa1b9",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "94df84f74b5029f5b94870a8c06c1afdad819203c743f421c0a9bf7ba1fa0ad8",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 499,
+                "b": 96
+              },
+              "audio_duration_sec": {
+                "a": 209.9210625,
+                "b": 146.68
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "权御天下",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "b1b855a8ee0ca466c117ea2038ef2e0e50cd254ddf60c1ba98dde27069b2cbb1",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "7a4158562bba7860ce201734c406f25a0a9e19238d0a6d8cd35e5aeb500e90bf",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 762,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 249.9406875,
+                "b": 208.02
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "梦良衣",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e0325a927777a77a454dac3cc3d3eec3a22a47a253a484b6d64aa300dc135940",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "3f022f1a2c659f72e4f977fd99935a3583b0960bcfffd3d2b68bca2faf21b09c",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 112,
+                "b": 90
+              },
+              "audio_duration_sec": {
+                "a": 187.40825,
+                "b": 164.04
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "此处通往天空",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "a0d592760c219c3f1b3637679cb9658522805e8ac5b1c66bc1ef53c6da5829e0",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "81c2e2ac42e74d98a120892fa3a722e77d067dcfe82539de0ef457c6602b31ff",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 286,
+                "b": 96
+              },
+              "audio_duration_sec": {
+                "a": 203.8186875,
+                "b": 162.12
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "浮夸",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "e771dffc6804ea95378cd738137161c0db380c3cd17a5fa567ff274e9597d055",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "5edfc733b0ba047521fd24f1e29728a0570e58ce2ed5d982f9a68416bd28836a",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 487,
+                "b": 150
+              },
+              "audio_duration_sec": {
+                "a": 287.0186875,
+                "b": 271.04
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "炉心融解",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "1b8f7db7bf53125ad5f5e0e7c9ebf4cf936500e02f0d914d56f0d6e6db3d8a2f",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "297c2e65c1b1e101e2176e3afc3cc3e92262396e17317f11bc7aa825e7ca230e",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 326,
+                "b": 139
+              },
+              "audio_duration_sec": {
+                "a": 332.324,
+                "b": 289.66
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "电灯胆",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "ddabd38e4a28f67ba782580d192a5dd8e9666e6286ead0e037f30a96c1be4a77",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d90c76619f01acd122be390c9ca470f6a085093b08af64ddf078081c245e3fb1",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 350,
+                "b": 96
+              },
+              "audio_duration_sec": {
+                "a": 213.9486875,
+                "b": 141.56
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5414490f5435b1cd7fbb46b1e291754639d1895203744b9c6832d5a39706306e",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "10eeb8352606b687ac7452f5dd824e073409ce7f84ba669e8d32c8027d7141fe",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 532,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 230.7626875,
+                "b": 187.12
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "画下灯塔水母 - 副本",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "61d72efe4938dd822cf696aaff993e96fffd6ed8cf63505be925b4f2c4f84595",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "3251c8e3d64d1c375d415302d19b387d81c190b8f21bb820600a5f8ed7bb44b3",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 381,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 230.7626875,
+                "b": 193.76
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "皱鳃鲨",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "9f7fca49b86ee66d48b78544fc27543d79b4d8ce12e3f7495d1314fdd3d8dd5f",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ea28a132b8d4c154f2dc8001ac45f6c96f63305d63fc360ce72e2fd69e52fbd0",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 261,
+                "b": 64
+              },
+              "audio_duration_sec": {
+                "a": 185.344,
+                "b": 82.64
+              },
+              "language": {
+                "a": "Japanese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "祈愿花开",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "0a298eb083a1aa8f145b9634db50f164959b4136aea5244fbe5fe8e5d4a10f1a",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "69d7f22835388bbce1d199e6b5f07d5e145e6d04e565a93c2b99feba6032f290",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 463,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 271.3251875,
+                "b": 210.08
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "红日",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "5db2e4bb818ca3c34f059aaaaacb489262782c2c36fc2931addefe955d24e9c4",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "d9c6650c09849809496b26876b4fb408537efd33499a48b14b209e282fb34af1",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 534,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 291.328,
+                "b": 198.32
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "若梦境来袭",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "c81f468125451f7fa9c600ee473c761890a3c73652c5c42239470a66d5dc5587",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "ffe050f6520534804075044385443565dc3af4de1aa48116e38357996ab546f9",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 427,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 268.565375,
+                "b": 211.22
+              },
+              "language": {
+                "a": "Chinese",
+                "b": ""
+              }
+            }
+          },
+          {
+            "song": "难念的经",
+            "same_audio_sha": 0,
+            "same_request_hash": 0,
+            "same_window_plan": 0,
+            "same_unit_count": 0,
+            "same_text": 0,
+            "outputs_identical": 0,
+            "max_boundary_shift_sec": null,
+            "identity_diff": {
+              "audio_sha256": {
+                "a": "66bd8febac3b00455b4521000ec31c5ef24b05483728a43ca19c3bbcb9f0608e",
+                "b": ""
+              },
+              "request_hash": {
+                "a": "a1b33634cd817c0a085264e0108d6533f1fe0136013e661dc00f4a1b38a915fb",
+                "b": ""
+              },
+              "schema_version": {
+                "a": "qwen_fa_batch_alignment_v4_forward_overlap_compression",
+                "b": ""
+              },
+              "window_policy": {
+                "a": "silence_aware_global_core_plan_v7",
+                "b": ""
+              },
+              "window_core_sec": {
+                "a": 60.0,
+                "b": null
+              },
+              "left_context_sec": {
+                "a": 10.0,
+                "b": null
+              },
+              "units": {
+                "a": 680,
+                "b": 128
+              },
+              "audio_duration_sec": {
+                "a": 288.597375,
+                "b": 229.58
+              },
+              "language": {
+                "a": "Cantonese",
+                "b": ""
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "headline": {
+    "b4_vs_current_verdict": "duplicate_configuration",
+    "b4_vs_current_identical_output_share": 0.92,
+    "b4_vs_current_same_plan_share": 1.0,
+    "divergent_songs_explained_by_audio_change": true,
+    "pairs_not_comparable": [
+      "current_silence__vs__slot_align",
+      "ktv_B4__vs__slot_align",
+      "current_silence__vs__textmode3"
+    ],
+    "unattributable_batches": [
+      "slot_vs_b4_align",
+      "slot_v2_textmode3"
+    ],
+    "conclusion": "the 2026-08-14/15 real-song comparison suite cannot support any mechanism claim: one pair is a duplicate run, the other two are index-incomparable, and the slot batches record no audio identity"
+  }
+}

@@ -49,7 +49,7 @@
 | D2 | 面板 `label_*_err_sec` 是**无符号** ⇒ `raw − err` 反推真值有 ± 歧义（曾被误读为"24% 单元跨尝试分歧"）；正确重建 = 段局部 `timestamp_class_ids × 0.08` + `global_start_sec`，与冻结误差 **max dev 0.0** | ✅ | `src/lyricalign/analysis/longform_signed_gt.py`、`SIGNED_GT_STATS.json` |
 | D3 | 长时序面板每行是 **(request, view, 单元) 一次尝试**（134,538 行 = 14,441 单元，扇出 9.3×，最多 24 窗）；单元键必须含 `song` | ✅♻️ | `ANALYSIS_CALIBRE.json` |
 | D4 | evaluation_v1 的 `audio_input` 因子是 **DEAD CONFIGURATION**：mix/vocal 954 组配对 `audio_sha256` 100% 相同 ⇒ 消融从未换过输入，相关结论作废 | ✅ | `20260912_gtsinger_multiview.md` §2b |
-| D5 | `20260814_ktv_B4` vs `20260814_ktv_current_silence` **不构成已识别对比**：窗口计划逐字段相同、99.92% 单元一致；批处理视图不记录 silence 标志、`full_slot` 不记 schema/音频 sha 且 23.6% 索引错位 | ✅ | `20260912_real_song_cross_views.md` §0/§1 |
+| D5 | `20260814_ktv_B4` vs `20260814_ktv_current_silence` 是**同一配置的重复运行**（收紧版）：25/25 窗口计划相同、23/25 歌曲输出逐字节相同，剩余 2 首的差异全部落在音频 sha 也不同的歌上；`20260815_slot*` 批次 identity.schema_version/audio_sha256/request_hash **100% 缺失**（不可归因）且与 B4/current 逐索引文本 100% 漂移 ⇒ 三批之间不存在任何可支持的对比；textmode3 单元数不同（word vs char）；批处理视图不记录 silence 标志、`full_slot` 不记 schema/音频 sha 且 23.6% 索引错位 | ✅ | `20260912_real_song_cross_views.md` §0/§1 |
 | D6 | 前向是确定性的（0/28,980 位移）⇒ 按 identity 缓存安全，但必须保留参考时间轴与 attempt↔request 映射 | ✅ | `20260912_postprocess_policy_replay.md` |
 | D7 | 跨视图/跨尝试比较前必须过**可比性门**：逐位文本一致 + 同音频 sha + 计划确实不同 | ✅ | `src/lyricalign/analysis/real_song_views.py`（`comparability` 段） |
 | D8 | 均值类指标在含 gross 异常的证据上无意义（两次事故：位移均值 15.7s、mass lost 78%）⇒ 一律中位/p90 + 封顶口径 | ✅ | `cleanup_simulation`、`real_song_views` |
@@ -72,7 +72,7 @@
 | F1 | 同一**最好 checkpoint + 多个不同裁窗**能否吃到 +3.4pp（长时序跨窗 oracle 与现装的差） | ⛔ 需 GPU | 对 17 首 MIR-1K 或 GTSinger 整曲加跑 windowed 计划；先过 D7 门 |
 | F2 | 真实整曲 ≥180s 的自然长音频 + 人工 GT（当前 MIR-1K 最长 126.7s） | ⛔ 需标注 | GTSinger 整曲试点（25 连续段、wav==labels，2026-08-21 记录） |
 | F3 | 末字拖长音尾边界判据 | ❌ **REFUTED（第 11 轮）** | 相对 RMS 衰减与「人声/伴奏能量比」两条事后声学判据均不可用：前者在末字上几乎不触发（MIR-1K 1/17、GTSinger 6/168），导出阈值迁移后 −13.4pp；后者覆盖 88–99% 但 hit@100 仅 6–62%（同单元模型 95.8%）。oracle 界末字 +0.00pp ⇒ 需模型侧改动 |
-| F4 | 批处理链路补齐 `identity.window` 规划标志；配置矩阵同一性门接入批次收尾 | ✅ 可纯 CPU 做 | 已有最小实现 `factor_content_audit()`，待接入 |
+| F4 | 批处理链路补齐 `identity.window` 规划标志与 `identity.audio`/`request_hash`；把同一性门接入批次收尾 | ✅ 可纯 CPU 做 | 门已实现：`evidence_identity_audit.audit_pair()`（duplicate_configuration / not_comparable / not_identified / identified 四类裁定）+ `gtsinger_multiview.factor_content_audit()`；待接入批次收尾 |
 | F5 | 3 项 HEAD 自带失败测试（冻结主线语义） | ⛔ 需主线裁定 | 不属于本会话范围，未触碰 |
 
 ## G. 会话累计产物（可复用资产）
@@ -82,6 +82,6 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：`tests/evaluation/` 76 项（本会话新增），全量 `1518 passed / 3 pre-existing failed`
+- 测试：`tests/evaluation/` 81 项（本会话新增），全量 `1523 passed / 3 pre-existing failed`
 - 报告：`reports/progress/20260912_*.md` 共 7 份 + 本索引
 - 纪律：全程零 GPU 前向、realign 仍 shadow-only、未改任何生产实现、MIR-1K/PJS 仅 test-only 报告用途
