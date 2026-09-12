@@ -199,3 +199,38 @@ def gap_artifact_bound(a_err: pd.Series, b_err: pd.Series, *, tol: float,
             "max_spurious_gap_pp": round(spurious_pp, 2),
             "gap_exceeds_grid_slack": bool(abs(gap_pp) > spurious_pp),
             "solid_disagreement_units": int(solid_a + solid_b)}
+
+
+def band_edge_stability(err: pd.Series, *, edges: Sequence[float] = (0.100, 0.250),
+                        quantum_sec: float = 0.08) -> dict[str, Any]:
+    """Is a frozen band edge (e.g. detector_v2's SAFE <= 100 ms) resolvable at the grid scale?
+
+    For every edge, move the edge by one quantum in each direction and see how far the band share
+    travels.  An edge whose band share swings by tens of points under a one-grid move cannot carry a
+    product decision on its own: the verdict is about rounding, not about alignment quality.  A stable
+    edge (small swing) can.
+    """
+    e = pd.to_numeric(err, errors="coerce").to_numpy(dtype=float)
+    e = e[np.isfinite(e)]
+    out: dict[str, Any] = {"units": int(e.size), "quantum_sec": quantum_sec, "by_edge": {},
+                           "stable_edges": [], "grid_fragile_edges": []}
+    if not e.size:
+        return out
+    for edge in edges:
+        share = float((e < edge).mean())
+        up = float((e < edge - quantum_sec).mean())     # stricter edge
+        down = float((e < edge + quantum_sec).mean())   # looser edge
+        swing_pp = 100.0 * (down - up)
+        knife = float(np.mean(np.abs(e - edge) <= quantum_sec))
+        entry = {"band_inside_share": round(share, 4),
+                 "band_inside_share_if_edge_one_quantum_stricter": round(up, 4),
+                 "band_inside_share_if_edge_one_quantum_looser": round(down, 4),
+                 "swing_pp": round(swing_pp, 2),
+                 "knife_edge_share": round(knife, 4),
+                 "verdict": ("grid-fragile: a one-grid move in the edge changes the band share by "
+                             f"{swing_pp:.1f}pp" if swing_pp > 10.0
+                             else "stable enough to carry a band decision")}
+        (out["grid_fragile_edges"] if swing_pp > 10.0 else out["stable_edges"]).append(
+            f"{int(edge * 1000)}ms")
+        out["by_edge"][f"{int(edge * 1000)}ms"] = entry
+    return out

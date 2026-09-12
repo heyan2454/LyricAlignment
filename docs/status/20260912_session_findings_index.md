@@ -100,6 +100,9 @@
 
 | B40 | **指标可分辨限（本轮新增的硬口径）**：以"落后方差距不足一个 80ms 格点的单元数"为界，`r1 vs r0` 在 100ms 上 +18.00pp **超过界 4.82pp**（扎实差异 1,784 单元）⇒ projector 增益为真；而 `r2 vs r1` 50ms +2.78pp **低于界 9.96pp**、MIR-1K `r2_full vs r1_full` +0.29pp（界 3.54pp）、`r2_full vs r2_ood` −0.69pp（界 2.85pp）⇒ **均不可归因，两个 r2 checkpoint 谁更好现有指标判不了**。单系统侧：hit@50/hit@100 可被一个格点同向偏移推动 ±42.1/±36.7pp（刀尖判定 84.2%/73.4%），200ms 后才稳定 | ✅ | `reports/progress/20260912_metric_stability.md`、`runs/20260912_label_noise_ceiling/{STABILITY,GAP_ARTIFACT}.json` |
 
+| B41 | **detector_v2 的 SAFE ≤0.100s 带边是格点脆弱的**：把带边移动一个 80ms 格点，带内占比摆幅 65.9–81.0pp（生产视图 88.04% 摆 77.9pp）⇒ **不能单独作为产品 gate 依据**；而 **UNSAFE ≥0.250s 在好系统上稳定**（摆幅 1.4–8.5pp）⇒ 需要可下判断的带时用 250ms，100ms 仅作报告口径。副产品：250ms 摆幅可当质量体检量（生产 2.7pp / MIR-1K 1.4pp / M4 22.8pp） | ✅ | `runs/20260912_label_noise_ceiling/BAND_EDGE.json`、报告 §2b |
+| B42 | 工程教训：**列名与 DataFrame 方法名冲突时（`mode`/`count`/`max`/`abs`…）必须用 `df["col"]` 取列**；`df.mode` 返回方法，比较后恒 False ⇒ 切片静默变空（本轮生产视图 units=0 的真实原因） | ✅ | 本会话第 33 轮记录 |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -160,8 +163,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 170 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1611 passed / 3 pre-existing failed`（第 32 轮后隔离复跑）。
+- 测试：本会话新增 174 项
+- 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1614 passed / 3 pre-existing failed`（第 33 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

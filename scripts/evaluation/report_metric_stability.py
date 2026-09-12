@@ -21,6 +21,8 @@ def main() -> int:
     args = ap.parse_args()
     stab = json.loads((args.run / "STABILITY.json").read_text(encoding="utf-8"))
     gap = json.loads((args.run / "GAP_ARTIFACT.json").read_text(encoding="utf-8"))
+    band_path = args.run / "BAND_EDGE.json"
+    band = json.loads(band_path.read_text(encoding="utf-8")) if band_path.exists() else None
     L: list[str] = []
     w = L.append
     w("# 指标能分辨多小的差？格点余量与差值可归因性（第 32 轮，2026-09-12）")
@@ -99,6 +101,37 @@ def main() -> int:
           f"{v['gap_pp']:+.2f}pp | {v['max_spurious_gap_pp']:.2f}pp | "
           f"{'**是**' if v['gap_exceeds_grid_slack'] else '否'} | {v['solid_disagreement_units']:,} |")
     w("")
+    if band:
+        w("## 2b. 回应用到 detector_v2 的冻结分带（SAFE ≤0.100s / UNSAFE ≥0.250s）")
+        w("")
+        w("测试方法：把带边整体移动一个 80ms 格点（也就是标签/预测的最小可能改动），看带内占比摆多大。")
+        w("")
+        w("| 面板 | 单元 | SAFE≤100ms 带内 | 移动一格的摆幅 | 250ms 带内 | 摆幅 | 判读 |")
+        w("|---|---:|---:|---:|---:|---:|---|")
+        for name, blk in band["panels"].items():
+            e1, e25 = blk["by_edge"]["100ms"], blk["by_edge"]["250ms"]
+            verdict = ("100ms 带边**格点脆弱**" if "100ms" in blk["grid_fragile_edges"] else "100ms 稳定")
+            if "250ms" in blk["grid_fragile_edges"]:
+                verdict += "；250ms 也脆弱（该系统确实差）"
+            w(f"| `{name}` | {blk['units']:,} | {100*e1['band_inside_share']:.2f}% | "
+              f"**{e1['swing_pp']:.1f}pp** | {100*e25['band_inside_share']:.2f}% | "
+              f"{e25['swing_pp']:.1f}pp | {verdict} |")
+        w("")
+        gv = band["panels"].get("gtsinger_prod_r2_vocal_windowed", {}).get("by_edge", {})
+        mv = band["panels"].get("m4_all", {}).get("by_edge", {})
+        if gv and mv:
+            w(f"- ⇒ **SAFE ≤0.100s 不能作为产品决策的唯一依据**：在最好的面板上带内占比 "
+              f"{100*gv['100ms']['band_inside_share']:.2f}%，但一格移动就摆 "
+              f"{gv['100ms']['swing_pp']:.1f}pp（即 88%→约 10% 或 96%）；"
+              "而 **UNSAFE ≥0.250s 在好系统上是稳定的**"
+              f"（摆幅 {min(v['by_edge']['250ms']['swing_pp'] for v in band['panels'].values() if '250ms' not in v['grid_fragile_edges']):.1f}"
+              f"–{max(v['by_edge']['250ms']['swing_pp'] for v in band['panels'].values() if '250ms' not in v['grid_fragile_edges']):.1f}pp，"
+              "只统计 250ms 带边本身稳定的面板）。")
+            w(f"- 副产品：**250ms 摆幅本身是质量信号** —— 生产视图 {gv['250ms']['swing_pp']:.1f}pp、"
+              f"MIR-1K {band['panels']['mir1k_r2_full']['by_edge']['250ms']['swing_pp']:.1f}pp，"
+              f"而 M4 是 {mv['250ms']['swing_pp']:.1f}pp ⇒ 好坏系统的分带可分辨性不同，"
+              "可用它做快速体检。")
+        w("")
     w("## 3. 对本会话既往结论的追溯性限定（不改原文，只加限定）")
     w("")
     w("- 第 15 轮「联合求解改善**首单元** +2.78pp」：与本轮 `r2_vs_r1@50ms` 同一量级，"

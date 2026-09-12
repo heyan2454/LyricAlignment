@@ -99,3 +99,28 @@ def test_gap_artifact_bound_only_counts_losers_with_one_quantum_slack():
 def test_gap_artifact_bound_degenerate_inputs():
     res = LN.gap_artifact_bound(pd.Series([np.nan] * 5), pd.Series([0.1] * 5), tol=0.1)
     assert res["available"] is False
+
+
+def test_band_edge_stability_flags_a_grid_fragile_edge():
+    """A dense error distribution under the grid makes the 100 ms edge carry no decision."""
+    rng = np.random.default_rng(12)
+    err = np.abs(rng.normal(0.03, 0.04, 1000))          # median well below the 80 ms grid
+    out = LN.band_edge_stability(pd.Series(err), edges=(0.1, 0.25), quantum_sec=0.08)
+    e100, e250 = out["by_edge"]["100ms"], out["by_edge"]["250ms"]
+    assert e100["swing_pp"] > e250["swing_pp"]
+    assert "100ms" in out["grid_fragile_edges"]
+    assert e100["band_inside_share_if_edge_one_quantum_stricter"] < e100["band_inside_share"] < \
+        e100["band_inside_share_if_edge_one_quantum_looser"]
+
+
+def test_band_edge_stability_with_sparse_errors_is_stable():
+    err = np.abs(np.random.default_rng(13).normal(0.5, 0.3, 800))   # mostly far beyond both edges
+    out = LN.band_edge_stability(pd.Series(err), edges=(0.1, 0.25), quantum_sec=0.08)
+    assert out["by_edge"]["100ms"]["swing_pp"] < 15.0
+    assert "100ms" not in out["grid_fragile_edges"] or out["by_edge"]["100ms"]["swing_pp"] > 10.0
+    assert out["units"] == 800
+
+
+def test_band_edge_stability_empty_input():
+    out = LN.band_edge_stability(pd.Series([], dtype=float))
+    assert out["units"] == 0 and out["by_edge"] == {}
