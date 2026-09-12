@@ -177,3 +177,45 @@ GTSinger 面板答不了的问题（窗口/接缝、非零起唱点、门控跨�
    （100ms 0.779 → 200ms 0.910 → 250ms 0.928）；门控 OOF AUC bad250 0.924 / bad100 0.765。
    ⇒ 熵适合当 **gross error（≥250ms）触发器**，不适合当 100ms 精修验收器。
    项目现有三档标签（safe/grey/unsafe）在 100–250ms 灰区内无排序信息，熵可补这一层。
+
+---
+
+# 第 4 轮（同日）：普通话**自然录音**人工逐字真值面板（MIR-1K partial-align）
+
+用户指示优先普通话效果。MIR-1K partial-align 子集带**人工逐字符 on/off 标注**
+（`MIR1k_partial_align.json` 的 `on_offset`，预处理只做单调性/时长校验 ⇒ 不是第 3 轮那种伪造均匀轴），
+2,035 字 / 17 首真实伴奏流行歌（官方人声通道，22–127 s）。项目 2026-07-22/24 在**同一集合**上留下
+6 份预测（上游 base、r0、r1、r2×3 个不同训练 run/配置），但历史只汇总成一个标量 `loss`。
+本轮做首次单元级分析；纯 CPU、零前向、+612 KB。
+
+- 代码：`src/lyricalign/analysis/mir1k_natural_panel.py`
+- 入口：`scripts/evaluation/report_mir1k_natural_panel.py`（含 metrics 输出）；`build_panel()/analyse()` 由模块暴露
+- 测试：`tests/evaluation/test_mir1k_natural_panel.py`（8 项，含"位置轴必须来自真实字数"的回归护栏）
+- 产物：`runs/20260912_mir1k_natural_panel/{PANEL_AUDIT,ANALYSIS}.json + panel.csv.gz`、
+  `reports/progress/20260912_mir1k_natural_panel.md`、
+  `results/by_run/20260912_mir1k_natural_panel/metrics.json`
+
+## 结论
+
+1. **对账门通过**：面板重算 `mean_iou` 与 canonical `metrics.corrected.json` 三个 r2 预测器全部
+   `join_ok`（Δ≤3e-5）；MAE 差异完全由 canonical 的 song-macro/invalid 罚项口径解释。
+2. 真实水平：hit@100 **91.8–92.3%**、hit@250 98.6–98.8%、MAE(start) 35–37ms、IoU 0.832；
+   上游 base 只有 **22.7%**（且 20.1% 零/负时长）⇒ 项目适配贡献是决定性的，不可用上坡分数当基线。
+3. 阶梯在第 3 个域上复现：r0→r1 **+16.4pp**、r1→r2 **+0.4pp**；r0 缺陷仍在尾边界（end 95ms vs start 60ms）。
+4. **新失效层 = 每项最后一个字**：r2 末字 hit@100 82.3%（中间 91.1%、首字 94.1%），
+   末字 end 偏移随模型翻号（r2 +101ms / r1 −77ms / r0 −468ms）；
+   首字在自然录音上**没有**惩罚且预测 start 从不塌 0 ⇒ 与第 3 轮解释一致：
+   GTSinger 的"段首幻觉前奏"需要"音频硬切在起唱点"作触发条件。
+5. **长度不是因素、密度才是**：hit@100 与项时长相关 0.0025（13/17 项 >60s、3 项 >90s），
+   与逐项字数相关 **+0.31** ⇒ "长音频更难"在自然数据上不成立，难度来自唱法/字密度。
+6. 无真值分歧信号迁移成立但有前提：强集合（r0/r1/r2 三 run）AUC(≥250ms) **0.839**、AUC(>100ms) 0.628；
+   把上游 base 放回来 AUC 掉到 0.789、flag10% 精度从 0.092 崩到 0.020
+   ⇒ 已把成员规则写进代码（自身 hit@100 < 参考一半者自动 `weak_excluded`）。
+7. 误差聚簇在自然录音上明显减弱（坏单元落 ≥2 游程占比 **42%**，GTSinger 是 67.6%）
+   ⇒ 区域级 realign 的收益上限**按域不同**，不能把 GTSinger 聚簇率当通用常数。
+8. 两个 checkpoint 的聚合差只有 +0.20pp，但 **3.8% 单元位移 >20ms**（最大 1.04s）
+   ⇒ 聚合指标无法区分 checkpoint；单元级不稳定集合就是最该优先 realign 的候选。
+
+## 纪律
+
+MIR-1K 是 test-only：本轮全部数字只做报告，未用于任何 checkpoint 选择或机制调参；未改任何实现。

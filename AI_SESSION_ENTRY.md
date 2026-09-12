@@ -11,7 +11,7 @@ reports/progress/20260912_gtsinger_gt_deep_analysis.md
 results/by_run/20260912_gtsinger_gt_deep/metrics.json
 ```
 
-Four things later rounds must not re-assume:
+Five things later rounds must not re-assume:
 
 1. The 3x2x2 evaluation matrix is degenerate — `mix`/`vocal` were fed the same wav and
    `full`/`windowed` coincide on short clips, so those runs contain no audio-input or planning-mode
@@ -24,7 +24,15 @@ Four things later rounds must not re-assume:
 3. Decoder entropy plus cross-configuration disagreement are real-GT-validated no-GT error signals
    (grouped-CV AUC 0.913 on GTSinger), but entropy detects *gross* errors: AUC 0.78 at 100 ms versus
    0.93 at 250 ms on the long-form panel. Use it as a re-align trigger, not as a refinement judge.
-4. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
+4. On **natural Mandarin with human per-character GT** (MIR-1K partial-align, 2,035 chars / 17 real
+   accompanied songs, six retained predictors) the aligner reaches hit@100 91.8-92.3% and the r0->r1->r2
+   ladder reproduces (+16.4pp / +0.4pp), but the failing position is the **last character of an item**
+   (82.3% vs 91.1% middle, with the sign of the offset flipping per checkpoint), accuracy is unrelated to
+   item *duration* (r=0.003) while it rises with lyric *density* (r=+0.31), and error clustering is much
+   weaker than in studio clips (42% of bad units in runs >=2 vs 67.6% on GTSinger) — region-level
+   realign gains must therefore be calibrated per domain. See
+   `reports/progress/20260912_mir1k_natural_panel.md`.
+5. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
    ground truth: joining predictions to it yields hit@100 = 5.3% where the frozen real-GT labels give
    87.9%. Any reuse of `research_v7_detector_v2` evidence must reconcile recomputed errors against
    that run's frozen `LABELS.jsonl` before believing a number (see `uniform_axis_trap`), and run1's
