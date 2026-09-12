@@ -1,0 +1,689 @@
+{
+  "schema_version": "trigger_replication_metrics_v1",
+  "audit": {
+    "schema": "trigger_replication_v1",
+    "corpus": "M4Singer long-form (timelines synthesised from real segments)",
+    "label_kind": "rule_validated weak labels, 80 ms quantised (not human GT)",
+    "segments_with_audio": 633,
+    "units_scored": 4241,
+    "truncation_tol_sec": 0.16,
+    "aucs": {
+      "all": {
+        "units": 4241,
+        "truncated": {
+          "prevalence": 0.6574,
+          "auc_gap_over_core": 0.5059,
+          "auc_end_entropy": 0.6266,
+          "auc_end_margin": 0.3966,
+          "auc_rise_ratio": 0.5202
+        },
+        "any_error_gt_100ms": {
+          "prevalence": 0.9635,
+          "auc_gap_over_core": 0.4892,
+          "auc_end_entropy": 0.6619,
+          "auc_end_margin": 0.4003,
+          "auc_rise_ratio": 0.5213
+        }
+      },
+      "train_split": {
+        "units": 2827,
+        "truncated": {
+          "prevalence": 0.6339,
+          "auc_gap_over_core": 0.5002,
+          "auc_end_entropy": 0.6426,
+          "auc_end_margin": 0.3867,
+          "auc_rise_ratio": 0.5158
+        },
+        "any_error_gt_100ms": {
+          "prevalence": 0.9579,
+          "auc_gap_over_core": 0.4773,
+          "auc_end_entropy": 0.6763,
+          "auc_end_margin": 0.3872,
+          "auc_rise_ratio": 0.5246
+        }
+      },
+      "validation_split": {
+        "units": 767,
+        "truncated": {
+          "prevalence": 0.6949,
+          "auc_gap_over_core": 0.505,
+          "auc_end_entropy": 0.5794,
+          "auc_end_margin": 0.4207,
+          "auc_rise_ratio": 0.5434
+        },
+        "any_error_gt_100ms": {
+          "prevalence": 0.9726,
+          "auc_gap_over_core": 0.5432,
+          "auc_end_entropy": 0.6392,
+          "auc_end_margin": 0.4416,
+          "auc_rise_ratio": 0.5338
+        }
+      }
+    },
+    "slices": {
+      "by_family": {
+        "baseline_legal": {
+          "units": 515,
+          "truncated": {
+            "prevalence": 0.633,
+            "auc_gap_over_core": 0.4778,
+            "auc_end_entropy": 0.5397,
+            "auc_end_margin": 0.4617,
+            "auc_rise_ratio": 0.546
+          },
+          "any_error_gt_100ms": {
+            "prevalence": 0.9709,
+            "auc_gap_over_core": 0.4655,
+            "auc_end_entropy": 0.6273,
+            "auc_end_margin": 0.4734,
+            "auc_rise_ratio": 0.4831
+          }
+        },
+        "crop_early": {
+          "units": 449,
+          "truncated": {
+            "prevalence": 0.7105,
+            "auc_gap_over_core": 0.5298,
+            "auc_end_entropy": 0.5997,
+            "auc_end_margin": 0.4098,
+            "auc_rise_ratio": 0.5386
+          },
+          "any_error_gt_100ms": {
+            "prevalence": 0.9644,
+            "auc_gap_over_core": 0.5212,
+            "auc_end_entropy": 0.6744,
+            "auc_end_margin": 0.3869,
+            "auc_rise_ratio": 0.5874
+          }
+        },
+        "crop_late": {
+          "units": 538,
+          "truncated": {
+            "prevalence": 0.5446,
+            "auc_gap_over_core": 0.4187,
+            "auc_end_entropy": 0.4767,
+            "auc_end_margin": 0.5162,
+            "auc_rise_ratio": 0.4986
+          },
+          "any_error_gt_100ms": {
+            "prevalence": 0.9572,
+            "auc_gap_over_core": 0.4127,
+            "auc_end_entropy": 0.5711,
+            "auc_end_margin": 0.4797,
+            "auc_rise_ratio": 0.5642
+          }
+        },
+        "cursor_shift": {
+          "units": 651,
+          "truncated": {
+            "prevalence": 0.7235,
+            "auc_gap_over_core": 0.5665,
+            "auc_end_entropy": 0.6137,
+            "auc_end_margin": 0.4107,
+            "auc_rise_ratio": 0.5748
+          },
+          "any_error_gt_100ms": {
+            "prevalence": 0.9616,
+            "auc_gap_over_core": 0.5443,
+            "auc_end_entropy": 0.6611,
+            "auc_end_margin": 0.4377,
+            "auc_rise_ratio": 0.5746
+          }
+        },
+        "end_early": {
+          "units": 902,
+          "truncated": {
+            "prevalence": 0.633,
+            "auc_gap_over_core": 0.501,
+            "auc_end_entropy": 0.6113,
+            "auc_end_margin": 0.392,
+            "auc_rise_ratio": 0.489
+          },
+          "any_error_gt_100ms": {
+            "prevalence": 0.959,
+            "auc_gap_over_core": 0.5203,
+            "auc_end_entropy": 0.6721,
+            "auc_end_margin": 0.3572,
+            "auc_rise_ratio": 0.4926
+          }
+        },
+        "end_late": {
+          "units": 690,
+          "truncated": {
+            "prevalence": 0.571,
+            "auc_gap_over_core": 0.4265,
+            "auc_end_entropy": 0.6031,
+            "auc_end_margin": 0.4451,
+            "auc_rise_ratio": 0.5266
+          },
+          "any_error_gt_100ms": {
+            "prevalence": 0.9594,
+            "auc_gap_over_core": 0.4155,
+            "auc_end_entropy": 0.6115,
+            "auc_end_margin": 0.4498,
+            "auc_rise_ratio": 0.483
+          }
+        },
+        "repeated_section": {
+          "units": 496,
+          "truncated": {
+            "prevalence": 0.8347,
+            "auc_gap_over_core": 0.6063,
+            "auc_end_entropy": 0.8331,
+            "auc_end_margin": 0.2085,
+            "auc_rise_ratio": 0.4236
+          },
+          "any_error_gt_100ms": {
+            "prevalence": 0.9778,
+            "auc_gap_over_core": 0.5228,
+            "auc_end_entropy": 0.8656,
+            "auc_end_margin": 0.2107,
+            "auc_rise_ratio": 0.4416
+          }
+        }
+      },
+      "long_note": {
+        "units": 138,
+        "truncated": {
+          "prevalence": 0.8043,
+          "auc_gap_over_core": 0.5913,
+          "auc_end_entropy": 0.2975,
+          "auc_end_margin": 0.6036,
+          "auc_rise_ratio": 0.479
+        },
+        "any_error_gt_100ms": {
+          "prevalence": 1.0
+        }
+      }
+    },
+    "deciles_m4": {
+      "gap_over_core": {
+        "available": true,
+        "units": 4241,
+        "score_col": "gap_over_core",
+        "spearman_rho": -0.0602,
+        "spearman_p": 8.804e-05,
+        "median_lateness_ms": -115.5,
+        "share_gt_later_than_pred": 0.3009,
+        "late_threshold_ms": 160.0,
+        "decile_table": [
+          {
+            "decile": 0,
+            "units": 425,
+            "score_median": 0.006,
+            "lateness_median_ms": -57.3,
+            "lateness_mean_ms": -180.3,
+            "share_late_gt_threshold": 0.202
+          },
+          {
+            "decile": 1,
+            "units": 424,
+            "score_median": 0.056,
+            "lateness_median_ms": -93.4,
+            "lateness_mean_ms": -174.1,
+            "share_late_gt_threshold": 0.177
+          },
+          {
+            "decile": 2,
+            "units": 424,
+            "score_median": 0.439,
+            "lateness_median_ms": -112.2,
+            "lateness_mean_ms": -364.1,
+            "share_late_gt_threshold": 0.17
+          },
+          {
+            "decile": 3,
+            "units": 424,
+            "score_median": 0.684,
+            "lateness_median_ms": -124.3,
+            "lateness_mean_ms": -480.7,
+            "share_late_gt_threshold": 0.158
+          },
+          {
+            "decile": 4,
+            "units": 425,
+            "score_median": 0.81,
+            "lateness_median_ms": -148.1,
+            "lateness_mean_ms": -609.8,
+            "share_late_gt_threshold": 0.129
+          },
+          {
+            "decile": 5,
+            "units": 423,
+            "score_median": 0.929,
+            "lateness_median_ms": -106.5,
+            "lateness_mean_ms": -394.5,
+            "share_late_gt_threshold": 0.168
+          },
+          {
+            "decile": 6,
+            "units": 424,
+            "score_median": 1.038,
+            "lateness_median_ms": -150.0,
+            "lateness_mean_ms": -400.7,
+            "share_late_gt_threshold": 0.146
+          },
+          {
+            "decile": 7,
+            "units": 424,
+            "score_median": 1.159,
+            "lateness_median_ms": -129.8,
+            "lateness_mean_ms": -476.9,
+            "share_late_gt_threshold": 0.139
+          },
+          {
+            "decile": 8,
+            "units": 424,
+            "score_median": 1.394,
+            "lateness_median_ms": -154.3,
+            "lateness_mean_ms": -543.4,
+            "share_late_gt_threshold": 0.139
+          },
+          {
+            "decile": 9,
+            "units": 424,
+            "score_median": 2.071,
+            "lateness_median_ms": -106.4,
+            "lateness_mean_ms": -301.9,
+            "share_late_gt_threshold": 0.158
+          }
+        ],
+        "monotone_increasing_median": false,
+        "spread_median_ms": 97.0
+      },
+      "end_entropy": {
+        "available": true,
+        "units": 4241,
+        "score_col": "end_entropy",
+        "spearman_rho": 0.0555,
+        "spearman_p": 0.0002997,
+        "median_lateness_ms": -115.5,
+        "share_gt_later_than_pred": 0.3009,
+        "late_threshold_ms": 160.0,
+        "decile_table": [
+          {
+            "decile": 0,
+            "units": 425,
+            "score_median": 0.324,
+            "lateness_median_ms": -111.1,
+            "lateness_mean_ms": -636.1,
+            "share_late_gt_threshold": 0.085
+          },
+          {
+            "decile": 1,
+            "units": 424,
+            "score_median": 0.537,
+            "lateness_median_ms": -123.3,
+            "lateness_mean_ms": -374.2,
+            "share_late_gt_threshold": 0.108
+          },
+          {
+            "decile": 2,
+            "units": 424,
+            "score_median": 0.688,
+            "lateness_median_ms": -133.3,
+            "lateness_mean_ms": -582.6,
+            "share_late_gt_threshold": 0.111
+          },
+          {
+            "decile": 3,
+            "units": 424,
+            "score_median": 0.787,
+            "lateness_median_ms": -131.1,
+            "lateness_mean_ms": -522.8,
+            "share_late_gt_threshold": 0.125
+          },
+          {
+            "decile": 4,
+            "units": 424,
+            "score_median": 0.897,
+            "lateness_median_ms": -105.0,
+            "lateness_mean_ms": -362.1,
+            "share_late_gt_threshold": 0.144
+          },
+          {
+            "decile": 5,
+            "units": 424,
+            "score_median": 1.097,
+            "lateness_median_ms": -113.6,
+            "lateness_mean_ms": -437.9,
+            "share_late_gt_threshold": 0.134
+          },
+          {
+            "decile": 6,
+            "units": 424,
+            "score_median": 1.385,
+            "lateness_median_ms": -121.7,
+            "lateness_mean_ms": -301.1,
+            "share_late_gt_threshold": 0.167
+          },
+          {
+            "decile": 7,
+            "units": 425,
+            "score_median": 1.86,
+            "lateness_median_ms": -88.7,
+            "lateness_mean_ms": -291.2,
+            "share_late_gt_threshold": 0.228
+          },
+          {
+            "decile": 8,
+            "units": 423,
+            "score_median": 2.857,
+            "lateness_median_ms": -123.2,
+            "lateness_mean_ms": -368.2,
+            "share_late_gt_threshold": 0.277
+          },
+          {
+            "decile": 9,
+            "units": 424,
+            "score_median": 4.686,
+            "lateness_median_ms": -127.3,
+            "lateness_mean_ms": -49.7,
+            "share_late_gt_threshold": 0.208
+          }
+        ],
+        "monotone_increasing_median": false,
+        "spread_median_ms": 44.7
+      },
+      "rise_ratio": {
+        "available": true,
+        "units": 4081,
+        "score_col": "rise_ratio",
+        "spearman_rho": -0.0078,
+        "spearman_p": 0.6162,
+        "median_lateness_ms": -115.5,
+        "share_gt_later_than_pred": 0.2965,
+        "late_threshold_ms": 160.0,
+        "decile_table": [
+          {
+            "decile": 0,
+            "units": 409,
+            "score_median": 0.223,
+            "lateness_median_ms": -131.4,
+            "lateness_mean_ms": -318.1,
+            "share_late_gt_threshold": 0.159
+          },
+          {
+            "decile": 1,
+            "units": 408,
+            "score_median": 0.565,
+            "lateness_median_ms": -106.5,
+            "lateness_mean_ms": -400.0,
+            "share_late_gt_threshold": 0.115
+          },
+          {
+            "decile": 2,
+            "units": 408,
+            "score_median": 0.765,
+            "lateness_median_ms": -111.2,
+            "lateness_mean_ms": -218.9,
+            "share_late_gt_threshold": 0.172
+          },
+          {
+            "decile": 3,
+            "units": 408,
+            "score_median": 0.908,
+            "lateness_median_ms": -125.7,
+            "lateness_mean_ms": -369.9,
+            "share_late_gt_threshold": 0.162
+          },
+          {
+            "decile": 4,
+            "units": 408,
+            "score_median": 1.034,
+            "lateness_median_ms": -111.1,
+            "lateness_mean_ms": -465.4,
+            "share_late_gt_threshold": 0.169
+          },
+          {
+            "decile": 5,
+            "units": 408,
+            "score_median": 1.212,
+            "lateness_median_ms": -117.3,
+            "lateness_mean_ms": -470.1,
+            "share_late_gt_threshold": 0.184
+          },
+          {
+            "decile": 6,
+            "units": 412,
+            "score_median": 1.488,
+            "lateness_median_ms": -97.0,
+            "lateness_mean_ms": -297.1,
+            "share_late_gt_threshold": 0.165
+          },
+          {
+            "decile": 7,
+            "units": 406,
+            "score_median": 2.016,
+            "lateness_median_ms": -109.1,
+            "lateness_mean_ms": -371.7,
+            "share_late_gt_threshold": 0.138
+          },
+          {
+            "decile": 8,
+            "units": 406,
+            "score_median": 3.093,
+            "lateness_median_ms": -148.1,
+            "lateness_mean_ms": -565.0,
+            "share_late_gt_threshold": 0.148
+          },
+          {
+            "decile": 9,
+            "units": 408,
+            "score_median": 8.775,
+            "lateness_median_ms": -115.5,
+            "lateness_mean_ms": -496.5,
+            "share_late_gt_threshold": 0.159
+          }
+        ],
+        "monotone_increasing_median": false,
+        "spread_median_ms": 51.1
+      }
+    },
+    "deciles_gtsinger": {
+      "gap_over_core": {
+        "available": true,
+        "units": 4288,
+        "score_col": "gap_over_core",
+        "spearman_rho": 0.7774,
+        "spearman_p": 0.0,
+        "median_lateness_ms": 40.0,
+        "share_gt_later_than_pred": 0.6651,
+        "late_threshold_ms": 160.0,
+        "decile_table": [
+          {
+            "decile": 0,
+            "units": 436,
+            "score_median": 0.032,
+            "lateness_median_ms": -20.0,
+            "lateness_mean_ms": -14.9,
+            "share_late_gt_threshold": 0.0
+          },
+          {
+            "decile": 1,
+            "units": 424,
+            "score_median": 0.066,
+            "lateness_median_ms": -23.0,
+            "lateness_mean_ms": -36.7,
+            "share_late_gt_threshold": 0.0
+          },
+          {
+            "decile": 2,
+            "units": 428,
+            "score_median": 0.099,
+            "lateness_median_ms": -20.0,
+            "lateness_mean_ms": -12.4,
+            "share_late_gt_threshold": 0.019
+          },
+          {
+            "decile": 3,
+            "units": 428,
+            "score_median": 0.151,
+            "lateness_median_ms": -20.0,
+            "lateness_mean_ms": -12.8,
+            "share_late_gt_threshold": 0.0
+          },
+          {
+            "decile": 4,
+            "units": 428,
+            "score_median": 0.231,
+            "lateness_median_ms": 10.0,
+            "lateness_mean_ms": 22.6,
+            "share_late_gt_threshold": 0.084
+          },
+          {
+            "decile": 5,
+            "units": 432,
+            "score_median": 0.404,
+            "lateness_median_ms": 51.5,
+            "lateness_mean_ms": 74.5,
+            "share_late_gt_threshold": 0.093
+          },
+          {
+            "decile": 6,
+            "units": 428,
+            "score_median": 0.809,
+            "lateness_median_ms": 80.0,
+            "lateness_mean_ms": 191.1,
+            "share_late_gt_threshold": 0.411
+          },
+          {
+            "decile": 7,
+            "units": 428,
+            "score_median": 1.149,
+            "lateness_median_ms": 240.0,
+            "lateness_mean_ms": 307.6,
+            "share_late_gt_threshold": 0.654
+          },
+          {
+            "decile": 8,
+            "units": 428,
+            "score_median": 1.578,
+            "lateness_median_ms": 398.0,
+            "lateness_mean_ms": 534.8,
+            "share_late_gt_threshold": 0.916
+          },
+          {
+            "decile": 9,
+            "units": 428,
+            "score_median": 2.678,
+            "lateness_median_ms": 460.0,
+            "lateness_mean_ms": 643.3,
+            "share_late_gt_threshold": 0.991
+          }
+        ],
+        "monotone_increasing_median": false,
+        "spread_median_ms": 483.0
+      },
+      "rise_ratio": {
+        "available": true,
+        "units": 4496,
+        "score_col": "rise_ratio",
+        "spearman_rho": 0.1092,
+        "spearman_p": 2.147e-13,
+        "median_lateness_ms": 40.0,
+        "share_gt_later_than_pred": 0.6753,
+        "late_threshold_ms": 160.0,
+        "decile_table": [
+          {
+            "decile": 0,
+            "units": 452,
+            "score_median": 0.159,
+            "lateness_median_ms": 40.0,
+            "lateness_mean_ms": 24.7,
+            "share_late_gt_threshold": 0.035
+          },
+          {
+            "decile": 1,
+            "units": 448,
+            "score_median": 0.39,
+            "lateness_median_ms": 20.0,
+            "lateness_mean_ms": 41.1,
+            "share_late_gt_threshold": 0.098
+          },
+          {
+            "decile": 2,
+            "units": 460,
+            "score_median": 0.55,
+            "lateness_median_ms": 0.0,
+            "lateness_mean_ms": 52.7,
+            "share_late_gt_threshold": 0.183
+          },
+          {
+            "decile": 3,
+            "units": 440,
+            "score_median": 0.69,
+            "lateness_median_ms": 76.5,
+            "lateness_mean_ms": 117.9,
+            "share_late_gt_threshold": 0.309
+          },
+          {
+            "decile": 4,
+            "units": 448,
+            "score_median": 0.807,
+            "lateness_median_ms": 190.0,
+            "lateness_mean_ms": 283.9,
+            "share_late_gt_threshold": 0.518
+          },
+          {
+            "decile": 5,
+            "units": 456,
+            "score_median": 0.907,
+            "lateness_median_ms": 210.0,
+            "lateness_mean_ms": 295.8,
+            "share_late_gt_threshold": 0.518
+          },
+          {
+            "decile": 6,
+            "units": 444,
+            "score_median": 0.998,
+            "lateness_median_ms": 360.0,
+            "lateness_mean_ms": 445.3,
+            "share_late_gt_threshold": 0.676
+          },
+          {
+            "decile": 7,
+            "units": 452,
+            "score_median": 1.094,
+            "lateness_median_ms": 90.0,
+            "lateness_mean_ms": 307.6,
+            "share_late_gt_threshold": 0.46
+          },
+          {
+            "decile": 8,
+            "units": 452,
+            "score_median": 1.272,
+            "lateness_median_ms": 16.0,
+            "lateness_mean_ms": 189.5,
+            "share_late_gt_threshold": 0.354
+          },
+          {
+            "decile": 9,
+            "units": 444,
+            "score_median": 1.973,
+            "lateness_median_ms": 0.0,
+            "lateness_mean_ms": 108.1,
+            "share_late_gt_threshold": 0.162
+          }
+        ],
+        "monotone_increasing_median": false,
+        "spread_median_ms": 360.0
+      }
+    }
+  },
+  "headline": {
+    "m4_gap_auc_truncated": 0.5059,
+    "m4_gap_spearman": -0.0602,
+    "m4_gap_spread_ms": 97.0,
+    "gtsinger_gap_spearman": 0.7774,
+    "gtsinger_gap_spread_ms": 483.0,
+    "m4_entropy_auc_end_error": 0.6619,
+    "m4_entropy_auc_by_split": {
+      "train_split": 0.6763,
+      "validation_split": 0.6392
+    },
+    "gap_trigger_portable": false,
+    "entropy_trigger_partially_portable": true,
+    "conclusion": "the gap-residual trigger does not replicate on M4Singer (rho -0.06, AUC 0.51): it is GTSinger-specific; only boundary confidence carries over weakly, and label saturation in M4 requires the decile/Spearman view alongside AUC"
+  }
+}

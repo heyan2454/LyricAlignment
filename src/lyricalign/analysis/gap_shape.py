@@ -233,3 +233,45 @@ def grouped_auc(gaps: pd.DataFrame, *, score_col: str, group_col: str,
         out["cluster_bootstrap_median_ci95"] = [round(float(np.percentile(boots, 2.5)), 4),
                                                 round(float(np.percentile(boots, 97.5)), 4)]
     return out
+
+
+def lateness_deciles(gaps: pd.DataFrame, *, score_col: str = "gap_over_core",
+                     n_bins: int = 10, late_ms: float = 160.0) -> dict[str, Any]:
+    """Saturation-robust view of a trigger: mean/median signed lateness per score decile.
+
+    An AUC is uninformative when the label is nearly constant (a corpus where 66 % of units are
+    "truncated" gives every score an AUC near 0.5).  Reading the continuous target —
+    ``gt_end − pred_end`` — across score deciles shows whether the score orders the magnitude at all,
+    and whether that ordering is monotone, which is the property a trigger actually needs.
+    """
+    from scipy.stats import spearmanr
+    d = gaps.dropna(subset=[score_col, "gt_end_sec", "pred_end_sec"]).copy()
+    if len(d) < n_bins * 5:
+        return {"available": False, "units": int(len(d))}
+    d["lateness_ms"] = (pd.to_numeric(d["gt_end_sec"], errors="coerce")
+                        - pd.to_numeric(d["pred_end_sec"], errors="coerce")).to_numpy(dtype=float) * 1000.0
+    d = d.dropna(subset=["lateness_ms"])
+    d["decile"] = pd.qcut(d[score_col], n_bins, labels=False, duplicates="drop")
+    table = d.groupby("decile").agg(units=("lateness_ms", "size"),
+                                    score_median=(score_col, "median"),
+                                    lateness_median_ms=("lateness_ms", "median"),
+                                    lateness_mean_ms=("lateness_ms", "mean"),
+                                    share_late_gt_threshold=("lateness_ms",
+                                                             lambda x: float((x > late_ms).mean())))
+    rho = spearmanr(d[score_col], d["lateness_ms"])
+    med = table["lateness_median_ms"].to_numpy(dtype=float)
+    monotone_up = bool(np.all(np.diff(med) >= -1e-9))
+    return {"available": True, "units": int(len(d)), "score_col": score_col,
+            "spearman_rho": round(float(rho.statistic), 4),
+            "spearman_p": float(f"{rho.pvalue:.3e}"),
+            "median_lateness_ms": round(float(np.median(d["lateness_ms"])), 1),
+            "share_gt_later_than_pred": round(float((d["lateness_ms"] > 0).mean()), 4),
+            "late_threshold_ms": late_ms,
+            "decile_table": [{"decile": int(i), "units": int(r.units),
+                              "score_median": round(float(r.score_median), 3),
+                              "lateness_median_ms": round(float(r.lateness_median_ms), 1),
+                              "lateness_mean_ms": round(float(r.lateness_mean_ms), 1),
+                              "share_late_gt_threshold": round(float(r.share_late_gt_threshold), 3)}
+                             for i, r in table.reset_index().set_index("decile").iterrows()],
+            "monotone_increasing_median": monotone_up,
+            "spread_median_ms": round(float(med.max() - med.min()), 1)}

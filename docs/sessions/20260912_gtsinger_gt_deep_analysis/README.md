@@ -1327,3 +1327,36 @@ flag 触发比例：inversion 6.33%、gap_residual 11.0%、high_entropy_end 20.0
 根因是**在可达上界下正确的天花板应按"错且可救"排序**，补 `oracle_by_recoverable` 策略并同时保留
 `oracle_by_error`（乐观上界的天花板）；另修 `bound_budget_value` 成功分支缺 `available` 标志、
 `reachability` 缺列不优雅、测试夹具里对数组用 `in`（改 `np.isin`）。
+
+---
+
+# 第 30 轮：触发器跨语料复现 —— 间隙残余**未通过**，只有置信度勉强同向
+
+- 代码：`gap_shape.lateness_deciles()`（抗饱和诊断）；入口 `scripts/evaluation/{run,report}_trigger_replication.py`
+- 产物：`runs/20260912_trigger_replication/{REPLICATION.json,m4_gap_features.csv.gz}`、
+  `reports/progress/20260912_trigger_replication.md`、`results/by_run/20260912_trigger_replication/metrics.json`
+- 数据：M4Singer 长时序（**弱标签 rule_validated、80ms 量化**，时间线由真实片段**拼接**、含人工静音）
+  vs GTSinger（人工词级真值、连续清唱片段）；同一份代码路径算特征；633 段可用音频、4,241 个可测间隙单元
+
+## 结果
+
+| 语料 | n | Spearman ρ(gap_over_core, 真值−预测滞后) | 十分位中位滞后跨度 | 「真值晚于预测」比例 | AUC(切早) |
+|---|---:|---:|---:|---:|---:|
+| GTSinger | 4,288 | **+0.7774** | **483.0ms** | 66.5% | 0.921 |
+| **M4Singer** | 4,241 | **−0.0602** | **97.0ms** | 30.1%（中位滞后 **−115.5ms**，即预测偏晚） | **0.506** |
+
+- M4 上标签近常数（切早流行率 65.7%）⇒ **AUC 一律趋 0.5**，必须同时看连续量排序（ρ/十分位），
+  否则会误判成"所有信号都失效"；反之只看 ρ 会漏掉覆盖率差异。
+- 置信度是唯一同向的：M4 `end_entropy` 对"误差>100ms" AUC **0.662**（train 0.676 / val 0.639），
+  方向与 GTSinger 一致但明显更弱（0.845）；且它对滞后大小无排序力（ρ 0.056）。
+- `margin` 在 M4 上 AUC 0.397（方向反直觉）⇒ 不可用。
+
+## 判定（对前几轮的降级）
+1. **`gap_over_core` 不得作为通用重解码触发器上线**：目前证据只支持"GTSinger 型连续清唱片段"这一局部场景；
+2. 第 27 轮融合分数里**真正可移植的成分只有熵**；融合值与"只用熵"的值接近
+   （可达上界 5/10/20% = +1.12/+2.51/+4.90pp），所以**第 29 轮的预算结论不变**，但实现应只用熵；
+3. 方法学：**跨语料复现必须 AUC + 抗饱和连续量并报**，并显式报告标签流行率。
+
+## 本轮自查
+驱动里 JSON 写出发生在十分位计算之前 ⇒ 报告首版读到空值（n=0、ρ=None）；
+已把写出移到计算之后并重跑验证。测试新增 1 项（ρ>0.9 的合成信号 vs ρ≈0 的无信号 + 小样本 unavailable）。

@@ -102,3 +102,25 @@ def test_prevalence_by_shape_counts_all_three():
     assert res["by_shape"]["rising"]["units"] == 2
     assert res["by_shape"]["falling"]["units"] == 1
     assert res["by_shape"]["flat"]["units"] == 1
+
+
+def test_lateness_deciles_detects_a_real_signal_and_a_dead_one():
+    import numpy as np
+    rng = np.random.default_rng(5)
+    n = 400
+    gap = rng.uniform(0, 3, n)
+    good = pd.DataFrame({"gap_over_core": gap,
+                         "gt_end_sec": gap * 0.5 + rng.normal(0, 0.02, n),
+                         "pred_end_sec": np.zeros(n)})
+    res = GS.lateness_deciles(good)
+    assert res["available"] is True
+    assert res["spearman_rho"] > 0.9
+    assert res["spread_median_ms"] > 500
+
+    dead = pd.DataFrame({"gap_over_core": gap,
+                         "gt_end_sec": rng.normal(0, 0.05, n), "pred_end_sec": np.zeros(n)})
+    res2 = GS.lateness_deciles(dead)
+    assert abs(res2["spearman_rho"]) < 0.2
+    assert res2["spread_median_ms"] < res["spread_median_ms"]
+    # too few units -> unavailable rather than a meaningless table
+    assert GS.lateness_deciles(good.head(20))["available"] is False
