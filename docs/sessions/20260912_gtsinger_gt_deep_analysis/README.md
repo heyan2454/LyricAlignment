@@ -1,4 +1,7 @@
-# 2026-09-12 GTSinger 真值深度分析轮（goal 自由行动，只读挖掘）
+# 2026-09-12 真值深度分析轮（goal 自由行动，只读挖掘；共 3 轮）
+
+> 目录名保留 `gtsinger_gt_deep_analysis`（第 1 轮入口）；第 2 轮（后处理策略重放）与第 3 轮
+> （长时序弱真值面板）记录追加在本文件后半部分，代码与产物路径各自独立。
 
 本轮不启动任何 GPU 前向、不新增训练，只做一件事：把 2026-08-16 evaluation_v1 已经落盘的
 GTSinger 评测产物**逐单元**重读一遍，回答旧浅层汇总（hit-rate 表）回答不了的问题。
@@ -128,3 +131,49 @@ PYTHONPATH=src python -m pytest -q tests/evaluation
 
 - 未改任何实现：`V9` 只是重放证据，真实实现改动会使既有 official 口径产物失效并需作废受影响 identity，
   留给主线按冻结参数纪律决定；长歌串行合并/跨窗口缝合阶段未被重放覆盖。
+
+---
+
+# 第 3 轮（同日）：长时序弱真值面板（detector_v2 M4Singer-concat 证据）
+
+GTSinger 面板答不了的问题（窗口/接缝、非零起唱点、门控跨域迁移）需要长时序数据。
+本轮从 `research_v7_detector_v2/run{1,2}` 的既有证据装配了一个 **200s 级长时序面板**：
+逐单元 raw/official 两阶段边界 + 熵/margin/repair 位移 + 项目冻结的逐单元真值误差标签。
+纯 CPU、零前向、数据目录 +16 MB。
+
+- 代码：`src/lyricalign/analysis/m4_longform_weakgt.py`
+- 入口：`scripts/evaluation/{build_m4_longform_weakgt_panel,report_m4_longform_weakgt}.py`
+- 测试：`tests/evaluation/test_m4_longform_weakgt.py`（5 项，0.6s）
+- 产物：`runs/20260912_m4_longform_weakgt/{longform_units.jsonl.gz,PANEL_SUMMARY.json,ANALYSIS.json}`、
+  `reports/progress/20260912_m4_longform_weakgt_panel.md`、
+  `results/by_run/20260912_m4_longform_weakgt/metrics.json`
+
+## 结论
+
+1. **P1 方法陷阱（本轮最重要的产出）**：`LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec`
+   是**合成均匀轴**（labeler 的真实 GT 来自逐段 M4Singer 字符标注平移）。
+   直接拿它当真值：hit@100 = **5.3%**；用冻结的真实 GT 误差：**87.9%**（相差 83pp，
+   两种"误差"相关仅 0.61、中位分歧 346ms）。本轮我自己第一次装配就踩中了它，
+   靠"重算误差 vs 冻结标签误差"对账才发现 ⇒ 该对账已实现为 `uniform_axis_trap` 段，
+   建议作为一切复用 detector_v2 证据分析的硬门。
+2. **run1 不可复用（登记）**：其冻结引用
+   `research_v7_align_behavior/smoke_20260805_review12/formal_manifest_v3/LONG_TIMELINE_MANIFEST.jsonl`
+   已不在盘上 ⇒ run1 的 137k 单元证据无法重算（面板构建器显式输出
+   `excluded: reference_timeline_missing`，而不是静默换一份同名 timeline）。
+   同时发现 evidence_v2 以 attempt 身份命名、与 manifest 的 request 身份**无留存链接**
+   （`cached/` 已清理）⇒ 这批证据的 window/request 级归因不可重建。
+3. **长时序 baseline 真实水平**：hit@100 raw 87.95% / official 88.00%，MAE(both)
+   83.2 / 78.9ms，unsafe(≥250ms) 2.4% ⇒ 合成长轴上未见整体退化。
+4. **后处理并非处处有害（限定第 2 轮结论）**：research_v7 official 阶段只动 1.2% 单元，
+   被动的单元 MAE 780ms→426ms、hit@100 60.3%→64.0%，repair 37.3% vs damage 31.1%，
+   净效应单元级 +0.045pp、请求级 −0.041pp（CI [−0.121,+0.037]）≈ 中性；
+   且被移动起点只有 **0.6%** 等于前一单元尾端（demo 管线 98.3%）
+   ⇒ "把起点钉到前一个尾端"是 **demo 官方管线特有**，第 2 轮的改造建议只适用于那条管线。
+5. **段首效应在长时序上不存在**：段首 87.78% vs 其余 87.97%（603 段）。
+   因为这里每个拼接缝前有 0.5s 真静音；GTSinger 的"幻觉前奏"发生在**音频被硬切在起唱点**时。
+   ⇒ 触发条件是"窗口左端没有真实前奏"，不是"处于边界"；自然长歌分窗若左端切在演唱中，
+   风险与 GTSinger 同类，但本面板无自然长歌 GT，无法验证。
+6. **熵基 no-GT 信号的定位被澄清**：`max_ent` AUC 随阈值变宽升高
+   （100ms 0.779 → 200ms 0.910 → 250ms 0.928）；门控 OOF AUC bad250 0.924 / bad100 0.765。
+   ⇒ 熵适合当 **gross error（≥250ms）触发器**，不适合当 100ms 精修验收器。
+   项目现有三档标签（safe/grey/unsafe）在 100–250ms 灰区内无排序信息，熵可补这一层。

@@ -11,14 +11,28 @@ reports/progress/20260912_gtsinger_gt_deep_analysis.md
 results/by_run/20260912_gtsinger_gt_deep/metrics.json
 ```
 
-Two things later rounds must not re-assume: (1) the 3x2x2 evaluation matrix is degenerate —
-`mix`/`vocal` were fed the same wav and `full`/`windowed` coincide on short clips, so those runs
-contain no audio-input or planning-mode evidence at all; (2) `official` post-processing is net
-negative against real ground truth at the 100 ms tolerance (overlap resolution pins a start to the
-previous end in 98% of moved cases), while cross-configuration disagreement plus decoder entropy
-give a real-GT-validated no-GT error signal (grouped-CV AUC 0.913). This addendum does not rule on
-which session is the mainline; it only supersedes the *numbers* in the older shallow GTSinger
-summary tables wherever they conflict.
+Four things later rounds must not re-assume:
+
+1. The 3x2x2 evaluation matrix is degenerate — `mix`/`vocal` were fed the same wav and
+   `full`/`windowed` coincide on short clips, so those runs contain no audio-input or planning-mode
+   evidence at all (redundancy factor 3.4x).
+2. In the *demo* official pipeline, post-processing is net negative against real ground truth at
+   100 ms (overlap resolution pins a start to the previous end in 98% of moved cases). Replaying
+   rule variants on the same panel shows the fixable headroom is +2.4 pp and a plain
+   "trim the earlier tail + 0.05 s minimum duration" rule captures 88% of it. This does **not**
+   transfer to the research_v7 official stage, which touches 1.2% of units and is neutral there.
+3. Decoder entropy plus cross-configuration disagreement are real-GT-validated no-GT error signals
+   (grouped-CV AUC 0.913 on GTSinger), but entropy detects *gross* errors: AUC 0.78 at 100 ms versus
+   0.93 at 250 ms on the long-form panel. Use it as a re-align trigger, not as a refinement judge.
+4. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
+   ground truth: joining predictions to it yields hit@100 = 5.3% where the frozen real-GT labels give
+   87.9%. Any reuse of `research_v7_detector_v2` evidence must reconcile recomputed errors against
+   that run's frozen `LABELS.jsonl` before believing a number (see `uniform_axis_trap`), and run1's
+   reference timeline is already gone from disk (evidence is therefore un-reusable).
+
+Forward determinism was verified positively: the same request identity reproduced a bit-identical
+raw stage across two independent forwards (0/28,980 units differing), so content-addressed evidence
+reuse is sound *when the reference artifacts are retained*.
 
 ## 2026-08-16 Lyric Align Dataset Acquisition & No-Training Evaluation — Newer Session
 
