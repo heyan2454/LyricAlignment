@@ -11,7 +11,7 @@ reports/progress/20260912_gtsinger_gt_deep_analysis.md
 results/by_run/20260912_gtsinger_gt_deep/metrics.json
 ```
 
-Eight things later rounds must not re-assume:
+Ten things later rounds must not re-assume:
 
 1. The 3x2x2 evaluation matrix is degenerate — `mix`/`vocal` were fed the same wav and
    `full`/`windowed` coincide on short clips, so those runs contain no audio-input or planning-mode
@@ -48,7 +48,18 @@ Eight things later rounds must not re-assume:
    schema version. Cross-view work on natural long songs therefore has **no usable evidence base** yet, and a
    comparability gate (same text per index + same audio sha + different plan) is now implemented in
    `src/lyricalign/analysis/real_song_views.py`.
-8. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
+8. The long-form panel is **per attempt, not per unit**: a row is one (request_identity, view_id,
+   canonical_unit_id) and the 134,538 rows cover only 14,441 lyric units (fan-out 9.3x, up to 24 windows
+   per unit), so row-level statistics are attempt-weighted; the correct unit key needs `song`
+   (`view_id, song, canonical_unit_id`). Unit-level medians are better than attempt-level (87.33% vs
+   84.97% raw hit@100) while worst-attempt is 73.65% — long-form risk is per-unit variance, not the mean.
+9. A single **joint constrained solve** (min 50 ms, max 3 s, monotone starts, no overlap, weighted-L1 to
+   clipped raw, weights from recorded boundary entropy ranks) is the first cleanup change that validates
+   positively on human GT: GTSinger hit@100 83.59% vs 81.57% shipped (+2.02pp), degenerate 4.61%->0%,
+   MAE 101.2ms; accuracy-neutral on natural long-form (86.57% vs 86.54% raw) and the only rule reaching
+   0% degenerate/overlap/regression on 25 real accompanied songs. See
+   `src/lyricalign/analysis/joint_cleanup.py` and `reports/progress/20260912_joint_cleanup.md`.
+10. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
    ground truth: joining predictions to it yields hit@100 = 5.3% where the frozen real-GT labels give
    87.9%. Any reuse of `research_v7_detector_v2` evidence must reconcile recomputed errors against
    that run's frozen `LABELS.jsonl` before believing a number (see `uniform_axis_trap`), and run1's

@@ -1,0 +1,548 @@
+{
+  "schema_version": "joint_cleanup_metrics_v1",
+  "source_joint": "/home/hyan/Data/lyricalign/runs/20260912_real_song_views/JOINT_CLEANUP.json",
+  "source_calibre": "/home/hyan/Data/lyricalign/runs/20260912_m4_longform_weakgt/ANALYSIS_CALIBRE.json",
+  "recommendation": "replace the sequential cleanup with one constrained solve (min 0.05 s, max 3 s, monotone starts, no overlap, weighted-L1 to clipped raw)",
+  "gtsinger": {
+    "panel": {
+      "units": 28980,
+      "sequences": 1908,
+      "reference": "human GTSinger word-level GT (round-1 panel)"
+    },
+    "rules": [
+      {
+        "rule": "raw_none",
+        "units": 28980,
+        "mae_start_sec": 0.0566,
+        "mae_end_sec": 0.0773,
+        "mae_both_sec": 0.1039,
+        "median_both_sec": 0.04,
+        "mean_iou": 0.753,
+        "hit100": 0.8334,
+        "hit200": 0.8784,
+        "hit250": 0.8944,
+        "degenerate_share": 0.0126,
+        "negative_share": 0.0022,
+        "overlap_share": 0.0477,
+        "start_regression_share": 0.0024,
+        "max_duration_sec": 2.8,
+        "median_duration_sec": 0.4,
+        "plausible_mass_sec": 11683.2,
+        "share_units_moved_vs_raw": 0.0
+      },
+      {
+        "rule": "shipped_official",
+        "units": 28980,
+        "mae_start_sec": 0.0606,
+        "mae_end_sec": 0.0715,
+        "mae_both_sec": 0.1065,
+        "median_both_sec": 0.04,
+        "mean_iou": 0.7375,
+        "hit100": 0.8157,
+        "hit200": 0.8725,
+        "hit250": 0.89,
+        "degenerate_share": 0.0461,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 2.8,
+        "median_duration_sec": 0.32,
+        "plausible_mass_sec": 11328.82,
+        "share_units_moved_vs_raw": 0.0539
+      },
+      {
+        "rule": "V9_end_trim_min0.05s",
+        "units": 28980,
+        "mae_start_sec": 0.0566,
+        "mae_end_sec": 0.1102,
+        "mae_both_sec": 0.1419,
+        "median_both_sec": 0.04,
+        "mean_iou": 0.7099,
+        "hit100": 0.7862,
+        "hit200": 0.8405,
+        "hit250": 0.8605,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0375,
+        "start_regression_share": 0.0024,
+        "max_duration_sec": 2.24,
+        "median_duration_sec": 0.32,
+        "plausible_mass_sec": 10177.63,
+        "share_units_moved_vs_raw": 0.1229
+      },
+      {
+        "rule": "R8_joint_lp_alpha0",
+        "units": 28980,
+        "mae_start_sec": 0.057,
+        "mae_end_sec": 0.0675,
+        "mae_both_sec": 0.1012,
+        "median_both_sec": 0.04,
+        "mean_iou": 0.7513,
+        "hit100": 0.8359,
+        "hit200": 0.8828,
+        "hit250": 0.8994,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 2.8,
+        "median_duration_sec": 0.32,
+        "plausible_mass_sec": 11344.92,
+        "share_units_moved_vs_raw": 0.1032,
+        "alpha": 0.0,
+        "solve_statuses": {
+          "ok": 1908
+        }
+      },
+      {
+        "rule": "R8_joint_lp_alpha2",
+        "units": 28980,
+        "mae_start_sec": 0.0588,
+        "mae_end_sec": 0.0693,
+        "mae_both_sec": 0.1035,
+        "median_both_sec": 0.04,
+        "mean_iou": 0.7465,
+        "hit100": 0.8276,
+        "hit200": 0.8781,
+        "hit250": 0.8945,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 2.8,
+        "median_duration_sec": 0.32,
+        "plausible_mass_sec": 11346.16,
+        "share_units_moved_vs_raw": 0.1056,
+        "alpha": 2.0,
+        "solve_statuses": {
+          "ok": 1908
+        }
+      },
+      {
+        "rule": "R8_joint_lp_alpha4",
+        "units": 28980,
+        "mae_start_sec": 0.0587,
+        "mae_end_sec": 0.0693,
+        "mae_both_sec": 0.1034,
+        "median_both_sec": 0.04,
+        "mean_iou": 0.7467,
+        "hit100": 0.828,
+        "hit200": 0.8781,
+        "hit250": 0.8944,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 2.8,
+        "median_duration_sec": 0.32,
+        "plausible_mass_sec": 11348.88,
+        "share_units_moved_vs_raw": 0.1045,
+        "alpha": 4.0,
+        "solve_statuses": {
+          "ok": 1908
+        }
+      },
+      {
+        "rule": "R8_joint_lp_alpha8",
+        "units": 28980,
+        "mae_start_sec": 0.0585,
+        "mae_end_sec": 0.0693,
+        "mae_both_sec": 0.1032,
+        "median_both_sec": 0.04,
+        "mean_iou": 0.7472,
+        "hit100": 0.828,
+        "hit200": 0.8783,
+        "hit250": 0.8943,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 2.8,
+        "median_duration_sec": 0.32,
+        "plausible_mass_sec": 11356.08,
+        "share_units_moved_vs_raw": 0.0999,
+        "alpha": 8.0,
+        "solve_statuses": {
+          "ok": 1908
+        }
+      }
+    ]
+  },
+  "real_songs": {
+    "panel": {
+      "units": 10909,
+      "songs": 25,
+      "view": "b4_60s_windowed"
+    },
+    "rules": [
+      {
+        "rule": "R0_none",
+        "units": 10909,
+        "degenerate_share": 0.1125,
+        "negative_share": 0.0658,
+        "overlap_share": 0.122,
+        "start_regression_share": 0.0712,
+        "max_duration_sec": 108.72,
+        "median_duration_sec": 0.24,
+        "plausible_mass_sec": 5018.84,
+        "plausible_mass_lost_share": 0.0,
+        "share_units_moved": 0.0,
+        "median_shift_sec": null,
+        "p90_shift_sec": null
+      },
+      {
+        "rule": "R1_shipped",
+        "units": 10909,
+        "degenerate_share": 0.1713,
+        "negative_share": 0.0,
+        "overlap_share": 0.0009,
+        "start_regression_share": 0.0006,
+        "max_duration_sec": 52.8,
+        "median_duration_sec": 0.24,
+        "plausible_mass_sec": 3347.6,
+        "plausible_mass_lost_share": 0.333,
+        "share_units_moved": 0.2251,
+        "median_shift_sec": 3.2,
+        "p90_shift_sec": 65.2
+      },
+      {
+        "rule": "R3_end_trim_min0.05s",
+        "units": 10909,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.1173,
+        "start_regression_share": 0.0712,
+        "max_duration_sec": 101.36,
+        "median_duration_sec": 0.24,
+        "plausible_mass_sec": 4208.91,
+        "plausible_mass_lost_share": 0.1614,
+        "share_units_moved": 0.2221,
+        "median_shift_sec": 0.35,
+        "p90_shift_sec": 34.466
+      },
+      {
+        "rule": "R6_clip_then_trim",
+        "units": 10909,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.1173,
+        "start_regression_share": 0.0712,
+        "max_duration_sec": 3.0,
+        "median_duration_sec": 0.24,
+        "plausible_mass_sec": 4309.43,
+        "plausible_mass_lost_share": 0.1413,
+        "share_units_moved": 0.2382,
+        "median_shift_sec": 0.48,
+        "p90_shift_sec": 48.252
+      },
+      {
+        "rule": "R7_clip_only",
+        "units": 10909,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.1845,
+        "start_regression_share": 0.0712,
+        "max_duration_sec": 3.0,
+        "median_duration_sec": 0.32,
+        "plausible_mass_sec": 5411.48,
+        "plausible_mass_lost_share": -0.0782,
+        "share_units_moved": 0.1514,
+        "median_shift_sec": 1.4,
+        "p90_shift_sec": 56.68
+      },
+      {
+        "rule": "R8_joint_lp",
+        "units": 10909,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 3.0,
+        "median_duration_sec": 0.24,
+        "plausible_mass_sec": 3247.55,
+        "plausible_mass_lost_share": 0.3529,
+        "share_units_moved": 0.3068,
+        "median_shift_sec": 1.28,
+        "p90_shift_sec": 47.47,
+        "solve": {
+          "groups": 25,
+          "statuses": {
+            "ok": 25
+          },
+          "fallbacks": 0
+        },
+        "share_moved_boundaries_that_were_confident": 0.0435,
+        "alpha": 4.0
+      },
+      {
+        "rule": "R8b_joint_unweighted",
+        "units": 10909,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 3.0,
+        "median_duration_sec": 0.24,
+        "plausible_mass_sec": 3226.65,
+        "plausible_mass_lost_share": 0.3571,
+        "share_units_moved": 0.3032,
+        "median_shift_sec": 1.62,
+        "p90_shift_sec": 47.615,
+        "solve": {
+          "groups": 25,
+          "statuses": {
+            "ok": 25
+          },
+          "fallbacks": 0
+        },
+        "alpha": 0.0
+      }
+    ]
+  },
+  "m4_longform": {
+    "panel": {
+      "units": 116369,
+      "sequences": 1380,
+      "reference": "M4Singer-derived weak GT reconstructed from frozen signed errors",
+      "reconstruction_check_raw_max_dev_sec": 0.0,
+      "stage_agreement_share": 0.9778,
+      "stage_disagreement_max_sec": 119.84,
+      "rows_dropped_by_stage_disagreement": 2656,
+      "axis_note": "panel gt_* column rejected: fabricated uniform axis (round 3)"
+    },
+    "rules": [
+      {
+        "rule": "raw_none",
+        "units": 116369,
+        "mae_start_sec": 0.1595,
+        "mae_end_sec": 0.1796,
+        "mae_both_sec": 0.1977,
+        "median_both_sec": 0.05,
+        "mean_iou": 0.789,
+        "hit100": 0.8654,
+        "hit200": 0.9488,
+        "hit250": 0.9585,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0181,
+        "start_regression_share": 0.0036,
+        "max_duration_sec": 22.72,
+        "median_duration_sec": 0.4,
+        "plausible_mass_sec": 58502.6,
+        "share_units_moved_vs_raw": 0.0
+      },
+      {
+        "rule": "official_stage",
+        "units": 116369,
+        "mae_start_sec": 0.142,
+        "mae_end_sec": 0.1427,
+        "mae_both_sec": 0.1688,
+        "median_both_sec": 0.05,
+        "mean_iou": 0.784,
+        "hit100": 0.86,
+        "hit200": 0.9444,
+        "hit250": 0.9546,
+        "degenerate_share": 0.014,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 11.12,
+        "median_duration_sec": 0.4,
+        "plausible_mass_sec": 56653.74,
+        "share_units_moved_vs_raw": 0.0217
+      },
+      {
+        "rule": "final_stage",
+        "units": 116369,
+        "mae_start_sec": 0.142,
+        "mae_end_sec": 0.1427,
+        "mae_both_sec": 0.1688,
+        "median_both_sec": 0.05,
+        "mean_iou": 0.784,
+        "hit100": 0.86,
+        "hit200": 0.9444,
+        "hit250": 0.9546,
+        "degenerate_share": 0.014,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 11.12,
+        "median_duration_sec": 0.4,
+        "plausible_mass_sec": 56653.74,
+        "share_units_moved_vs_raw": 0.0217
+      },
+      {
+        "rule": "V9_end_trim_min0.05s",
+        "units": 116369,
+        "mae_start_sec": 0.1595,
+        "mae_end_sec": 0.1754,
+        "mae_both_sec": 0.1964,
+        "median_both_sec": 0.05,
+        "mean_iou": 0.7846,
+        "hit100": 0.8647,
+        "hit200": 0.9461,
+        "hit250": 0.9553,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0064,
+        "start_regression_share": 0.0036,
+        "max_duration_sec": 22.72,
+        "median_duration_sec": 0.4,
+        "plausible_mass_sec": 55866.82,
+        "share_units_moved_vs_raw": 0.0267
+      },
+      {
+        "rule": "R8_joint_lp_alpha0",
+        "units": 116369,
+        "mae_start_sec": 0.1522,
+        "mae_end_sec": 0.1534,
+        "mae_both_sec": 0.177,
+        "median_both_sec": 0.05,
+        "mean_iou": 0.7874,
+        "hit100": 0.8657,
+        "hit200": 0.948,
+        "hit250": 0.9574,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 3.0,
+        "median_duration_sec": 0.4,
+        "plausible_mass_sec": 56679.67,
+        "share_units_moved_vs_raw": 0.0298,
+        "alpha": 0.0,
+        "solve_statuses": {
+          "ok": 1380
+        }
+      },
+      {
+        "rule": "R8_joint_lp_alpha4",
+        "units": 116369,
+        "mae_start_sec": 0.155,
+        "mae_end_sec": 0.1563,
+        "mae_both_sec": 0.1812,
+        "median_both_sec": 0.05,
+        "mean_iou": 0.7837,
+        "hit100": 0.8597,
+        "hit200": 0.9441,
+        "hit250": 0.9541,
+        "degenerate_share": 0.0,
+        "negative_share": 0.0,
+        "overlap_share": 0.0,
+        "start_regression_share": 0.0,
+        "max_duration_sec": 3.0,
+        "median_duration_sec": 0.4,
+        "plausible_mass_sec": 56686.61,
+        "share_units_moved_vs_raw": 0.033,
+        "alpha": 4.0,
+        "solve_statuses": {
+          "ok": 1380
+        }
+      }
+    ]
+  },
+  "longform_calibre_correction": {
+    "rows": 134538,
+    "unique_units": 14441,
+    "fan_out_factor": 9.316,
+    "multiplicity_median": 1,
+    "multiplicity_max": 24,
+    "multiplicity_mode": {
+      "1": 8670,
+      "20": 2724,
+      "24": 2597
+    },
+    "requests": 1440,
+    "unit_key": "(view_id, song, canonical_unit_id)",
+    "unit_of_analysis": "row = one (request_identity, view_id, canonical_unit_id) = one window attempt on one lyric unit",
+    "warning": "attempt-level and unit-level statistics differ materially; never call the row-level number unit-level",
+    "raw": {
+      "attempt_level": {
+        "n": 119834,
+        "hit100": 0.8497,
+        "hit250": 0.9452,
+        "mae": 0.2421
+      },
+      "unit_level_median_of_attempts": {
+        "n": 13642,
+        "hit100": 0.8733,
+        "hit250": 0.9696,
+        "mae": 0.1014
+      },
+      "unit_level_worst_of_attempts": {
+        "n": 13642,
+        "hit100": 0.7365,
+        "hit250": 0.8481,
+        "mae": 1.0601
+      },
+      "unit_level_best_of_attempts_oracle": {
+        "n": 13642,
+        "hit100": 0.9053,
+        "hit250": 0.9773,
+        "mae": 0.0748
+      },
+      "attempt_spread_sec": {
+        "median": 0.0,
+        "p90": 3.56,
+        "share_units_gt_100ms": 0.1298
+      }
+    },
+    "official": {
+      "attempt_level": {
+        "n": 117208,
+        "hit100": 0.862,
+        "hit250": 0.9578,
+        "mae": 0.1574
+      },
+      "unit_level_median_of_attempts": {
+        "n": 13541,
+        "hit100": 0.8766,
+        "hit250": 0.9728,
+        "mae": 0.0862
+      },
+      "unit_level_worst_of_attempts": {
+        "n": 13541,
+        "hit100": 0.7564,
+        "hit250": 0.874,
+        "mae": 0.6048
+      },
+      "unit_level_best_of_attempts_oracle": {
+        "n": 13541,
+        "hit100": 0.9074,
+        "hit250": 0.9791,
+        "mae": 0.0638
+      },
+      "attempt_spread_sec": {
+        "median": 0.0,
+        "p90": 0.4,
+        "share_units_gt_100ms": 0.1085
+      }
+    }
+  },
+  "headline": {
+    "gtsinger_hit100_joint_vs_shipped": [
+      0.8359,
+      0.8157
+    ],
+    "gtsinger_gain_over_shipped_pp": 2.02,
+    "gtsinger_degenerate_joint_vs_shipped": [
+      0.0,
+      0.0461
+    ],
+    "m4_hit100_joint_vs_raw": [
+      0.8657,
+      0.8654
+    ],
+    "real_songs_degenerate_shipped": 0.1713,
+    "real_songs_degenerate_joint": 0.0,
+    "unit_vs_attempt_hit100_raw": [
+      0.8733,
+      0.8497
+    ],
+    "official_variance_shrink_p90": [
+      3.56,
+      0.4
+    ],
+    "cross_window_oracle_headroom_pp": 3.2
+  }
+}

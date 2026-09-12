@@ -424,6 +424,95 @@ def _block(sub: pd.DataFrame, stage: str = "final") -> dict[str, Any]:
             "label_safe_share": round(float((lab == "safe").mean()), 4)}
 
 
+# ---------------------------------------------------------------------------
+# unit of analysis: attempts vs canonical units (correction, 2026-09-12 round 7)
+# ---------------------------------------------------------------------------
+
+def analysis_calibre(df: pd.DataFrame) -> dict[str, Any]:
+    """Declare the unit of analysis, which the first version of this panel never did.
+
+    The frame is one row per **(request, canonical unit)**: under the sliding-window plan a unit is
+    predicted by every window that covers it, so multiplicities of 20-24 are expected, not a join bug.
+    Row-level ("attempt-weighted") statistics therefore answer *how does a random attempt do*, while
+    canonical-unit statistics answer *how does each lyric unit end up*.  Both are reported; earlier
+    text in this session called the former "unit level", which was wrong.
+    """
+    # canonical_unit_id indexes the *song's* timeline, so a view-level key would collide across songs
+    key = ["view_id", "song", "canonical_unit_id"]
+    multiplicity = df.groupby(key, observed=True).size()
+    out: dict[str, Any] = {"rows": int(len(df)), "unique_units": int(len(multiplicity)),
+                           "fan_out_factor": round(float(len(df) / max(len(multiplicity), 1)), 3),
+                           "multiplicity_median": int(multiplicity.median()),
+                           "multiplicity_max": int(multiplicity.max()),
+                           "multiplicity_mode": multiplicity.value_counts().head(3).to_dict(),
+                           "requests": int(df["request_identity"].nunique())
+                           if "request_identity" in df else None,
+                           "unit_key": "(view_id, song, canonical_unit_id)",
+                           "unit_of_analysis": "row = one (request_identity, view_id, canonical_unit_id) "
+                                               "= one window attempt on one lyric unit",
+                           "warning": "attempt-level and unit-level statistics differ materially; "
+                                      "never call the row-level number unit-level"}
+    for col, tag in (("label_raw_both_err_sec", "raw"), ("label_off_both_err_sec", "official")):
+        if col not in df:
+            continue
+        v = pd.to_numeric(df[col], errors="coerce").to_numpy(dtype=float)
+        ok = np.isfinite(v)
+        per_unit = df.groupby(key, observed=True)[col].median()
+        u = pd.to_numeric(per_unit, errors="coerce").to_numpy(dtype=float)
+        oku = np.isfinite(u)
+        entry = {
+            "attempt_level": {"n": int(ok.sum()),
+                              "hit100": round(float(np.mean(v[ok] <= 0.1)), 4),
+                              "hit250": round(float(np.mean(v[ok] <= 0.25)), 4),
+                              "mae": round(float(np.mean(v[ok])), 4)},
+            "unit_level_median_of_attempts": {"n": int(oku.sum()),
+                                              "hit100": round(float(np.mean(u[oku] <= 0.1)), 4),
+                                              "hit250": round(float(np.mean(u[oku] <= 0.25)), 4),
+                                              "mae": round(float(np.mean(u[oku])), 4)},
+            "unit_level_worst_of_attempts": {},
+        }
+        for name, how in (("unit_level_worst_of_attempts", "max"),
+                          ("unit_level_best_of_attempts_oracle", "min")):
+            red = df.groupby(key, observed=True)[col].agg(how)
+            vv = pd.to_numeric(red, errors="coerce").to_numpy(dtype=float)
+            okv = np.isfinite(vv)
+            if not okv.any():
+                continue
+            entry[name] = {"n": int(okv.sum()),
+                           "hit100": round(float(np.mean(vv[okv] <= 0.1)), 4),
+                           "hit250": round(float(np.mean(vv[okv] <= 0.25)), 4),
+                           "mae": round(float(np.mean(vv[okv])), 4)}
+        spread = df.groupby(key, observed=True)[col].agg(["max", "min"])
+        gap = (spread["max"] - spread["min"]).to_numpy(dtype=float)
+        entry["attempt_spread_sec"] = {
+            "median": round(float(np.nanmedian(gap)), 4), "p90": round(float(np.nanpercentile(gap, 90)), 4),
+            "share_units_gt_100ms": round(float(np.nanmean(gap > 0.1)), 4)}
+        out[tag] = entry
+    return out
+
+
+def unit_level_frame(df: pd.DataFrame, agg: str = "median") -> pd.DataFrame:
+    """Collapse the per-attempt frame to one row per (view_id, song, canonical_unit_id).
+
+    ``agg`` controls how attempts are reduced: ``median`` (typical attempt) or ``worst``
+    (the attempt a user would see if the plan happened to be unlucky).  Boundary columns are reduced
+    the same way so downstream structural analysis stays on a single row per lyric unit.
+    """
+    key = ["view_id", "song", "canonical_unit_id"]
+    keep_first = [c for c in ("singer", "family", "split", "text", "source_segment_id",
+                              "source_unit_index", "segment_start_sec", "segment_n_units",
+                              "timeline_duration_sec", "gt_start_sec", "gt_end_sec", "gt_dur_sec",
+                              "is_segment_first") if c in df.columns]
+    num = [c for c in df.columns
+           if c.startswith(("label_", "raw_", "off_", "final_", "start_", "end_", "min_margin",
+                            "repair_", "dist_", "raw_bad", "final_"))
+           and pd.api.types.is_numeric_dtype(df[c]) and c not in key]
+    grouped = df.groupby(key, observed=True)
+    out = grouped.agg({**{c: agg for c in num}, **{c: "first" for c in keep_first}})
+    out["attempts"] = grouped.size()
+    return out.reset_index()
+
+
 def analyse(df: pd.DataFrame) -> dict[str, Any]:
     base = baseline_frame(df)
     out: dict[str, Any] = {"schema": "m4_longform_weakgt_analysis_v1",
