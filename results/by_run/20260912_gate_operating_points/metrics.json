@@ -1,0 +1,508 @@
+{
+  "schema_version": "gate_operating_points_metrics_v1",
+  "audit": {
+    "schema": "gate_operating_points_v1",
+    "unsafe_edge_sec": 0.25,
+    "quantum_sec": 0.08,
+    "source": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2",
+    "files": 8,
+    "pooled": {
+      "units": 972330,
+      "unsafe_edge_sec": 0.25,
+      "quantum_sec": 0.08,
+      "by_safe_edge": {
+        "100ms": {
+          "safe_share": 0.7363,
+          "grey_share": 0.0855,
+          "unsafe_share": 0.1782,
+          "robust_safe_share": 0.2084,
+          "safe_share_robustness": 0.283,
+          "swing_pp_if_edge_moved_one_quantum": 60.0
+        },
+        "160ms": {
+          "safe_share": 0.7984,
+          "grey_share": 0.0234,
+          "unsafe_share": 0.1782,
+          "robust_safe_share": 0.6904,
+          "safe_share_robustness": 0.8647,
+          "swing_pp_if_edge_moved_one_quantum": 20.11
+        },
+        "200ms": {
+          "safe_share": 0.8131,
+          "grey_share": 0.0087,
+          "unsafe_share": 0.1782,
+          "robust_safe_share": 0.7742,
+          "safe_share_robustness": 0.9522,
+          "swing_pp_if_edge_moved_one_quantum": 4.99
+        },
+        "250ms": {
+          "safe_share": 0.8218,
+          "grey_share": 0.0,
+          "unsafe_share": 0.1782,
+          "robust_safe_share": 0.8058,
+          "safe_share_robustness": 0.9805,
+          "swing_pp_if_edge_moved_one_quantum": 2.22
+        }
+      },
+      "unsafe_share": 0.1782,
+      "unsafe_knife_edge_share": 0.0222
+    },
+    "per_file": [
+      {
+        "file": "mir_run",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/mir_run",
+        "units": 167052,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.8506,
+            "grey_share": 0.0889,
+            "unsafe_share": 0.0605,
+            "robust_safe_share": 0.279,
+            "safe_share_robustness": 0.3279,
+            "swing_pp_if_edge_moved_one_quantum": 64.92
+          },
+          "160ms": {
+            "safe_share": 0.9133,
+            "grey_share": 0.0262,
+            "unsafe_share": 0.0605,
+            "robust_safe_share": 0.8186,
+            "safe_share_robustness": 0.8964,
+            "swing_pp_if_edge_moved_one_quantum": 27.79
+          },
+          "200ms": {
+            "safe_share": 0.9315,
+            "grey_share": 0.008,
+            "unsafe_share": 0.0605,
+            "robust_safe_share": 0.889,
+            "safe_share_robustness": 0.9544,
+            "swing_pp_if_edge_moved_one_quantum": 5.15
+          },
+          "250ms": {
+            "safe_share": 0.9395,
+            "grey_share": 0.0,
+            "unsafe_share": 0.0605,
+            "robust_safe_share": 0.9271,
+            "safe_share_robustness": 0.9867,
+            "swing_pp_if_edge_moved_one_quantum": 1.75
+          }
+        },
+        "unsafe_share": 0.0605,
+        "unsafe_knife_edge_share": 0.0175
+      },
+      {
+        "file": "mir_run_v2",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/mir_run_v2",
+        "units": 166026,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.8507,
+            "grey_share": 0.0893,
+            "unsafe_share": 0.06,
+            "robust_safe_share": 0.2782,
+            "safe_share_robustness": 0.327,
+            "swing_pp_if_edge_moved_one_quantum": 65.03
+          },
+          "160ms": {
+            "safe_share": 0.9136,
+            "grey_share": 0.0264,
+            "unsafe_share": 0.06,
+            "robust_safe_share": 0.8185,
+            "safe_share_robustness": 0.8959,
+            "swing_pp_if_edge_moved_one_quantum": 27.72
+          },
+          "200ms": {
+            "safe_share": 0.9319,
+            "grey_share": 0.008,
+            "unsafe_share": 0.06,
+            "robust_safe_share": 0.8892,
+            "safe_share_robustness": 0.9542,
+            "swing_pp_if_edge_moved_one_quantum": 5.18
+          },
+          "250ms": {
+            "safe_share": 0.94,
+            "grey_share": 0.0,
+            "unsafe_share": 0.06,
+            "robust_safe_share": 0.9275,
+            "safe_share_robustness": 0.9867,
+            "swing_pp_if_edge_moved_one_quantum": 1.73
+          }
+        },
+        "unsafe_share": 0.06,
+        "unsafe_knife_edge_share": 0.0173
+      },
+      {
+        "file": "run1",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/run1",
+        "units": 100472,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.0423,
+            "grey_share": 0.0031,
+            "unsafe_share": 0.9546,
+            "robust_safe_share": 0.0123,
+            "safe_share_robustness": 0.2915,
+            "swing_pp_if_edge_moved_one_quantum": 3.27
+          },
+          "160ms": {
+            "safe_share": 0.0431,
+            "grey_share": 0.0023,
+            "unsafe_share": 0.9546,
+            "robust_safe_share": 0.0423,
+            "safe_share_robustness": 0.982,
+            "swing_pp_if_edge_moved_one_quantum": 2.96
+          },
+          "200ms": {
+            "safe_share": 0.0452,
+            "grey_share": 0.0002,
+            "unsafe_share": 0.9546,
+            "robust_safe_share": 0.043,
+            "safe_share_robustness": 0.9524,
+            "swing_pp_if_edge_moved_one_quantum": 0.24
+          },
+          "250ms": {
+            "safe_share": 0.0454,
+            "grey_share": 0.0,
+            "unsafe_share": 0.9546,
+            "robust_safe_share": 0.0451,
+            "safe_share_robustness": 0.9921,
+            "swing_pp_if_edge_moved_one_quantum": 0.13
+          }
+        },
+        "unsafe_share": 0.9546,
+        "unsafe_knife_edge_share": 0.0013
+      },
+      {
+        "file": "run1_v2",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/run1_v2",
+        "units": 241846,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.8222,
+            "grey_share": 0.1013,
+            "unsafe_share": 0.0766,
+            "robust_safe_share": 0.1984,
+            "safe_share_robustness": 0.2413,
+            "swing_pp_if_edge_moved_one_quantum": 70.76
+          },
+          "160ms": {
+            "safe_share": 0.897,
+            "grey_share": 0.0264,
+            "unsafe_share": 0.0766,
+            "robust_safe_share": 0.752,
+            "safe_share_robustness": 0.8383,
+            "swing_pp_if_edge_moved_one_quantum": 18.74
+          },
+          "200ms": {
+            "safe_share": 0.9131,
+            "grey_share": 0.0103,
+            "unsafe_share": 0.0766,
+            "robust_safe_share": 0.8655,
+            "safe_share_robustness": 0.9479,
+            "swing_pp_if_edge_moved_one_quantum": 6.11
+          },
+          "250ms": {
+            "safe_share": 0.9234,
+            "grey_share": 0.0,
+            "unsafe_share": 0.0766,
+            "robust_safe_share": 0.9017,
+            "safe_share_robustness": 0.9765,
+            "swing_pp_if_edge_moved_one_quantum": 3.11
+          }
+        },
+        "unsafe_share": 0.0766,
+        "unsafe_knife_edge_share": 0.0311
+      },
+      {
+        "file": "run2",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/run2",
+        "units": 243782,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.8265,
+            "grey_share": 0.1006,
+            "unsafe_share": 0.0729,
+            "robust_safe_share": 0.2209,
+            "safe_share_robustness": 0.2673,
+            "swing_pp_if_edge_moved_one_quantum": 68.88
+          },
+          "160ms": {
+            "safe_share": 0.9004,
+            "grey_share": 0.0266,
+            "unsafe_share": 0.0729,
+            "robust_safe_share": 0.7624,
+            "safe_share_robustness": 0.8467,
+            "swing_pp_if_edge_moved_one_quantum": 19.46
+          },
+          "200ms": {
+            "safe_share": 0.9155,
+            "grey_share": 0.0115,
+            "unsafe_share": 0.0729,
+            "robust_safe_share": 0.8718,
+            "safe_share_robustness": 0.9522,
+            "swing_pp_if_edge_moved_one_quantum": 5.91
+          },
+          "250ms": {
+            "safe_share": 0.9271,
+            "grey_share": 0.0,
+            "unsafe_share": 0.0729,
+            "robust_safe_share": 0.9052,
+            "safe_share_robustness": 0.9764,
+            "swing_pp_if_edge_moved_one_quantum": 2.92
+          }
+        },
+        "unsafe_share": 0.0729,
+        "unsafe_knife_edge_share": 0.0292
+      },
+      {
+        "file": "serial_run",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/serial_run",
+        "units": 3400,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.8376,
+            "grey_share": 0.0971,
+            "unsafe_share": 0.0653,
+            "robust_safe_share": 0.2185,
+            "safe_share_robustness": 0.2609,
+            "swing_pp_if_edge_moved_one_quantum": 69.82
+          },
+          "160ms": {
+            "safe_share": 0.9129,
+            "grey_share": 0.0218,
+            "unsafe_share": 0.0653,
+            "robust_safe_share": 0.7935,
+            "safe_share_robustness": 0.8692,
+            "swing_pp_if_edge_moved_one_quantum": 17.65
+          },
+          "200ms": {
+            "safe_share": 0.9244,
+            "grey_share": 0.0103,
+            "unsafe_share": 0.0653,
+            "robust_safe_share": 0.8841,
+            "safe_share_robustness": 0.9564,
+            "swing_pp_if_edge_moved_one_quantum": 5.5
+          },
+          "250ms": {
+            "safe_share": 0.9347,
+            "grey_share": 0.0,
+            "unsafe_share": 0.0653,
+            "robust_safe_share": 0.9153,
+            "safe_share_robustness": 0.9792,
+            "swing_pp_if_edge_moved_one_quantum": 2.76
+          }
+        },
+        "unsafe_share": 0.0653,
+        "unsafe_knife_edge_share": 0.0276
+      },
+      {
+        "file": "stress2_run",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/stress2_run",
+        "units": 29920,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.8098,
+            "grey_share": 0.1263,
+            "unsafe_share": 0.0639,
+            "robust_safe_share": 0.1848,
+            "safe_share_robustness": 0.2282,
+            "swing_pp_if_edge_moved_one_quantum": 73.01
+          },
+          "160ms": {
+            "safe_share": 0.9104,
+            "grey_share": 0.0257,
+            "unsafe_share": 0.0639,
+            "robust_safe_share": 0.7691,
+            "safe_share_robustness": 0.8448,
+            "swing_pp_if_edge_moved_one_quantum": 21.21
+          },
+          "200ms": {
+            "safe_share": 0.9212,
+            "grey_share": 0.0149,
+            "unsafe_share": 0.0639,
+            "robust_safe_share": 0.885,
+            "safe_share_robustness": 0.9607,
+            "swing_pp_if_edge_moved_one_quantum": 5.47
+          },
+          "250ms": {
+            "safe_share": 0.9361,
+            "grey_share": 0.0,
+            "unsafe_share": 0.0639,
+            "robust_safe_share": 0.9114,
+            "safe_share_robustness": 0.9736,
+            "swing_pp_if_edge_moved_one_quantum": 2.92
+          }
+        },
+        "unsafe_share": 0.0639,
+        "unsafe_knife_edge_share": 0.0292
+      },
+      {
+        "file": "stress_run",
+        "path": "/home/hyan/Data/lyricalign/runs/research_v7_detector_v2/stress_run",
+        "units": 19832,
+        "unsafe_edge_sec": 0.25,
+        "quantum_sec": 0.08,
+        "by_safe_edge": {
+          "100ms": {
+            "safe_share": 0.0474,
+            "grey_share": 0.0016,
+            "unsafe_share": 0.951,
+            "robust_safe_share": 0.0256,
+            "safe_share_robustness": 0.5404,
+            "swing_pp_if_edge_moved_one_quantum": 2.28
+          },
+          "160ms": {
+            "safe_share": 0.0477,
+            "grey_share": 0.0013,
+            "unsafe_share": 0.951,
+            "robust_safe_share": 0.0474,
+            "safe_share_robustness": 0.9937,
+            "swing_pp_if_edge_moved_one_quantum": 2.04
+          },
+          "200ms": {
+            "safe_share": 0.0486,
+            "grey_share": 0.0004,
+            "unsafe_share": 0.951,
+            "robust_safe_share": 0.0477,
+            "safe_share_robustness": 0.9813,
+            "swing_pp_if_edge_moved_one_quantum": 0.13
+          },
+          "250ms": {
+            "safe_share": 0.049,
+            "grey_share": 0.0,
+            "unsafe_share": 0.951,
+            "robust_safe_share": 0.0484,
+            "safe_share_robustness": 0.9877,
+            "swing_pp_if_edge_moved_one_quantum": 0.07
+          }
+        },
+        "unsafe_share": 0.951,
+        "unsafe_knife_edge_share": 0.0007
+      }
+    ],
+    "held_out_test_slice": {
+      "units": 100722,
+      "unsafe_edge_sec": 0.25,
+      "quantum_sec": 0.08,
+      "by_safe_edge": {
+        "100ms": {
+          "safe_share": 0.7333,
+          "grey_share": 0.1056,
+          "unsafe_share": 0.161,
+          "robust_safe_share": 0.2112,
+          "safe_share_robustness": 0.2881,
+          "swing_pp_if_edge_moved_one_quantum": 60.38
+        },
+        "160ms": {
+          "safe_share": 0.8001,
+          "grey_share": 0.0388,
+          "unsafe_share": 0.161,
+          "robust_safe_share": 0.6645,
+          "safe_share_robustness": 0.8305,
+          "swing_pp_if_edge_moved_one_quantum": 19.4
+        },
+        "200ms": {
+          "safe_share": 0.823,
+          "grey_share": 0.016,
+          "unsafe_share": 0.161,
+          "robust_safe_share": 0.7613,
+          "safe_share_robustness": 0.925,
+          "swing_pp_if_edge_moved_one_quantum": 8.06
+        },
+        "250ms": {
+          "safe_share": 0.839,
+          "grey_share": 0.0,
+          "unsafe_share": 0.161,
+          "robust_safe_share": 0.8099,
+          "safe_share_robustness": 0.9653,
+          "swing_pp_if_edge_moved_one_quantum": 3.97
+        }
+      },
+      "unsafe_share": 0.161,
+      "unsafe_knife_edge_share": 0.0397
+    },
+    "pooled_non_broken": {
+      "units": 852026,
+      "excluded_files": [
+        "run1",
+        "stress_run"
+      ],
+      "unsafe_edge_sec": 0.25,
+      "quantum_sec": 0.08,
+      "by_safe_edge": {
+        "100ms": {
+          "safe_share": 0.8342,
+          "grey_share": 0.0972,
+          "unsafe_share": 0.0687,
+          "robust_safe_share": 0.2358,
+          "safe_share_robustness": 0.2826,
+          "swing_pp_if_edge_moved_one_quantum": 68.04
+        },
+        "160ms": {
+          "safe_share": 0.905,
+          "grey_share": 0.0264,
+          "unsafe_share": 0.0687,
+          "robust_safe_share": 0.7818,
+          "safe_share_robustness": 0.8639,
+          "swing_pp_if_edge_moved_one_quantum": 22.55
+        },
+        "200ms": {
+          "safe_share": 0.9214,
+          "grey_share": 0.0099,
+          "unsafe_share": 0.0687,
+          "robust_safe_share": 0.8773,
+          "safe_share_robustness": 0.9521,
+          "swing_pp_if_edge_moved_one_quantum": 5.66
+        },
+        "250ms": {
+          "safe_share": 0.9313,
+          "grey_share": 0.0,
+          "unsafe_share": 0.0687,
+          "robust_safe_share": 0.9131,
+          "safe_share_robustness": 0.9804,
+          "swing_pp_if_edge_moved_one_quantum": 2.51
+        }
+      },
+      "unsafe_share": 0.0687,
+      "unsafe_knife_edge_share": 0.0251
+    }
+  },
+  "headline": {
+    "product_regime_units": 852026,
+    "excluded_broken_runs": [
+      "run1",
+      "stress_run"
+    ],
+    "true_unsafe_share": 0.0687,
+    "safe_100ms": {
+      "auto_accept": 0.8342,
+      "robust": 0.2358,
+      "robustness": 0.2826,
+      "review": 0.0972
+    },
+    "safe_200ms": {
+      "auto_accept": 0.9214,
+      "robust": 0.8773,
+      "robustness": 0.9521,
+      "review": 0.0099
+    },
+    "delta_auto_accept_pp": 8.72,
+    "delta_robust_pp": 64.15,
+    "delta_review_pp": -8.73,
+    "recommendation": "SAFE <=0.200s with UNSAFE >=0.250s; keep 100ms as report-only",
+    "caveat": "label-side ceiling; realised coverage depends on detector accuracy"
+  }
+}

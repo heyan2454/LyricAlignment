@@ -149,3 +149,28 @@ def test_detector_label_stability_detects_lineage_mismatch():
 def test_detector_label_stability_small_input():
     assert LN.detector_label_stability(pd.Series([0.1] * 10),
                                        pd.Series(["safe"] * 10))["available"] is False
+
+
+def test_gate_operating_points_makes_all_three_axes_better_when_edge_moves_out():
+    """Dense errors under the grid: a 100 ms edge waves less through *and* is less determined."""
+    rng = np.random.default_rng(31)
+    err = np.concatenate([np.abs(rng.normal(0.05, 0.05, 3000)),      # good system, sub-quantum median
+                          np.abs(rng.normal(0.60, 0.15, 300))])       # a few clearly unsafe
+    out = LN.gate_operating_points(pd.Series(err), safe_edges=(0.10, 0.20), unsafe_edge=0.25)
+    assert out["units"] == err.size
+    a, b = out["by_safe_edge"]["100ms"], out["by_safe_edge"]["200ms"]
+    assert b["safe_share"] > a["safe_share"]                       # more auto-accept
+    assert b["robust_safe_share"] > a["robust_safe_share"]         # and far more of it determined
+    assert b["safe_share_robustness"] > a["safe_share_robustness"]
+    assert b["grey_share"] < a["grey_share"]                       # smaller review queue
+    assert b["swing_pp_if_edge_moved_one_quantum"] < a["swing_pp_if_edge_moved_one_quantum"]
+    assert out["by_safe_edge"]["200ms"]["unsafe_share"] == out["unsafe_share"]
+
+
+def test_gate_operating_points_shares_sum_to_one_and_handle_empty():
+    err = pd.Series(np.linspace(0.0, 0.5, 501))
+    out = LN.gate_operating_points(err, safe_edges=(0.1,), unsafe_edge=0.25)
+    v = out["by_safe_edge"]["100ms"]
+    assert abs(v["safe_share"] + v["grey_share"] + v["unsafe_share"] - 1.0) < 1e-6
+    empty = LN.gate_operating_points(pd.Series([], dtype=float))
+    assert empty["units"] == 0 and empty["by_safe_edge"] == {}

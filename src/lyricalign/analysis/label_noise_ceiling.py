@@ -272,3 +272,39 @@ def detector_label_stability(err: pd.Series, frozen_label: pd.Series, *,
                                           else "grid-stable")}
     out["usable_gate_edges"] = [k for k, v in out["edges"].items() if v["verdict"] == "grid-stable"]
     return out
+
+
+def gate_operating_points(err: pd.Series, *, safe_edges: Sequence[float] = (0.10, 0.16, 0.20),
+                          unsafe_edge: float = 0.25, quantum_sec: float = 0.08) -> dict[str, Any]:
+    """Three-way band shares for each candidate SAFE edge, plus how much of each share is robust.
+
+    This describes the *operating point* of the review gate rather than another accuracy number: how
+    many units the gate waves through, how many it escalates, and how much of the wave-through
+    decision survives a one-quantum move of the edge (the grid fragility measured in rounds 33-34).
+    An edge whose decisions are mostly knife-edge is not a gate; pushing it out by two grid steps
+    trades a little coverage for decisions that are actually determined by the data.
+    """
+    e = pd.to_numeric(err, errors="coerce").to_numpy(dtype=float)
+    e = e[np.isfinite(e)]
+    out: dict[str, Any] = {"units": int(e.size), "unsafe_edge_sec": unsafe_edge,
+                           "quantum_sec": quantum_sec, "by_safe_edge": {}}
+    if not e.size:
+        return out
+    unsafe_share = float((e >= unsafe_edge).mean())
+    out["unsafe_share"] = round(unsafe_share, 4)
+    out["unsafe_knife_edge_share"] = round(float(np.mean(np.abs(e - unsafe_edge) <= quantum_sec)), 4)
+    for edge in safe_edges:
+        safe = e < edge
+        grey = (~safe) & (e < unsafe_edge)
+        stricter = e < edge - quantum_sec
+        looser = e < edge + quantum_sec
+        decided = safe & (e <= edge - quantum_sec)      # safe verdict robust to a one-quantum move
+        out["by_safe_edge"][f"{int(edge * 1000)}ms"] = {
+            "safe_share": round(float(safe.mean()), 4),
+            "grey_share": round(float(grey.mean()), 4),
+            "unsafe_share": round(unsafe_share, 4),
+            "robust_safe_share": round(float(decided.mean()), 4),
+            "safe_share_robustness": round(float(decided.sum() / max(safe.sum(), 1)), 4),
+            "swing_pp_if_edge_moved_one_quantum": round(100.0 * float(looser.mean() - stricter.mean()), 2),
+        }
+    return out
