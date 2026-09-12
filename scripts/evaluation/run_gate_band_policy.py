@@ -25,12 +25,19 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from typing import Any, Sequence
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from lyricalign.analysis import gtsinger_gt_deep as GG
 from lyricalign.analysis import label_noise_ceiling as LN
 from lyricalign.analysis import redecode_budget as RB
+from lyricalign.analysis import trigger_fusion as TF
+
+# score ladder: each rung is the previous one plus one more free signal, so the columns of the
+# "reverse requirement table" are directly comparable increments rather than unrelated models
+SCORE_RUNGS = ("r1_entropy", "r2_entropy_inversion", "r3_entropy_inversion_gap", "r4_fused_rank",
+              "r5_oracle_error_bound")
 
 RUNS = Path("/home/hyan/Data/lyricalign/runs")
 OUT = RUNS / "20260912_gate_band_policy"
@@ -42,8 +49,28 @@ def ceiling_for(err: np.ndarray) -> dict[str, Any]:
     return LN.gate_operating_points(pd.Series(err), safe_edges=EDGES, unsafe_edge=0.25)
 
 
-def fold(frame: pd.DataFrame, *, err_col: str, score_col: str, fit_mask: np.ndarray,
-         label: str) -> dict[str, Any]:
+def add_score_ladder(frame: pd.DataFrame) -> pd.DataFrame:
+    """Attach the five rung scores (higher = more suspicious) to a per-unit frame."""
+    d = TF.build_features(frame)
+    ent = TF._num(d, "raw_entropy_end")
+    if not ent.notna().any():
+        ent = TF._num(d, "end_entropy")
+    inv = TF._num(d, "f_inversion").fillna(0.0)
+    gap = TF._num(d, "gap_over_core")
+    gap_n = gap.rank(pct=True)
+    ent_n = ent.rank(pct=True)
+    d["r1_entropy"] = ent_n
+    d["r2_entropy_inversion"] = 0.5 * ent_n + 0.5 * inv
+    d["r3_entropy_inversion_gap"] = pd.concat(
+        [ent_n, inv, gap_n], axis=1).mean(axis=1, skipna=True)
+    d["r4_fused_rank"] = TF._num(d, "fused_mean_rank")
+    d["r5_oracle_error_bound"] = pd.to_numeric(d["err"], errors="coerce")
+    return d
+
+
+def fold(frame: pd.DataFrame, *, err_col: str, fit_mask: np.ndarray, label: str,
+         rungs: Sequence[str] = SCORE_RUNGS) -> dict[str, Any]:
+    """Evaluate every score rung on the same fit/eval split and the same ceiling."""
     fit = frame[fit_mask]
     ev = frame[~fit_mask]
     if len(fit) < 200 or len(ev) < 200:
@@ -52,12 +79,21 @@ def fold(frame: pd.DataFrame, *, err_col: str, score_col: str, fit_mask: np.ndar
     ceil = ceiling_for(ev[err_col].to_numpy(dtype=float))
     res: dict[str, Any] = {"label": label, "available": True, "fit_units": int(len(fit)),
                            "eval_units": int(len(ev)),
-                           "eval_true_unsafe_share": ceil["unsafe_share"], "by_budget": {}}
-    for budget in FALSE_SAFE_BUDGETS:
-        table = RB.band_policy_table(ev[err_col], ev[score_col], edges=EDGES,
-                                     fit_err=fit[err_col], fit_score=fit[score_col],
-                                     false_safe_budget=budget, ceiling=ceil)
-        res["by_budget"][f"{int(budget * 100)}pct"] = table
+                           "eval_true_unsafe_share": ceil["unsafe_share"],
+                           "rung_coverage": {r: round(float(ev[r].notna().mean()), 4) for r in rungs
+                                             if r in ev.columns},
+                           "by_rung": {}}
+    for rung in rungs:
+        if rung not in ev.columns or ev[rung].notna().sum() < 200:
+            res["by_rung"][rung] = {"available": False}
+            continue
+        per_budget: dict[str, Any] = {}
+        for budget in FALSE_SAFE_BUDGETS:
+            per_budget[f"{int(budget * 100)}pct"] = RB.band_policy_table(
+                ev[err_col], ev[rung], edges=EDGES,
+                fit_err=fit[err_col], fit_score=fit[rung],
+                false_safe_budget=budget, ceiling=ceil)
+        res["by_rung"][rung] = {"available": True, "by_budget": per_budget}
     return res
 
 
@@ -75,6 +111,15 @@ def main() -> int:
                            (go["pred_end_sec"] - go["gt_end_sec"]).abs())
     go["score"] = pd.to_numeric(go["raw_entropy_end"], errors="coerce")
     go = go.dropna(subset=["err", "score"])
+    # the gap rung exists only where a measurable inter-unit gap exists, so it is joined as a
+    # partial-coverage feature and the ladder degrades gracefully where it is missing
+    gk = ["item", "model", "audio_input", "mode", "unit_index"]
+    try:
+        gf = pd.read_csv(RUNS / "20260912_gap_shape/gtsinger_gap_features.csv.gz")
+        go = go.merge(gf[gk + ["gap_over_core"]], on=gk, how="left")
+    except FileNotFoundError:
+        go["gap_over_core"] = np.nan
+    go = add_score_ladder(go)
     items = sorted(go["item"].astype(str).unique())
     half = {it: (i % 2) for i, it in enumerate(items)}
     go["half"] = go["item"].map(half)
@@ -86,6 +131,7 @@ def main() -> int:
                            (m4["off_end_sec"] - m4["gt_end_sec"]).abs())
     m4["score"] = pd.to_numeric(m4["end_entropy"], errors="coerce")
     m4 = m4.dropna(subset=["err", "score"])
+    m4 = add_score_ladder(m4)
 
     m4_val = m4[m4["split"].isin(["train", "validation"])]
     m4_test = m4[m4["split"].isin(["train", "test"])]
@@ -100,17 +146,17 @@ def main() -> int:
                                          "corpora record)",
                            "corpora": {
                                "gtsinger_half_a_fit_half_b_eval": fold(
-                                   go, err_col="err", score_col="score",
+                                   go, err_col="err",
                                    fit_mask=(go["half"] == 0).to_numpy(dtype=bool), label="A->B"),
                                "gtsinger_half_b_fit_half_a_eval": fold(
-                                   go, err_col="err", score_col="score",
+                                   go, err_col="err",
                                    fit_mask=(go["half"] == 1).to_numpy(dtype=bool), label="B->A"),
                                "m4_train_fit_validation_eval": fold(
-                                   m4_val, err_col="err", score_col="score",
+                                   m4_val, err_col="err",
                                    fit_mask=(m4_val["split"] == "train").to_numpy(dtype=bool),
                                    label="train->validation"),
                                "m4_train_fit_test_eval_transfer_only": fold(
-                                   m4_test, err_col="err", score_col="score",
+                                   m4_test, err_col="err",
                                    fit_mask=(m4_test["split"] == "train").to_numpy(dtype=bool),
                                    label="train->test (transfer only)")}}
     (args.out_dir / "GATE_BAND_POLICY.json").write_text(
@@ -122,6 +168,20 @@ def main() -> int:
             continue
         print(f"\n== {name}: fit={blk['fit_units']:,} eval={blk['eval_units']:,} "
               f"eval true-unsafe(>=250ms)={100 * blk['eval_true_unsafe_share']:.2f}% ==")
+        print("   coverage: " + ", ".join(f"{k}={100*v:.0f}%" for k, v in blk.get("rung_coverage", {}).items()))
+        for rung, rb in blk["by_rung"].items():
+            if not rb.get("available"):
+                print(f"   {rung}: unavailable")
+                continue
+            for bkey, table in rb["by_budget"].items():
+                for edge, v in table["by_edge"].items():
+                    if "note" in v:
+                        print(f"      {rung:24s} b{bkey:5s} {edge:6s} 不可行")
+                        continue
+                    print(f"      {rung:24s} b{bkey:5s} {edge:6s} accept={100*v['auto_accept_share']:6.2f}% "
+                          f"ceiling={100*(v.get('ceiling_auto_accept_share') or 0):6.2f}% "
+                          f"headroom={v.get('headroom_pp')}pp false_safe={100*(v.get('false_safe_share') or 0):4.2f}%")
+        continue
         for bkey, table in blk["by_budget"].items():
             if not table.get("units"):
                 print(f"   budget {bkey}: unavailable")

@@ -1,5 +1,5 @@
 {
-  "schema_version": "gate_band_policy_metrics_v1",
+  "schema_version": "gate_band_policy_metrics_v2",
   "audit": {
     "schema": "gate_band_policy_v1",
     "edges": [
@@ -21,70 +21,374 @@
         "fit_units": 15312,
         "eval_units": 15288,
         "eval_true_unsafe_share": 0.1104,
-        "by_budget": {
-          "2pct": {
+        "rung_coverage": {
+          "r1_entropy": 1.0,
+          "r2_entropy_inversion": 1.0,
+          "r3_entropy_inversion_gap": 1.0,
+          "r4_fused_rank": 1.0,
+          "r5_oracle_error_bound": 1.0
+        },
+        "by_rung": {
+          "r1_entropy": {
             "available": true,
-            "units": 15288,
-            "false_safe_budget": 0.02,
-            "threshold_fit_units": 15312,
-            "by_edge": {
-              "100ms": {
-                "note": "no threshold meets the budget on the fit slice"
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "threshold": 0.0764,
+                    "auto_accept_share": 0.0785,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.7834,
+                    "fit_false_safe_share": 0.0176,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": 78.34
+                  },
+                  "200ms": {
+                    "threshold": 0.3177,
+                    "auto_accept_share": 0.3176,
+                    "false_safe_share": 0.0222,
+                    "false_safe_units": 108,
+                    "missed_unsafe_share": 0.5623,
+                    "fit_false_safe_share": 0.0197,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 55.52
+                  }
+                }
               },
-              "160ms": {
-                "threshold": 0.255,
-                "auto_accept_share": 0.0785,
-                "false_safe_share": 0.0,
-                "false_safe_units": 0,
-                "missed_unsafe_share": 0.7834,
-                "fit_false_safe_share": 0.0176,
-                "ceiling_auto_accept_share": 0.8619,
-                "ceiling_robust_share": 0.7637,
-                "headroom_pp": 78.34
-              },
-              "200ms": {
-                "threshold": 0.6306,
-                "auto_accept_share": 0.3176,
-                "false_safe_share": 0.0222,
-                "false_safe_units": 108,
-                "missed_unsafe_share": 0.5623,
-                "fit_false_safe_share": 0.0197,
-                "ceiling_auto_accept_share": 0.8728,
-                "ceiling_robust_share": 0.8323,
-                "headroom_pp": 55.52
+              "5pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "threshold": 0.6474,
+                    "auto_accept_share": 0.6601,
+                    "false_safe_share": 0.042,
+                    "false_safe_units": 424,
+                    "missed_unsafe_share": 0.2295,
+                    "fit_false_safe_share": 0.0473,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": 20.18
+                  },
+                  "200ms": {
+                    "threshold": 0.7475,
+                    "auto_accept_share": 0.763,
+                    "false_safe_share": 0.048,
+                    "false_safe_units": 560,
+                    "missed_unsafe_share": 0.1465,
+                    "fit_false_safe_share": 0.0496,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 10.98
+                  }
+                }
               }
             }
           },
-          "5pct": {
+          "r2_entropy_inversion": {
             "available": true,
-            "units": 15288,
-            "false_safe_budget": 0.05,
-            "threshold_fit_units": 15312,
-            "by_edge": {
-              "100ms": {
-                "note": "no threshold meets the budget on the fit slice"
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "threshold": 0.0382,
+                    "auto_accept_share": 0.0785,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.7834,
+                    "fit_false_safe_share": 0.0176,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": 78.34
+                  },
+                  "200ms": {
+                    "threshold": 0.1589,
+                    "auto_accept_share": 0.3176,
+                    "false_safe_share": 0.0222,
+                    "false_safe_units": 108,
+                    "missed_unsafe_share": 0.5623,
+                    "fit_false_safe_share": 0.0197,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 55.52
+                  }
+                }
               },
-              "160ms": {
-                "threshold": 0.9977,
-                "auto_accept_share": 0.6601,
-                "false_safe_share": 0.042,
-                "false_safe_units": 424,
-                "missed_unsafe_share": 0.2295,
-                "fit_false_safe_share": 0.0473,
-                "ceiling_auto_accept_share": 0.8619,
-                "ceiling_robust_share": 0.7637,
-                "headroom_pp": 20.18
+              "5pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "threshold": 0.3237,
+                    "auto_accept_share": 0.6591,
+                    "false_safe_share": 0.0405,
+                    "false_safe_units": 408,
+                    "missed_unsafe_share": 0.2295,
+                    "fit_false_safe_share": 0.0473,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": 20.28
+                  },
+                  "200ms": {
+                    "threshold": 0.3738,
+                    "auto_accept_share": 0.7619,
+                    "false_safe_share": 0.0467,
+                    "false_safe_units": 544,
+                    "missed_unsafe_share": 0.1465,
+                    "fit_false_safe_share": 0.0496,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 11.09
+                  }
+                }
+              }
+            }
+          },
+          "r3_entropy_inversion_gap": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "threshold": 0.1222,
+                    "auto_accept_share": 0.2368,
+                    "false_safe_share": 0.021,
+                    "false_safe_units": 76,
+                    "missed_unsafe_share": 0.63,
+                    "fit_false_safe_share": 0.0192,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": 62.51
+                  },
+                  "200ms": {
+                    "threshold": 0.1479,
+                    "auto_accept_share": 0.2881,
+                    "false_safe_share": 0.0182,
+                    "false_safe_units": 80,
+                    "missed_unsafe_share": 0.59,
+                    "fit_false_safe_share": 0.0169,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 58.47
+                  }
+                }
               },
-              "200ms": {
-                "threshold": 1.2245,
-                "auto_accept_share": 0.763,
-                "false_safe_share": 0.048,
-                "false_safe_units": 560,
-                "missed_unsafe_share": 0.1465,
-                "fit_false_safe_share": 0.0496,
-                "ceiling_auto_accept_share": 0.8728,
-                "ceiling_robust_share": 0.8323,
-                "headroom_pp": 10.98
+              "5pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "threshold": 0.3859,
+                    "auto_accept_share": 0.781,
+                    "false_safe_share": 0.0469,
+                    "false_safe_units": 560,
+                    "missed_unsafe_share": 0.1175,
+                    "fit_false_safe_share": 0.0494,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": 8.09
+                  },
+                  "200ms": {
+                    "threshold": 0.4303,
+                    "auto_accept_share": 0.8501,
+                    "false_safe_share": 0.0511,
+                    "false_safe_units": 664,
+                    "missed_unsafe_share": 0.0662,
+                    "fit_false_safe_share": 0.0454,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 2.27
+                  }
+                }
+              }
+            }
+          },
+          "r4_fused_rank": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "threshold": 0.3474,
+                    "auto_accept_share": 0.2671,
+                    "false_safe_share": 0.0245,
+                    "false_safe_units": 100,
+                    "missed_unsafe_share": 0.6122,
+                    "fit_false_safe_share": 0.0194,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 60.57
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "threshold": 0.5922,
+                    "auto_accept_share": 0.6824,
+                    "false_safe_share": 0.0479,
+                    "false_safe_units": 500,
+                    "missed_unsafe_share": 0.2122,
+                    "fit_false_safe_share": 0.0496,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": 17.95
+                  },
+                  "200ms": {
+                    "threshold": 0.6339,
+                    "auto_accept_share": 0.7588,
+                    "false_safe_share": 0.0483,
+                    "false_safe_units": 560,
+                    "missed_unsafe_share": 0.1507,
+                    "fit_false_safe_share": 0.0492,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 11.4
+                  }
+                }
+              }
+            }
+          },
+          "r5_oracle_error_bound": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.1,
+                    "auto_accept_share": 0.8108,
+                    "false_safe_share": 0.0045,
+                    "false_safe_units": 56,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0062,
+                    "ceiling_auto_accept_share": 0.8072,
+                    "ceiling_robust_share": 0.123,
+                    "headroom_pp": -0.36
+                  },
+                  "160ms": {
+                    "threshold": 0.16,
+                    "auto_accept_share": 0.8629,
+                    "false_safe_share": 0.0012,
+                    "false_safe_units": 16,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0005,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": -0.1
+                  },
+                  "200ms": {
+                    "threshold": 0.23,
+                    "auto_accept_share": 0.883,
+                    "false_safe_share": 0.0116,
+                    "false_safe_units": 156,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0077,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": -1.02
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 15288,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15312,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.117,
+                    "auto_accept_share": 0.8305,
+                    "false_safe_share": 0.028,
+                    "false_safe_units": 356,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0354,
+                    "ceiling_auto_accept_share": 0.8072,
+                    "ceiling_robust_share": 0.123,
+                    "headroom_pp": -2.33
+                  },
+                  "160ms": {
+                    "threshold": 0.23,
+                    "auto_accept_share": 0.883,
+                    "false_safe_share": 0.024,
+                    "false_safe_units": 324,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0282,
+                    "ceiling_auto_accept_share": 0.8619,
+                    "ceiling_robust_share": 0.7637,
+                    "headroom_pp": -2.11
+                  },
+                  "200ms": {
+                    "threshold": 0.303,
+                    "auto_accept_share": 0.9076,
+                    "false_safe_share": 0.0383,
+                    "false_safe_units": 532,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0344,
+                    "ceiling_auto_accept_share": 0.8728,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": -3.48
+                  }
+                }
               }
             }
           }
@@ -96,86 +400,446 @@
         "fit_units": 15288,
         "eval_units": 15312,
         "eval_true_unsafe_share": 0.1134,
-        "by_budget": {
-          "2pct": {
+        "rung_coverage": {
+          "r1_entropy": 1.0,
+          "r2_entropy_inversion": 1.0,
+          "r3_entropy_inversion_gap": 1.0,
+          "r4_fused_rank": 1.0,
+          "r5_oracle_error_bound": 1.0
+        },
+        "by_rung": {
+          "r1_entropy": {
             "available": true,
-            "units": 15312,
-            "false_safe_budget": 0.02,
-            "threshold_fit_units": 15288,
-            "by_edge": {
-              "100ms": {
-                "threshold": 0.2487,
-                "auto_accept_share": 0.0711,
-                "false_safe_share": 0.0588,
-                "false_safe_units": 64,
-                "missed_unsafe_share": 0.7333,
-                "fit_false_safe_share": 0.0176,
-                "ceiling_auto_accept_share": 0.8002,
-                "ceiling_robust_share": 0.1428,
-                "headroom_pp": 72.91
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.0727,
+                    "auto_accept_share": 0.0711,
+                    "false_safe_share": 0.0588,
+                    "false_safe_units": 64,
+                    "missed_unsafe_share": 0.7333,
+                    "fit_false_safe_share": 0.0176,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 72.91
+                  },
+                  "160ms": {
+                    "threshold": 0.1973,
+                    "auto_accept_share": 0.198,
+                    "false_safe_share": 0.0224,
+                    "false_safe_units": 68,
+                    "missed_unsafe_share": 0.6599,
+                    "fit_false_safe_share": 0.016,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 65.44
+                  },
+                  "200ms": {
+                    "threshold": 0.2949,
+                    "auto_accept_share": 0.2962,
+                    "false_safe_share": 0.0168,
+                    "false_safe_units": 76,
+                    "missed_unsafe_share": 0.5802,
+                    "fit_false_safe_share": 0.0187,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 57.53
+                  }
+                }
               },
-              "160ms": {
-                "threshold": 0.4674,
-                "auto_accept_share": 0.198,
-                "false_safe_share": 0.0224,
-                "false_safe_units": 68,
-                "missed_unsafe_share": 0.6599,
-                "fit_false_safe_share": 0.016,
-                "ceiling_auto_accept_share": 0.8524,
-                "ceiling_robust_share": 0.744,
-                "headroom_pp": 65.44
-              },
-              "200ms": {
-                "threshold": 0.6052,
-                "auto_accept_share": 0.2962,
-                "false_safe_share": 0.0168,
-                "false_safe_units": 76,
-                "missed_unsafe_share": 0.5802,
-                "fit_false_safe_share": 0.0187,
-                "ceiling_auto_accept_share": 0.8715,
-                "ceiling_robust_share": 0.8323,
-                "headroom_pp": 57.53
+              "5pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.2949,
+                    "auto_accept_share": 0.2962,
+                    "false_safe_share": 0.0538,
+                    "false_safe_units": 244,
+                    "missed_unsafe_share": 0.5199,
+                    "fit_false_safe_share": 0.049,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 50.4
+                  },
+                  "160ms": {
+                    "threshold": 0.6952,
+                    "auto_accept_share": 0.6829,
+                    "false_safe_share": 0.0547,
+                    "false_safe_units": 572,
+                    "missed_unsafe_share": 0.2079,
+                    "fit_false_safe_share": 0.047,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 16.95
+                  },
+                  "200ms": {
+                    "threshold": 0.7417,
+                    "auto_accept_share": 0.727,
+                    "false_safe_share": 0.0489,
+                    "false_safe_units": 544,
+                    "missed_unsafe_share": 0.18,
+                    "fit_false_safe_share": 0.0464,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 14.45
+                  }
+                }
               }
             }
           },
-          "5pct": {
+          "r2_entropy_inversion": {
             "available": true,
-            "units": 15312,
-            "false_safe_budget": 0.05,
-            "threshold_fit_units": 15288,
-            "by_edge": {
-              "100ms": {
-                "threshold": 0.6052,
-                "auto_accept_share": 0.2962,
-                "false_safe_share": 0.0538,
-                "false_safe_units": 244,
-                "missed_unsafe_share": 0.5199,
-                "fit_false_safe_share": 0.049,
-                "ceiling_auto_accept_share": 0.8002,
-                "ceiling_robust_share": 0.1428,
-                "headroom_pp": 50.4
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.0363,
+                    "auto_accept_share": 0.0711,
+                    "false_safe_share": 0.0588,
+                    "false_safe_units": 64,
+                    "missed_unsafe_share": 0.7333,
+                    "fit_false_safe_share": 0.0176,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 72.91
+                  },
+                  "160ms": {
+                    "threshold": 0.0986,
+                    "auto_accept_share": 0.198,
+                    "false_safe_share": 0.0224,
+                    "false_safe_units": 68,
+                    "missed_unsafe_share": 0.6599,
+                    "fit_false_safe_share": 0.016,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 65.44
+                  },
+                  "200ms": {
+                    "threshold": 0.1474,
+                    "auto_accept_share": 0.2962,
+                    "false_safe_share": 0.0168,
+                    "false_safe_units": 76,
+                    "missed_unsafe_share": 0.5802,
+                    "fit_false_safe_share": 0.0187,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 57.53
+                  }
+                }
               },
-              "160ms": {
-                "threshold": 1.0917,
-                "auto_accept_share": 0.6829,
-                "false_safe_share": 0.0547,
-                "false_safe_units": 572,
-                "missed_unsafe_share": 0.2079,
-                "fit_false_safe_share": 0.047,
-                "ceiling_auto_accept_share": 0.8524,
-                "ceiling_robust_share": 0.744,
-                "headroom_pp": 16.95
+              "5pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.1474,
+                    "auto_accept_share": 0.2962,
+                    "false_safe_share": 0.0538,
+                    "false_safe_units": 244,
+                    "missed_unsafe_share": 0.5199,
+                    "fit_false_safe_share": 0.049,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 50.4
+                  },
+                  "160ms": {
+                    "threshold": 0.3601,
+                    "auto_accept_share": 0.7074,
+                    "false_safe_share": 0.0572,
+                    "false_safe_units": 620,
+                    "missed_unsafe_share": 0.1865,
+                    "fit_false_safe_share": 0.049,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 14.5
+                  },
+                  "200ms": {
+                    "threshold": 0.385,
+                    "auto_accept_share": 0.7581,
+                    "false_safe_share": 0.0503,
+                    "false_safe_units": 584,
+                    "missed_unsafe_share": 0.1515,
+                    "fit_false_safe_share": 0.0496,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 11.34
+                  }
+                }
+              }
+            }
+          },
+          "r3_entropy_inversion_gap": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.0363,
+                    "auto_accept_share": 0.0711,
+                    "false_safe_share": 0.0588,
+                    "false_safe_units": 64,
+                    "missed_unsafe_share": 0.7333,
+                    "fit_false_safe_share": 0.0141,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 72.91
+                  },
+                  "160ms": {
+                    "threshold": 0.1008,
+                    "auto_accept_share": 0.2019,
+                    "false_safe_share": 0.022,
+                    "false_safe_units": 68,
+                    "missed_unsafe_share": 0.656,
+                    "fit_false_safe_share": 0.0173,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 65.05
+                  },
+                  "200ms": {
+                    "threshold": 0.1513,
+                    "auto_accept_share": 0.302,
+                    "false_safe_share": 0.0182,
+                    "false_safe_units": 84,
+                    "missed_unsafe_share": 0.575,
+                    "fit_false_safe_share": 0.0178,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 56.95
+                  }
+                }
               },
-              "200ms": {
-                "threshold": 1.209,
-                "auto_accept_share": 0.727,
-                "false_safe_share": 0.0489,
-                "false_safe_units": 544,
-                "missed_unsafe_share": 0.18,
-                "fit_false_safe_share": 0.0464,
-                "ceiling_auto_accept_share": 0.8715,
-                "ceiling_robust_share": 0.8323,
-                "headroom_pp": 14.45
+              "5pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.1513,
+                    "auto_accept_share": 0.302,
+                    "false_safe_share": 0.0554,
+                    "false_safe_units": 256,
+                    "missed_unsafe_share": 0.5149,
+                    "fit_false_safe_share": 0.0481,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 49.82
+                  },
+                  "160ms": {
+                    "threshold": 0.3856,
+                    "auto_accept_share": 0.7557,
+                    "false_safe_share": 0.0491,
+                    "false_safe_units": 568,
+                    "missed_unsafe_share": 0.1348,
+                    "fit_false_safe_share": 0.0469,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 9.67
+                  },
+                  "200ms": {
+                    "threshold": 0.4152,
+                    "auto_accept_share": 0.8059,
+                    "false_safe_share": 0.0415,
+                    "false_safe_units": 512,
+                    "missed_unsafe_share": 0.099,
+                    "fit_false_safe_share": 0.0454,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 6.56
+                  }
+                }
+              }
+            }
+          },
+          "r4_fused_rank": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.2316,
+                    "auto_accept_share": 0.0948,
+                    "false_safe_share": 0.0606,
+                    "false_safe_units": 88,
+                    "missed_unsafe_share": 0.7111,
+                    "fit_false_safe_share": 0.0186,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 70.54
+                  },
+                  "160ms": {
+                    "threshold": 0.2832,
+                    "auto_accept_share": 0.1714,
+                    "false_safe_share": 0.0229,
+                    "false_safe_units": 60,
+                    "missed_unsafe_share": 0.686,
+                    "fit_false_safe_share": 0.0183,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 68.1
+                  },
+                  "200ms": {
+                    "threshold": 0.3,
+                    "auto_accept_share": 0.1991,
+                    "false_safe_share": 0.0184,
+                    "false_safe_units": 56,
+                    "missed_unsafe_share": 0.6761,
+                    "fit_false_safe_share": 0.0173,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 67.24
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.3,
+                    "auto_accept_share": 0.1991,
+                    "false_safe_share": 0.0564,
+                    "false_safe_units": 172,
+                    "missed_unsafe_share": 0.6123,
+                    "fit_false_safe_share": 0.0427,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 60.11
+                  },
+                  "160ms": {
+                    "threshold": 0.5931,
+                    "auto_accept_share": 0.6604,
+                    "false_safe_share": 0.0498,
+                    "false_safe_units": 504,
+                    "missed_unsafe_share": 0.226,
+                    "fit_false_safe_share": 0.0485,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": 19.2
+                  },
+                  "200ms": {
+                    "threshold": 0.6467,
+                    "auto_accept_share": 0.7508,
+                    "false_safe_share": 0.0505,
+                    "false_safe_units": 580,
+                    "missed_unsafe_share": 0.1586,
+                    "fit_false_safe_share": 0.0486,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": 12.07
+                  }
+                }
+              }
+            }
+          },
+          "r5_oracle_error_bound": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.1,
+                    "auto_accept_share": 0.7978,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0024,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": 0.24
+                  },
+                  "160ms": {
+                    "threshold": 0.22,
+                    "auto_accept_share": 0.8759,
+                    "false_safe_share": 0.0256,
+                    "false_safe_units": 344,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0186,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": -2.35
+                  },
+                  "200ms": {
+                    "threshold": 0.22,
+                    "auto_accept_share": 0.8759,
+                    "false_safe_share": 0.0051,
+                    "false_safe_units": 68,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0061,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": -0.44
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 15312,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 15288,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.11,
+                    "auto_accept_share": 0.826,
+                    "false_safe_share": 0.0313,
+                    "false_safe_units": 396,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0269,
+                    "ceiling_auto_accept_share": 0.8002,
+                    "ceiling_robust_share": 0.1428,
+                    "headroom_pp": -2.58
+                  },
+                  "160ms": {
+                    "threshold": 0.29,
+                    "auto_accept_share": 0.8968,
+                    "false_safe_share": 0.0484,
+                    "false_safe_units": 664,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0451,
+                    "ceiling_auto_accept_share": 0.8524,
+                    "ceiling_robust_share": 0.744,
+                    "headroom_pp": -4.44
+                  },
+                  "200ms": {
+                    "threshold": 0.29,
+                    "auto_accept_share": 0.8968,
+                    "false_safe_share": 0.0283,
+                    "false_safe_units": 388,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0329,
+                    "ceiling_auto_accept_share": 0.8715,
+                    "ceiling_robust_share": 0.8323,
+                    "headroom_pp": -2.53
+                  }
+                }
               }
             }
           }
@@ -187,38 +851,254 @@
         "fit_units": 91845,
         "eval_units": 21773,
         "eval_true_unsafe_share": 0.6984,
-        "by_budget": {
-          "2pct": {
+        "rung_coverage": {
+          "r1_entropy": 1.0,
+          "r2_entropy_inversion": 1.0,
+          "r3_entropy_inversion_gap": 1.0,
+          "r4_fused_rank": 1.0,
+          "r5_oracle_error_bound": 1.0
+        },
+        "by_rung": {
+          "r1_entropy": {
             "available": true,
-            "units": 21773,
-            "false_safe_budget": 0.02,
-            "threshold_fit_units": 91845,
-            "by_edge": {
-              "100ms": {
-                "note": "no threshold meets the budget on the fit slice"
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               },
-              "160ms": {
-                "note": "no threshold meets the budget on the fit slice"
-              },
-              "200ms": {
-                "note": "no threshold meets the budget on the fit slice"
+              "5pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               }
             }
           },
-          "5pct": {
+          "r2_entropy_inversion": {
             "available": true,
-            "units": 21773,
-            "false_safe_budget": 0.05,
-            "threshold_fit_units": 91845,
-            "by_edge": {
-              "100ms": {
-                "note": "no threshold meets the budget on the fit slice"
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               },
-              "160ms": {
-                "note": "no threshold meets the budget on the fit slice"
+              "5pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              }
+            }
+          },
+          "r3_entropy_inversion_gap": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               },
-              "200ms": {
-                "note": "no threshold meets the budget on the fit slice"
+              "5pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              }
+            }
+          },
+          "r4_fused_rank": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              }
+            }
+          },
+          "r5_oracle_error_bound": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.0932,
+                    "auto_accept_share": 0.0432,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0036,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.0468,
+                    "ceiling_robust_share": 0.0013,
+                    "headroom_pp": 0.36
+                  },
+                  "160ms": {
+                    "threshold": 0.1583,
+                    "auto_accept_share": 0.1568,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0024,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.1592,
+                    "ceiling_robust_share": 0.0351,
+                    "headroom_pp": 0.24
+                  },
+                  "200ms": {
+                    "threshold": 0.1983,
+                    "auto_accept_share": 0.2283,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0012,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.2295,
+                    "ceiling_robust_share": 0.0809,
+                    "headroom_pp": 0.12
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 21773,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.0932,
+                    "auto_accept_share": 0.0432,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0036,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.0468,
+                    "ceiling_robust_share": 0.0013,
+                    "headroom_pp": 0.36
+                  },
+                  "160ms": {
+                    "threshold": 0.1583,
+                    "auto_accept_share": 0.1568,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0024,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.1592,
+                    "ceiling_robust_share": 0.0351,
+                    "headroom_pp": 0.24
+                  },
+                  "200ms": {
+                    "threshold": 0.1983,
+                    "auto_accept_share": 0.2283,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0012,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.2295,
+                    "ceiling_robust_share": 0.0809,
+                    "headroom_pp": 0.12
+                  }
+                }
               }
             }
           }
@@ -230,38 +1110,254 @@
         "fit_units": 91845,
         "eval_units": 20920,
         "eval_true_unsafe_share": 0.8229,
-        "by_budget": {
-          "2pct": {
+        "rung_coverage": {
+          "r1_entropy": 1.0,
+          "r2_entropy_inversion": 1.0,
+          "r3_entropy_inversion_gap": 1.0,
+          "r4_fused_rank": 1.0,
+          "r5_oracle_error_bound": 1.0
+        },
+        "by_rung": {
+          "r1_entropy": {
             "available": true,
-            "units": 20920,
-            "false_safe_budget": 0.02,
-            "threshold_fit_units": 91845,
-            "by_edge": {
-              "100ms": {
-                "note": "no threshold meets the budget on the fit slice"
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               },
-              "160ms": {
-                "note": "no threshold meets the budget on the fit slice"
-              },
-              "200ms": {
-                "note": "no threshold meets the budget on the fit slice"
+              "5pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               }
             }
           },
-          "5pct": {
+          "r2_entropy_inversion": {
             "available": true,
-            "units": 20920,
-            "false_safe_budget": 0.05,
-            "threshold_fit_units": 91845,
-            "by_edge": {
-              "100ms": {
-                "note": "no threshold meets the budget on the fit slice"
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               },
-              "160ms": {
-                "note": "no threshold meets the budget on the fit slice"
+              "5pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              }
+            }
+          },
+          "r3_entropy_inversion_gap": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
               },
-              "200ms": {
-                "note": "no threshold meets the budget on the fit slice"
+              "5pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              }
+            }
+          },
+          "r4_fused_rank": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "160ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  },
+                  "200ms": {
+                    "note": "no threshold meets the budget on the fit slice"
+                  }
+                }
+              }
+            }
+          },
+          "r5_oracle_error_bound": {
+            "available": true,
+            "by_budget": {
+              "2pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.02,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.0932,
+                    "auto_accept_share": 0.0284,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0026,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.031,
+                    "ceiling_robust_share": 0.0012,
+                    "headroom_pp": 0.26
+                  },
+                  "160ms": {
+                    "threshold": 0.1583,
+                    "auto_accept_share": 0.0849,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.0849,
+                    "ceiling_robust_share": 0.0188,
+                    "headroom_pp": 0.0
+                  },
+                  "200ms": {
+                    "threshold": 0.1983,
+                    "auto_accept_share": 0.1226,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0001,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.1227,
+                    "ceiling_robust_share": 0.0496,
+                    "headroom_pp": 0.01
+                  }
+                }
+              },
+              "5pct": {
+                "available": true,
+                "units": 20920,
+                "false_safe_budget": 0.05,
+                "threshold_fit_units": 91845,
+                "by_edge": {
+                  "100ms": {
+                    "threshold": 0.0932,
+                    "auto_accept_share": 0.0284,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0026,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.031,
+                    "ceiling_robust_share": 0.0012,
+                    "headroom_pp": 0.26
+                  },
+                  "160ms": {
+                    "threshold": 0.1583,
+                    "auto_accept_share": 0.0849,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.0849,
+                    "ceiling_robust_share": 0.0188,
+                    "headroom_pp": 0.0
+                  },
+                  "200ms": {
+                    "threshold": 0.1983,
+                    "auto_accept_share": 0.1226,
+                    "false_safe_share": 0.0,
+                    "false_safe_units": 0,
+                    "missed_unsafe_share": 0.0001,
+                    "fit_false_safe_share": 0.0,
+                    "ceiling_auto_accept_share": 0.1227,
+                    "ceiling_robust_share": 0.0496,
+                    "headroom_pp": 0.01
+                  }
+                }
               }
             }
           }
@@ -270,23 +1366,49 @@
     }
   },
   "headline": {
-    "gtsinger_100ms_operable": {
-      "gtsinger_half_a_fit_half_b_eval": false,
-      "gtsinger_half_b_fit_half_a_eval": true
+    "rung_accept_at_200ms_5pct": {
+      "gtsinger_half_a_fit_half_b_eval": {
+        "r1_entropy": 0.763,
+        "r2_entropy_inversion": 0.7619,
+        "r3_entropy_inversion_gap": 0.8501,
+        "r4_fused_rank": 0.7588,
+        "r5_oracle_error_bound": 0.9076
+      },
+      "gtsinger_half_b_fit_half_a_eval": {
+        "r1_entropy": 0.727,
+        "r2_entropy_inversion": 0.7581,
+        "r3_entropy_inversion_gap": 0.8059,
+        "r4_fused_rank": 0.7508,
+        "r5_oracle_error_bound": 0.8968
+      }
     },
-    "gtsinger_200ms_measured_accept_5pct": {
-      "gtsinger_half_a_fit_half_b_eval": 0.763,
-      "gtsinger_half_b_fit_half_a_eval": 0.727
+    "rung_false_safe_at_200ms_5pct": {
+      "gtsinger_half_a_fit_half_b_eval": {
+        "r1_entropy": 0.048,
+        "r2_entropy_inversion": 0.0467,
+        "r3_entropy_inversion_gap": 0.0511,
+        "r4_fused_rank": 0.0483,
+        "r5_oracle_error_bound": 0.0383
+      },
+      "gtsinger_half_b_fit_half_a_eval": {
+        "r1_entropy": 0.0489,
+        "r2_entropy_inversion": 0.0503,
+        "r3_entropy_inversion_gap": 0.0415,
+        "r4_fused_rank": 0.0505,
+        "r5_oracle_error_bound": 0.0283
+      }
     },
-    "gtsinger_200ms_ceiling": {
+    "ceiling_at_200ms": {
       "gtsinger_half_a_fit_half_b_eval": 0.8728,
       "gtsinger_half_b_fit_half_a_eval": 0.8715
     },
-    "headroom_pp_at_200ms_5pct": {
-      "gtsinger_half_a_fit_half_b_eval": 10.98,
-      "gtsinger_half_b_fit_half_a_eval": 14.45
+    "gap_rung_gain_pp": {
+      "gtsinger_half_a_fit_half_b_eval": 8.71,
+      "gtsinger_half_b_fit_half_a_eval": 7.89
     },
-    "m4_gate_infeasible_at_all_edges": true,
-    "conclusion": "an entropy-only gate cannot operate at the 100 ms SAFE edge (infeasible in one fold, ~30 % accept in the other) but realises 72-76 % at 200 ms under a 5 % false-safe budget, ~11-15 pp below the label-side ceiling; on M4 the gate is infeasible at every edge"
+    "inversion_alone_adds_nothing": true,
+    "round27_fused_no_better_than_entropy": true,
+    "m4_all_real_rungs_infeasible": true,
+    "caveat": "R3's gain rests on gap_over_core, which failed cross-corpus replication (rounds 30/31): GTSinger-scoped evidence only, not shippable"
   }
 }
