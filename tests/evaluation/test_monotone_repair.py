@@ -98,3 +98,28 @@ def test_targeted_repair_is_a_noop_on_a_clean_timeline():
     res = repair_targeted_blocks(starts, ends)
     assert res["blocks"] == 0 and res["moved_units"] == 0
     assert np.allclose(res["starts"], starts) and np.allclose(res["ends"], ends)
+
+
+def test_local_overlap_resolution_trims_only_the_crossing_ends():
+    """Measured semantics: starts stay put, only ends that cross the next start are trimmed."""
+    from lyricalign.analysis.monotone_repair import resolve_overlaps_locally
+
+    starts = np.array([0.0, 1.0, 1.2, 3.0, 4.0])
+    ends = np.array([1.1, 1.3, 2.0, 3.5, 4.5])       # ends 0 and 1 cross their successors' starts
+    res = resolve_overlaps_locally(starts, ends)
+    assert res["illegal_units"] == 0 and res["zero_length_units"] == 0
+    assert res["starts"].tolist() == starts.tolist()          # no start was moved
+    assert res["ends"][:2].tolist() == [1.0, 1.2]             # trimmed exactly to the next start
+    assert res["ends"][2:].tolist() == [2.0, 3.5, 4.5]        # untouched
+    assert res["moved_units"] == 2
+
+
+def test_recommended_chain_is_legal_on_a_mixed_timeline():
+    from lyricalign.analysis.monotone_repair import repair_all_targeted
+
+    starts = np.array([0.0, 1.0, 2.0, 2.0, 2.0, 5.0, 5.5])
+    ends = np.array([0.9, 1.9, 2.0, 2.0, 2.0, 5.4, 5.5])
+    res = repair_all_targeted(starts, ends)
+    assert res["zero_length_units"] == 0
+    assert res["illegal_units"] == 0
+    assert res["starts"][0] == 0.0 and res["ends"][0] == 0.9

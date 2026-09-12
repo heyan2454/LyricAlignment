@@ -530,3 +530,33 @@ def gate_projection(units: pd.DataFrame, *, accept_rate: float = 0.763,
                 "score_col": score_col,
                 "units_without_score": int((~np.isfinite(score)).sum())})
     return out
+
+
+def identical_start_blocks(units: pd.DataFrame, *, min_block: int = 5,
+                           start_col: str = "start_sec", song_col: str = "song",
+                           require_degenerate: bool = True) -> dict[str, Any]:
+    """Characters that share one timestamp in a block — the signature of a collapsed span.
+
+    The upstream repair (rounds 44-45) can leave a whole window on a single timestamp, which makes
+    every character in it zero-length.  Counting those blocks is a cheap, label-free alarm for a
+    batch: a healthy timeline may have a couple of coincidental ties, a collapsed one has hundreds.
+    ``require_degenerate`` restricts the count to blocks whose members really are zero-length, so
+    legitimate simultaneous onsets are not reported as collapse.
+    """
+    if units.empty:
+        return {"available": False, "reason": "empty frame"}
+    frame = units.reset_index(drop=True)
+    starts = pd.to_numeric(frame[start_col], errors="coerce").round(4)
+    key = frame[song_col].astype(str) + "|" + starts.astype(str)
+    zero = (pd.to_numeric(frame["end_sec"], errors="coerce")
+            - pd.to_numeric(frame[start_col], errors="coerce") <= 1e-9)
+    agg = pd.DataFrame({"zero": zero.to_numpy()}).groupby(key, observed=True)["zero"].agg(
+        ["size", "sum"])
+    blocks = agg[agg["size"] >= min_block]
+    if require_degenerate:
+        blocks = blocks[blocks["sum"] == blocks["size"]]
+    biggest = blocks["size"].max() if len(blocks) else 0
+    return {"available": True, "units": int(len(frame)), "min_block": min_block,
+            "blocks": int(len(blocks)), "units_in_blocks": int(blocks["size"].sum()),
+            "largest_block": int(biggest),
+            "share_of_units_in_blocks": round(float(blocks["size"].sum() / max(len(frame), 1)), 4)}

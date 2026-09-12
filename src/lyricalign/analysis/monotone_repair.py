@@ -192,3 +192,58 @@ def repair_targeted_blocks(starts, ends, *, min_dur: float = MIN_DUR_SEC,
             "zero_length_units": int(np.sum(e - s <= 1e-9)),
             "illegal_units": int(_count_illegal(s, e)),
             "moved_units": int(np.sum((np.abs(s - s_in) > 1e-9) | (np.abs(e - e_in) > 1e-9)))}
+
+
+def resolve_overlaps_locally(starts, ends, *, min_dur: float = MIN_DUR_SEC,
+                            max_dur: float = MAX_DUR_SEC,
+                            duration: float | None = None) -> dict[str, Any]:
+    """Fix overlaps and start regressions by moving only the units that are actually broken.
+
+    Round 47 measured the cost of the blanket route: running the joint solver over the whole timeline
+    leaves the structure spotless (0.01 % illegal) but moves units that were already correct and drops
+    hit@200 by 4.3 pp.  Overlaps and regressions, however, are *local* defects: a later unit starting
+    before its predecessor ends.  Pushing that later start forward (cascading only through the
+    following unit when it in turn collides) repairs the defect while leaving every other timestamp
+    exactly where the data put it.  Ends are only trimmed when they would cross the next start.
+    """
+    s_in = np.asarray(starts, dtype=float).copy()
+    e_in = np.asarray(ends, dtype=float).copy()
+    n = s_in.size
+    if n == 0:
+        return {"starts": s_in, "ends": e_in, "moved_units": 0, "zero_length_units": 0,
+                "illegal_units": 0, "shifts": 0}
+    s, e = s_in.copy(), e_in.copy()
+    shifted = 0
+    for i in range(1, n):
+        floor = s[i - 1] + min_dur                 # never share a start, never regress
+        if s[i] < floor:
+            s[i] = floor
+            shifted += 1
+        # trivially impossible durations get the minimum instead of zero
+        if not (e[i] > s[i] + 1e-9):
+            e[i] = s[i] + min_dur
+    # trim ends that overrun the following start (only the violating end moves)
+    if n > 1:
+        over = e[:-1] > s[1:] + 1e-9
+        e[:-1] = np.where(over, s[1:], e[:-1])
+    e = np.minimum(e, s + max_dur)
+    if duration is not None and np.isfinite(duration):
+        e = np.minimum(e, float(duration))
+    e = np.maximum(e, s + min_dur)
+    moved = int(np.sum((np.abs(s - s_in) > 1e-9) | (np.abs(e - e_in) > 1e-9)))
+    return {"starts": s, "ends": e, "moved_units": moved, "shifts": shifted,
+            "zero_length_units": int(np.sum(e - s <= 1e-9)),
+            "illegal_units": _count_illegal(s, e)}
+
+
+def repair_all_targeted(starts, ends, *, min_dur: float = MIN_DUR_SEC,
+                        max_dur: float = MAX_DUR_SEC, duration: float | None = None,
+                        collapsed_run: int = 2):
+    """Collapsed-block repair followed by local overlap resolution — the recommended chain."""
+    res = repair_targeted_blocks(starts, ends, min_dur=min_dur, max_dur=max_dur,
+                                 duration=duration, collapsed_run=collapsed_run)
+    fixed = resolve_overlaps_locally(res["starts"], res["ends"], min_dur=min_dur, max_dur=max_dur,
+                                     duration=duration)
+    return {**res, "starts": fixed["starts"], "ends": fixed["ends"],
+            "overlap_moved_units": fixed["moved_units"], "shifts": fixed["shifts"],
+            "zero_length_units": fixed["zero_length_units"], "illegal_units": fixed["illegal_units"]}

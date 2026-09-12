@@ -115,7 +115,12 @@ def audit(batch: Path, accept_rate: float = 0.763) -> dict[str, object]:
     # absolute entropy thresholds do not transfer between corpora, so this answers "if we gated at
     # this accept rate for THIS batch, what structural risk would still ship?" without pretending
     # to be an accuracy claim.
-    out["observations"] = {"gate_projection": SC.gate_projection(df, accept_rate=accept_rate)}
+    out["observations"] = {
+        "gate_projection": SC.gate_projection(df, accept_rate=accept_rate),
+        # collapse alarm: characters sharing one timestamp inside a block of >=5, the fingerprint of
+        # the upstream single-constant fill (rounds 44-45).  Observation only, never gates.
+        "collapse_blocks": SC.identical_start_blocks(df),
+    }
     out["per_song_worst"] = sorted(summ["per_song"], key=lambda r: -r["illegal_share"])[:8]
     failing = [k for k, v in checks.items() if not v["pass"]]
     out["verdict"] = "ship_ok" if not failing else "blocked"
@@ -177,6 +182,12 @@ def main() -> int:
               + (f"  blocking={b['blocking_checks']}" if b.get("blocking_checks") else ""))
         for k, v in b.get("checks", {}).items():
             print(f"   [{'OK ' if v['pass'] else 'FAIL'}] {k:24s} {json.dumps(v['value'], ensure_ascii=False)[:150]}")
+        cb = (b.get("observations") or {}).get("collapse_blocks") or {}
+        if cb.get("available"):
+            warn = "  <-- COLLAPSE" if cb["blocks"] else ""
+            print(f"   [OBS ] collapse_blocks: {cb['blocks']} block(s) >= {cb['min_block']} sharing one "
+                  f"timestamp, {cb['units_in_blocks']} units ({100 * cb['share_of_units_in_blocks']:.2f}%), "
+                  f"largest {cb['largest_block']}{warn}")
         gp = (b.get("observations") or {}).get("gate_projection") or {}
         if gp.get("available"):
             print(f"   [OBS ] gate_projection@accept={100 * gp['accept_share']:.1f}%: "

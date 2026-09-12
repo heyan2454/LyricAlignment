@@ -126,6 +126,8 @@
 
 | B54 | **修塌陷的代价实测（只读影子对照，GTSinger 人工真值 30,600 单元）**：① **一刀切（全时间线按最小时长重排）= 用精度换结构**——零长度 0% 但中位误差 40→46ms、hit@200 **83.24%**（比现交付值 −3.98pp）；② **定向修复（只重排"同一起点连续 ≥2 字"或"结束不晚于开始"的块）= 几乎免费且更好**——零长度 0%、中位误差不变、hit@100/200/250 **81.39/88.31/90.08%**（对现交付值 **+1.02/+1.09/+1.01pp**，对原始 argmax −0.73/+0.52/+0.59pp）；③ 真歌批：零长度 **16.28%→0.00%**、同一起点块 16→0（最大 199→0），残余非法 13.62% **全部继承自原始阶段**（重叠 11.36→9.44%、回退 6.57→4.16%），未新增违规；④ 既有联合合法化治重叠但**零长度仍 16.28%** ⇒ **两处互补：先定向修复再联合合法化** | ✅ | `reports/progress/20260912_shadow_repair_value.md`、`src/lyricalign/analysis/monotone_repair.py` |
 
+| B55 | **组合修复的影子对照：只改塌陷那一步，别的都不要动**（GTSinger 人工真值 30,600 字 + 真歌批结构）：① **只修塌陷块**＝零长度归零、中位误差不变、hit@100/200/250 对现交付值 **+1.02/+1.09/+1.01pp**；② **再定向治重叠**（只裁越界结尾）＝结构非法 13.62%→**0.87%** 但精度 **−3.60pp**（0.2s 档，中位误差 40→45ms）；③ **再走整体合法化求解**＝非法 0.01% 但精度 **−4.32pp**（中位 40→50ms）。真歌批：零长度 16.28%→**0.00%**、同一时刻长块 16→**0**；现交付值重叠仅 0.10% ⇒ **流水线本已处理重叠，叠加只会重复收费** ⇒ 最终建议：仅替换上游常数填充为定向块修复，不叠加任何额外合法化；批次自检已加「同一时刻长块」观察列 | ✅ | `reports/progress/20260912_combined_repair_shadow.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -186,9 +188,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 203 项
+- 测试：本会话新增 207 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1642 passed / 3 pre-existing failed`（第 46 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1646 passed / 3 pre-existing failed`（第 47 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

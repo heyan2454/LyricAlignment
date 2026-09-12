@@ -1,0 +1,241 @@
+{
+  "schema_version": "combined_repair_shadow_metrics_v1",
+  "audit": {
+    "schema": "combined_repair_shadow_v1",
+    "order": [
+      "targeted_block_repair",
+      "existing_joint_legalisation"
+    ],
+    "discipline": "read-only shadow; never written back to the product path",
+    "tolerances_sec": [
+      0.1,
+      0.2,
+      0.25
+    ],
+    "panels": {
+      "gtsinger_human_gt": {
+        "units": 30600,
+        "legalisation": {
+          "ok": 1908
+        },
+        "upstream_repaired_shipped": {
+          "units": 30600,
+          "median_err_ms": 40.0,
+          "zero_length_share": 0.0444,
+          "hit_at_100ms": 0.8037,
+          "hit_at_200ms": 0.8722,
+          "hit_at_250ms": 0.8907
+        },
+        "shadow_targeted_only": {
+          "units": 30600,
+          "median_err_ms": 40.0,
+          "zero_length_share": 0.0,
+          "hit_at_100ms": 0.8139,
+          "hit_at_200ms": 0.8831,
+          "hit_at_250ms": 0.9008
+        },
+        "shadow_targeted_then_legalised": {
+          "units": 30600,
+          "median_err_ms": 50.0,
+          "zero_length_share": 0.0,
+          "hit_at_100ms": 0.7624,
+          "hit_at_200ms": 0.829,
+          "hit_at_250ms": 0.846
+        },
+        "shadow_all_targeted_recommended": {
+          "units": 30600,
+          "median_err_ms": 45.0,
+          "zero_length_share": 0.0,
+          "hit_at_100ms": 0.7741,
+          "hit_at_200ms": 0.8362,
+          "hit_at_250ms": 0.8527
+        },
+        "deltas_pp_vs_shipped": {
+          "shadow_targeted_only_minus_shipped@100ms": 1.02,
+          "shadow_targeted_only_minus_shipped@200ms": 1.09,
+          "shadow_targeted_only_minus_shipped@250ms": 1.01,
+          "shadow_targeted_then_legalised_minus_shipped@100ms": -4.13,
+          "shadow_targeted_then_legalised_minus_shipped@200ms": -4.32,
+          "shadow_targeted_then_legalised_minus_shipped@250ms": -4.47,
+          "shadow_all_targeted_recommended_minus_shipped@100ms": -2.96,
+          "shadow_all_targeted_recommended_minus_shipped@200ms": -3.6,
+          "shadow_all_targeted_recommended_minus_shipped@250ms": -3.8
+        }
+      },
+      "product_batch_structural": {
+        "units": 13735,
+        "shipped": {
+          "zero_length_share": 0.1628,
+          "illegal_share": 0.1672,
+          "overlap_share": 0.001,
+          "identical_start_blocks": {
+            "available": true,
+            "units": 13735,
+            "min_block": 5,
+            "blocks": 16,
+            "units_in_blocks": 641,
+            "largest_block": 199,
+            "share_of_units_in_blocks": 0.0467
+          }
+        },
+        "shadow_targeted_only": {
+          "zero_length_share": 0.0,
+          "illegal_share": 0.1362,
+          "overlap_share": 0.0944,
+          "identical_start_blocks": {
+            "available": true,
+            "units": 13735,
+            "min_block": 5,
+            "blocks": 0,
+            "units_in_blocks": 0,
+            "largest_block": 0,
+            "share_of_units_in_blocks": 0.0
+          }
+        },
+        "shadow_all_targeted_recommended": {
+          "zero_length_share": 0.0,
+          "illegal_share": 0.0087,
+          "overlap_share": 0.0,
+          "identical_start_blocks": {
+            "available": true,
+            "units": 13735,
+            "min_block": 5,
+            "blocks": 0,
+            "units_in_blocks": 0,
+            "largest_block": 0,
+            "share_of_units_in_blocks": 0.0
+          }
+        },
+        "shadow_targeted_then_legalised": {
+          "zero_length_share": 0.0,
+          "illegal_share": 0.0001,
+          "overlap_share": 0.0,
+          "identical_start_blocks": {
+            "available": true,
+            "units": 13735,
+            "min_block": 5,
+            "blocks": 0,
+            "units_in_blocks": 0,
+            "largest_block": 0,
+            "share_of_units_in_blocks": 0.0
+          }
+        },
+        "legalisation_statuses": {
+          "ok": 33
+        }
+      }
+    }
+  },
+  "headline": {
+    "gtsinger": {
+      "upstream_repaired_shipped": {
+        "units": 30600,
+        "median_err_ms": 40.0,
+        "zero_length_share": 0.0444,
+        "hit_at_100ms": 0.8037,
+        "hit_at_200ms": 0.8722,
+        "hit_at_250ms": 0.8907
+      },
+      "shadow_targeted_only": {
+        "units": 30600,
+        "median_err_ms": 40.0,
+        "zero_length_share": 0.0,
+        "hit_at_100ms": 0.8139,
+        "hit_at_200ms": 0.8831,
+        "hit_at_250ms": 0.9008
+      },
+      "shadow_all_targeted_recommended": {
+        "units": 30600,
+        "median_err_ms": 45.0,
+        "zero_length_share": 0.0,
+        "hit_at_100ms": 0.7741,
+        "hit_at_200ms": 0.8362,
+        "hit_at_250ms": 0.8527
+      },
+      "shadow_targeted_then_legalised": {
+        "units": 30600,
+        "median_err_ms": 50.0,
+        "zero_length_share": 0.0,
+        "hit_at_100ms": 0.7624,
+        "hit_at_200ms": 0.829,
+        "hit_at_250ms": 0.846
+      }
+    },
+    "deltas_pp_vs_shipped": {
+      "shadow_targeted_only_minus_shipped@100ms": 1.02,
+      "shadow_targeted_only_minus_shipped@200ms": 1.09,
+      "shadow_targeted_only_minus_shipped@250ms": 1.01,
+      "shadow_targeted_then_legalised_minus_shipped@100ms": -4.13,
+      "shadow_targeted_then_legalised_minus_shipped@200ms": -4.32,
+      "shadow_targeted_then_legalised_minus_shipped@250ms": -4.47,
+      "shadow_all_targeted_recommended_minus_shipped@100ms": -2.96,
+      "shadow_all_targeted_recommended_minus_shipped@200ms": -3.6,
+      "shadow_all_targeted_recommended_minus_shipped@250ms": -3.8
+    },
+    "product_batch": {
+      "shipped": {
+        "zero_length_share": 0.1628,
+        "illegal_share": 0.1672,
+        "overlap_share": 0.001,
+        "identical_start_blocks": {
+          "available": true,
+          "units": 13735,
+          "min_block": 5,
+          "blocks": 16,
+          "units_in_blocks": 641,
+          "largest_block": 199,
+          "share_of_units_in_blocks": 0.0467
+        }
+      },
+      "shadow_targeted_only": {
+        "zero_length_share": 0.0,
+        "illegal_share": 0.1362,
+        "overlap_share": 0.0944,
+        "identical_start_blocks": {
+          "available": true,
+          "units": 13735,
+          "min_block": 5,
+          "blocks": 0,
+          "units_in_blocks": 0,
+          "largest_block": 0,
+          "share_of_units_in_blocks": 0.0
+        }
+      },
+      "shadow_all_targeted_recommended": {
+        "zero_length_share": 0.0,
+        "illegal_share": 0.0087,
+        "overlap_share": 0.0,
+        "identical_start_blocks": {
+          "available": true,
+          "units": 13735,
+          "min_block": 5,
+          "blocks": 0,
+          "units_in_blocks": 0,
+          "largest_block": 0,
+          "share_of_units_in_blocks": 0.0
+        }
+      },
+      "shadow_targeted_then_legalised": {
+        "zero_length_share": 0.0,
+        "illegal_share": 0.0001,
+        "overlap_share": 0.0,
+        "identical_start_blocks": {
+          "available": true,
+          "units": 13735,
+          "min_block": 5,
+          "blocks": 0,
+          "units_in_blocks": 0,
+          "largest_block": 0,
+          "share_of_units_in_blocks": 0.0
+        }
+      }
+    },
+    "recommended_change": "replace only the upstream constant-fill step with the targeted block repair; do not add any further legalisation",
+    "targeted_only_gain_pp_at_200ms": 1.09,
+    "extra_legalisation_cost_pp_at_200ms": -3.6,
+    "product_zero_length_before_after": [
+      0.1628,
+      0.0
+    ]
+  }
+}

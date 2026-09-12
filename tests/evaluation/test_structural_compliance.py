@@ -219,3 +219,30 @@ def test_gate_projection_is_explicit_when_scores_are_missing():
                            "ent_end": None}] * 40)
     out = SC.gate_projection(units)
     assert out["available"] is False and "reason" in out
+
+
+def test_identical_start_blocks_detects_collapse_and_ignores_healthy_ties():
+    import pandas as pd
+    from lyricalign.analysis import structural_compliance as SC
+
+    rows = []
+    for i in range(12):                                # healthy: distinct starts, real durations
+        rows.append({"song": "ok", "unit_index": i, "start_sec": i * 1.0, "end_sec": i * 1.0 + 0.5})
+    for i in range(40):                                # collapsed: one timestamp, zero duration
+        rows.append({"song": "bad", "unit_index": i, "start_sec": 5.0, "end_sec": 5.0})
+    out = SC.identical_start_blocks(pd.DataFrame(rows), min_block=5)
+    assert out["available"] is True and out["units"] == 52
+    assert out["blocks"] == 1 and out["units_in_blocks"] == 40 and out["largest_block"] == 40
+    assert out["share_of_units_in_blocks"] == pytest.approx(40 / 52, abs=1e-4)
+
+
+def test_identical_start_blocks_can_report_non_degenerate_ties_when_asked():
+    import pandas as pd
+    from lyricalign.analysis import structural_compliance as SC
+
+    # five characters legitimately start together (a chord-like onset) but have real durations
+    rows = [{"song": "x", "unit_index": i, "start_sec": 2.0, "end_sec": 2.4} for i in range(5)]
+    strict = SC.identical_start_blocks(pd.DataFrame(rows), min_block=5)
+    loose = SC.identical_start_blocks(pd.DataFrame(rows), min_block=5, require_degenerate=False)
+    assert strict["blocks"] == 0
+    assert loose["blocks"] == 1 and loose["units_in_blocks"] == 5
