@@ -331,12 +331,14 @@ def _derive(df: pd.DataFrame) -> pd.DataFrame:
     df["final_both_err_uniformaxis"] = np.maximum(
         (df["final_start_sec"] - df["gt_start_sec"]).abs(),
         (df["final_end_sec"] - df["gt_end_sec"]).abs())
-    df["raw_start_err"] = df["label_raw_start_err_sec"]
-    df["raw_end_err"] = df["label_raw_end_err_sec"]
-    df["raw_both_err"] = df["label_raw_both_err_sec"]
-    df["final_start_err"] = df["label_off_start_err_sec"]
-    df["final_end_err"] = df["label_off_end_err_sec"]
-    df["final_both_err"] = df["label_off_both_err_sec"]
+    for col, src in (("raw_start_err", "label_raw_start_err_sec"),
+                     ("raw_end_err", "label_raw_end_err_sec"),
+                     ("raw_both_err", "label_raw_both_err_sec"),
+                     ("final_start_err", "label_off_start_err_sec"),
+                     ("final_end_err", "label_off_end_err_sec"),
+                     ("final_both_err", "label_off_both_err_sec")):
+        # panels without the frozen label columns degrade to NaN (never to the fabricated axis)
+        df[col] = df[src] if src in df.columns else np.nan
     for src in ("raw", "final"):
         df[f"{src}_dur"] = df[f"{src}_end_sec"] - df[f"{src}_start_sec"]
     # signed bias is NOT recoverable against real GT from these artifacts (the frozen audit stores
@@ -349,7 +351,8 @@ def _derive(df: pd.DataFrame) -> pd.DataFrame:
         tag = str(int(round(tol * 1000)))
         df[f"final_bad{tag}"] = (df["final_both_err"] > tol).astype(float)
         df[f"raw_bad{tag}"] = (df["raw_both_err"] > tol).astype(float)
-    df["is_segment_first"] = (df["source_unit_index"] == 0).astype(float)
+    df["is_segment_first"] = ((df["source_unit_index"] == 0).astype(float)
+                              if "source_unit_index" in df.columns else np.nan)
     # position inside the source phrase *on the fabricated uniform axis* (coarse rank only)
     df["dist_into_segment_uniformaxis"] = df["gt_start_sec"] - df["segment_start_sec"]
     df["max_ent"] = df[["start_entropy", "end_entropy"]].max(axis=1)
@@ -598,6 +601,7 @@ def analyse(df: pd.DataFrame) -> dict[str, Any]:
                     sub.loc[sub[name].astype(str) == "safe", err].mean()), 4)}
         out["frozen_label_crosscheck"] = agree
     out["view_agreement"] = _view_agreement(df)
+    out["text_error_collateral"] = analyse_text_error_collateral(df)
     return out
 
 
@@ -643,6 +647,129 @@ def _gate(base: pd.DataFrame) -> dict[str, Any]:
                                                     / max(ys.sum(), 1)), 4)}
                           for f in (0.05, 0.10, 0.20, 0.30)}}
     return res
+
+
+# ---------------------------------------------------------------------------
+# text-error collateral damage (mainline question: how much of an output is
+# salvageable when the *lyric text* handed to the aligner is partly wrong?)
+# ---------------------------------------------------------------------------
+
+TAIL_FAMILIES = ("end_early", "end_late", "crop_late", "repeated_section")
+HEAD_FAMILIES = ("crop_early",)
+SHIFT_FAMILIES = ("cursor_shift",)
+
+
+def _rank_profile(sub: pd.DataFrame) -> dict[str, Any]:
+    """Error profile of surviving (non-mutated) units, positioned by rank from each edge."""
+    if sub.empty:
+        return {"n": 0}
+    err = sub["final_both_err"]
+    return {
+        "n_units": int(len(sub)),
+        "n_requests": int(sub["req_key"].nunique()),
+        "hit100": round(float((err <= 0.1).mean()), 4),
+        "unsafe_ge250": round(float((err >= 0.25).mean()), 4),
+        "mae_sec": round(float(err.mean()), 4),
+        "median_sec": round(float(err.median()), 4),
+    }
+
+
+def analyse_text_error_collateral(df: pd.DataFrame) -> dict[str, Any]:
+    """Do mutated lyric texts corrupt the units that the mutation did *not* touch?
+
+    Detector V2 spent its budget on *detecting* unsafe output.  The complementary quantity -- how
+    far a text error propagates into otherwise-correct units -- decides how much of a window is
+    salvageable and therefore how large a realign region has to be.  Both quantities are available
+    from the same retained evidence: per-request text-mutation family plus per-unit frozen errors
+    for units whose canonical id is untouched by the mutation.
+    """
+    d = df.dropna(subset=["final_both_err"]).copy()
+    if d.empty:
+        return {"available": False}
+    rng = d.groupby(["req_key", "family"], observed=True)["canonical_unit_id"].agg(["min", "max"])
+    d = d.merge(rng.rename(columns={"min": "cid_min", "max": "cid_max"}),
+                left_on=["req_key", "family"], right_index=True, how="left")
+    d["rank_from_start"] = d["canonical_unit_id"] - d["cid_min"]
+    d["rank_from_end"] = d["cid_max"] - d["canonical_unit_id"]
+    d["span"] = d["cid_max"] - d["cid_min"] + 1
+    d["frac_pos"] = d["rank_from_start"] / d["span"].clip(lower=1)
+
+    out: dict[str, Any] = {"schema": "m4_longform_text_error_collateral_v1",
+                           "caveat": "canonical_unit_id rank is a proxy for text position; the "
+                                     "mutation geometry itself is not retained per evidence identity"}
+    base = d[d["family"].astype(str).str.startswith("baseline")]
+    out["baseline_reference"] = _rank_profile(base)
+    out["by_family"] = {str(f): _rank_profile(sub) for f, sub in d.groupby("family", observed=True)}
+
+    # surviving-unit profiles, positioned relative to the damaged end
+    def edge_profile(fams: tuple[str, ...], from_edge: str, label: str) -> dict[str, Any]:
+        sub = d[d["family"].astype(str).isin(fams)].copy()
+        if sub.empty:
+            return {"available": False, "families": list(fams)}
+        col = "rank_from_start" if from_edge == "start" else "rank_from_end"
+        buckets = [-0.5, 2.5, 7.5, 17.5, 1e9]
+        names = ["1-3 units from damaged edge", "4-8", "9-18", ">18"]
+        sub["bucket"] = pd.cut(sub[col], buckets, labels=names)
+        tab = sub.groupby("bucket", observed=True).agg(
+            n=("final_both_err", "size"), hit100=("final_both_err", lambda x: (x <= 0.1).mean()),
+            unsafe=("final_both_err", lambda x: (x >= 0.25).mean()),
+            mae=("final_both_err", "mean")).reset_index()
+        rows = [{"bucket": str(r.bucket), "n": int(r.n), "hit100": round(float(r.hit100), 4),
+                 "unsafe_ge250": round(float(r.unsafe), 4), "mae_sec": round(float(r.mae), 4)}
+                for r in tab.itertuples()]
+        far = sub[sub[col] > 18]
+        ref_far = base[base[col] > 18] if col in base else base
+        entry: dict[str, Any] = {"available": True, "families": list(fams), "profile": rows,
+                                 "far_from_edge": _rank_profile(far),
+                                 "baseline_far_from_edge": _rank_profile(ref_far)}
+        if len(far) > 200 and len(ref_far) > 200:
+            entry["far_hit100_minus_baseline_pp"] = round(float(
+                ((far["final_both_err"] <= 0.1).mean()
+                 - (ref_far["final_both_err"] <= 0.1).mean()) * 100), 3)
+            entry["far_unsafe_minus_baseline_pp"] = round(float(
+                ((far["final_both_err"] >= 0.25).mean()
+                 - (ref_far["final_both_err"] >= 0.25).mean()) * 100), 3)
+        entry["label"] = label
+        return entry
+
+    out["tail_mutations_survivors"] = edge_profile(TAIL_FAMILIES, "start",
+                                                   "text damaged at the tail: leading survivors")
+    out["head_mutations_survivors"] = edge_profile(HEAD_FAMILIES, "end",
+                                                   "text damaged at the head: trailing survivors")
+    out["shift_mutations_profile"] = edge_profile(SHIFT_FAMILIES, "start",
+                                                  "cursor-shifted text: whole-request profile")
+
+    # paired comparison on the *same* canonical unit, baseline vs mutated request
+    pairs = (base[["song", "canonical_unit_id", "final_both_err", "raw_both_err"]]
+             .rename(columns={"final_both_err": "base_err", "raw_both_err": "base_raw_err"})
+             .merge(d[~d["family"].astype(str).str.startswith("baseline")]
+                    [["song", "canonical_unit_id", "family", "req_key", "final_both_err"]]
+                    .rename(columns={"final_both_err": "mut_err"}),
+                    on=["song", "canonical_unit_id"], how="inner"))
+    if not pairs.empty:
+        per_family = {}
+        for fam, sub in pairs.groupby("family", observed=True):
+            delta = sub["mut_err"] - sub["base_err"]
+            rng2 = np.random.default_rng(SEED)
+            draws = np.array([delta.to_numpy()[rng2.choice(len(delta), len(delta), True)].mean()
+                              for _ in range(400)])
+            per_family[str(fam)] = {
+                "n_paired_units": int(len(sub)),
+                "mean_err_delta_sec": round(float(delta.mean()), 4),
+                "ci95_sec": [round(float(np.percentile(draws, 2.5)), 4),
+                             round(float(np.percentile(draws, 97.5)), 4)],
+                "hit100_delta_pp": round(float(((sub["mut_err"] <= 0.1).mean()
+                                                - (sub["base_err"] <= 0.1).mean()) * 100), 3),
+                "share_mut_worse": round(float((delta > 0.001).mean()), 4),
+                "share_mut_better": round(float((delta < -0.001).mean()), 4)}
+        out["paired_same_unit_baseline_vs_mutated"] = per_family
+    out["realign_region_implication"] = {
+        "question": "how large must a re-align region be when part of the text is wrong?",
+        "answer_from_this_panel": "see far_from_edge vs baseline_far_from_edge: if survivors far "
+                                  "from the damaged edge already match the baseline profile, a "
+                                  "local region around the damaged span is sufficient",
+    }
+    return out
 
 
 def _view_agreement(df: pd.DataFrame) -> dict[str, Any]:

@@ -120,6 +120,42 @@ def test_analyse_reports_trap_and_stage_from_frozen_errors(fake_run: Path):
     assert "uniform_axis_trap" not in result or result["uniform_axis_trap"]["n_units"] >= 0
 
 
+def test_text_error_collateral_detects_contamination_radius():
+    rows = []
+    # baseline: perfect units; mutated tail request: first 3 survivors broken, rest perfect
+    for cid in range(20):
+        rows.append({"run": "r", "request_identity": "base", "view_id": "full", "song": "s",
+                     "family": "baseline_legal", "canonical_unit_id": cid,
+                     "label_off_both_err_sec": 0.02, "label_raw_both_err_sec": 0.02,
+                     "label_off_start_err_sec": 0.01, "label_raw_start_err_sec": 0.01, "raw_label": "safe", "off_label": "safe",
+                     "source_unit_index": cid, "segment_start_sec": 0.0, "gt_start_sec": float(cid),
+                     "gt_end_sec": float(cid) + 0.5, "raw_dur": 0.5, "final_dur": 0.5,
+                     "raw_start_sec": float(cid), "raw_end_sec": float(cid) + 0.5,
+                     "off_start_sec": float(cid), "off_end_sec": float(cid) + 0.5})
+    for cid in range(20):
+        err = 1.0 if cid < 3 else 0.02
+        rows.append({"run": "r", "request_identity": "mut", "view_id": "full", "song": "s",
+                     "family": "end_early", "canonical_unit_id": cid,
+                     "label_off_both_err_sec": err, "label_raw_both_err_sec": err,
+                     "label_off_start_err_sec": err / 2, "label_raw_start_err_sec": err / 2, "raw_label": "unsafe" if err > 0.2 else "safe",
+                     "off_label": "unsafe" if err > 0.2 else "safe",
+                     "source_unit_index": cid, "segment_start_sec": 0.0, "gt_start_sec": float(cid),
+                     "gt_end_sec": float(cid) + 0.5, "raw_dur": 0.5, "final_dur": 0.5,
+                     "raw_start_sec": float(cid), "raw_end_sec": float(cid) + 0.5,
+                     "off_start_sec": float(cid), "off_end_sec": float(cid) + 0.5})
+    df = P.frame_from_rows(rows)
+    out = P.analyse_text_error_collateral(df)
+    prof = {r["bucket"]: r for r in out["tail_mutations_survivors"]["profile"]}
+    near = prof["1-3 units from damaged edge"]
+    far = prof[">18"]
+    assert near["hit100"] < 0.9 and far["hit100"] > 0.95
+    paired = out["paired_same_unit_baseline_vs_mutated"]["end_early"]
+    assert paired["mean_err_delta_sec"] > 0 and paired["hit100_delta_pp"] < 0
+    delta = out["tail_mutations_survivors"].get("far_hit100_minus_baseline_pp")
+    # the guard needs >200 far units, so a tiny fixture legitimately omits it
+    assert delta is None or delta >= -1.0
+
+
 def test_auc_orientation():
     y = np.array([0, 0, 1, 1], dtype=float)
     assert P._auc(y, np.array([0.1, 0.2, 0.8, 0.9]), min_n=4) == pytest.approx(1.0)
