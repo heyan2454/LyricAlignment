@@ -107,6 +107,8 @@
 
 | B44 | **gate 工作点（标签侧天花板，972,330 已标单元；产品口径 852,026）**：把 SAFE 边从 ≤0.100s 推到 ≤0.200s（两格缓冲）三指标同时变好 —— 自动通过 **83.42%→92.14%**、其中稳健判定 **23.58%→87.73%**、待复核 **9.72%→0.99%**；现状 100ms 边**既少放行又不确定**（放行中 71.7% 距带边不足一格）。留出 test 片与全量合并形状一致（稳健率 28.8% / 28.3%）⇒ 非子集巧合。**注意这是天花板**：实测收益仍受探测器精度限制（第 5 轮 UNSAFE 召回仅 3–5%） | ✅ | `reports/progress/20260912_gate_operating_points.md`、`runs/20260912_gate_operating_points/GATE_OPERATING_POINTS.json` |
 
+| B45 | **实际 gate 对天花板的兑现率**（阈值只在拟合片选、评估片测、天花板同片重算）：GTSinger 5% 误放预算下 **≤0.200s 实测放行 76.3% vs 天花板 87.3%（余量仅 11.0pp，兑现 87%）**；**≤0.100s 不可操作**（A→B 无阈值满足预算、B→A 仅放行 29.6% ⇒ 该边阈值不可迁移，而 200ms 边两折叠差 3.6pp）；2% 预算时 200ms 仍可达 31.8%。**M4 长时序在所有边/预算下均不可行**（评估片真 unsafe 69.8%、test 转移 82.3%）⇒ 普遍错数据上 gate 正确选择"几乎不放行"。分数只能用边界熵（两语料共有的唯一后验）⇒ 余量主要在新证据而非换分数 | ✅ | `reports/progress/20260912_gate_band_policy.md`、`runs/20260912_gate_band_policy/GATE_BAND_POLICY.json` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -167,9 +169,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 180 项
+- 测试：本会话新增 184 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1619 passed / 3 pre-existing failed`（第 35 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1623 passed / 3 pre-existing failed`（第 37 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

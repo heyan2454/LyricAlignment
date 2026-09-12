@@ -1,0 +1,292 @@
+{
+  "schema_version": "gate_band_policy_metrics_v1",
+  "audit": {
+    "schema": "gate_band_policy_v1",
+    "edges": [
+      0.1,
+      0.16,
+      0.2
+    ],
+    "unsafe_edge": 0.25,
+    "false_safe_budgets": [
+      0.02,
+      0.05
+    ],
+    "discipline": "threshold fitted on the fit slice only and evaluated on a disjoint slice; the ceiling is recomputed on the same evaluation slice so measured and ceiling are comparable; M4 test split is reported as frozen transfer only",
+    "score_used": "raw end-boundary entropy (the only confidence signal both corpora record)",
+    "corpora": {
+      "gtsinger_half_a_fit_half_b_eval": {
+        "label": "A->B",
+        "available": true,
+        "fit_units": 15312,
+        "eval_units": 15288,
+        "eval_true_unsafe_share": 0.1104,
+        "by_budget": {
+          "2pct": {
+            "available": true,
+            "units": 15288,
+            "false_safe_budget": 0.02,
+            "threshold_fit_units": 15312,
+            "by_edge": {
+              "100ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "160ms": {
+                "threshold": 0.255,
+                "auto_accept_share": 0.0785,
+                "false_safe_share": 0.0,
+                "false_safe_units": 0,
+                "missed_unsafe_share": 0.7834,
+                "fit_false_safe_share": 0.0176,
+                "ceiling_auto_accept_share": 0.8619,
+                "ceiling_robust_share": 0.7637,
+                "headroom_pp": 78.34
+              },
+              "200ms": {
+                "threshold": 0.6306,
+                "auto_accept_share": 0.3176,
+                "false_safe_share": 0.0222,
+                "false_safe_units": 108,
+                "missed_unsafe_share": 0.5623,
+                "fit_false_safe_share": 0.0197,
+                "ceiling_auto_accept_share": 0.8728,
+                "ceiling_robust_share": 0.8323,
+                "headroom_pp": 55.52
+              }
+            }
+          },
+          "5pct": {
+            "available": true,
+            "units": 15288,
+            "false_safe_budget": 0.05,
+            "threshold_fit_units": 15312,
+            "by_edge": {
+              "100ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "160ms": {
+                "threshold": 0.9977,
+                "auto_accept_share": 0.6601,
+                "false_safe_share": 0.042,
+                "false_safe_units": 424,
+                "missed_unsafe_share": 0.2295,
+                "fit_false_safe_share": 0.0473,
+                "ceiling_auto_accept_share": 0.8619,
+                "ceiling_robust_share": 0.7637,
+                "headroom_pp": 20.18
+              },
+              "200ms": {
+                "threshold": 1.2245,
+                "auto_accept_share": 0.763,
+                "false_safe_share": 0.048,
+                "false_safe_units": 560,
+                "missed_unsafe_share": 0.1465,
+                "fit_false_safe_share": 0.0496,
+                "ceiling_auto_accept_share": 0.8728,
+                "ceiling_robust_share": 0.8323,
+                "headroom_pp": 10.98
+              }
+            }
+          }
+        }
+      },
+      "gtsinger_half_b_fit_half_a_eval": {
+        "label": "B->A",
+        "available": true,
+        "fit_units": 15288,
+        "eval_units": 15312,
+        "eval_true_unsafe_share": 0.1134,
+        "by_budget": {
+          "2pct": {
+            "available": true,
+            "units": 15312,
+            "false_safe_budget": 0.02,
+            "threshold_fit_units": 15288,
+            "by_edge": {
+              "100ms": {
+                "threshold": 0.2487,
+                "auto_accept_share": 0.0711,
+                "false_safe_share": 0.0588,
+                "false_safe_units": 64,
+                "missed_unsafe_share": 0.7333,
+                "fit_false_safe_share": 0.0176,
+                "ceiling_auto_accept_share": 0.8002,
+                "ceiling_robust_share": 0.1428,
+                "headroom_pp": 72.91
+              },
+              "160ms": {
+                "threshold": 0.4674,
+                "auto_accept_share": 0.198,
+                "false_safe_share": 0.0224,
+                "false_safe_units": 68,
+                "missed_unsafe_share": 0.6599,
+                "fit_false_safe_share": 0.016,
+                "ceiling_auto_accept_share": 0.8524,
+                "ceiling_robust_share": 0.744,
+                "headroom_pp": 65.44
+              },
+              "200ms": {
+                "threshold": 0.6052,
+                "auto_accept_share": 0.2962,
+                "false_safe_share": 0.0168,
+                "false_safe_units": 76,
+                "missed_unsafe_share": 0.5802,
+                "fit_false_safe_share": 0.0187,
+                "ceiling_auto_accept_share": 0.8715,
+                "ceiling_robust_share": 0.8323,
+                "headroom_pp": 57.53
+              }
+            }
+          },
+          "5pct": {
+            "available": true,
+            "units": 15312,
+            "false_safe_budget": 0.05,
+            "threshold_fit_units": 15288,
+            "by_edge": {
+              "100ms": {
+                "threshold": 0.6052,
+                "auto_accept_share": 0.2962,
+                "false_safe_share": 0.0538,
+                "false_safe_units": 244,
+                "missed_unsafe_share": 0.5199,
+                "fit_false_safe_share": 0.049,
+                "ceiling_auto_accept_share": 0.8002,
+                "ceiling_robust_share": 0.1428,
+                "headroom_pp": 50.4
+              },
+              "160ms": {
+                "threshold": 1.0917,
+                "auto_accept_share": 0.6829,
+                "false_safe_share": 0.0547,
+                "false_safe_units": 572,
+                "missed_unsafe_share": 0.2079,
+                "fit_false_safe_share": 0.047,
+                "ceiling_auto_accept_share": 0.8524,
+                "ceiling_robust_share": 0.744,
+                "headroom_pp": 16.95
+              },
+              "200ms": {
+                "threshold": 1.209,
+                "auto_accept_share": 0.727,
+                "false_safe_share": 0.0489,
+                "false_safe_units": 544,
+                "missed_unsafe_share": 0.18,
+                "fit_false_safe_share": 0.0464,
+                "ceiling_auto_accept_share": 0.8715,
+                "ceiling_robust_share": 0.8323,
+                "headroom_pp": 14.45
+              }
+            }
+          }
+        }
+      },
+      "m4_train_fit_validation_eval": {
+        "label": "train->validation",
+        "available": true,
+        "fit_units": 91845,
+        "eval_units": 21773,
+        "eval_true_unsafe_share": 0.6984,
+        "by_budget": {
+          "2pct": {
+            "available": true,
+            "units": 21773,
+            "false_safe_budget": 0.02,
+            "threshold_fit_units": 91845,
+            "by_edge": {
+              "100ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "160ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "200ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              }
+            }
+          },
+          "5pct": {
+            "available": true,
+            "units": 21773,
+            "false_safe_budget": 0.05,
+            "threshold_fit_units": 91845,
+            "by_edge": {
+              "100ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "160ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "200ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              }
+            }
+          }
+        }
+      },
+      "m4_train_fit_test_eval_transfer_only": {
+        "label": "train->test (transfer only)",
+        "available": true,
+        "fit_units": 91845,
+        "eval_units": 20920,
+        "eval_true_unsafe_share": 0.8229,
+        "by_budget": {
+          "2pct": {
+            "available": true,
+            "units": 20920,
+            "false_safe_budget": 0.02,
+            "threshold_fit_units": 91845,
+            "by_edge": {
+              "100ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "160ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "200ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              }
+            }
+          },
+          "5pct": {
+            "available": true,
+            "units": 20920,
+            "false_safe_budget": 0.05,
+            "threshold_fit_units": 91845,
+            "by_edge": {
+              "100ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "160ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              },
+              "200ms": {
+                "note": "no threshold meets the budget on the fit slice"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "headline": {
+    "gtsinger_100ms_operable": {
+      "gtsinger_half_a_fit_half_b_eval": false,
+      "gtsinger_half_b_fit_half_a_eval": true
+    },
+    "gtsinger_200ms_measured_accept_5pct": {
+      "gtsinger_half_a_fit_half_b_eval": 0.763,
+      "gtsinger_half_b_fit_half_a_eval": 0.727
+    },
+    "gtsinger_200ms_ceiling": {
+      "gtsinger_half_a_fit_half_b_eval": 0.8728,
+      "gtsinger_half_b_fit_half_a_eval": 0.8715
+    },
+    "headroom_pp_at_200ms_5pct": {
+      "gtsinger_half_a_fit_half_b_eval": 10.98,
+      "gtsinger_half_b_fit_half_a_eval": 14.45
+    },
+    "m4_gate_infeasible_at_all_edges": true,
+    "conclusion": "an entropy-only gate cannot operate at the 100 ms SAFE edge (infeasible in one fold, ~30 % accept in the other) but realises 72-76 % at 200 ms under a 5 % false-safe budget, ~11-15 pp below the label-side ceiling; on M4 the gate is infeasible at every edge"
+  }
+}

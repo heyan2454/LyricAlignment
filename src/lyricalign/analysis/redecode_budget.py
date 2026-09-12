@@ -19,7 +19,7 @@ the part no re-decode of the same evidence can recover.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 import numpy as np
 import pandas as pd
@@ -102,4 +102,70 @@ def bound_budget_value(d: pd.DataFrame, *, score_col: str, err_col: str = "both_
         "recoverable_wrong_units": int((wrong & fixable).sum()),
         "unrecoverable_share_of_wrong_units": round(
             float((wrong & ~fixable).sum() / max(wrong.sum(), 1)), 4)}
+    return out
+
+
+def band_policy_table(err: pd.Series, score: pd.Series, *, edges: Sequence[float] = (0.10, 0.16, 0.20),
+                      fit_err: pd.Series | None = None, fit_score: pd.Series | None = None,
+                      false_safe_budget: float = 0.05,
+                      ceiling: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Measured gate behaviour at each SAFE edge, against the label-side ceiling.
+
+    The gate accepts a unit when its suspicion score is low enough.  The threshold is chosen on the
+    **fit** slice only (validation / dev — never on the evaluated slice), as the largest accepted
+    share whose false-safe rate on that fit slice stays within ``false_safe_budget``.  Reported per
+    edge: the share the gate actually waves through, how many of those are genuinely worse than the
+    edge, and how far that is from the label-side ceiling (what a *perfect* predictor could wave
+    through at the same edge).  The gap is the detector's remaining headroom, which is the number a
+    budget request needs; the ceiling alone (round 35) is not.
+    """
+    e = pd.to_numeric(err, errors="coerce").to_numpy(dtype=float)
+    sc = pd.to_numeric(score, errors="coerce").to_numpy(dtype=float)
+    ok = np.isfinite(e) & np.isfinite(sc)
+    if ok.sum() < 50:
+        return {"available": False, "units": int(ok.sum())}
+    fe = fs = None
+    if fit_err is not None and fit_score is not None:
+        fe = pd.to_numeric(fit_err, errors="coerce").to_numpy(dtype=float)
+        fs = pd.to_numeric(fit_score, errors="coerce").to_numpy(dtype=float)
+        fok = np.isfinite(fe) & np.isfinite(fs)
+        if fok.sum() < 50:
+            fe = fs = None
+    if fe is None:
+        fe, fs = e[ok], sc[ok]
+    e, sc = e[ok], sc[ok]
+    out: dict[str, Any] = {"available": True, "units": int(e.size),
+                           "false_safe_budget": false_safe_budget,
+                           "threshold_fit_units": int(fe.size),
+                           "by_edge": {}}
+    for edge in edges:
+        fit_bad = fe > edge
+        order = np.argsort(fs)
+        chosen = None
+        for frac in np.linspace(1.0, 0.05, 40):
+            k = max(1, int(round(frac * fs.size)))
+            accepted = order[:k]
+            fsr = float(fit_bad[accepted].mean()) if accepted.size else 1.0
+            if fsr <= false_safe_budget:
+                chosen = (float(fs[accepted][-1]) if accepted.size else None, k / fs.size, fsr)
+                break
+        if chosen is None:
+            out["by_edge"][f"{int(edge * 1000)}ms"] = {"note": "no threshold meets the budget on the fit slice"}
+            continue
+        tau, accept_share, fit_false_safe = chosen
+        accepted = sc <= tau
+        measured = {
+            "threshold": round(tau, 4), "auto_accept_share": round(float(accepted.mean()), 4),
+            "false_safe_share": round(float((e[accepted] > edge).mean()), 4) if accepted.any() else None,
+            "false_safe_units": int((e[accepted] > edge).sum()),
+            "missed_unsafe_share": round(float(((~accepted) & (e <= edge)).mean()), 4),
+            "fit_false_safe_share": round(fit_false_safe, 4),
+        }
+        if ceiling:
+            c = (ceiling.get("by_safe_edge") or {}).get(f"{int(edge * 1000)}ms")
+            if c:
+                measured["ceiling_auto_accept_share"] = c["safe_share"]
+                measured["ceiling_robust_share"] = c["robust_safe_share"]
+                measured["headroom_pp"] = round(100.0 * (c["safe_share"] - float(accepted.mean())), 2)
+        out["by_edge"][f"{int(edge * 1000)}ms"] = measured
     return out
