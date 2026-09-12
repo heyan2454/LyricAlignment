@@ -59,3 +59,43 @@ def test_degenerate_inputs_return_none_not_crash():
     assert LN.threshold_sensitivity(d["err"], d["score"])["by_threshold"]["100ms"]["auc"] is None
     res = LN.ambiguous_label_impact(d["err"], d["score"], threshold=0.1, label_quantum_sec=0.08)
     assert res["available"] is False
+
+
+def test_metric_stability_reports_shift_bound_and_knife_edge_share():
+    rng = np.random.default_rng(9)
+    n = 500
+    err = np.abs(rng.normal(0.04, 0.05, n))          # median well below the 80 ms grid
+    out = LN.metric_stability(pd.Series(err), tolerances=(0.05, 0.1, 0.2),
+                              label_quantum_sec=0.08, prediction_quantum_sec=0.08)
+    assert out["units"] == n
+    t50, t200 = out["by_tolerance"]["50ms"], out["by_tolerance"]["200ms"]
+    assert t50["knife_edge_share"] > t200["knife_edge_share"]        # tighter threshold is more fragile
+    assert t50["systematic_shift_bound_pp"] > t200["systematic_shift_bound_pp"]
+    assert t50["hit_share_if_errors_shifted_plus_quantum"] >= t50["hit_share"] >= \
+        t50["hit_share_if_errors_shifted_minus_quantum"]
+
+
+def test_gap_artifact_bound_only_counts_losers_with_one_quantum_slack():
+    n = 400
+    rng = np.random.default_rng(10)
+    a = np.abs(rng.normal(0.05, 0.02, n))                  # A comfortably inside
+    b = np.abs(rng.normal(0.105, 0.004, n))                # B misses by ~5 ms -> inside one quantum
+    res = LN.gap_artifact_bound(pd.Series(a), pd.Series(b), tol=0.1, quantum_sec=0.08)
+    assert res["available"] is True
+    assert res["gap_pp"] > 0
+    # the whole gap is explainable by grid slack here, because B misses by less than one quantum
+    assert res["gap_exceeds_grid_slack"] is False
+    assert res["a_ahead_by_grid_slack_units"] > 0
+    assert res["solid_disagreement_units"] == 0 or res["a_ahead_solid_units"] == 0
+
+    # a clearly-worse B (errors far beyond the quantum) produces an attributable gap
+    b_far = np.abs(rng.normal(0.4, 0.05, n))
+    res2 = LN.gap_artifact_bound(pd.Series(a), pd.Series(b_far), tol=0.1, quantum_sec=0.08)
+    assert res2["gap_exceeds_grid_slack"] is True
+    assert res2["a_ahead_solid_units"] > 100
+    assert res2["max_spurious_gap_pp"] < res2["gap_pp"]
+
+
+def test_gap_artifact_bound_degenerate_inputs():
+    res = LN.gap_artifact_bound(pd.Series([np.nan] * 5), pd.Series([0.1] * 5), tol=0.1)
+    assert res["available"] is False

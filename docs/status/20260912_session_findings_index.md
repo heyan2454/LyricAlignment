@@ -12,7 +12,7 @@
 |---|---|---|---|
 | A1 | 录音室短句（GTSinger，人工真值）：r2 hit@100 90.0%（早期轮次口径）/ 88.0%（12 视图口径） | ✅ | `results/by_run/20260912_gtsinger_gt_deep/metrics.json`、`20260912_gtsinger_multiview` |
 | A2 | 自然伴奏普通话（MIR-1K，人工逐字 GT）：r2 hit@100 91.8–92.3%、hit@250 98.6–98.8%、IoU 0.832、MAE(start) 35–37ms | ✅ | `reports/progress/20260912_mir1k_natural_panel.md`、`runs/20260912_mir1k_natural_panel/ANALYSIS.json` |
-| A3 | 阶梯 r0→r1 +16pp、r1→r2 ≤0.5pp，在 GTSinger 与 MIR-1K 两个域复现 ⇒ 增益几乎全来自 projector 适配 | ✅ | 同上 + `20260912_gtsinger_gt_deep` |
+| A3 | ♻️**第 32 轮给出可计算界**（r2 vs r1 在 50ms 差 +2.78pp 但格点余量界 9.96pp ⇒ 不可归因；100ms 差 +2.51pp 勉强超出界 2.47pp），故本条"r1→r2 ≤0.5pp"应表述为"低于指标可分辨限"：阶梯 r0→r1 +16pp、r1→r2 ≤0.5pp，在 GTSinger 与 MIR-1K 两个域复现 ⇒ 增益几乎全来自 projector 适配 | ✅ | 同上 + `20260912_gtsinger_gt_deep` |
 | A4 | 上游未适配系统（base_qwen_raw_v1）在 MIR-1K 只有 22.7% hit@100（20.1% 零/负时长）⇒ 不可当基线 | ✅ | `mir1k_natural_panel` |
 | A5 | 长时序（M4 拼接，弱 GT）：单窗 84.5%、现装 official 84.0%、跨窗共识 86.6% | ✅ | `20260912_longform_pipeline_candidate` |
 
@@ -98,6 +98,8 @@
 
 | B39 | **100ms 阈值被 80ms 格点污染**：GTSinger 上 **73.4%** 单元的误差落在阈值 ±1 格内（M4 12.9%）；剔除后同一分数 AUC 0.7993→**0.8662**（M4 0.6619→0.7003）⇒ **以 100ms 为界的判别力评估系统性低估真实判别力**，detector_v2 SAFE ≤100ms 正落在该区间；且 AUC 随容差单调上升（80→250ms：0.776→0.853）⇒ 触发器擅长抓粗错。另：M4 面板中位误差 525ms、96.4% 单元超 100ms ⇒ **它不是可比的复现语料**（第 30 轮否证强度下调），而 M4 的 `baseline_legal_only` 子集 AUC 仅 0.627 ⇒ 标签质量解释不了全部差距，不得声称熵的跨语料一致性已被证明 | ✅ | `reports/progress/20260912_label_noise_ceiling.md`、`runs/20260912_label_noise_ceiling/LABEL_NOISE.json` |
 
+| B40 | **指标可分辨限（本轮新增的硬口径）**：以"落后方差距不足一个 80ms 格点的单元数"为界，`r1 vs r0` 在 100ms 上 +18.00pp **超过界 4.82pp**（扎实差异 1,784 单元）⇒ projector 增益为真；而 `r2 vs r1` 50ms +2.78pp **低于界 9.96pp**、MIR-1K `r2_full vs r1_full` +0.29pp（界 3.54pp）、`r2_full vs r2_ood` −0.69pp（界 2.85pp）⇒ **均不可归因，两个 r2 checkpoint 谁更好现有指标判不了**。单系统侧：hit@50/hit@100 可被一个格点同向偏移推动 ±42.1/±36.7pp（刀尖判定 84.2%/73.4%），200ms 后才稳定 | ✅ | `reports/progress/20260912_metric_stability.md`、`runs/20260912_label_noise_ceiling/{STABILITY,GAP_ARTIFACT}.json` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -158,8 +160,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 166 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1608 passed / 3 pre-existing failed`（第 31 轮后隔离复跑）。
+- 测试：本会话新增 170 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1611 passed / 3 pre-existing failed`（第 32 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
