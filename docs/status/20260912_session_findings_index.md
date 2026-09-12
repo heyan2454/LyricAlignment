@@ -134,6 +134,8 @@
 
 | B58 | **评测集污染度（两个有人工真值的评测集都被上游塌陷污染）**：MIR-1K 基础模型 **20.15%** 的字没有位置（误差<0.2s 38.72%→**46.52%**，上限 +7.80pp），训练后检查点 0.25–0.59%（上限 +0.1–0.5pp）；GTSinger r2 3.53%（94.27%→**96.50%**，上限 **+2.23pp**）、r1 4.12%（+2.72pp）、r0 5.69%（+2.47pp）；**退化单元占失败的比例：GTSinger r2 41.1% / r1 36.6%，MIR-1K r2_full 24.4%** ⇒ **引用历史精度必须并列「去掉退化单元」的值；修复后的涨分不得算作模型进步** | ✅ | `reports/progress/20260912_eval_contamination.md` |
 
+| B59 | **去退化复核：长音收尾的跨域反向偏置仍在且更强**：录音室（GTSinger 全检查点，第 21 轮口径）长音收尾中位 **−40.0 → −48.0ms**（偏晚 23.9%→22.1%），伴奏域（MIR-1K r2_full）**+32.4 → +34.0ms**（74.1%→74.8%）⇒ **符号相反，"全局偏移校正不可跨域迁移"继续成立**；且**塌陷单元自己偏晚**（录音室长音 +10.0ms、75.0% 偏晚）⇒ 混入它们在**掩盖**真实提前量，去掉后提前反而变大。**口径更新：今后引用第 21 轮的偏置应改用去退化版（−48ms / +34ms）或并列两者** | ✅ | `reports/progress/20260912_bias_excluding_degenerate.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -194,9 +196,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 226 项
+- 测试：本会话新增 226 项（第 51 轮无新增测试）
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1655 passed / 3 pre-existing failed`（第 50 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1655 passed / 3 pre-existing failed`（第 51 轮后隔离复跑，无新增测试）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

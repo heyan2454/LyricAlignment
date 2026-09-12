@@ -1,0 +1,252 @@
+{
+  "schema_version": "bias_excluding_degenerate_metrics_v1",
+  "audit": {
+    "schema": "bias_excluding_degenerate_v2",
+    "predictor": "gtsinger official r2 (all items) / mir1k r2_full_20260723",
+    "studio_gtsinger_r2_only": {
+      "units": 10200,
+      "all": {
+        "units": 10200,
+        "degenerate_share_of_slice": 0.0353,
+        "all_units": {
+          "units_in_stratum": 10200,
+          "median_ms": 0.0,
+          "mean_ms": 10.7,
+          "late_share": 0.4996
+        },
+        "long_note": {
+          "units_in_stratum": 480,
+          "median_ms": -14.5,
+          "mean_ms": -11.7,
+          "late_share": 0.3375
+        },
+        "short_note": {
+          "units_in_stratum": 3228,
+          "median_ms": 0.0,
+          "mean_ms": 6.8,
+          "late_share": 0.456
+        }
+      },
+      "excluding_degenerate": {
+        "units": 9840,
+        "degenerate_share_of_slice": 0.0,
+        "all_units": {
+          "units_in_stratum": 9840,
+          "median_ms": 2.0,
+          "mean_ms": 11.6,
+          "late_share": 0.5024
+        },
+        "long_note": {
+          "units_in_stratum": 468,
+          "median_ms": -16.0,
+          "mean_ms": -14.5,
+          "late_share": 0.3205
+        },
+        "short_note": {
+          "units_in_stratum": 3068,
+          "median_ms": 0.0,
+          "mean_ms": 7.2,
+          "late_share": 0.4602
+        }
+      },
+      "degenerate_only": {
+        "units": 360,
+        "degenerate_share_of_slice": 1.0,
+        "all_units": {
+          "units_in_stratum": 360,
+          "median_ms": 0.0,
+          "mean_ms": -13.1,
+          "late_share": 0.4222
+        },
+        "long_note": {
+          "units_in_stratum": 12,
+          "median_ms": 30.0,
+          "mean_ms": 96.7,
+          "late_share": 1.0
+        },
+        "short_note": {
+          "units_in_stratum": 160,
+          "median_ms": 0.0,
+          "mean_ms": -1.9,
+          "late_share": 0.375
+        }
+      }
+    },
+    "studio_gtsinger_all_checkpoints": {
+      "units": 30600,
+      "all": {
+        "units": 30600,
+        "degenerate_share_of_slice": 0.0444,
+        "all_units": {
+          "units_in_stratum": 30600,
+          "median_ms": -10.0,
+          "mean_ms": -30.1,
+          "late_share": 0.398
+        },
+        "long_note": {
+          "units_in_stratum": 1440,
+          "median_ms": -40.0,
+          "mean_ms": -273.4,
+          "late_share": 0.2389
+        },
+        "short_note": {
+          "units_in_stratum": 9684,
+          "median_ms": -10.0,
+          "mean_ms": -2.3,
+          "late_share": 0.3715
+        }
+      },
+      "excluding_degenerate": {
+        "units": 29240,
+        "degenerate_share_of_slice": 0.0,
+        "all_units": {
+          "units_in_stratum": 29240,
+          "median_ms": -10.0,
+          "mean_ms": -27.4,
+          "late_share": 0.3982
+        },
+        "long_note": {
+          "units_in_stratum": 1392,
+          "median_ms": -48.0,
+          "mean_ms": -279.5,
+          "late_share": 0.2213
+        },
+        "short_note": {
+          "units_in_stratum": 9088,
+          "median_ms": -10.0,
+          "mean_ms": -2.1,
+          "late_share": 0.3704
+        }
+      },
+      "degenerate_only": {
+        "units": 1360,
+        "degenerate_share_of_slice": 1.0,
+        "all_units": {
+          "units_in_stratum": 1360,
+          "median_ms": -10.0,
+          "mean_ms": -88.4,
+          "late_share": 0.3941
+        },
+        "long_note": {
+          "units_in_stratum": 48,
+          "median_ms": 10.0,
+          "mean_ms": -95.8,
+          "late_share": 0.75
+        },
+        "short_note": {
+          "units_in_stratum": 596,
+          "median_ms": -10.0,
+          "mean_ms": -4.4,
+          "late_share": 0.3893
+        }
+      }
+    },
+    "target_mir1k": {
+      "units": 2035,
+      "all": {
+        "units": 2035,
+        "degenerate_share_of_slice": 0.0059,
+        "all_units": {
+          "units_in_stratum": 2035,
+          "median_ms": 2.6,
+          "mean_ms": 7.7,
+          "late_share": 0.5194
+        },
+        "long_note": {
+          "units_in_stratum": 112,
+          "median_ms": 32.4,
+          "mean_ms": 45.2,
+          "late_share": 0.7411
+        },
+        "short_note": {
+          "units_in_stratum": 717,
+          "median_ms": 0.0,
+          "mean_ms": 0.6,
+          "late_share": 0.4616
+        }
+      },
+      "excluding_degenerate": {
+        "units": 2023,
+        "degenerate_share_of_slice": 0.0,
+        "all_units": {
+          "units_in_stratum": 2023,
+          "median_ms": 2.8,
+          "mean_ms": 8.9,
+          "late_share": 0.521
+        },
+        "long_note": {
+          "units_in_stratum": 111,
+          "median_ms": 34.0,
+          "mean_ms": 46.5,
+          "late_share": 0.7477
+        },
+        "short_note": {
+          "units_in_stratum": 713,
+          "median_ms": 0.0,
+          "mean_ms": 1.0,
+          "late_share": 0.4628
+        }
+      },
+      "degenerate_only": {
+        "units": 12,
+        "degenerate_share_of_slice": 1.0,
+        "all_units": {
+          "units_in_stratum": 12,
+          "median_ms": -66.0,
+          "mean_ms": -198.2,
+          "late_share": 0.25
+        },
+        "long_note": {
+          "units_in_stratum": 1,
+          "median_ms": -100.1,
+          "mean_ms": -100.1,
+          "late_share": 0.0
+        },
+        "short_note": {
+          "units_in_stratum": 4,
+          "median_ms": -28.7,
+          "mean_ms": -76.1,
+          "late_share": 0.25
+        }
+      }
+    },
+    "verdict": {
+      "long_note_median_ms": {
+        "studio": {
+          "all": -14.5,
+          "excluding_degenerate": -16.0
+        },
+        "target": {
+          "all": 32.4,
+          "excluding_degenerate": 34.0
+        }
+      },
+      "sign_flip_survives": true
+    },
+    "verdict_pooled": {
+      "long_note_median_ms": {
+        "studio_all_checkpoints": {
+          "all": -40.0,
+          "excluding_degenerate": -48.0
+        },
+        "target": {
+          "all": 32.4,
+          "excluding_degenerate": 34.0
+        }
+      }
+    }
+  },
+  "headline": {
+    "studio_long_note_median_ms": {
+      "all": -40.0,
+      "excluding_degenerate": -48.0
+    },
+    "accompanied_long_note_median_ms": {
+      "all": 32.4,
+      "excluding_degenerate": 34.0
+    },
+    "studio_degenerate_only_long_note_median_ms": 10.0,
+    "sign_flip_survives": true,
+    "conclusion": "the cross-domain sign flip in long-note end bias survives (and slightly strengthens) after removing collapsed units: studio early, accompanied late; the collapsed units themselves sit late and were masking part of the early bias, so global offset correction remains unjustified"
+  }
+}
