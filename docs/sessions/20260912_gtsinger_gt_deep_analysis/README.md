@@ -728,3 +728,28 @@ I See Fire（EN，51.4%→88.1%，新造 123，计数器 0）、
 相关性可以指向错误的阶段；**阶段谱系比对**（同一单元的多个阶段值）才是因果证据。
 本轮同时把「逐歌净值」与「单元级新造数」两个口径分开命名（`net_added_by_*` vs `created_by_postprocess`），
 避免净值抵消掩盖问题。
+
+## 第 13 轮续：统一批次自检入口 `scripts/evaluation/audit_batch.py`
+
+一条命令回答三件事（全部零真值、零前向）：
+1. **可归因吗**：每首歌是否记录 audio sha / request_hash / schema / 规划标志；
+2. **结构合法吗**：零长/重叠/回退/离谱时长，并且**按阶段谱系定位是谁造的**（第 13 轮教训：
+   相关性会骗人，必须逐阶段比同一单元的四个阶段值）；
+3. **修得回来吗**：用联合求解当检查器，报告"合法化需要移动多少单元、位移多大"。
+另可选 `--compare-batch` 走第 11 轮的配对门（identified / not_identified /
+duplicate_configuration / not_comparable）。
+
+对真实批次的实际输出（就是本会话已诊断的那批）：
+
+```
+VERDICT=blocked  blocking=['structural_legality','stage_attribution','window_anchor_pinning']
+   [OK ] attributable_identity   {..., records_silence_flags: 0.0}
+   [FAIL] structural_legality     illegal_share 16.72% (gate 5%)
+   [FAIL] stage_attribution      worst_stage=net_added_by_fixed (+807)
+   [FAIL] window_anchor_pinning  pinned 946 (6.89%, 10 首)
+   [OK ] repair_feasibility      post_repair_illegal_share 0.0, moved 22.4%, 中位 0.1s
+pairwise -> DUPLICATE_CONFIGURATION: 23/25 逐字节相同 ...
+```
+
+gate 阈值写在 `GATES`（illegal 5% / 阶段净新增 1% / 钉锚点 2%），是**建议默认值**而非已裁定标准，
+调整需要在项目内讨论；本会话没有改动任何生产实现。测试 3 项（合成批次 + 子进程冒烟）。
