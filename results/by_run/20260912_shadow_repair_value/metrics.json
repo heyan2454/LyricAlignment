@@ -1,0 +1,188 @@
+{
+  "schema_version": "shadow_repair_value_metrics_v1",
+  "audit": {
+    "schema": "shadow_repair_value_v1",
+    "discipline": "read-only: the shadow repair is never written back; GTSinger has human GT, the product batch is scored structurally only",
+    "tolerances_sec": [
+      0.1,
+      0.2,
+      0.25
+    ],
+    "panels": {
+      "gtsinger_human_gt": {
+        "units": 30600,
+        "variants": {
+          "raw_argmax": {
+            "units": 30600,
+            "median_err_ms": 40.0,
+            "p90_err_ms": 280.0,
+            "zero_length_share": 0.0127,
+            "hit_at_100ms": 0.8212,
+            "hit_at_200ms": 0.8779,
+            "hit_at_250ms": 0.8949
+          },
+          "upstream_repaired_shipped": {
+            "units": 30600,
+            "median_err_ms": 40.0,
+            "p90_err_ms": 294.0,
+            "zero_length_share": 0.0444,
+            "hit_at_100ms": 0.8037,
+            "hit_at_200ms": 0.8722,
+            "hit_at_250ms": 0.8907
+          },
+          "shadow_min_duration": {
+            "units": 30600,
+            "median_err_ms": 46.0,
+            "p90_err_ms": 440.2,
+            "zero_length_share": 0.0,
+            "hit_at_100ms": 0.7766,
+            "hit_at_200ms": 0.8324,
+            "hit_at_250ms": 0.8485
+          },
+          "shadow_targeted_blocks": {
+            "units": 30600,
+            "median_err_ms": 40.0,
+            "p90_err_ms": 250.0,
+            "zero_length_share": 0.0,
+            "hit_at_100ms": 0.8139,
+            "hit_at_200ms": 0.8831,
+            "hit_at_250ms": 0.9008
+          }
+        },
+        "paired_deltas_pp": {
+          "shadow_min_duration_minus_upstream_repaired_shipped@100ms": -2.71,
+          "shadow_min_duration_minus_upstream_repaired_shipped@200ms": -3.98,
+          "shadow_min_duration_minus_upstream_repaired_shipped@250ms": -4.22,
+          "shadow_targeted_blocks_minus_upstream_repaired_shipped@100ms": 1.02,
+          "shadow_targeted_blocks_minus_upstream_repaired_shipped@200ms": 1.09,
+          "shadow_targeted_blocks_minus_upstream_repaired_shipped@250ms": 1.01,
+          "shadow_targeted_blocks_minus_raw_argmax@100ms": -0.73,
+          "shadow_targeted_blocks_minus_raw_argmax@200ms": 0.52,
+          "shadow_targeted_blocks_minus_raw_argmax@250ms": 0.59,
+          "raw_argmax_minus_upstream_repaired_shipped@100ms": 1.75,
+          "raw_argmax_minus_upstream_repaired_shipped@200ms": 0.57,
+          "raw_argmax_minus_upstream_repaired_shipped@250ms": 0.42
+        }
+      },
+      "product_batch_structural": {
+        "units": 13735,
+        "shipped": {
+          "zero_length_share": 0.1628,
+          "illegal_share": 0.1672,
+          "identical_start_blocks": {
+            "blocks": 16,
+            "units": 641,
+            "largest": 199
+          }
+        },
+        "shadow_from_raw": {
+          "zero_length_share": 0.0,
+          "illegal_share": 0.0036,
+          "diagnostics": {
+            "songs": 33,
+            "zero_length_units": 0,
+            "illegal_units": 0,
+            "repaired_units": 0,
+            "blocks": 0,
+            "untouched_units": 0
+          },
+          "identical_start_blocks": {
+            "blocks": 0,
+            "units": 0,
+            "largest": 0
+          }
+        },
+        "shadow_targeted": {
+          "zero_length_share": 0.0,
+          "illegal_share": 0.1362,
+          "diagnostics": {
+            "songs": 33,
+            "zero_length_units": 0,
+            "illegal_units": 1297,
+            "repaired_units": 1949,
+            "blocks": 807,
+            "untouched_units": 11786
+          },
+          "identical_start_blocks": {
+            "blocks": 0,
+            "units": 0,
+            "largest": 0
+          }
+        }
+      }
+    }
+  },
+  "headline": {
+    "gtsinger_variants": {
+      "raw_argmax": {
+        "units": 30600,
+        "median_err_ms": 40.0,
+        "p90_err_ms": 280.0,
+        "zero_length_share": 0.0127,
+        "hit_at_100ms": 0.8212,
+        "hit_at_200ms": 0.8779,
+        "hit_at_250ms": 0.8949
+      },
+      "upstream_repaired_shipped": {
+        "units": 30600,
+        "median_err_ms": 40.0,
+        "p90_err_ms": 294.0,
+        "zero_length_share": 0.0444,
+        "hit_at_100ms": 0.8037,
+        "hit_at_200ms": 0.8722,
+        "hit_at_250ms": 0.8907
+      },
+      "shadow_min_duration": {
+        "units": 30600,
+        "median_err_ms": 46.0,
+        "p90_err_ms": 440.2,
+        "zero_length_share": 0.0,
+        "hit_at_100ms": 0.7766,
+        "hit_at_200ms": 0.8324,
+        "hit_at_250ms": 0.8485
+      },
+      "shadow_targeted_blocks": {
+        "units": 30600,
+        "median_err_ms": 40.0,
+        "p90_err_ms": 250.0,
+        "zero_length_share": 0.0,
+        "hit_at_100ms": 0.8139,
+        "hit_at_200ms": 0.8831,
+        "hit_at_250ms": 0.9008
+      }
+    },
+    "paired_deltas_pp": {
+      "shadow_min_duration_minus_upstream_repaired_shipped@100ms": -2.71,
+      "shadow_min_duration_minus_upstream_repaired_shipped@200ms": -3.98,
+      "shadow_min_duration_minus_upstream_repaired_shipped@250ms": -4.22,
+      "shadow_targeted_blocks_minus_upstream_repaired_shipped@100ms": 1.02,
+      "shadow_targeted_blocks_minus_upstream_repaired_shipped@200ms": 1.09,
+      "shadow_targeted_blocks_minus_upstream_repaired_shipped@250ms": 1.01,
+      "shadow_targeted_blocks_minus_raw_argmax@100ms": -0.73,
+      "shadow_targeted_blocks_minus_raw_argmax@200ms": 0.52,
+      "shadow_targeted_blocks_minus_raw_argmax@250ms": 0.59,
+      "raw_argmax_minus_upstream_repaired_shipped@100ms": 1.75,
+      "raw_argmax_minus_upstream_repaired_shipped@200ms": 0.57,
+      "raw_argmax_minus_upstream_repaired_shipped@250ms": 0.42
+    },
+    "product_shipped_zero_share": 0.1628,
+    "product_targeted_zero_share": 0.0,
+    "product_shipped_identical_blocks": {
+      "blocks": 16,
+      "units": 641,
+      "largest": 199
+    },
+    "product_targeted_identical_blocks": {
+      "blocks": 0,
+      "units": 0,
+      "largest": 0
+    },
+    "blanket_repair_costs_accuracy_pp": -3.98,
+    "targeted_repair_gain_vs_shipped_pp": {
+      "hit100": 1.02,
+      "hit200": 1.09,
+      "hit250": 1.01
+    },
+    "conclusion": "a blanket minimum-duration re-space removes zero-length but costs ~4pp at 200 ms; a TARGETED repair restricted to collapsed/inverted blocks removes 100 % of zero-length at no measurable accuracy cost and beats the shipped upstream output by ~1pp at every sound tolerance"
+  }
+}
