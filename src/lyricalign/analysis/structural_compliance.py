@@ -464,3 +464,36 @@ def triage_by_song(df: pd.DataFrame, lineage: dict[str, Any] | None = None,
             "triage": action,
         })
     return pd.DataFrame(rows).sort_values("illegal_share", ascending=False).reset_index(drop=True)
+
+
+def policy_audit(accepted: "np.ndarray", violations: pd.DataFrame, langs: pd.Series,
+                 *, flag: str = "is_illegal") -> dict[str, Any]:
+    """Score a release/hold policy on structural evidence alone (no ground truth needed).
+
+    `accepted` marks the units a gate would ship.  The two numbers that matter are the illegal share
+    **inside** the accepted set (the risk the product keeps) and the share of all illegal units that
+    the held-back set catches (the value of the review budget).  The per-language breakdown exposes
+    how the budget is distributed, which is where a single global threshold quietly makes a policy
+    choice about languages.
+    """
+    accepted = np.asarray(accepted, dtype=bool)
+    review = ~accepted
+    bad = violations[flag].to_numpy(dtype=bool)
+    langs = langs.astype(str)
+    out: dict[str, Any] = {
+        "units": int(accepted.size),
+        "accept_share": round(float(accepted.mean()), 4),
+        "review_share": round(float(review.mean()), 4),
+        "flag": flag,
+        "illegal_in_accepted_share": round(float(bad[accepted].mean()), 4) if accepted.any() else None,
+        "illegal_capture_of_all_illegal": round(float(bad[review].sum() / max(bad.sum(), 1)), 4),
+        "review_share_by_language": {k: round(float(review[(langs == k).to_numpy()].mean()), 4)
+                                     for k in sorted(langs.dropna().unique())},
+        "review_units_by_language": {k: int(review[(langs == k).to_numpy()].sum())
+                                     for k in sorted(langs.dropna().unique())},
+        "accepted_illegal_by_language": {
+            k: round(float(bad[accepted & (langs == k).to_numpy()].mean()), 4)
+            if (accepted & (langs == k).to_numpy()).any() else None
+            for k in sorted(langs.dropna().unique())},
+    }
+    return out

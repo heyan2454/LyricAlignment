@@ -113,6 +113,8 @@
 
 | B47 | **真实歌批上的无真值结构审计**（按 GTSinger 学到的放行率做批内分位匹配，因绝对阈值不跨域）：整批 13,735 单元零长 16.28%、非法 16.72%；**R1 只用边界熵放行 76.30% 时，放行集合零长仅 5.10% vs 拦下集合 52.26%（lift +47.1pp）⇒ 用 23.7% 复核量捕获 76% 的零长单元**（熵信号在生产数据上确实有效）；**R3 新增放行的 1,490 单元里 35.7% 是零长（整批 16.3% 的 2.2×）⇒ 结构代理独立否证间隙残余迁移**，与第 30/31 轮一致，且本批间隙覆盖仅 12.7%；**单一全局阈值等于按语言分配复核预算**（放行率 普通话 94.1% / 粤语 72.5% / 英语 66.1% / **日语 27.1%**）⇒ 需按语言标定；队列最集中的歌与第 27 轮重解码队列同源同序 | ✅ | `reports/progress/20260912_gate_batch_application.md` |
 
+| B48 | **gate 的三策略前沿**（同一总放行率、无真值结构审计；整批非法率按语言差异巨大：日 49.3% / 英 22.7% / 粤 15.1% / 普 6.6%）：76.3% 放行档下 **全局分位捕获 76.0% 非法单元（复核 23.7%，队列复核率 普 5.9%、日 72.9%）**；**按语言等放行率捕获掉到 55.0%（−21.0pp）且三档一致损失 16.3~21.6pp ⇒ 被严格支配，不要采用**；**按语言等风险**（对齐全局放行集合非法率 8.11%）需多花 6.4pp 复核量、捕获 63.4%、并把日语推到 99.2% 复核 ⇒ 若产品要"各语言风险相当"必须是**知情选择**而非全局阈值的隐性副作用 | ✅ | `runs/20260912_gate_language_calibration/LANGUAGE_CALIBRATION.json`、`structural_compliance.policy_audit` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -173,9 +175,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 184 项（第 38/39 轮无新增测试，复用第 37 轮的 4 项）
+- 测试：本会话新增 186 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1623 passed / 3 pre-existing failed`（第 39 轮后隔离复跑；38/39 轮无新增测试）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1625 passed / 3 pre-existing failed`（第 40 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

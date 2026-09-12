@@ -154,3 +154,37 @@ def test_load_batch_reads_a_batch_and_drops_missing_boundaries(fake_batch: Path)
     assert df["start_sec"].notna().all()
     dfr, _ = S.load_batch(fake_batch, stage="raw")
     assert float((dfr["end_sec"] - dfr["start_sec"]).le(1e-6).sum()) == 2.0   # raw-side degeneracy
+
+
+def test_policy_audit_reports_risk_and_capture_without_ground_truth():
+    import numpy as np
+    import pandas as pd
+    from lyricalign.analysis import structural_compliance as SC
+
+    viol = pd.DataFrame({"is_illegal": [True, False, False, False, True, False, False, False]})
+    langs = pd.Series(["zh", "zh", "en", "en", "ja", "ja", "en", "zh"])
+    # hold both illegal units (idx 0 zh, idx 4 ja) and every Japanese unit
+    accepted = np.array([False, True, True, True, False, False, True, True])
+    out = SC.policy_audit(accepted, viol, langs)
+    assert out["accept_share"] == 0.625        # 5 of 8 units accepted
+    assert out["illegal_capture_of_all_illegal"] == 1.0
+    assert out["illegal_in_accepted_share"] == 0.0
+    # langs zh,zh,en,en,ja,ja,en,zh with accepted F,T,T,T,F,T,T,T:
+    assert out["review_share_by_language"]["ja"] == 1.0        # both Japanese units held
+    # the module rounds shares to 4 decimals, so compare with an explicit tolerance
+    assert out["review_share_by_language"]["zh"] == pytest.approx(1 / 3, abs=1e-4)
+    assert out["review_share_by_language"]["en"] == 0.0        # every English unit accepted
+    assert out["accepted_illegal_by_language"]["ja"] is None   # nothing accepted for that language
+
+
+def test_policy_audit_capture_drops_when_illegal_units_are_accepted():
+    import numpy as np
+    import pandas as pd
+    from lyricalign.analysis import structural_compliance as SC
+
+    viol = pd.DataFrame({"is_illegal": [True, True, False, False]})
+    langs = pd.Series(["zh"] * 4)
+    accepted = np.array([True, True, True, False])
+    out = SC.policy_audit(accepted, viol, langs)
+    assert out["illegal_capture_of_all_illegal"] == 0.0        # both illegal units were shipped
+    assert out["illegal_in_accepted_share"] == pytest.approx(2 / 3, abs=1e-4)  # 2 of 3 accepted
