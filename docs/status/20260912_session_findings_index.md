@@ -136,6 +136,8 @@
 
 | B59 | **去退化复核：长音收尾的跨域反向偏置仍在且更强**：录音室（GTSinger 全检查点，第 21 轮口径）长音收尾中位 **−40.0 → −48.0ms**（偏晚 23.9%→22.1%），伴奏域（MIR-1K r2_full）**+32.4 → +34.0ms**（74.1%→74.8%）⇒ **符号相反，"全局偏移校正不可跨域迁移"继续成立**；且**塌陷单元自己偏晚**（录音室长音 +10.0ms、75.0% 偏晚）⇒ 混入它们在**掩盖**真实提前量，去掉后提前反而变大。**口径更新：今后引用第 21 轮的偏置应改用去退化版（−48ms / +34ms）或并列两者** | ✅ | `reports/progress/20260912_bias_excluding_degenerate.md` |
 
+| B60 | **三个既有失败测试已归因**：① `strict_boundary_cursor_policy` 有两套词汇（规划器 `window_planning.py:404` 发 `per_region_soft_*`，写入器 `align_qwen_fa_serial_demo.py:1322` 在自己的 trace 上发 `continue_from_*`），测试拿写入器的值断言规划器的行 ⇒ 永不可能通过；**全仓库无消费者读该键**（纯观测字段）；② R-S 音频跨度是**有意**加宽一个 margin（`a6cdb8a`，为规避零时长塌陷产生 `invalid audio range: t,t`），测试仍期待未加宽值 ⇒ 过期；两例均已修正并转绿。③ 剩一例：`PATCH_MANIFEST.sha256` 为 **git 跟踪的既有内容**（`20e4afb` 引入）却被测试禁止存在于仓库根 ⇒ 需授权处置（移入 archive 或改禁止列表），本会话不动 | ✅ | `docs/sessions/20260912_gtsinger_gt_deep_analysis/README.md` 第 52 轮 |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -198,7 +200,7 @@
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
 - 测试：本会话新增 226 项（第 51 轮无新增测试）
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1655 passed / 3 pre-existing failed`（第 51 轮后隔离复跑，无新增测试）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1657 passed / 1 failed`（第 52 轮后隔离复跑；剩那 1 项需授权处置，见 B60/清单 31）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

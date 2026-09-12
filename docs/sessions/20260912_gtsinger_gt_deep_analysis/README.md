@@ -1958,3 +1958,35 @@ MIR-1K：hit@50 ±47.9pp、hit@100 ±40.5pp、hit@200 ±2.0pp、hit@250 ±0.7pp�
 自查：`bias_by_stratum` 的关键字是 `end_pred/end_gt`（我误用 `pred_col`）；
 `sign_flip_survives` 第一版把两个布尔用 `!=` 比较 ⇒ 恒判为"未成立"，改为直接判"录音室为负且伴奏为正"；
 去掉了一个未被使用的辅助函数。
+
+---
+
+# 第 52 轮：三个既有失败测试逐一归因（修好 2 个，第 3 个需主线决定）
+
+## 已修（都是**过期断言**，不是行为缺陷）
+1. `tests/test_inline_realign_v4_full_mechanism.py::test_strict_silence_windows_never_cross_gap`
+   —— 同名键 `strict_boundary_cursor_policy` 在仓库里有**两套词汇**：规划器 `window_planning.py:404`
+   发 `per_region_soft_continue_from_committed_cursor`，串行写入器
+   `align_qwen_fa_serial_demo.py:1322` 在自己的 trace 行上发 `continue_from_committed_cursor_after_region`。
+   测试拿**写入器的值**去断言**规划器的行** ⇒ 永远不可能通过（`aaa7feb` 之后）。
+   现改为断言规划器自己的常量，并注明：**全仓库没有任何消费者读这个键**（纯观测字段），
+   所以两套词汇共存不是缺陷，但值得主线统一。
+2. `tests/unit_realign/test_request_families.py::test_local_context_is_family_specific`
+   —— R-S 的音频跨度被**有意**加了 `audio_margin_sec`（提交 `a6cdb8a`：避免塌陷/零时长本地跨度产生
+   `invalid audio range: t,t` 的退化裁剪）。测试仍期待未加宽的 4.5 ⇒ 过期。
+   现改为 4.5+0.5 并补断言"裁剪仍覆盖完整本地跨度、未塌成目标跨度"。
+   注：这条修复恰好与第 44–45 轮发现的塌陷同源——**当时是为了绕开塌陷才加的加宽**。
+
+## 未修（需要主线决定，因为动它就是"删除/清理过去内容"）
+3. `tests/test_archive_builder.py::test_repository_root_has_no_obsolete_patch_or_archive_copies`
+   —— 该测试要求仓库根不得存在 `PATCH_MANIFEST.sha256`，但**这个文件是 git 跟踪的既有内容**
+   （由 `20e4afb merge(patch): activate 20260814 realign recovery + visualization session` 引入，
+   内容是当时若干文件的 SHA256 清单）。
+   两个自洽出路，任选其一，都需要授权：
+   - 把文件移进 `docs/archive/`（或 `archive/`）并同步测试里的禁止列表；
+   - 或承认它是有效历史清单，把它从 `forbidden` 列表中移除。
+   本会话按"禁止删除清理过去内容"的约束**不擅自处置**。
+
+## 结果
+`tests/test_inline_realign_v4_full_mechanism.py` 与 `tests/unit_realign/test_request_families.py`
+两文件现全绿（32 项通过）；全量剩 **1** 项失败（上面第 3 条），属需授权事项而非代码缺陷。

@@ -108,10 +108,14 @@ def test_local_context_is_family_specific():
     assert ra2["canonical_ids"] == [0, 1, 2, 3, 4]
     # R-B: bounded by nearest anchors inclusive -> [1,2,3]
     assert rb["canonical_ids"] == [1, 2, 3]
-    # R-S: full local window, and audio is the full local span (not target span).
+    # R-S: full local window, and audio is the full local span (not target span), padded by one
+    # audio_margin_sec (default 0.5) so a collapsed/zero-duration local span cannot produce the
+    # degenerate "invalid audio range: t,t" crop (see commit a6cdb8a); the start is clamped at 0.
     assert rs["canonical_ids"] == [0, 1, 2, 3, 4]
     assert rs["audio_start_sec"] == 0.0
-    assert rs["audio_end_sec"] == 4.5
+    assert rs["audio_end_sec"] == 4.5 + 0.5
+    # the crop still covers the whole local span rather than collapsing to the target
+    assert rs["audio_start_sec"] <= 0.0 and rs["audio_end_sec"] >= 4.5
 
 
 def test_ru_zero_neighbors_and_audio_margin():

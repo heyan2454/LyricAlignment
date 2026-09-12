@@ -40,7 +40,11 @@ def test_strict_silence_windows_never_cross_gap() -> None:
     region_finals = [row for row in plan["windows"] if row["is_final_region_core"]]
     assert len(region_finals) == 2
     assert region_finals[0]["is_final_core"] is False
-    assert region_finals[0]["strict_boundary_cursor_policy"] == "continue_from_committed_cursor_after_region"
+    # The planner labels its own window rows "per_region_soft_continue_from_committed_cursor";
+    # "continue_from_committed_cursor_after_region" is a *different* label that the serial writer puts
+    # on its trace rows.  Nothing consumes either string, so the planner test must assert the planner's
+    # value (an earlier version of this assertion pinned the writer's label and never matched).
+    assert region_finals[0]["strict_boundary_cursor_policy"] == "per_region_soft_continue_from_committed_cursor"
     assert region_finals[-1]["is_final_core"] is True
     for row in plan["windows"]:
         assert row["strict_region_start_sec"] <= row["input_start_sec"]
