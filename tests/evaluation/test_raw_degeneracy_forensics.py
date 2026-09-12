@@ -137,3 +137,43 @@ def test_zero_length_profile_is_not_confounded_by_song_density():
     assert dens["dense"] > dens["sparse"]        # density tracks the real timing, not degeneracy
     prof = RDF.zero_length_profile(d)
     assert prof["zero_units"] == 0
+
+
+def test_degenerate_run_lineage_names_the_growing_stage():
+    """A block that is partly fine at raw and fully pinned at fixed must be attributed to fixed."""
+    import pandas as pd
+    from lyricalign.analysis import raw_degeneracy_forensics as RDF
+
+    n = 60
+    rows = []
+    # raw: only the middle third is degenerate, and the block still spans real time
+    for i in range(n):
+        bad = 20 <= i < 40
+        rows.append({"song": "s", "unit_index": i, "start_sec": i * 1.0,
+                     "end_sec": i * 1.0 + (0.0 if bad else 0.6)})
+    raw = pd.DataFrame(rows)
+    # fixed: the whole span collapses onto one timestamp
+    fixed = raw.copy()
+    fixed.loc[:, "start_sec"] = 10.0
+    fixed.loc[:, "end_sec"] = 10.0
+    frames = {"raw": raw, "fixed": fixed}
+    out = RDF.degenerate_run_lineage(frames, min_run=30, anchor_stage="fixed")
+    assert out["available"] is True and len(out["blocks"]) == 1
+    blk = out["blocks"][0]
+    assert blk["by_stage"]["raw"]["zero_units"] == 20      # only the middle third at raw
+    assert blk["by_stage"]["raw"]["distinct_start_times"] > 1
+    assert blk["by_stage"]["fixed"]["zero_units"] == 60    # everything at fixed
+    assert blk["by_stage"]["fixed"]["single_timestamp_block"] is True
+    assert blk["first_stage_fully_pinned"] == "fixed"
+    assert blk["zero_growth_vs_previous_stage"]["fixed"] == 40
+
+
+def test_degenerate_run_lineage_ignores_short_blocks():
+    import pandas as pd
+    from lyricalign.analysis import raw_degeneracy_forensics as RDF
+
+    rows = [{"song": "s", "unit_index": i, "start_sec": i * 1.0,
+             "end_sec": i * 1.0 + (0.0 if i < 3 else 0.5)} for i in range(30)]
+    d = pd.DataFrame(rows)
+    out = RDF.degenerate_run_lineage({"raw": d}, min_run=10, anchor_stage="raw")
+    assert out["blocks"] == []

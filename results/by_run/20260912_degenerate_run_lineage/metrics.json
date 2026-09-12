@@ -1,0 +1,312 @@
+{
+  "schema_version": "degenerate_run_lineage_metrics_v1",
+  "audit": {
+    "available": true,
+    "anchor_stage": "selected",
+    "min_run": 50,
+    "blocks": [
+      {
+        "song": "初音未来的消失",
+        "start_index": 304,
+        "end_index": 554,
+        "anchor_length": 251,
+        "by_stage": {
+          "raw": {
+            "units_in_span": 251,
+            "zero_units": 133,
+            "distinct_start_times": 123,
+            "single_timestamp_block": false,
+            "span_sec": 108.72
+          },
+          "fixed": {
+            "units_in_span": 251,
+            "zero_units": 251,
+            "distinct_start_times": 2,
+            "single_timestamp_block": false,
+            "span_sec": 67.885
+          },
+          "selected": {
+            "units_in_span": 251,
+            "zero_units": 251,
+            "distinct_start_times": 2,
+            "single_timestamp_block": false,
+            "span_sec": 67.885
+          },
+          "final": {
+            "units_in_span": 251,
+            "zero_units": 251,
+            "distinct_start_times": 2,
+            "single_timestamp_block": false,
+            "span_sec": 67.885
+          }
+        },
+        "first_stage_fully_pinned": null,
+        "zero_growth_vs_previous_stage": {
+          "fixed": 118,
+          "selected": 0,
+          "final": 0
+        }
+      },
+      {
+        "song": "I See Fire",
+        "start_index": 107,
+        "end_index": 305,
+        "anchor_length": 199,
+        "by_stage": {
+          "raw": {
+            "units_in_span": 199,
+            "zero_units": 107,
+            "distinct_start_times": 79,
+            "single_timestamp_block": false,
+            "span_sec": 79.2
+          },
+          "fixed": {
+            "units_in_span": 199,
+            "zero_units": 199,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "selected": {
+            "units_in_span": 199,
+            "zero_units": 199,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "final": {
+            "units_in_span": 199,
+            "zero_units": 199,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          }
+        },
+        "first_stage_fully_pinned": "fixed",
+        "zero_growth_vs_previous_stage": {
+          "fixed": 92,
+          "selected": 0,
+          "final": 0
+        }
+      },
+      {
+        "song": "画下灯塔水母",
+        "start_index": 384,
+        "end_index": 518,
+        "anchor_length": 135,
+        "by_stage": {
+          "raw": {
+            "units_in_span": 135,
+            "zero_units": 80,
+            "distinct_start_times": 40,
+            "single_timestamp_block": false,
+            "span_sec": 68.16
+          },
+          "fixed": {
+            "units_in_span": 135,
+            "zero_units": 135,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "selected": {
+            "units_in_span": 135,
+            "zero_units": 135,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "final": {
+            "units_in_span": 135,
+            "zero_units": 135,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          }
+        },
+        "first_stage_fully_pinned": "fixed",
+        "zero_growth_vs_previous_stage": {
+          "fixed": 55,
+          "selected": 0,
+          "final": 0
+        }
+      },
+      {
+        "song": "冬之花",
+        "start_index": 109,
+        "end_index": 221,
+        "anchor_length": 113,
+        "by_stage": {
+          "raw": {
+            "units_in_span": 113,
+            "zero_units": 67,
+            "distinct_start_times": 40,
+            "single_timestamp_block": false,
+            "span_sec": 102.08
+          },
+          "fixed": {
+            "units_in_span": 113,
+            "zero_units": 113,
+            "distinct_start_times": 2,
+            "single_timestamp_block": false,
+            "span_sec": 9.44
+          },
+          "selected": {
+            "units_in_span": 113,
+            "zero_units": 113,
+            "distinct_start_times": 2,
+            "single_timestamp_block": false,
+            "span_sec": 9.44
+          },
+          "final": {
+            "units_in_span": 113,
+            "zero_units": 113,
+            "distinct_start_times": 2,
+            "single_timestamp_block": false,
+            "span_sec": 9.44
+          }
+        },
+        "first_stage_fully_pinned": null,
+        "zero_growth_vs_previous_stage": {
+          "fixed": 46,
+          "selected": 0,
+          "final": 0
+        }
+      },
+      {
+        "song": "初音未来的消失",
+        "start_index": 0,
+        "end_index": 96,
+        "anchor_length": 97,
+        "by_stage": {
+          "raw": {
+            "units_in_span": 97,
+            "zero_units": 56,
+            "distinct_start_times": 38,
+            "single_timestamp_block": false,
+            "span_sec": 71.68
+          },
+          "fixed": {
+            "units_in_span": 97,
+            "zero_units": 97,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "selected": {
+            "units_in_span": 97,
+            "zero_units": 97,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "final": {
+            "units_in_span": 97,
+            "zero_units": 97,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          }
+        },
+        "first_stage_fully_pinned": "fixed",
+        "zero_growth_vs_previous_stage": {
+          "fixed": 41,
+          "selected": 0,
+          "final": 0
+        }
+      },
+      {
+        "song": "I See Fire",
+        "start_index": 0,
+        "end_index": 62,
+        "anchor_length": 63,
+        "by_stage": {
+          "raw": {
+            "units_in_span": 63,
+            "zero_units": 34,
+            "distinct_start_times": 28,
+            "single_timestamp_block": false,
+            "span_sec": 54.64
+          },
+          "fixed": {
+            "units_in_span": 63,
+            "zero_units": 63,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "selected": {
+            "units_in_span": 63,
+            "zero_units": 63,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          },
+          "final": {
+            "units_in_span": 63,
+            "zero_units": 63,
+            "distinct_start_times": 1,
+            "single_timestamp_block": true,
+            "span_sec": 0.0
+          }
+        },
+        "first_stage_fully_pinned": "fixed",
+        "zero_growth_vs_previous_stage": {
+          "fixed": 29,
+          "selected": 0,
+          "final": 0
+        }
+      }
+    ],
+    "stages": [
+      "raw",
+      "fixed",
+      "selected",
+      "final"
+    ],
+    "summary": {
+      "blocks": 6,
+      "pinned_at_first_stage": 0,
+      "total_anchor_units": 858
+    },
+    "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+    "pinning_inventory": {
+      "shipped_zero_units": 2236,
+      "zero_units_in_identical_start_blocks_ge5": 641,
+      "share_of_zero_units_in_identical_start_blocks": 0.2867,
+      "such_blocks": 16,
+      "largest_identical_start_block": 199
+    }
+  },
+  "headline": {
+    "blocks": 6,
+    "min_run": 50,
+    "pinned_already_at_first_stage": 0,
+    "zero_growth_only_in_fixed": true,
+    "example": {
+      "song": "初音未来的消失",
+      "raw": {
+        "units_in_span": 251,
+        "zero_units": 133,
+        "distinct_start_times": 123,
+        "single_timestamp_block": false,
+        "span_sec": 108.72
+      },
+      "fixed": {
+        "units_in_span": 251,
+        "zero_units": 251,
+        "distinct_start_times": 2,
+        "single_timestamp_block": false,
+        "span_sec": 67.885
+      }
+    },
+    "pinning_inventory": {
+      "shipped_zero_units": 2236,
+      "zero_units_in_identical_start_blocks_ge5": 641,
+      "share_of_zero_units_in_identical_start_blocks": 0.2867,
+      "such_blocks": 16,
+      "largest_identical_start_block": 199
+    },
+    "conclusion": "the entire amplification happens in the fixed (processor_decoded) stage, which collapses whole spans onto one timestamp; selected/final add zero; no long block was already collapsed at raw"
+  }
+}

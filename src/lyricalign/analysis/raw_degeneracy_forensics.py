@@ -395,3 +395,85 @@ def zero_length_profile(units: pd.DataFrame, *, zero_flag: str = "flag_zero_or_n
             aucs[c] = round(float(a), 4)
     out["auc_context_predicts_zero"] = aucs
     return out
+
+
+def degenerate_run_lineage(stage_frames: dict[str, pd.DataFrame], *, min_run: int = 50,
+                           anchor_stage: str = "selected",
+                           zero_col: str = "flag_zero_or_negative") -> dict[str, Any]:
+    """Follow each long degenerate block through the pipeline stages and name the step that grows it.
+
+    Round 43 showed the shipped longest block is 251 units where the raw longest is 22.  Rounds 15–17
+    suspected two mechanisms (whole blocks pinned to a window's input start, and inverted pairs
+    silently clamped to zero length).  This function tests those suspicions *on the actual long
+    blocks*: for each block found at ``anchor_stage`` it reports, at every stage, how many of those
+    same unit indices are degenerate, how many distinct start times they occupy, and whether they all
+    collapse onto a single timestamp — the signature of pinning.
+    """
+    # local import: structural_compliance owns the violation flags and importing it at module level
+    # would couple the two analysis modules at import time
+    from lyricalign.analysis.structural_compliance import flag_violations
+
+    frames = {k: v.sort_values(["song", "unit_index"]).reset_index(drop=True)
+              for k, v in stage_frames.items() if v is not None and not v.empty}
+    if anchor_stage not in frames:
+        return {"available": False, "reason": f"no {anchor_stage} frame"}
+    anchor = frames[anchor_stage]
+    if zero_col not in anchor.columns:
+        anchor = flag_violations(anchor)
+        zero_col = "flag_zero_or_negative"
+    runs: list[dict[str, Any]] = []
+    for song, sub in anchor.groupby("song", observed=True):
+        z = sub[zero_col].to_numpy(dtype=bool)
+        i = 0
+        while i < len(z):
+            if not z[i]:
+                i += 1
+                continue
+            j = i
+            while j + 1 < len(z) and z[j + 1]:
+                j += 1
+            if j - i + 1 >= min_run:
+                runs.append({"song": str(song), "start_index": int(sub["unit_index"].iloc[i]),
+                             "end_index": int(sub["unit_index"].iloc[j]),
+                             "anchor_length": j - i + 1})
+            i = j + 1
+    out: dict[str, Any] = {"available": True, "anchor_stage": anchor_stage, "min_run": min_run,
+                           "blocks": [], "stages": list(frames)}
+    for run in runs:
+        entry: dict[str, Any] = dict(run)
+        entry["by_stage"] = {}
+        for stage, frame in frames.items():
+            sub = frame[(frame["song"] == run["song"])
+                        & (frame["unit_index"] >= run["start_index"])
+                        & (frame["unit_index"] <= run["end_index"])]
+            if sub.empty:
+                continue
+            if zero_col not in sub.columns:
+                sub = flag_violations(sub)
+            starts = pd.to_numeric(sub["start_sec"], errors="coerce").to_numpy(dtype=float)
+            ends = pd.to_numeric(sub["end_sec"], errors="coerce").to_numpy(dtype=float)
+            finite = np.isfinite(starts) & np.isfinite(ends)
+            n_distinct = int(len(np.unique(np.round(starts[finite], 4)))) if finite.any() else 0
+            entry["by_stage"][stage] = {
+                "units_in_span": int(len(sub)),
+                "zero_units": int(sub[zero_col].to_numpy(dtype=bool).sum()),
+                "distinct_start_times": n_distinct,
+                "single_timestamp_block": bool(n_distinct == 1 and finite.any()),
+                "span_sec": round(float(np.nanmax(ends[finite]) - np.nanmin(starts[finite])), 4)
+                if finite.any() else None,
+            }
+        # which stage first shows a majority-single-timestamp collapse inside this span?
+        entry["first_stage_fully_pinned"] = next(
+            (s for s in frames if entry["by_stage"].get(s, {}).get("single_timestamp_block")), None)
+        entry["zero_growth_vs_previous_stage"] = {
+            s: entry["by_stage"][s]["zero_units"] - entry["by_stage"][prev]["zero_units"]
+            for prev, s in zip(list(frames), list(frames)[1:])
+            if s in entry["by_stage"] and prev in entry["by_stage"]}
+        out["blocks"].append(entry)
+    out["blocks"].sort(key=lambda r: -r["anchor_length"])
+    out["summary"] = {
+        "blocks": len(out["blocks"]),
+        "pinned_at_first_stage": sum(1 for b in out["blocks"]
+                                     if b["first_stage_fully_pinned"] == list(frames)[0]),
+        "total_anchor_units": sum(b["anchor_length"] for b in out["blocks"])}
+    return out

@@ -120,6 +120,8 @@
 | B50 | **零长度字是块状塌陷且被后处理放大 11 倍**（33 首真歌交付线）：2,236 个零长字只分布在 **734 段**，**最长连续 251 字**（原始阶段仅 22），**≥5 长度段占 59.3%**（原始 23.2%），孤立仅 23.3% ⇒ **修法必须段落级/重解码，不是逐字插值**；**6/33 首零长 >30%、3 首 >50%**（I See Fire 88.1%、初音未来的消失 76.5%、冬之花 62.6%），最健康四首全是普通话（1.2–1.9%）；**歌曲级密度与零长无关（ρ=−0.07）⇒ "歌词太密"假设否证**；位置效应真实（后段 24.3% vs 前段 11.0%，最后一字 18.2%） | ✅ | `reports/progress/20260912_zero_length_profile.md` |
 | B51 | 指标陷阱（本轮自查）：**"局部窗口密度"在含零长单元的窗口上是循环论证**（时长塌缩致密度虚高，原始阶段中位数顶到裁剪值 5000 字/秒）⇒ 只能作"扎堆证据"；非循环替代是**歌曲级密度**（用整首歌时间轴跨度，零长单元无法干扰） | ✅ | 同上 §3 |
 
+| B52 | **超长塌陷的唯一归因：`fixed`（processor_decoded）阶段**（6 个 ≥50 字块逐阶段取证）：`raw` 时块内只坏一半且仍有真实跨度（如 I See Fire 199 字块：107/199 退化、79 个不同起点、79.2s），到 `fixed` 变成 **199/199 退化、1 个起点、0.0s**；`selected`/`final` 逐阶段净增**全为 0**；**0/6 个块在 raw 就是全塌陷** ⇒ 塌陷是下游破坏性做出来的，不是模型原始输出的必然结果。总量：2,236 个零长字中 **641（28.7%）位于 16 个"起点完全相同"的块**（最大 199 字）。⇒ **修法第一步是修 fixed 的整块钳位/钉锚，其次才是重解码** | ✅ | `reports/progress/20260912_degenerate_run_lineage.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -180,9 +182,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 190 项
+- 测试：本会话新增 192 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1629 passed / 3 pre-existing failed`（第 43 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1631 passed / 3 pre-existing failed`（第 44 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
