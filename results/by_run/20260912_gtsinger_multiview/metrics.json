@@ -1,0 +1,982 @@
+{
+  "schema_version": "gtsinger_multiview_metrics_v1",
+  "source": "/home/hyan/Data/lyricalign/runs/20260912_gtsinger_multiview/MULTIVIEW.json",
+  "official": {
+    "schema": "gtsinger_multiview_selection_v1",
+    "results": {
+      "R1_consensus_median_boundaries": {
+        "units": 2415,
+        "hit100": 0.8729,
+        "hit200": 0.9292,
+        "hit250": 0.9429,
+        "mae_both_sec": 0.0721,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8563,
+          0.8893
+        ],
+        "mae_ci95_item_boot": [
+          0.0666,
+          0.0787
+        ],
+        "note": "median boundary across the 12 views"
+      },
+      "R0_mean_of_views": {
+        "units": 30600,
+        "hit100": 0.8037,
+        "hit200": 0.8722,
+        "hit250": 0.8907,
+        "mae_both_sec": 0.1065,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.7888,
+          0.8187
+        ],
+        "mae_ci95_item_boot": [
+          0.0994,
+          0.114
+        ],
+        "note": "average over views (equals a random view)"
+      },
+      "S_pick_max_support": {
+        "units": 2415,
+        "hit100": 0.8526,
+        "hit200": 0.9234,
+        "hit250": 0.9362,
+        "mae_both_sec": 0.083,
+        "median_both_sec": 0.05,
+        "hit100_ci95_item_boot": [
+          0.8349,
+          0.8689
+        ],
+        "mae_ci95_item_boot": [
+          0.0769,
+          0.0898
+        ],
+        "note": "pick the view with max support_100ms"
+      },
+      "S_pick_min_consensus_distance": {
+        "units": 2415,
+        "hit100": 0.8737,
+        "hit200": 0.9284,
+        "hit250": 0.9424,
+        "mae_both_sec": 0.0722,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8579,
+          0.8897
+        ],
+        "mae_ci95_item_boot": [
+          0.0665,
+          0.0788
+        ],
+        "note": "pick the view with min dev_consensus"
+      },
+      "S_pick_min_entropy": {
+        "units": 2415,
+        "hit100": 0.8576,
+        "hit200": 0.9159,
+        "hit250": 0.9313,
+        "mae_both_sec": 0.0853,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8421,
+          0.872
+        ],
+        "mae_ci95_item_boot": [
+          0.0779,
+          0.0936
+        ],
+        "note": "pick the view with min ent_max_view"
+      },
+      "S_production_when_confident_else_best_support": {
+        "units": 4886,
+        "hit100": 0.8719,
+        "hit200": 0.9363,
+        "hit250": 0.9468,
+        "mae_both_sec": 0.0737,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8571,
+          0.8853
+        ],
+        "mae_ci95_item_boot": [
+          0.0686,
+          0.0799
+        ],
+        "note": "keep production view when its consensus distance <=100ms (97% of units), else re-pick by support"
+      },
+      "U_oracle_best_view": {
+        "units": 2415,
+        "hit100": 0.9101,
+        "hit200": 0.9511,
+        "hit250": 0.9582,
+        "mae_both_sec": 0.0595,
+        "median_both_sec": 0.03,
+        "hit100_ci95_item_boot": [
+          0.896,
+          0.9248
+        ],
+        "mae_ci95_item_boot": [
+          0.0546,
+          0.0654
+        ],
+        "note": "upper bound, uses GT"
+      },
+      "U_worst_view": {
+        "units": 2415,
+        "hit100": 0.6505,
+        "hit200": 0.7408,
+        "hit250": 0.7727,
+        "mae_both_sec": 0.1849,
+        "median_both_sec": 0.068,
+        "hit100_ci95_item_boot": [
+          0.6234,
+          0.6735
+        ],
+        "mae_ci95_item_boot": [
+          0.1694,
+          0.2019
+        ],
+        "note": "lower bound, uses GT"
+      }
+    },
+    "per_view_baseline": {
+      "mean_of_views_hit100": 0.8037,
+      "mean_of_views_mae": 0.1065,
+      "production_view": {
+        "name": "r2|vocal|windowed",
+        "units": 2550,
+        "hit100": 0.8804,
+        "hit200": 0.9427,
+        "hit250": 0.9518,
+        "mae_both_sec": 0.0678,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8643,
+          0.8971
+        ],
+        "mae_ci95_item_boot": [
+          0.0627,
+          0.074
+        ],
+        "note": "single deployed configuration"
+      },
+      "all_views": {
+        "r0|mix|full": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r0|mix|windowed": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r0|vocal|full": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r0|vocal|windowed": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r1|mix|full": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0756,
+          "is_production_view": false
+        },
+        "r1|mix|windowed": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0755,
+          "is_production_view": false
+        },
+        "r1|vocal|full": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0756,
+          "is_production_view": false
+        },
+        "r1|vocal|windowed": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0755,
+          "is_production_view": false
+        },
+        "r2|mix|full": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0679,
+          "is_production_view": false
+        },
+        "r2|mix|windowed": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0678,
+          "is_production_view": false
+        },
+        "r2|vocal|full": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0679,
+          "is_production_view": false
+        },
+        "r2|vocal|windowed": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0678,
+          "is_production_view": true
+        }
+      }
+    },
+    "gap_closed": {
+      "R1_consensus_median_boundaries": {
+        "hit100": 0.8729,
+        "delta_pp_vs_production": -0.75,
+        "share_of_oracle_gap": -0.253
+      },
+      "R0_mean_of_views": {
+        "hit100": 0.8037,
+        "delta_pp_vs_production": -7.67,
+        "share_of_oracle_gap": -2.582
+      },
+      "S_pick_max_support": {
+        "hit100": 0.8526,
+        "delta_pp_vs_production": -2.78,
+        "share_of_oracle_gap": -0.936
+      },
+      "S_pick_min_consensus_distance": {
+        "hit100": 0.8737,
+        "delta_pp_vs_production": -0.67,
+        "share_of_oracle_gap": -0.226
+      },
+      "S_pick_min_entropy": {
+        "hit100": 0.8576,
+        "delta_pp_vs_production": -2.28,
+        "share_of_oracle_gap": -0.768
+      },
+      "S_production_when_confident_else_best_support": {
+        "hit100": 0.8719,
+        "delta_pp_vs_production": -0.85,
+        "share_of_oracle_gap": -0.286
+      }
+    },
+    "oracle_gap_pp": 2.97,
+    "diversity": {
+      "cross_view_disagreement": {
+        "median_sec": 0.08,
+        "p75": 0.16,
+        "p90": 0.4,
+        "share_gt_100ms": 0.2708,
+        "share_gt_250ms": 0.193
+      },
+      "factor_decomposition": {
+        "model (other factors held fixed)": {
+          "levels": [
+            "r0",
+            "r1",
+            "r2"
+          ],
+          "matched_cells": 9660,
+          "start_diff_median_sec": 0.0,
+          "start_diff_share_gt_100ms": 0.0836,
+          "end_diff_median_sec": 0.08,
+          "end_diff_share_gt_100ms": 0.2149
+        },
+        "audio_input (other factors held fixed)": {
+          "levels": [
+            "mix",
+            "vocal"
+          ],
+          "matched_cells": 14490,
+          "start_diff_median_sec": 0.0,
+          "start_diff_share_gt_100ms": 0.0,
+          "end_diff_median_sec": 0.0,
+          "end_diff_share_gt_100ms": 0.0
+        },
+        "mode (other factors held fixed)": {
+          "levels": [
+            "full",
+            "windowed"
+          ],
+          "matched_cells": 14490,
+          "start_diff_median_sec": 0.0,
+          "start_diff_share_gt_100ms": 0.0,
+          "end_diff_median_sec": 0.0,
+          "end_diff_share_gt_100ms": 0.0
+        }
+      },
+      "views": {
+        "r0|mix|full": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r0|mix|windowed": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r0|vocal|full": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r0|vocal|windowed": {
+          "units": 2550,
+          "hit100": 0.6753,
+          "hit250": 0.78,
+          "mae_both_sec": 0.1762,
+          "is_production_view": false
+        },
+        "r1|mix|full": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0756,
+          "is_production_view": false
+        },
+        "r1|mix|windowed": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0755,
+          "is_production_view": false
+        },
+        "r1|vocal|full": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0756,
+          "is_production_view": false
+        },
+        "r1|vocal|windowed": {
+          "units": 2550,
+          "hit100": 0.8553,
+          "hit250": 0.9404,
+          "mae_both_sec": 0.0755,
+          "is_production_view": false
+        },
+        "r2|mix|full": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0679,
+          "is_production_view": false
+        },
+        "r2|mix|windowed": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0678,
+          "is_production_view": false
+        },
+        "r2|vocal|full": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0679,
+          "is_production_view": false
+        },
+        "r2|vocal|windowed": {
+          "units": 2550,
+          "hit100": 0.8804,
+          "hit250": 0.9518,
+          "mae_both_sec": 0.0678,
+          "is_production_view": true
+        }
+      },
+      "units": 2415
+    },
+    "factor_content_audit": {
+      "available": true,
+      "pipeline": "official",
+      "expectation": {
+        "audio_input": "input_bytes",
+        "mode": "input_plan",
+        "model": "input_checkpoint"
+      },
+      "factors": {
+        "model": {
+          "levels": [
+            "r0",
+            "r1",
+            "r2"
+          ],
+          "matched_cells": 636,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "same file by design (checkpoint axis); differs in output => informative"
+        },
+        "audio_input": {
+          "levels": [
+            "mix",
+            "vocal"
+          ],
+          "matched_cells": 954,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "DEAD CONFIGURATION: mix and vocal cells were fed the *same bytes* (identical audio_sha256) => this ablation never happened"
+        },
+        "mode": {
+          "levels": [
+            "full",
+            "windowed"
+          ],
+          "matched_cells": 954,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "same file by design; uninformative on clips shorter than one window (outputs identical, see factor_decomposition)"
+        }
+      }
+    }
+  },
+  "raw": {
+    "schema": "gtsinger_multiview_selection_v1",
+    "results": {
+      "R1_consensus_median_boundaries": {
+        "units": 2415,
+        "hit100": 0.8928,
+        "hit200": 0.9366,
+        "hit250": 0.9482,
+        "mae_both_sec": 0.0683,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8788,
+          0.9054
+        ],
+        "mae_ci95_item_boot": [
+          0.0634,
+          0.0737
+        ],
+        "note": "median boundary across the 12 views"
+      },
+      "R0_mean_of_views": {
+        "units": 33228,
+        "hit100": 0.8242,
+        "hit200": 0.8791,
+        "hit250": 0.8958,
+        "mae_both_sec": 0.1036,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8104,
+          0.8363
+        ],
+        "mae_ci95_item_boot": [
+          0.0979,
+          0.11
+        ],
+        "note": "average over views (equals a random view)"
+      },
+      "S_pick_max_support": {
+        "units": 2415,
+        "hit100": 0.87,
+        "hit200": 0.9313,
+        "hit250": 0.942,
+        "mae_both_sec": 0.0794,
+        "median_both_sec": 0.05,
+        "hit100_ci95_item_boot": [
+          0.8555,
+          0.884
+        ],
+        "mae_ci95_item_boot": [
+          0.074,
+          0.0855
+        ],
+        "note": "pick the view with max support_100ms"
+      },
+      "S_pick_min_consensus_distance": {
+        "units": 2415,
+        "hit100": 0.8928,
+        "hit200": 0.9358,
+        "hit250": 0.9482,
+        "mae_both_sec": 0.0684,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8793,
+          0.9054
+        ],
+        "mae_ci95_item_boot": [
+          0.0635,
+          0.0738
+        ],
+        "note": "pick the view with min dev_consensus"
+      },
+      "S_pick_min_entropy": {
+        "units": 2415,
+        "hit100": 0.877,
+        "hit200": 0.9238,
+        "hit250": 0.935,
+        "mae_both_sec": 0.0823,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8634,
+          0.89
+        ],
+        "mae_ci95_item_boot": [
+          0.0762,
+          0.0899
+        ],
+        "note": "pick the view with min ent_max_view"
+      },
+      "S_production_when_confident_else_best_support": {
+        "units": 5104,
+        "hit100": 0.8897,
+        "hit200": 0.9428,
+        "hit250": 0.9518,
+        "mae_both_sec": 0.0706,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8772,
+          0.9009
+        ],
+        "mae_ci95_item_boot": [
+          0.0661,
+          0.0759
+        ],
+        "note": "keep production view when its consensus distance <=100ms (97% of units), else re-pick by support"
+      },
+      "U_oracle_best_view": {
+        "units": 2415,
+        "hit100": 0.9267,
+        "hit200": 0.9565,
+        "hit250": 0.9636,
+        "mae_both_sec": 0.0561,
+        "median_both_sec": 0.03,
+        "hit100_ci95_item_boot": [
+          0.9164,
+          0.9378
+        ],
+        "mae_ci95_item_boot": [
+          0.052,
+          0.0611
+        ],
+        "note": "upper bound, uses GT"
+      },
+      "U_worst_view": {
+        "units": 2415,
+        "hit100": 0.6687,
+        "hit200": 0.7458,
+        "hit250": 0.7743,
+        "mae_both_sec": 0.1847,
+        "median_both_sec": 0.06,
+        "hit100_ci95_item_boot": [
+          0.6403,
+          0.6925
+        ],
+        "mae_ci95_item_boot": [
+          0.1694,
+          0.2024
+        ],
+        "note": "lower bound, uses GT"
+      }
+    },
+    "per_view_baseline": {
+      "mean_of_views_hit100": 0.8242,
+      "mean_of_views_mae": 0.1036,
+      "production_view": {
+        "name": "r2|vocal|windowed",
+        "units": 2769,
+        "hit100": 0.8974,
+        "hit200": 0.9458,
+        "hit250": 0.9545,
+        "mae_both_sec": 0.0666,
+        "median_both_sec": 0.04,
+        "hit100_ci95_item_boot": [
+          0.8841,
+          0.9116
+        ],
+        "mae_ci95_item_boot": [
+          0.0617,
+          0.0722
+        ],
+        "note": "single deployed configuration"
+      },
+      "all_views": {
+        "r0|mix|full": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1707,
+          "is_production_view": false
+        },
+        "r0|mix|windowed": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1695,
+          "is_production_view": false
+        },
+        "r0|vocal|full": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1707,
+          "is_production_view": false
+        },
+        "r0|vocal|windowed": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1695,
+          "is_production_view": false
+        },
+        "r1|mix|full": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.0742,
+          "is_production_view": false
+        },
+        "r1|mix|windowed": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.074,
+          "is_production_view": false
+        },
+        "r1|vocal|full": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.0742,
+          "is_production_view": false
+        },
+        "r1|vocal|windowed": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.074,
+          "is_production_view": false
+        },
+        "r2|mix|full": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0667,
+          "is_production_view": false
+        },
+        "r2|mix|windowed": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0666,
+          "is_production_view": false
+        },
+        "r2|vocal|full": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0667,
+          "is_production_view": false
+        },
+        "r2|vocal|windowed": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0666,
+          "is_production_view": true
+        }
+      }
+    },
+    "gap_closed": {
+      "R1_consensus_median_boundaries": {
+        "hit100": 0.8928,
+        "delta_pp_vs_production": -0.46,
+        "share_of_oracle_gap": -0.157
+      },
+      "R0_mean_of_views": {
+        "hit100": 0.8242,
+        "delta_pp_vs_production": -7.32,
+        "share_of_oracle_gap": -2.498
+      },
+      "S_pick_max_support": {
+        "hit100": 0.87,
+        "delta_pp_vs_production": -2.74,
+        "share_of_oracle_gap": -0.935
+      },
+      "S_pick_min_consensus_distance": {
+        "hit100": 0.8928,
+        "delta_pp_vs_production": -0.46,
+        "share_of_oracle_gap": -0.157
+      },
+      "S_pick_min_entropy": {
+        "hit100": 0.877,
+        "delta_pp_vs_production": -2.04,
+        "share_of_oracle_gap": -0.696
+      },
+      "S_production_when_confident_else_best_support": {
+        "hit100": 0.8897,
+        "delta_pp_vs_production": -0.77,
+        "share_of_oracle_gap": -0.263
+      }
+    },
+    "oracle_gap_pp": 2.93,
+    "diversity": {
+      "cross_view_disagreement": {
+        "median_sec": 0.08,
+        "p75": 0.16,
+        "p90": 0.48,
+        "share_gt_100ms": 0.2658,
+        "share_gt_250ms": 0.1975
+      },
+      "factor_decomposition": {
+        "model (other factors held fixed)": {
+          "levels": [
+            "r0",
+            "r1",
+            "r2"
+          ],
+          "matched_cells": 9660,
+          "start_diff_median_sec": 0.0,
+          "start_diff_share_gt_100ms": 0.0766,
+          "end_diff_median_sec": 0.08,
+          "end_diff_share_gt_100ms": 0.2151
+        },
+        "audio_input (other factors held fixed)": {
+          "levels": [
+            "mix",
+            "vocal"
+          ],
+          "matched_cells": 14490,
+          "start_diff_median_sec": 0.0,
+          "start_diff_share_gt_100ms": 0.0,
+          "end_diff_median_sec": 0.0,
+          "end_diff_share_gt_100ms": 0.0
+        },
+        "mode (other factors held fixed)": {
+          "levels": [
+            "full",
+            "windowed"
+          ],
+          "matched_cells": 14490,
+          "start_diff_median_sec": 0.0,
+          "start_diff_share_gt_100ms": 0.0,
+          "end_diff_median_sec": 0.0,
+          "end_diff_share_gt_100ms": 0.0015
+        }
+      },
+      "views": {
+        "r0|mix|full": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1707,
+          "is_production_view": false
+        },
+        "r0|mix|windowed": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1695,
+          "is_production_view": false
+        },
+        "r0|vocal|full": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1707,
+          "is_production_view": false
+        },
+        "r0|vocal|windowed": {
+          "units": 2769,
+          "hit100": 0.701,
+          "hit250": 0.7909,
+          "mae_both_sec": 0.1695,
+          "is_production_view": false
+        },
+        "r1|mix|full": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.0742,
+          "is_production_view": false
+        },
+        "r1|mix|windowed": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.074,
+          "is_production_view": false
+        },
+        "r1|vocal|full": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.0742,
+          "is_production_view": false
+        },
+        "r1|vocal|windowed": {
+          "units": 2769,
+          "hit100": 0.8743,
+          "hit250": 0.9419,
+          "mae_both_sec": 0.074,
+          "is_production_view": false
+        },
+        "r2|mix|full": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0667,
+          "is_production_view": false
+        },
+        "r2|mix|windowed": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0666,
+          "is_production_view": false
+        },
+        "r2|vocal|full": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0667,
+          "is_production_view": false
+        },
+        "r2|vocal|windowed": {
+          "units": 2769,
+          "hit100": 0.8974,
+          "hit250": 0.9545,
+          "mae_both_sec": 0.0666,
+          "is_production_view": true
+        }
+      },
+      "units": 2415
+    },
+    "factor_content_audit": {
+      "available": true,
+      "pipeline": "raw",
+      "expectation": {
+        "audio_input": "input_bytes",
+        "mode": "input_plan",
+        "model": "input_checkpoint"
+      },
+      "factors": {
+        "model": {
+          "levels": [
+            "r0",
+            "r1",
+            "r2"
+          ],
+          "matched_cells": 636,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "same file by design (checkpoint axis); differs in output => informative"
+        },
+        "audio_input": {
+          "levels": [
+            "mix",
+            "vocal"
+          ],
+          "matched_cells": 954,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "DEAD CONFIGURATION: mix and vocal cells were fed the *same bytes* (identical audio_sha256) => this ablation never happened"
+        },
+        "mode": {
+          "levels": [
+            "full",
+            "windowed"
+          ],
+          "matched_cells": 954,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "same file by design; uninformative on clips shorter than one window (outputs identical, see factor_decomposition)"
+        }
+      }
+    }
+  },
+  "headline": {
+    "units": 2415,
+    "nominal_views_per_unit": 12,
+    "production_view_hit100": 0.8804,
+    "consensus_delta_pp": -0.75,
+    "best_selector_delta_pp": -0.67,
+    "oracle_gap_pp": 2.97,
+    "factor_content_audit": {
+      "available": true,
+      "pipeline": "official",
+      "expectation": {
+        "audio_input": "input_bytes",
+        "mode": "input_plan",
+        "model": "input_checkpoint"
+      },
+      "factors": {
+        "model": {
+          "levels": [
+            "r0",
+            "r1",
+            "r2"
+          ],
+          "matched_cells": 636,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "same file by design (checkpoint axis); differs in output => informative"
+        },
+        "audio_input": {
+          "levels": [
+            "mix",
+            "vocal"
+          ],
+          "matched_cells": 954,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "DEAD CONFIGURATION: mix and vocal cells were fed the *same bytes* (identical audio_sha256) => this ablation never happened"
+        },
+        "mode": {
+          "levels": [
+            "full",
+            "windowed"
+          ],
+          "matched_cells": 954,
+          "share_identical_audio_sha": 1.0,
+          "share_identical_request_hash": 0.0,
+          "verdict": "same file by design; uninformative on clips shorter than one window (outputs identical, see factor_decomposition)"
+        }
+      }
+    },
+    "audio_input_ablation_was_real": false,
+    "factor_degeneration": {
+      "model": {
+        "start_diff_median_sec": 0.0,
+        "end_diff_share_gt_100ms": 0.2149
+      },
+      "audio_input": {
+        "start_diff_median_sec": 0.0,
+        "end_diff_share_gt_100ms": 0.0
+      },
+      "mode": {
+        "start_diff_median_sec": 0.0,
+        "end_diff_share_gt_100ms": 0.0
+      }
+    },
+    "conclusion": "views must differ at the input level AND be of comparable quality; on GTSinger the audio/mode factors are degenerate, so consensus loses to the production view"
+  }
+}
