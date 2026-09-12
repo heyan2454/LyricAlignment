@@ -1,0 +1,285 @@
+{
+  "schema_version": "eval_contamination_metrics_v1",
+  "audit": {
+    "schema": "eval_contamination_v1",
+    "tolerances_sec": [
+      0.1,
+      0.2,
+      0.25
+    ],
+    "question": "how much of each reported hit rate is the upstream zero-length collapse?",
+    "panels": {
+      "mir1k_human_gt": {
+        "units": 12210,
+        "items": 17,
+        "predictors": {
+          "base_qwen_raw_v1": {
+            "units": 2035,
+            "degenerate_units": 410,
+            "degenerate_share": 0.2015,
+            "hit_at_100ms": 0.2231,
+            "hit_at_100ms_excluding_degenerate": 0.2769,
+            "degenerate_share_of_misses_at_100ms": 0.2568,
+            "hit_at_200ms": 0.3872,
+            "hit_at_200ms_excluding_degenerate": 0.4652,
+            "degenerate_share_of_misses_at_200ms": 0.3031,
+            "hit_at_250ms": 0.4565,
+            "hit_at_250ms_excluding_degenerate": 0.5422,
+            "degenerate_share_of_misses_at_250ms": 0.3273,
+            "median_err_ms": 280.3,
+            "median_err_ms_excluding_degenerate": 220.0,
+            "degenerate_median_err_ms": 664.4,
+            "identical_start_blocks": {
+              "runs_ge_5": 2,
+              "units_in_runs": 13,
+              "longest_run": 8
+            }
+          },
+          "r0_raw_20260724": {
+            "units": 2035,
+            "degenerate_units": 48,
+            "degenerate_share": 0.0236,
+            "hit_at_100ms": 0.7459,
+            "hit_at_100ms_excluding_degenerate": 0.7635,
+            "degenerate_share_of_misses_at_100ms": 0.0909,
+            "hit_at_200ms": 0.8663,
+            "hit_at_200ms_excluding_degenerate": 0.8797,
+            "degenerate_share_of_misses_at_200ms": 0.1213,
+            "hit_at_250ms": 0.8889,
+            "hit_at_250ms_excluding_degenerate": 0.8993,
+            "degenerate_share_of_misses_at_250ms": 0.115,
+            "median_err_ms": 62.0,
+            "median_err_ms_excluding_degenerate": 60.2,
+            "degenerate_median_err_ms": 256.1,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          },
+          "r1_full_20260724": {
+            "units": 2035,
+            "degenerate_units": 9,
+            "degenerate_share": 0.0044,
+            "hit_at_100ms": 0.9115,
+            "hit_at_100ms_excluding_degenerate": 0.9156,
+            "degenerate_share_of_misses_at_100ms": 0.05,
+            "hit_at_200ms": 0.9779,
+            "hit_at_200ms_excluding_degenerate": 0.9812,
+            "degenerate_share_of_misses_at_200ms": 0.1556,
+            "hit_at_250ms": 0.9823,
+            "hit_at_250ms_excluding_degenerate": 0.9852,
+            "degenerate_share_of_misses_at_250ms": 0.1667,
+            "median_err_ms": 41.9,
+            "median_err_ms_excluding_degenerate": 41.6,
+            "degenerate_median_err_ms": 318.4,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          },
+          "r2_full_20260723": {
+            "units": 2035,
+            "degenerate_units": 12,
+            "degenerate_share": 0.0059,
+            "hit_at_100ms": 0.9145,
+            "hit_at_100ms_excluding_degenerate": 0.9199,
+            "degenerate_share_of_misses_at_100ms": 0.069,
+            "hit_at_200ms": 0.9799,
+            "hit_at_200ms_excluding_degenerate": 0.9847,
+            "degenerate_share_of_misses_at_200ms": 0.2439,
+            "hit_at_250ms": 0.9862,
+            "hit_at_250ms_excluding_degenerate": 0.9911,
+            "degenerate_share_of_misses_at_250ms": 0.3571,
+            "median_err_ms": 40.0,
+            "median_err_ms_excluding_degenerate": 40.0,
+            "degenerate_median_err_ms": 520.0,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          },
+          "r2_ood_20260723": {
+            "units": 2035,
+            "degenerate_units": 5,
+            "degenerate_share": 0.0025,
+            "hit_at_100ms": 0.9214,
+            "hit_at_100ms_excluding_degenerate": 0.9236,
+            "degenerate_share_of_misses_at_100ms": 0.0312,
+            "hit_at_200ms": 0.9794,
+            "hit_at_200ms_excluding_degenerate": 0.9808,
+            "degenerate_share_of_misses_at_200ms": 0.0714,
+            "hit_at_250ms": 0.9872,
+            "hit_at_250ms_excluding_degenerate": 0.9887,
+            "degenerate_share_of_misses_at_250ms": 0.1154,
+            "median_err_ms": 40.0,
+            "median_err_ms_excluding_degenerate": 40.0,
+            "degenerate_median_err_ms": 280.4,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          },
+          "r2_seed_20260724": {
+            "units": 2035,
+            "degenerate_units": 10,
+            "degenerate_share": 0.0049,
+            "hit_at_100ms": 0.9125,
+            "hit_at_100ms_excluding_degenerate": 0.917,
+            "degenerate_share_of_misses_at_100ms": 0.0562,
+            "hit_at_200ms": 0.9823,
+            "hit_at_200ms_excluding_degenerate": 0.9862,
+            "degenerate_share_of_misses_at_200ms": 0.2222,
+            "hit_at_250ms": 0.9877,
+            "hit_at_250ms_excluding_degenerate": 0.9916,
+            "degenerate_share_of_misses_at_250ms": 0.32,
+            "median_err_ms": 40.0,
+            "median_err_ms_excluding_degenerate": 40.0,
+            "degenerate_median_err_ms": 392.8,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          }
+        }
+      },
+      "gtsinger_human_gt": {
+        "units": 30600,
+        "predictors": {
+          "r0": {
+            "units": 10200,
+            "degenerate_units": 580,
+            "degenerate_share": 0.0569,
+            "hit_at_100ms": 0.6753,
+            "hit_at_100ms_excluding_degenerate": 0.7073,
+            "degenerate_share_of_misses_at_100ms": 0.1498,
+            "hit_at_200ms": 0.7541,
+            "hit_at_200ms_excluding_degenerate": 0.7788,
+            "degenerate_share_of_misses_at_200ms": 0.1515,
+            "hit_at_250ms": 0.78,
+            "hit_at_250ms_excluding_degenerate": 0.8033,
+            "degenerate_share_of_misses_at_250ms": 0.1569,
+            "median_err_ms": 60.0,
+            "median_err_ms_excluding_degenerate": 60.0,
+            "degenerate_median_err_ms": 330.0,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          },
+          "r1": {
+            "units": 10200,
+            "degenerate_units": 420,
+            "degenerate_share": 0.0412,
+            "hit_at_100ms": 0.8553,
+            "hit_at_100ms_excluding_degenerate": 0.8896,
+            "degenerate_share_of_misses_at_100ms": 0.2683,
+            "hit_at_200ms": 0.9196,
+            "hit_at_200ms_excluding_degenerate": 0.9468,
+            "degenerate_share_of_misses_at_200ms": 0.3659,
+            "hit_at_250ms": 0.9404,
+            "hit_at_250ms_excluding_degenerate": 0.9656,
+            "degenerate_share_of_misses_at_250ms": 0.4474,
+            "median_err_ms": 40.0,
+            "median_err_ms_excluding_degenerate": 40.0,
+            "degenerate_median_err_ms": 350.0,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          },
+          "r2": {
+            "units": 10200,
+            "degenerate_units": 360,
+            "degenerate_share": 0.0353,
+            "hit_at_100ms": 0.8804,
+            "hit_at_100ms_excluding_degenerate": 0.911,
+            "degenerate_share_of_misses_at_100ms": 0.282,
+            "hit_at_200ms": 0.9427,
+            "hit_at_200ms_excluding_degenerate": 0.965,
+            "degenerate_share_of_misses_at_200ms": 0.411,
+            "hit_at_250ms": 0.9518,
+            "hit_at_250ms_excluding_degenerate": 0.9711,
+            "degenerate_share_of_misses_at_250ms": 0.4228,
+            "median_err_ms": 40.0,
+            "median_err_ms_excluding_degenerate": 40.0,
+            "degenerate_median_err_ms": 320.0,
+            "identical_start_blocks": {
+              "runs_ge_5": 0,
+              "units_in_runs": 0,
+              "longest_run": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "headline": {
+    "mir1k": {
+      "base_qwen_raw_v1": {
+        "degenerate_share": 0.2015,
+        "hit200": 0.3872,
+        "hit200_excl_degenerate": 0.4652,
+        "degenerate_share_of_misses": 0.3031
+      },
+      "r0_raw_20260724": {
+        "degenerate_share": 0.0236,
+        "hit200": 0.8663,
+        "hit200_excl_degenerate": 0.8797,
+        "degenerate_share_of_misses": 0.1213
+      },
+      "r1_full_20260724": {
+        "degenerate_share": 0.0044,
+        "hit200": 0.9779,
+        "hit200_excl_degenerate": 0.9812,
+        "degenerate_share_of_misses": 0.1556
+      },
+      "r2_full_20260723": {
+        "degenerate_share": 0.0059,
+        "hit200": 0.9799,
+        "hit200_excl_degenerate": 0.9847,
+        "degenerate_share_of_misses": 0.2439
+      },
+      "r2_ood_20260723": {
+        "degenerate_share": 0.0025,
+        "hit200": 0.9794,
+        "hit200_excl_degenerate": 0.9808,
+        "degenerate_share_of_misses": 0.0714
+      },
+      "r2_seed_20260724": {
+        "degenerate_share": 0.0049,
+        "hit200": 0.9823,
+        "hit200_excl_degenerate": 0.9862,
+        "degenerate_share_of_misses": 0.2222
+      }
+    },
+    "gtsinger": {
+      "r0": {
+        "degenerate_share": 0.0569,
+        "hit200": 0.7541,
+        "hit200_excl_degenerate": 0.7788,
+        "degenerate_share_of_misses": 0.1515
+      },
+      "r1": {
+        "degenerate_share": 0.0412,
+        "hit200": 0.9196,
+        "hit200_excl_degenerate": 0.9468,
+        "degenerate_share_of_misses": 0.3659
+      },
+      "r2": {
+        "degenerate_share": 0.0353,
+        "hit200": 0.9427,
+        "hit200_excl_degenerate": 0.965,
+        "degenerate_share_of_misses": 0.411
+      }
+    },
+    "ceiling_interpretation": "the excluding-degenerate value is the upper bound of what fixing the collapse can buy on that metric",
+    "conclusion": "both human-GT evaluation sets are contaminated by the upstream collapse: the untuned base model loses 7.80 pp at 0.2 s, tuned checkpoints 0.3-2.7 pp, and degenerate units make up 7-41 % of their misses"
+  }
+}

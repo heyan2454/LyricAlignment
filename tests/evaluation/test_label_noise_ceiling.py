@@ -174,3 +174,34 @@ def test_gate_operating_points_shares_sum_to_one_and_handle_empty():
     assert abs(v["safe_share"] + v["grey_share"] + v["unsafe_share"] - 1.0) < 1e-6
     empty = LN.gate_operating_points(pd.Series([], dtype=float))
     assert empty["units"] == 0 and empty["by_safe_edge"] == {}
+
+
+def test_degeneracy_contamination_separates_structural_from_timing_error():
+    import numpy as np
+    import pandas as pd
+    from lyricalign.analysis import label_noise_ceiling as LN
+
+    n = 1000
+    err = np.full(n, 0.02)                      # healthy units are accurate
+    deg = np.zeros(n, dtype=bool)
+    deg[:100] = True                            # 100 units have no position at all
+    err[deg] = 3.0
+    out = LN.degeneracy_contamination(pd.Series(err), pd.Series(deg))
+    assert out["units"] == n and out["degenerate_units"] == 100
+    assert out["degenerate_share"] == pytest.approx(0.1, abs=1e-4)
+    assert out["hit_at_200ms"] == pytest.approx(0.9, abs=1e-4)
+    assert out["hit_at_200ms_excluding_degenerate"] == pytest.approx(1.0, abs=1e-4)
+    assert out["degenerate_share_of_misses_at_200ms"] == pytest.approx(1.0, abs=1e-4)
+    assert out["degenerate_median_err_ms"] == pytest.approx(3000.0, abs=1.0)
+
+
+def test_degeneracy_contamination_handles_empty_and_all_degenerate():
+    import numpy as np
+    import pandas as pd
+    from lyricalign.analysis import label_noise_ceiling as LN
+
+    empty = LN.degeneracy_contamination(pd.Series([], dtype=float), pd.Series([], dtype=bool))
+    assert empty["units"] == 0 and empty["degenerate_share"] is None
+    all_deg = LN.degeneracy_contamination(pd.Series([1.0, 2.0]), pd.Series([True, True]))
+    assert all_deg["hit_at_200ms_excluding_degenerate"] is None
+    assert all_deg["degenerate_share"] == 1.0

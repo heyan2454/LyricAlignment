@@ -308,3 +308,47 @@ def gate_operating_points(err: pd.Series, *, safe_edges: Sequence[float] = (0.10
             "swing_pp_if_edge_moved_one_quantum": round(100.0 * float(looser.mean() - stricter.mean()), 2),
         }
     return out
+
+
+def degeneracy_contamination(err: pd.Series, degenerate: pd.Series, *, score: pd.Series | None = None,
+                             tolerances: Sequence[float] = (0.10, 0.20, 0.25),
+                             timing_cols: Sequence[str] | None = None) -> dict[str, Any]:
+    """How much of an evaluation set's error is "the unit has no timeline position at all"?
+
+    A degenerate prediction (end not later than start) cannot be right, so it is a *structural* failure
+    rather than a timing error.  Mixing the two hides the fact that a headline hit rate is partly
+    measuring upstream damage.  This reports the hit rate on the full set, on the healthy subset, and
+    the share of failures attributable to degeneracy, so a re-run after the fix can be compared like
+    for like.
+    """
+    e = pd.to_numeric(err, errors="coerce")
+    z = degenerate.astype(bool) if degenerate is not None else pd.Series(False, index=e.index)
+    ok = e.notna()
+    e, z = e[ok], z[ok]
+    n = int(e.size)
+    out: dict[str, Any] = {"units": n, "degenerate_units": int(z.sum()),
+                           "degenerate_share": round(float(z.mean()), 4) if n else None}
+    for tol in tolerances:
+        hit = e <= tol
+        healthy = ~z
+        out[f"hit_at_{int(tol * 1000)}ms"] = round(float(hit.mean()), 4) if n else None
+        out[f"hit_at_{int(tol * 1000)}ms_excluding_degenerate"] = round(
+            float(hit[healthy].mean()), 4) if healthy.any() else None
+        # share of all misses that are degenerate
+        misses = (~hit).sum()
+        out[f"degenerate_share_of_misses_at_{int(tol * 1000)}ms"] = round(
+            float((hit[z] == False).sum() / max(misses, 1)), 4) if n else None  # noqa: E712
+    if n:
+        out["median_err_ms"] = round(float(e.median()) * 1000, 1)
+        out["median_err_ms_excluding_degenerate"] = round(
+            float(e[~z].median()) * 1000, 1) if (~z).any() else None
+        out["degenerate_median_err_ms"] = round(float(e[z].median()) * 1000, 1) if z.any() else None
+    if score is not None and n:
+        v = pd.to_numeric(score, errors="coerce")[ok]
+        good = v.notna()
+        if good.sum() >= 50 and z[good].sum() not in (0, int(good.sum())):
+            from lyricalign.realign_gate.gate_features import roc_auc
+            auc = roc_auc(z[good].to_numpy(dtype=float), v[good].to_numpy(dtype=float))
+            if auc is not None:
+                out["auc_score_predicts_degeneracy"] = round(float(auc), 4)
+    return out

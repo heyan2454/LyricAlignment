@@ -132,6 +132,8 @@
 
 | B57 | **改前/改后批次自检预览（33 首逐首，离线重建，不改产品文件）**：采用 `raw_with_targeted_repair` 后 —— 没有位置的字 **16.28%→0.00%**（**33 首逐首归零**，原最高一首 88.1%）、同一时刻长块 **16→0**、结构非法 16.72%→13.57%；重叠 0.10%→9.50%、起点回退 0.07%→4.19% 的变化**只是因为影子时间线尚未经过产品既有后处理**（现交付值重叠仅 0.10% 正是那步清掉的）⇒ **策略必须插在既有后处理之前，且不得再叠加额外合法化** | ✅ | `reports/progress/20260912_shadow_batch_audit.md` |
 
+| B58 | **评测集污染度（两个有人工真值的评测集都被上游塌陷污染）**：MIR-1K 基础模型 **20.15%** 的字没有位置（误差<0.2s 38.72%→**46.52%**，上限 +7.80pp），训练后检查点 0.25–0.59%（上限 +0.1–0.5pp）；GTSinger r2 3.53%（94.27%→**96.50%**，上限 **+2.23pp**）、r1 4.12%（+2.72pp）、r0 5.69%（+2.47pp）；**退化单元占失败的比例：GTSinger r2 41.1% / r1 36.6%，MIR-1K r2_full 24.4%** ⇒ **引用历史精度必须并列「去掉退化单元」的值；修复后的涨分不得算作模型进步** | ✅ | `reports/progress/20260912_eval_contamination.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -192,9 +194,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 224 项（第 49 轮无新增测试）
+- 测试：本会话新增 226 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1653 passed / 3 pre-existing failed`（第 48 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1655 passed / 3 pre-existing failed`（第 50 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
