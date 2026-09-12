@@ -67,6 +67,10 @@
 | B30 | **间隙"形状"假设被干净否证**：上升/下降并不区分"下一字起始"与"本字尾巴"（rise_ratio AUC 0.58；截早率 falling 34.5% < flat 61.1% > rising 32.9%）⇒ 真正有信息的是**残余水平**（持平≈整字能量）而非升降方向；绝对能量 `gap_rms` 含响度混杂（按检查点分组掉到 0.70），必须用比值 | ❌ | 同上 |
 | B31 | 真实歌（无真值、冻结判据）2,938 个可测间隙里 **34.2% 为 flat 且 gap/core 中位 1.014** ⇒ 与 B27 一致，但只算流行率；定性仍需那个人工标注小实验 | ✅(有限) | 同上 §3 |
 
+| B32 | **融合触发器已验证**（GTSinger 人工真值，目标端点误差>100ms，流行率 12.0%）：批内分位融合 AUC **0.850**、20% 复核预算召回 **67.1%**（精度 40.3%）；单件里 high_entropy 0.845 / gap_residual **0.884（精度 98%，但只覆盖 15% 单元，覆盖内 r@20%=49%）**；对"端点被切早"gap_residual AUC **0.9205**、**长音层 0.9407**（该层最强信号，尽管覆盖率低）；inversion 对端点误差 AUC 0.50（它预示后续塌陷而非精度）⇒ **三件分工不同，不可混用** | ✅ | `reports/progress/20260912_trigger_fusion.md` |
+| B33 | 真实歌冻结应用（无真值）：inversion 6.33% / gap_residual 11.0% / 高熵(top20%) 20.0% ⇒ 任一 **29.0%**；重解码队列前 8 全为非中文（I See Fire 97.8%、初音 93.0%、p.h 83.0%…），**中文歌无一进前十**（第 6/12/15 轮结论第四次复现） | ✅ | `runs/20260912_trigger_fusion/redecode_queue_real_songs.csv.gz` |
+| B34 | **两条口径纪律（本轮踩到）**：① 绝对熵阈值不跨域——GTSinger 上 `≥1.0 nats` 用到产品批会 flag 68.7%，必须改**批内分位**；② 部分覆盖特征必须同时报"全体召回"与"覆盖内召回"（间隙特征仅覆盖 12.7–15%），否则高精度件会被读成弱件 | ✅ | 同上 §3 |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -127,8 +131,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 152 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1594 passed / 3 pre-existing failed`（第 26 轮隔离复跑）。
+- 测试：本会话新增 157 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1599 passed / 3 pre-existing failed`（第 27 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
