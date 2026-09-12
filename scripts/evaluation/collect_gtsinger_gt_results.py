@@ -107,6 +107,39 @@ def main() -> int:
         "postprocess": pp,
         "extraction_stats": summ["stats"],
     }
+    pr_path = ad / "POLICY_REPLAY.json"
+    if pr_path.exists():
+        replay = json.loads(pr_path.read_text(encoding="utf-8"))
+        rules = replay["rules"]
+        non_gt = {k: v for k, v in rules.items() if not v["uses_gt"]}
+        # same tie-break as the report: hit@100, then fewer degenerate units, then hit@200/end MAE
+        best_name = min(non_gt, key=lambda k: (-non_gt[k]["hit100_micro"], non_gt[k]["zero_dur_rate"],
+                                               -non_gt[k]["hit200_macro"], non_gt[k]["mae_end_macro"], k))
+        oracle = rules.get("V99_oracle_pick_uses_gt", {})
+        policy = {
+            "schema_version": "gtsinger_gt_policy_replay_metrics_v1",
+            "run": RUN_NAME,
+            "source": str(pr_path),
+            "panel": replay["panel"],
+            "best_deployable_rule": best_name,
+            "rules": rules,
+            "strata": replay["strata"],
+            "rule_reconstruction": replay["rule_reconstruction"],
+            "stage_consistency": replay["stage_consistency"],
+            "breakdowns": replay.get("breakdowns"),
+            "headroom_captured_share": (
+                round(rules[best_name]["paired_vs_reference"]["vs_reference_hit100_pp"]
+                      / oracle["paired_vs_reference"]["vs_reference_hit100_pp"], 3)
+                if oracle.get("paired_vs_reference") and best_name in rules
+                and rules[best_name].get("paired_vs_reference") else None),
+        }
+        (args.results_root / "by_run" / RUN_NAME).mkdir(parents=True, exist_ok=True)
+        (args.results_root / "by_run" / RUN_NAME / "policy_replay.json").write_text(
+            json.dumps(policy, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({"policy_replay_metrics": str(
+            args.results_root / "by_run" / RUN_NAME / "policy_replay.json"),
+            "best": best_name}, ensure_ascii=False))
+
     out_dir = args.results_root / "by_run" / RUN_NAME
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / "metrics.json"

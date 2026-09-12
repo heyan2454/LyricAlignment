@@ -344,6 +344,26 @@ def main() -> int:
       "首单元位置这类结构化特征补强。")
     a("")
 
+    pr_path = ad / "POLICY_REPLAY.json"
+    if pr_path.exists():
+        rep = json.loads(pr_path.read_text(encoding="utf-8"))
+        cons = rep.get("stage_consistency", {})
+        if cons.get("available"):
+            a("## 7b. 口径修正（2026-09-12 第 2 轮重放实验后追加）")
+            a("")
+            a(f"- §3 的 A/B 准确表述是\"完整清理 vs 最小清理\"：raw 评测管线的 selected 阶段相对其"
+              f" raw 阶段仍调整了 {cons['raw_pipeline_self_adjustment']['n_adjusted']} 个单元"
+              f"（{pct(cons['raw_pipeline_self_adjustment']['share_adjusted_gt_1ms'],2)}，全部只动 end，"
+              f"含 {cons['cross_pipeline_selected_vs_raw']['n_negative_to_zero_clamps']} 个"
+              "负时长→零长钳位），并非字面意义的\"无后处理\"。")
+            a(f"- 好消息：**前向完全可复现** — 同一 identity 在两次独立前向中记录的 raw 阶段差异 "
+              f"{cons['forward_determinism']['n_differing_gt_1ms']} 个单元"
+              f"（最大 {sec(cons['forward_determinism']['max_diff_sec'],0)}），"
+              "按 identity 复用内容寻址 evidence 的前提成立。")
+            a("- §3 的建议\"拆开两端\"已被量化的规则重放取代：最优可部署规则是"
+              "**只修剪前单元尾端 + 最短时长保护**，见 "
+              "`reports/progress/20260912_postprocess_policy_replay.md`。")
+            a("")
     a("## 8. 复现")
     a("")
     a("```bash")

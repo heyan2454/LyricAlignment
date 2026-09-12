@@ -90,3 +90,41 @@ PYTHONPATH=src python -m pytest -q tests/evaluation
 
 其余 1458 项通过（含本轮新增 8 项）。这三项属主线实现与测试的口径漂移，
 修它们会改动 2026-08-14 冻结语义，留给主线轮次处理，不在本轮擅自改写。
+
+---
+
+# 第 2 轮（同日）：后处理策略重放实验
+
+同上面板、纯 CPU、零前向：先归因现装规则，再重放 14 个预注册规则变体，回答
+"改成什么规则能挽回多少"。
+
+- 代码：`src/lyricalign/analysis/postprocess_replay.py`；入口
+  `scripts/evaluation/replay_gtsinger_postprocess_policies.py` +
+  `scripts/evaluation/report_postprocess_policy_replay.py`；测试
+  `tests/evaluation/test_postprocess_policy_replay.py`（9 项，1.4s）。
+- 产物：`POLICY_REPLAY.json`、`policy_replay_by_sequence.csv.gz`（156 KB）、
+  `reports/progress/20260912_postprocess_policy_replay.md`、
+  `results/by_run/20260912_gtsinger_gt_deep/policy_replay.json`。
+
+## 结论
+
+1. **现装规则的行为已被数据确认**：1,292 个重叠单元对里，882 次推后起点、只有 12 次修剪尾端；
+   被推后的起点 97.3% 精确等于前单元尾端；决策与解码置信度无关（AUC 0.373，p=0.13）。
+   后处理新增 976 个零时长单元（1.26%→4.61%），其中 55.7% 就是被推扁的那个起点。
+2. **最优可部署规则 `V9_end_trim_min0.05s`（只修剪前单元尾端 + 0.05s 最短时长保护）**：
+   hit@100 83.01%（比现装 **+2.10pp**，CI [+1.89, +2.34]，段级 464 胜 / 32 负 ≈ 14:1），
+   hit@200 87.71%、IoU 0.758，零时长率回到 raw 水平 1.29%。
+   GT-oracle 逐重叠上界也只有 83.27%（+2.38pp）⇒ 该规则拿到了 88% 的空间，不必再造更复杂的仲裁器。
+3. **关键变量是"让哪一侧动"**：只推起点 `V3` 比现装还差 −2.25pp；对半分 `V4` +0.01pp；
+   按置信度加权 `V5` +0.24pp；只处理小重叠的阈值版 `V6/V7b` 反而不如无条件修尾端。
+4. **口径澄清**：raw 评测管线并非"无后处理"——其 selected 相对自身 raw 仍调整 208 单元（0.72%，
+   全部 end-only，含 32 个负时长钳零），所以第 1 轮的 A/B 是"完整清理 vs 最小清理"。
+5. **前向可复现性为正**：同一 identity 两次独立前向的 raw 阶段 **0 差异**（28,980 单元），
+   内容寻址 evidence 缓存的前提成立。
+6. 分层增益仍在：段首单元 63.3%→66.2%、零声母 63.7%→67.2%；但**段首幻觉前奏**（起点被推迟 ~0.5s）
+   发生在解码本身，任何后处理规则都救不了 → 第 3 轮起的主攻方向。
+
+## 未做（明确登记）
+
+- 未改任何实现：`V9` 只是重放证据，真实实现改动会使既有 official 口径产物失效并需作废受影响 identity，
+  留给主线按冻结参数纪律决定；长歌串行合并/跨窗口缝合阶段未被重放覆盖。
