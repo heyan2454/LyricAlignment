@@ -71,6 +71,28 @@
 | B33 | 真实歌冻结应用（无真值）：inversion 6.33% / gap_residual 11.0% / 高熵(top20%) 20.0% ⇒ 任一 **29.0%**；重解码队列前 8 全为非中文（I See Fire 97.8%、初音 93.0%、p.h 83.0%…），**中文歌无一进前十**（第 6/12/15 轮结论第四次复现） | ✅ | `runs/20260912_trigger_fusion/redecode_queue_real_songs.csv.gz` |
 | B34 | **两条口径纪律（本轮踩到）**：① 绝对熵阈值不跨域——GTSinger 上 `≥1.0 nats` 用到产品批会 flag 68.7%，必须改**批内分位**；② 部分覆盖特征必须同时报"全体召回"与"覆盖内召回"（间隙特征仅覆盖 12.7–15%），否则高精度件会被读成弱件 | ✅ | 同上 §3 |
 
+| B35 | **重解码预算的可达上界**（GTSinger 人工真值，零前向）：生产视图基线 88.0%，用第 27 轮触发器选单元重解码，5%/10%/20% 预算的**可达上界**只有 **+1.02 / +1.88 / +2.67pp**（乐观上界 +3.18/+4.63/+6.20pp；同预算随机 +0.24/+0.75/+1.33pp；oracle +5.02/+7.02/+7.02pp）；**错单元中 41.3%（长音层 61.3%）真值不在候选内 ⇒ 同窗口重解码救不了**；触发器只 capture oracle 的 0.20–0.38 | ✅ | `reports/progress/20260912_redecode_budget.md` |
+| B36 | **长音层的预算结论**：20% 预算下触发器 +3.33pp **不超过随机 +3.40pp** ⇒ 在长音层花重解码预算等于随机挑；应先提升可达性（训练/新证据），或改用能产生新候选的重解码参数 | ✅ | 同上 |
+
+## 0b. 第 22–29 轮新增结论（一段话版）
+
+- **后处理与观测已落地**：per-stage 退化观测 + `start_after_end` 告警接入生产写入器（additive）；
+  统一批次自检 `audit_batch.py` 六个 gate；一页交付前检查清单（16 条）。
+- **两处静默缺陷被定位**：fixed 阶段把整块单元钉到窗口 `input_start_sec`（真实歌 946 单元/6.89%）；
+  `karaoke.py` 预钳位把解码器起止倒序**静默转成零长**（870 中 595 个，解释 fixed 阶段净新增的 73.7%），
+  从而同时骗过两个既有计数器。
+- **三条"看起来能省算力"的路被否证**：事后声学阈值（末字 oracle +0.00pp）、局部修补倒序
+  （swap 使非法率 16.72%→19.64%）、插值/重排候选（不可达时候选跨度中位仅 1 格、长音 96% 在跨度外）。
+- **上限与预算的定量关系**：长音端点 40% 的 GT 不在 top-2 内；训练已把它从 70.8% 压到 21.7%；
+  多视图选择在录音室中文上只剩 +2.4pp（长音 +0.88pp，错误相关性 0.69–0.89）；
+  重解码预算在生产视图 5–20% 的**可达上界**只有 +1.0~+2.7pp，长音层与随机无异。
+- **口径被正式限定**：本会话早期绝对精度是**含退化单元的保守下界**（GTSinger +3.31pp、MIR-1K +3.21pp、
+  base 预测器 +5.38pp）；两系统退化率差 >1pp 时不得把 hit 差解释成精度差；绝对熵阈值不跨域；
+  部分覆盖特征必须双分母报召回。
+- **免费触发器已成型但未上线**：倒序（预示塌陷 lift 8–10×）+ 批内分位高熵（AUC 0.85/0.87）
+  + 间隙残余（切早 AUC 0.92、长音层 0.94、精度 98% 但覆盖 12–15%）；融合 AUC 0.850、
+  20% 复核预算召回 67.1%；真实歌任一触发 29.0%，中文歌无一进重解码队列前十。
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -131,8 +153,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 157 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1599 passed / 3 pre-existing failed`（第 27 轮后隔离复跑）。
+- 测试：本会话新增 161 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1603 passed / 3 pre-existing failed`（第 29 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
