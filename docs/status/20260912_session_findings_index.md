@@ -130,6 +130,8 @@
 
 | B56 | **定向修复已做成默认关的开关**：`--fixed-timestamp-policy`（默认 `upstream_repaired`＝逐位等价今天行为；`raw_with_targeted_repair`＝已实测推荐；`upstream_with_block_repair`＝未实测实验项），策略写入产物 `audit.fixed_timestamp_policy`；3 项契约测试守住"默认值不放宽""默认路径逐位不变""策略先于 research decoder 生效"；落地说明见 `docs/status/20260913_fixed_timestamp_policy_runbook.md` | ✅ | 同上 + `src/lyricalign/analysis/monotone_repair.py` |
 
+| B57 | **改前/改后批次自检预览（33 首逐首，离线重建，不改产品文件）**：采用 `raw_with_targeted_repair` 后 —— 没有位置的字 **16.28%→0.00%**（**33 首逐首归零**，原最高一首 88.1%）、同一时刻长块 **16→0**、结构非法 16.72%→13.57%；重叠 0.10%→9.50%、起点回退 0.07%→4.19% 的变化**只是因为影子时间线尚未经过产品既有后处理**（现交付值重叠仅 0.10% 正是那步清掉的）⇒ **策略必须插在既有后处理之前，且不得再叠加额外合法化** | ✅ | `reports/progress/20260912_shadow_batch_audit.md` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -190,7 +192,7 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 224 项
+- 测试：本会话新增 224 项（第 49 轮无新增测试）
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
   `tests/test_inversion_clamp_observability.py`），全量 `1653 passed / 3 pre-existing failed`（第 48 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
