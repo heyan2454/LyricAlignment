@@ -124,3 +124,28 @@ def test_band_edge_stability_with_sparse_errors_is_stable():
 def test_band_edge_stability_empty_input():
     out = LN.band_edge_stability(pd.Series([], dtype=float))
     assert out["units"] == 0 and out["by_edge"] == {}
+
+
+def test_detector_label_stability_flags_the_fragile_edge_only():
+    rng = np.random.default_rng(21)
+    n = 4000
+    err = np.concatenate([np.abs(rng.normal(0.06, 0.02, n - 400)),      # dense near the 100 ms edge
+                          np.abs(rng.normal(0.60, 0.10, 400))])          # clearly unsafe
+    frozen = np.where(err < 0.10, "safe", np.where(err >= 0.25, "unsafe", "grey"))
+    out = LN.detector_label_stability(pd.Series(err), pd.Series(frozen))
+    assert out["available"] is True and out["units"] == n
+    assert out["agreement_frozen_vs_recomputed"] == 1.0
+    assert out["edges"]["safe_grey_100ms"]["verdict"] == "grid-fragile"
+    assert "grey_unsafe_250ms" in out["usable_gate_edges"]
+
+
+def test_detector_label_stability_detects_lineage_mismatch():
+    err = np.linspace(0.0, 0.5, 2000)
+    wrong = np.where(err < 0.15, "safe", "unsafe")      # a different edge than the recomputation uses
+    out = LN.detector_label_stability(pd.Series(err), pd.Series(wrong))
+    assert out["agreement_frozen_vs_recomputed"] < 0.95
+
+
+def test_detector_label_stability_small_input():
+    assert LN.detector_label_stability(pd.Series([0.1] * 10),
+                                       pd.Series(["safe"] * 10))["available"] is False

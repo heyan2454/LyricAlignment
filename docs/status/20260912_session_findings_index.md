@@ -103,6 +103,8 @@
 | B41 | **detector_v2 的 SAFE ≤0.100s 带边是格点脆弱的**：把带边移动一个 80ms 格点，带内占比摆幅 65.9–81.0pp（生产视图 88.04% 摆 77.9pp）⇒ **不能单独作为产品 gate 依据**；而 **UNSAFE ≥0.250s 在好系统上稳定**（摆幅 1.4–8.5pp）⇒ 需要可下判断的带时用 250ms，100ms 仅作报告口径。副产品：250ms 摆幅可当质量体检量（生产 2.7pp / MIR-1K 1.4pp / M4 22.8pp） | ✅ | `runs/20260912_label_noise_ceiling/BAND_EDGE.json`、报告 §2b |
 | B42 | 工程教训：**列名与 DataFrame 方法名冲突时（`mode`/`count`/`max`/`abs`…）必须用 `df["col"]` 取列**；`df.mode` 返回方法，比较后恒 False ⇒ 切片静默变空（本轮生产视图 units=0 的真实原因） | ✅ | 本会话第 33 轮记录 |
 
+| B43 | **冻结 detector_v2 标签的格点稳定性**（8 个 LABELS 文件、972,330 已标单元）：① 血统完好——重算分带与冻结标签一致 ≥ **0.9793**；② **100ms（SAFE/GREY）边在好系统上格点脆弱**——刀尖占比最高 **75.1%**、带边移一格摆 **65–73pp** ⇒ 以 100ms 为界的精度/召回含大量舍入成分；③ **250ms（GREY/UNSAFE）边在全部 8 个文件上都稳定**（刀尖 ≤3.1%、摆幅 ≤3.1pp）⇒ **可下判断的 gate 应建立在 UNSAFE ≥0.250s**，SAFE 侧用 ≥2 格缓冲（≈160–200ms）或仅作报告 | ✅ | `runs/20260912_label_noise_ceiling/DETECTOR_LABEL_STABILITY.json` |
+
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
 | # | 结论 | 状态 | 支撑 |
@@ -163,9 +165,9 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 174 项
+- 测试：本会话新增 177 项
 - 交接页：`docs/status/20260912_session_handoff.md`（机器生成）（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1614 passed / 3 pre-existing failed`（第 33 轮后隔离复跑）。
+  `tests/test_inversion_clamp_observability.py`），全量 `1617 passed / 3 pre-existing failed`（第 34 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /

@@ -234,3 +234,41 @@ def band_edge_stability(err: pd.Series, *, edges: Sequence[float] = (0.100, 0.25
             f"{int(edge * 1000)}ms")
         out["by_edge"][f"{int(edge * 1000)}ms"] = entry
     return out
+
+
+def detector_label_stability(err: pd.Series, frozen_label: pd.Series, *,
+                             safe_edge: float = 0.100, unsafe_edge: float = 0.250,
+                             quantum_sec: float = 0.08) -> dict[str, Any]:
+    """Cross-check frozen band labels against the errors, and measure grid ambiguity per edge.
+
+    Used on the detector_v2 ``LABELS.jsonl`` files, whose ``audit.*_abs_error_sec`` let us recompute
+    the banding.  Two things must hold for a gate built on these labels: the frozen label must agree
+    with the recomputation (otherwise lineage is broken), and the edge must not be dominated by units
+    that a one-quantum move would reclassify (otherwise the label is a rounding lottery).
+    """
+    e = pd.to_numeric(err, errors="coerce").to_numpy(dtype=float)
+    lab = np.asarray(frozen_label, dtype=object)
+    ok = np.isfinite(e) & (lab != None)  # noqa: E721 - object array sentinel
+    if ok.sum() < 50:
+        return {"available": False}
+    e, lab = e[ok], lab[ok]
+    n = int(e.size)
+    recomputed = np.where(e < safe_edge, "safe", np.where(e >= unsafe_edge, "unsafe", "grey"))
+    both = np.isin(lab, ["safe", "unsafe", "grey"])
+    agreement = round(float((lab[both] == recomputed[both]).mean()), 4) if both.any() else None
+    out: dict[str, Any] = {"available": True, "units": n,
+                           "frozen_label_counts": {str(k): int((lab == k).sum())
+                                                   for k in sorted(set(map(str, lab)))},
+                           "agreement_frozen_vs_recomputed": agreement,
+                           "edges": {}}
+    for name, edge in (("safe_grey_100ms", safe_edge), ("grey_unsafe_250ms", unsafe_edge)):
+        amb = np.abs(e - edge) <= quantum_sec
+        stricter = float((e < edge - quantum_sec).mean())
+        looser = float((e < edge + quantum_sec).mean())
+        out["edges"][name] = {"knife_edge_share": round(float(amb.mean()), 4),
+                              "knife_edge_units": int(amb.sum()),
+                              "swing_pp_if_edge_moved_one_quantum": round(100.0 * (looser - stricter), 2),
+                              "verdict": ("grid-fragile" if 100.0 * (looser - stricter) > 10.0
+                                          else "grid-stable")}
+    out["usable_gate_edges"] = [k for k, v in out["edges"].items() if v["verdict"] == "grid-stable"]
+    return out

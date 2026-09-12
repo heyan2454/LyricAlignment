@@ -1482,3 +1482,36 @@ MIR-1K：hit@50 ±47.9pp、hit@100 ±40.5pp、hit@200 ±2.0pp、hit@250 ±0.7pp�
 自查：本轮又踩一个静默错误——`off.mode` 命中的是 **`DataFrame.mode()` 方法**而非同名列，
 导致生产视图过滤恒空（units=0）；改用 `off["mode"]` 后得到 2,550 单元。教训：**列名与 DataFrame
 方法名冲突时（mode/count/max/abs/min/sum…）必须用方括号取列**，已在本页记录。
+
+---
+
+# 第 34 轮：冻结 detector_v2 标签的格点稳定性（972,330 个已标单元 / 8 个 LABELS 文件）
+
+- 代码：`label_noise_ceiling.detector_label_stability()`；入口 `scripts/evaluation/run_detector_label_stability.py`
+- 产物：`runs/20260912_label_noise_ceiling/DETECTOR_LABEL_STABILITY.json`
+- 方法：用 `LABELS.jsonl` 自带的 `audit.start/end_abs_error_sec` 重算分带，与冻结标签比对；
+  再把带边移动**一个 80ms 格点**看刀尖占比与摆幅
+
+| LABELS 文件 | 单元 | 冻结 vs 重算一致 | 100ms 边刀尖 | 摆幅 | 250ms 边刀尖 | 摆幅 |
+|---|---:|---:|---:|---:|---:|---:|
+| mir_run / mir_run_v2 | 167k / 166k | 0.9967 / 0.9968 | 65.9% / 66.0% | 64.9 / 65.0pp | 1.8% / 1.7% | 1.8 / 1.7pp |
+| run1_v2 / run2 | 242k / 244k | 0.9939 / 0.9918 | 71.5% / 71.3% | 70.8 / 68.9pp | 3.1% / 2.9% | 3.1 / 2.9pp |
+| serial_run / stress2_run | 3.4k / 30k | 0.9829 / 0.9793 | 74.0% / 75.1% | 69.8 / 73.0pp | 2.8% / 2.9% | 2.8 / 2.9pp |
+| run1 / stress_run（差系统） | 100k / 20k | 0.9997 / 0.9995 | 3.3% / 2.4% | 3.3 / 2.3pp | 0.1% | 0.1pp |
+
+## 结论
+1. **标签血统完好**：8 个文件全部 agreement ≥ **0.9793**（最低 stress2_run），冻结标签与按 `≤0.10 / ≥0.25` 重算基本一致 ⇒ 第 8 轮的带符号真值重建可信；
+2. **SAFE/GREY 边（100ms）在好系统上是格点脆弱的**：最多 **75.1%** 的单元处在"距带边不足一格"的刀尖区，带边移一格可让占比摆 **65–73pp** ⇒ 以 100ms 为界的精度/召回数字里有一大块是舍入而非能力；
+3. **GREY/UNSAFE 边（250ms）在全部 8 个文件上都稳定**（刀尖 ≤3.1%、摆幅 ≤3.1pp）⇒ **可下判断的 gate 应该建立在 UNSAFE ≥0.250s 上**，SAFE 侧改用 ≥2 格缓冲（≈160–200ms）或仅作报告；
+4. 与第 33 轮同一现象在不同数据上复现（第 33 轮用评测面板，本轮用生产标签文件），**且"刀尖占比"本身可当体检量**：差系统（run1/stress_run）只有 2–3%，好系统 66–75%。
+
+## 存储与位置（本轮同时核对并清理）
+- 数据盘 `/dev/md0` 800G（已用 765G、**余 36G、96%**），`/home/hyan/Data` 是指向
+  `/root/autodl-tmp/AST_storage/Data` 的软链 ⇒ 本会话所有 run 产物都在这里（合计 **22M**，
+  其中 7.9M/9.9M 是早期两批面板）；根盘只放代码/报告/小指标（仓库 284M，含 .git 140M）。
+- 根盘 30G（用 21G、**余 9.3G**）。本会话清掉了自己产生的 `/tmp/pytest-of-root` **941M**
+  （pytest `tmp_path` 残留）；根盘其余大头是 `/root/.vscode-server` 8.7G、`/usr` 12G、
+  `miniconda3` 8.0G、`/root/.cache` 1.5G、以及若干**非本会话**的 `/tmp` 目录约 2.0G
+  （pipe_probe 324M、efficiency_bench 226M、cr 224M、cf_size 116M、tri_e2e 68M 等）——
+  **未经你同意没有删**。
+- 纪律照旧：不复制音频/checkpoint 进仓库，不新增大数据；产物只用 JSON/CSV.gz 摘要形式。
