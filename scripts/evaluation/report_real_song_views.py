@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 DEFAULT_DIR = Path("/home/hyan/Data/lyricalign/runs/20260912_real_song_views")
+C_PLAUSIBLE = 3.0        # mirrors cleanup_simulation.PLAUSIBLE_MAX_SEC
 REPO = Path(__file__).resolve().parents[2]
 
 
@@ -134,6 +135,56 @@ def main() -> int:
           "普通话侧真正该做的是把 9.7% 的退化率压下去（约束解码或单调性修复），"
           "而不是继续在边界毫秒级打磨。")
         w("")
+    cs_path = args.dir / "CLEANUP_SIM.json"
+    if cs_path.exists():
+        cs = json.loads(cs_path.read_text(encoding="utf-8"))
+        if cs.get("available") is not False:
+            rs = cs["raw_structure"]
+            w("## 3c. 清理规则离线模拟（无真值，只比结构与破坏度）")
+            w("")
+            w(f"- raw 自身：退化 {pct(rs['degenerate_share'],1)}（负时长 {pct(rs['negative_share'],1)}）、"
+              f"重叠 {pct(rs['overlap_share'],1)}、起点回退 {pct(rs['start_regression_share'],1)}；"
+              f"单元时长中位 {sec(rs['median_duration_sec'])} 但最长可达 "
+              f"**{rs['max_duration_sec']:.0f}s**（超过 {C_PLAUSIBLE}s 的异常单元占 "
+              f"{pct(rs['overshoot_units_share'],1)}）⇒ 破坏度一律按**封顶可信时长**计。")
+            w("")
+            w("| 规则 | 退化单元 | 负时长 | 重叠 | 起点回退 | 可信时长损失 | 被移动单元占比 | 位移中位 | 位移 p90 | 移动者中原本高置信占比 |")
+            w("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+            for k, v in cs["rules"].items():
+                cm = v["share_moved_boundaries_that_were_confident"]
+                w(f"| `{k}` | {pct(v['degenerate_share'],2)} | {pct(v['negative_share'],2)} | "
+                  f"{pct(v['overlap_share'],2)} | {pct(v['start_regression_share'],2)} | "
+                  f"{pct(v['plausible_mass_lost_share'],1)} | {pct(v['share_units_moved'],1)} | "
+                  f"{sec(v['median_shift_sec'])} | {sec(v['p90_shift_sec'],0)} | "
+                  f"{pct(cm,1) if cm is not None else '—'} |")
+            r0, r1 = cs["rules"]["R0_none"], cs["rules"]["R1_shipped"]
+            r3 = cs["rules"]["R3_end_trim_min0.05s"]
+            r6 = cs["rules"]["R6_clip_then_trim"]
+            w("")
+            w(f"- **现装规则（R1）**：把重叠从 {pct(r0['overlap_share'],1)} 压到 "
+              f"{pct(r1['overlap_share'],2)}、起点回退压到 {pct(r1['start_regression_share'],2)}，"
+              f"代价是退化单元升到 {pct(r1['degenerate_share'],1)} 且**可信时长损失 "
+              f"{pct(r1['plausible_mass_lost_share'],1)}**（把异常超长也一起删掉的部分已剔除，见下）。")
+            w(f"- **替代候选 R6（先把异常时长钳到可信范围，再修尾端、不制造零长）**：退化 "
+              f"{pct(r6['degenerate_share'],2)}（现装 {pct(r1['degenerate_share'],1)}）、"
+              f"可信时长损失 {pct(r6['plausible_mass_lost_share'],1)}"
+              f"（现装 {pct(r1['plausible_mass_lost_share'],1)}，约一半）；"
+              f"但重叠仍有 {pct(r6['overlap_share'],1)}、起点回退 {pct(r6['start_regression_share'],1)}"
+              "未解决 ⇒ 需要联合约束求解，而不是逐步修补。")
+            w(f"- **负结果（重要）**：朴素单调化 R2/R5 会把位移级联放大——"
+              f"R2 移动 {pct(cs['rules']['R2_monotone_clamp']['share_units_moved'],1)} 的单元、"
+              f"位移中位 {sec(cs['rules']['R2_monotone_clamp']['median_shift_sec'],0)}、"
+              f"重叠反升到 {pct(cs['rules']['R2_monotone_clamp']['overlap_share'],1)}。"
+              "原因：单个 raw 异常（尾端比首端早数十秒）在强制排序后会把后续全部推走"
+              "⇒ **任何单调性修复必须先做异常区间钳制**（这正是 R6 的第一步）。")
+            w("- 置信代理：被移动的边界中原本高置信（熵低于中位）的占比，现装 "
+              f"{pct(r1['share_moved_boundaries_that_were_confident'],1)}、R6 "
+              f"{pct(r6['share_moved_boundaries_that_were_confident'],1)}、朴素单调化 "
+              f"{pct(cs['rules']['R2_monotone_clamp']['share_moved_boundaries_that_were_confident'],1)}"
+              "⇒ 现装与 R6 都主要在动低置信边界（好），而朴素单调化会把一半高置信边界也搬走（坏）。")
+            w("- 这些都是**结构与破坏度**比较，不是精度比较；任何规则改动仍需在带真值的面板上复验"
+              "（第 2 轮的 V9 在 GTSinger 真值上是 +2.10pp，可作交叉参照）。")
+            w("")
     w("## 4. 与前三轮结论的接续")
     w("")
     w("- 第 1 轮：GTSinger 上 12 配置矩阵是假因子 ⇒ 本轮在真实长歌上又发现一个假因子"
@@ -170,6 +221,8 @@ def main() -> int:
         "posterior_predicts_disagreement_auc": a.get("posterior_predicts_disagreement_auc"),
         "postprocess_attribution": (json.loads((args.dir / "POSTPROCESS_ATTRIBUTION.json").read_text(encoding="utf-8"))
                                     if (args.dir / "POSTPROCESS_ATTRIBUTION.json").exists() else None),
+        "cleanup_simulation": (json.loads((args.dir / "CLEANUP_SIM.json").read_text(encoding="utf-8"))
+                               if (args.dir / "CLEANUP_SIM.json").exists() else None),
         "headline": {
             "comparable_pair_units": pairs["b4_vs_cur"]["comparable_units"],
             "comparable_pair_share_gt100ms": pairs["b4_vs_cur"]["share_gt_100ms"],
