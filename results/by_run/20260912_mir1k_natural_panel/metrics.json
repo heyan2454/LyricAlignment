@@ -1153,6 +1153,461 @@
       }
     ]
   },
+  "consensus_simulation": {
+    "schema": "mir1k_multiview_consensus_v1",
+    "reference_predictor": "r2_full_20260723",
+    "members": [
+      "r0_raw_20260724",
+      "r1_full_20260724",
+      "r2_full_20260723",
+      "r2_seed_20260724",
+      "r2_ood_20260723"
+    ],
+    "n_units": 2035,
+    "honesty": "members are five independent inference configurations of the same audio+text, not different audio crops; treat as a proxy upper bound for view-consensus selection",
+    "strategies": {
+      "S0_single_reference": {
+        "n": 2035,
+        "hit100": 0.9145,
+        "hit200": 0.9799,
+        "hit250": 0.9862,
+        "mae_start": 0.0365,
+        "mae_end": 0.0358,
+        "median_both": 0.04,
+        "p90_both": 0.0944,
+        "deployable": true,
+        "realignment_budget": 0.0,
+        "note": "r2_full_20260723 alone (status quo)",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.8235,
+          "mae_end": 0.1221
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8583,
+          "mae_end": 0.0574
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8304,
+          "mae_end": 0.0735
+        },
+        "delta_hit100_pp_vs_reference": 0.0,
+        "units_better_vs_ref": 0,
+        "units_worse_vs_ref": 0
+      },
+      "S1_median_all": {
+        "n": 2035,
+        "hit100": 0.9179,
+        "hit200": 0.9828,
+        "hit250": 0.9892,
+        "mae_start": 0.0366,
+        "mae_end": 0.0347,
+        "median_both": 0.04,
+        "p90_both": 0.0921,
+        "deployable": true,
+        "realignment_budget": 1.0,
+        "note": "recompute everything, keep the median",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1889
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8681,
+          "mae_end": 0.0531
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8839,
+          "mae_end": 0.0714
+        },
+        "delta_hit100_pp_vs_reference": 0.34,
+        "units_better_vs_ref": 94,
+        "units_worse_vs_ref": 82
+      },
+      "S2_trimmed_mean": {
+        "n": 2035,
+        "hit100": 0.914,
+        "hit200": 0.9848,
+        "hit250": 0.9872,
+        "mae_start": 0.0355,
+        "mae_end": 0.0332,
+        "median_both": 0.04,
+        "p90_both": 0.0929,
+        "deployable": true,
+        "realignment_budget": 1.0,
+        "note": "mean of inner members (drops one extreme per side)",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1412
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 1.0,
+          "mae_end": 0.0265
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8327,
+          "mae_end": 0.0529
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8304,
+          "mae_end": 0.0714
+        },
+        "delta_hit100_pp_vs_reference": -0.05,
+        "units_better_vs_ref": 299,
+        "units_worse_vs_ref": 131
+      },
+      "S3_vote_bucket": {
+        "n": 2035,
+        "hit100": 0.915,
+        "hit200": 0.9828,
+        "hit250": 0.9897,
+        "mae_start": 0.0364,
+        "mae_end": 0.034,
+        "median_both": 0.04,
+        "p90_both": 0.0937,
+        "deployable": true,
+        "realignment_budget": 1.0,
+        "note": "per-boundary majority inside 20ms bins",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1253
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8563,
+          "mae_end": 0.0502
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.875,
+          "mae_end": 0.0649
+        },
+        "delta_hit100_pp_vs_reference": 0.05,
+        "units_better_vs_ref": 106,
+        "units_worse_vs_ref": 83
+      },
+      "S6_agreement_weighted": {
+        "n": 2035,
+        "hit100": 0.9179,
+        "hit200": 0.9833,
+        "hit250": 0.9892,
+        "mae_start": 0.0364,
+        "mae_end": 0.0346,
+        "median_both": 0.04,
+        "p90_both": 0.0914,
+        "deployable": true,
+        "realignment_budget": 1.0,
+        "note": "mean of the largest agreement cluster (radius 40ms)",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1936
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8681,
+          "mae_end": 0.0528
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8839,
+          "mae_end": 0.0773
+        },
+        "delta_hit100_pp_vs_reference": 0.34,
+        "units_better_vs_ref": 100,
+        "units_worse_vs_ref": 86
+      },
+      "S4_gate_p50_median": {
+        "n": 2035,
+        "hit100": 0.917,
+        "hit200": 0.9828,
+        "hit250": 0.9882,
+        "mae_start": 0.0365,
+        "mae_end": 0.0349,
+        "median_both": 0.04,
+        "p90_both": 0.0929,
+        "deployable": true,
+        "realignment_budget": 0.4314,
+        "note": "spread>80ms (43% of units) replaced by median",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1889
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8681,
+          "mae_end": 0.0531
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.875,
+          "mae_end": 0.0721
+        },
+        "delta_hit100_pp_vs_reference": 0.25,
+        "units_better_vs_ref": 60,
+        "units_worse_vs_ref": 46
+      },
+      "S5_gate_p50_loo_median": {
+        "n": 2035,
+        "hit100": 0.9111,
+        "hit200": 0.9823,
+        "hit250": 0.9862,
+        "mae_start": 0.0364,
+        "mae_end": 0.0351,
+        "median_both": 0.04,
+        "p90_both": 0.0957,
+        "deployable": true,
+        "realignment_budget": 0.4314,
+        "note": "reference kept elsewhere; unstable units use leave-one-out median (threshold 80ms)",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7059,
+          "mae_end": 0.1953
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 1.0,
+          "mae_end": 0.0257
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8406,
+          "mae_end": 0.0553
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8304,
+          "mae_end": 0.086
+        },
+        "delta_hit100_pp_vs_reference": -0.34,
+        "units_better_vs_ref": 171,
+        "units_worse_vs_ref": 107
+      },
+      "S4_gate_p80_median": {
+        "n": 2035,
+        "hit100": 0.9165,
+        "hit200": 0.9818,
+        "hit250": 0.9882,
+        "mae_start": 0.0365,
+        "mae_end": 0.0348,
+        "median_both": 0.04,
+        "p90_both": 0.093,
+        "deployable": true,
+        "realignment_budget": 0.1956,
+        "note": "spread>80ms (20% of units) replaced by median",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1889
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8661,
+          "mae_end": 0.0532
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8661,
+          "mae_end": 0.0729
+        },
+        "delta_hit100_pp_vs_reference": 0.2,
+        "units_better_vs_ref": 36,
+        "units_worse_vs_ref": 18
+      },
+      "S5_gate_p80_loo_median": {
+        "n": 2035,
+        "hit100": 0.9086,
+        "hit200": 0.9813,
+        "hit250": 0.9862,
+        "mae_start": 0.0367,
+        "mae_end": 0.0355,
+        "median_both": 0.04,
+        "p90_both": 0.0971,
+        "deployable": true,
+        "realignment_budget": 0.1956,
+        "note": "reference kept elsewhere; unstable units use leave-one-out median (threshold 80ms)",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7059,
+          "mae_end": 0.1953
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8346,
+          "mae_end": 0.0561
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8214,
+          "mae_end": 0.087
+        },
+        "delta_hit100_pp_vs_reference": -0.59,
+        "units_better_vs_ref": 94,
+        "units_worse_vs_ref": 57
+      },
+      "S4_gate_p90_median": {
+        "n": 2035,
+        "hit100": 0.9155,
+        "hit200": 0.9813,
+        "hit250": 0.9872,
+        "mae_start": 0.0367,
+        "mae_end": 0.0351,
+        "median_both": 0.04,
+        "p90_both": 0.0939,
+        "deployable": true,
+        "realignment_budget": 0.0757,
+        "note": "spread>320ms (8% of units) replaced by median",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1889
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8622,
+          "mae_end": 0.0543
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8393,
+          "mae_end": 0.0758
+        },
+        "delta_hit100_pp_vs_reference": 0.1,
+        "units_better_vs_ref": 17,
+        "units_worse_vs_ref": 8
+      },
+      "S5_gate_p90_loo_median": {
+        "n": 2035,
+        "hit100": 0.9111,
+        "hit200": 0.9774,
+        "hit250": 0.9848,
+        "mae_start": 0.0369,
+        "mae_end": 0.0359,
+        "median_both": 0.04,
+        "p90_both": 0.0961,
+        "deployable": true,
+        "realignment_budget": 0.0757,
+        "note": "reference kept elsewhere; unstable units use leave-one-out median (threshold 320ms)",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.7647,
+          "mae_end": 0.1889
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 0.9412,
+          "mae_end": 0.028
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.8445,
+          "mae_end": 0.0578
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.8036,
+          "mae_end": 0.0915
+        },
+        "delta_hit100_pp_vs_reference": -0.34,
+        "units_better_vs_ref": 38,
+        "units_worse_vs_ref": 22
+      },
+      "S7_oracle_member_pick": {
+        "n": 2035,
+        "hit100": 0.9602,
+        "hit200": 0.9931,
+        "hit250": 0.9951,
+        "mae_start": 0.0316,
+        "mae_end": 0.0281,
+        "median_both": 0.0365,
+        "p90_both": 0.0751,
+        "deployable": false,
+        "realignment_budget": 1.0,
+        "note": "upper bound: per unit pick the member with the smallest true error (uses GT)",
+        "stratum_last_char": {
+          "n": 17,
+          "hit100": 0.8824,
+          "mae_end": 0.0945
+        },
+        "stratum_first_char": {
+          "n": 17,
+          "hit100": 1.0,
+          "mae_end": 0.0264
+        },
+        "stratum_unstable_top20pct": {
+          "n": 508,
+          "hit100": 0.9547,
+          "mae_end": 0.0341
+        },
+        "stratum_long_note": {
+          "n": 112,
+          "hit100": 0.9375,
+          "mae_end": 0.0449
+        },
+        "delta_hit100_pp_vs_reference": 4.57,
+        "units_better_vs_ref": 342,
+        "units_worse_vs_ref": 0
+      }
+    },
+    "summary": {
+      "reference_hit100": 0.9145,
+      "best_deployable_hit100": 0.9179,
+      "oracle_hit100": 0.9602,
+      "gap_closed_by_consensus_share": 0.074,
+      "budget_for_best": 1.0,
+      "interpretation": "compare only the *marginal* gain against the re-alignment budget; a strategy that reaches the oracle only by recomputing everything is not a win over simply trusting the single pass"
+    }
+  },
   "disagreement_signal_natural": {
     "reference_predictor": "r2_full_20260723",
     "membership": {

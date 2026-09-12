@@ -11,7 +11,7 @@ reports/progress/20260912_gtsinger_gt_deep_analysis.md
 results/by_run/20260912_gtsinger_gt_deep/metrics.json
 ```
 
-Five things later rounds must not re-assume:
+Seven things later rounds must not re-assume:
 
 1. The 3x2x2 evaluation matrix is degenerate — `mix`/`vocal` were fed the same wav and
    `full`/`windowed` coincide on short clips, so those runs contain no audio-input or planning-mode
@@ -32,7 +32,17 @@ Five things later rounds must not re-assume:
    weaker than in studio clips (42% of bad units in runs >=2 vs 67.6% on GTSinger) — region-level
    realign gains must therefore be calibrated per domain. See
    `reports/progress/20260912_mir1k_natural_panel.md`.
-5. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
+5. **Multi-view consensus over existing inference configurations is not worth GPU.** On the natural
+   Mandarin panel, the best deployable selection (median / agreement-cluster over 5 configurations) gains
+   +0.34 pp hit@100 while a per-unit oracle pick over the same members would gain +4.57 pp — consensus
+   closes only 7.4% of that gap, gated variants give +0.10 pp for 8% re-compute budget, and
+   leave-one-out median fallbacks are *negative*. Averaging also *damages* the last character of an item
+   (82.4% -> 76.5%). See `reports/progress/20260912_mir1k_natural_panel.md` section 5b and
+   `src/lyricalign/analysis/multiview_consensus.py`.
+6. The last-character deficit is a *long-note tail* problem, not truncation: last characters average
+   1.43 s of ground-truth duration (middle: 0.43 s), start sides are fine (94.1%), ends are not
+   (88.2%), and only 11.8% of last-char failures are shared by every predictor.
+7. `LONG_TIMELINE_MANIFEST.canonical_units[*].start_sec` is a **fabricated uniform axis**, not
    ground truth: joining predictions to it yields hit@100 = 5.3% where the frozen real-GT labels give
    87.9%. Any reuse of `research_v7_detector_v2` evidence must reconcile recomputed errors against
    that run's frozen `LABELS.jsonl` before believing a number (see `uniform_axis_trap`), and run1's

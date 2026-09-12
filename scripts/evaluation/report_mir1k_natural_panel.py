@@ -244,6 +244,58 @@ def main() -> int:
       "不能把 GTSinger 的聚簇率当通用常数。")
     w("")
 
+    cs_path = args.analysis_dir / "CONSENSUS_SIM.json"
+    if cs_path.exists():
+        cs = json.loads(cs_path.read_text(encoding="utf-8"))
+        strat, sumc = cs["strategies"], cs["summary"]
+        w("## 5b. 多视角共识离线模拟：主线 realign 的**负结果**（省 GPU 的关键证据）")
+        w("")
+        w(f"- 成员 = {len(cs['members'])} 个独立推理配置（同音频同歌词、不同 checkpoint/run），"
+          f"参考 `{cs['reference_predictor']}`，{cs['n_units']:,} 单元。{cs['honesty']}。")
+        w("")
+        w("| 策略 | hit@100 | Δ vs 单次 (pp) | MAE end | 重算预算 | 变好/变坏单元 | 末字 hit@100 | 不稳定 top20% hit@100 |")
+        w("|---|---:|---:|---:|---:|---:|---:|---:|")
+        for k, v in strat.items():
+            flag = "" if v.get("deployable", True) else "（用 GT，上界）"
+            bud = v.get("realignment_budget")
+            lc = (v.get("stratum_last_char") or {}).get("hit100")
+            un = (v.get("stratum_unstable_top20pct") or {}).get("hit100")
+            w(f"| `{k}`{flag} | {pct(v.get('hit100'), 2)} | "
+              f"{v.get('delta_hit100_pp_vs_reference'):+.2f} | {sec(v.get('mae_end'))} | "
+              f"{pct(bud, 0) if bud is not None else '—'} | "
+              f"{v['units_better_vs_ref']}/{v['units_worse_vs_ref']} | "
+              f"{pct(lc, 1)} | {pct(un, 1)} |")
+        w("")
+        w(f"- **共识几乎不涨**：可部署最优 {pct(sumc['best_deployable_hit100'], 1)} vs 单次 "
+          f"{pct(sumc['reference_hit100'], 1)}（"
+          f"+{(sumc['best_deployable_hit100'] - sumc['reference_hit100']) * 100:.2f}pp），"
+          f"而逐单元完美选人（用 GT）的上界是 {pct(sumc['oracle_hit100'], 1)}（"
+          f"+{(sumc['oracle_hit100'] - sumc['reference_hit100']) * 100:.2f}pp）"
+          f"⇒ **共识只关掉上界差距的 {pct(sumc['gap_closed_by_consensus_share'], 1)}**，"
+          f"且最优解需要 {pct(sumc['budget_for_best'], 0)} 的重算预算。")
+        w(f"- **末字被平均弄坏**：末字 hit@100 从单次 "
+          f"{pct(strat['S0_single_reference']['stratum_last_char']['hit100'], 1)} "
+          f"降到中位/投票/聚类的 "
+          f"{pct(strat['S1_median_all']['stratum_last_char']['hit100'], 1)}，"
+          f"只有 GT 上界能抬到 "
+          f"{pct(strat['S7_oracle_member_pick']['stratum_last_char']['hit100'], 1)} "
+          "⇒ 拖长音尾边界需要新的观察角度（更长右上下文、能量衰减判据），不是多份预测取平均。")
+        w(f"- 门控版性价比更低：p90 阈值只重算 "
+          f"{pct(strat['S4_gate_p90_median']['realignment_budget'], 0)} 的单元只换 "
+          f"{strat['S4_gate_p90_median']['delta_hit100_pp_vs_reference']:+.2f}pp；"
+          f"用 leave-one-out 中位数替换不稳定单元反而为负（"
+          f"{strat['S5_gate_p90_loo_median']['delta_hit100_pp_vs_reference']:+.2f}pp、"
+          f"{strat['S5_gate_p80_loo_median']['delta_hit100_pp_vs_reference']:+.2f}pp @p80）。")
+        w(f"- 顺带修掉一个实现缺陷：原先 S6 用\u300c支持度加权平均\u300d，单个 gross outlier 仍带 "
+          f"1/N 权重把结果拖走（加权平均会把边界拉偏 ~0.5s），已改为**最大一致簇内取均值**；"
+          f"改完 S6 与中位数一致（{strat['S6_agreement_weighted']['hit100']}），"
+          "说明结论对选择规则不敏感。")
+        w("- **决策含义**：`multi-realign dynamics / audio recrop / multi-view consensus` 这条线，"
+          "在「现有机制产生的多视图 + 任何选择或平均规则」这个设定下**不值得再花 GPU**。"
+          "与第 2 轮（后处理只有 +2.4pp 空间）合起来看："
+          "**单次解码之后的所有选择/清洗环节加起来的可挽回空间都在几 pp 以内**，"
+          "推进普通话精度必须回到解码本身（视图生成方式、左上下文、长音尾部判据）。")
+        w("")
     w("## 6. 不同 checkpoint 的单元级位移（聚合分数掩盖的东西）")
     w("")
     w("| 预测器对 | 20ms 内一致 | 100ms 内一致 | 中位跨度 | p90 跨度 | 最大跨度 | Δhit@100 |")
@@ -333,6 +385,8 @@ def main() -> int:
                            if (args.analysis_dir / "LAST_CHAR.json").exists() else None),
         "unstable_units": (json.loads((args.analysis_dir / "UNSTABLE_UNITS.json").read_text(encoding="utf-8"))
                            if (args.analysis_dir / "UNSTABLE_UNITS.json").exists() else None),
+        "consensus_simulation": (json.loads((args.analysis_dir / "CONSENSUS_SIM.json").read_text(encoding="utf-8"))
+                                 if (args.analysis_dir / "CONSENSUS_SIM.json").exists() else None),
         "disagreement_signal_natural": disq, "predictor_pairs": pairs,
         "structural_defects_by_predictor": defects, "error_runs_natural": runs,
         "per_item_variance": var, "panel": panel, "join_audit": audit["predictors"],
