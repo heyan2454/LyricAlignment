@@ -1,0 +1,203 @@
+{
+  "schema_version": "label_noise_ceiling_metrics_v1",
+  "audit": {
+    "schema": "label_noise_ceiling_v1",
+    "question": "is the weaker AUC on M4Singer a weaker signal or a coarser label?",
+    "corpora": {
+      "m4_weak_labels": {
+        "label_kind": "rule_validated weak labels, 80 ms quantised",
+        "units": 4241,
+        "threshold_sensitivity_entropy": {
+          "units": 4241,
+          "by_threshold": {
+            "80ms": {
+              "prevalence": 0.9785,
+              "auc": 0.6914
+            },
+            "100ms": {
+              "prevalence": 0.9635,
+              "auc": 0.6619
+            },
+            "120ms": {
+              "prevalence": 0.9399,
+              "auc": 0.6572
+            },
+            "160ms": {
+              "prevalence": 0.8965,
+              "auc": 0.6681
+            },
+            "200ms": {
+              "prevalence": 0.8453,
+              "auc": 0.683
+            },
+            "250ms": {
+              "prevalence": 0.7876,
+              "auc": 0.6876
+            }
+          }
+        },
+        "threshold_sensitivity_gap": {
+          "units": 4241,
+          "by_threshold": {
+            "80ms": {
+              "prevalence": 0.9785,
+              "auc": 0.5025
+            },
+            "100ms": {
+              "prevalence": 0.9635,
+              "auc": 0.4892
+            },
+            "120ms": {
+              "prevalence": 0.9399,
+              "auc": 0.5053
+            },
+            "160ms": {
+              "prevalence": 0.8965,
+              "auc": 0.5283
+            },
+            "200ms": {
+              "prevalence": 0.8453,
+              "auc": 0.5156
+            },
+            "250ms": {
+              "prevalence": 0.7876,
+              "auc": 0.5099
+            }
+          }
+        },
+        "ambiguous_exclusion_entropy": {
+          "available": true,
+          "units": 4241,
+          "threshold_sec": 0.1,
+          "label_quantum_sec": 0.08,
+          "ambiguous_units": 547,
+          "ambiguous_share": 0.129,
+          "auc_all": 0.6619,
+          "auc_excluding_ambiguous": 0.7003,
+          "auc_change": 0.0384,
+          "prevalence_all": 0.9635,
+          "prevalence_excluding_ambiguous": 0.9992
+        },
+        "slices": {
+          "all": {
+            "units": 4241,
+            "prevalence": 0.9635,
+            "median_err_ms": 525.0,
+            "auc": 0.6619
+          },
+          "baseline_legal_only": {
+            "units": 515,
+            "prevalence": 0.9709,
+            "median_err_ms": 438.2,
+            "auc": 0.6273
+          },
+          "train_split": {
+            "units": 2827,
+            "prevalence": 0.9579,
+            "median_err_ms": 479.1,
+            "auc": 0.6763
+          },
+          "validation_split": {
+            "units": 767,
+            "prevalence": 0.9726,
+            "median_err_ms": 565.7,
+            "auc": 0.6392
+          },
+          "unambiguous_neighbours": {
+            "units": 278,
+            "prevalence": 0.9784,
+            "median_err_ms": 418.4,
+            "auc": 0.7586
+          },
+          "long_note": {
+            "units": 138,
+            "prevalence": 1.0,
+            "median_err_ms": 1308.4,
+            "auc": null
+          }
+        }
+      },
+      "gtsinger_human_gt": {
+        "label_kind": "human word-level GT",
+        "units": 30600,
+        "threshold_sensitivity_entropy": {
+          "units": 30600,
+          "by_threshold": {
+            "80ms": {
+              "prevalence": 0.2461,
+              "auc": 0.7763
+            },
+            "100ms": {
+              "prevalence": 0.1963,
+              "auc": 0.7993
+            },
+            "120ms": {
+              "prevalence": 0.1677,
+              "auc": 0.8218
+            },
+            "160ms": {
+              "prevalence": 0.1424,
+              "auc": 0.8353
+            },
+            "200ms": {
+              "prevalence": 0.1278,
+              "auc": 0.8435
+            },
+            "250ms": {
+              "prevalence": 0.1093,
+              "auc": 0.8525
+            }
+          }
+        },
+        "ambiguous_exclusion_entropy": {
+          "available": true,
+          "units": 30600,
+          "threshold_sec": 0.1,
+          "label_quantum_sec": 0.08,
+          "ambiguous_units": 22458,
+          "ambiguous_share": 0.7339,
+          "auc_all": 0.7993,
+          "auc_excluding_ambiguous": 0.8662,
+          "auc_change": 0.0669,
+          "prevalence_all": 0.1963,
+          "prevalence_excluding_ambiguous": 0.5006
+        },
+        "slices": {
+          "all": {
+            "units": 30600,
+            "prevalence": 0.1963,
+            "median_err_ms": 40.0,
+            "auc": 0.7993
+          },
+          "production_view": {
+            "units": 2550,
+            "prevalence": 0.1196,
+            "median_err_ms": 40.0,
+            "auc": 0.7888
+          },
+          "long_note": {
+            "units": 1440,
+            "prevalence": 0.4306,
+            "median_err_ms": 80.0,
+            "auc": 0.7132
+          }
+        }
+      }
+    }
+  },
+  "headline": {
+    "m4_median_err_ms": 525.0,
+    "m4_prevalence_err_gt100ms": 0.9635,
+    "gtsinger_median_err_ms": 40.0,
+    "gtsinger_prevalence_err_gt100ms": 0.1963,
+    "comparable_corpus": false,
+    "gtsinger_ambiguous_share": 0.7339,
+    "gtsinger_auc_all": 0.7993,
+    "gtsinger_auc_excl_ambiguous": 0.8662,
+    "m4_ambiguous_share": 0.129,
+    "m4_auc_all": 0.6619,
+    "m4_auc_excl_ambiguous": 0.7003,
+    "auc_rises_with_tolerance_both": true,
+    "conclusion": "M4Singer is not a comparable replication corpus for trigger portability (96% of units exceed 100 ms, median error 525 ms vs 40 ms); separately, 73.4% of GTSinger units sit within one 80 ms quantum of the 100 ms threshold, so 100 ms-based discrimination is systematically understated"
+  }
+}

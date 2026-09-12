@@ -1360,3 +1360,46 @@ flag 触发比例：inversion 6.33%、gap_residual 11.0%、high_entropy_end 20.0
 ## 本轮自查
 驱动里 JSON 写出发生在十分位计算之前 ⇒ 报告首版读到空值（n=0、ρ=None）；
 已把写出移到计算之后并重跑验证。测试新增 1 项（ρ>0.9 的合成信号 vs ρ≈0 的无信号 + 小样本 unavailable）。
+
+---
+
+# 第 31 轮：是信号弱还是标签粗？（对第 30 轮的更正 + 一个新的口径问题）
+
+- 代码：`src/lyricalign/analysis/label_noise_ceiling.py`（`threshold_sensitivity / ambiguous_label_impact / slice_decomposition`）
+- 入口：`scripts/evaluation/{run,report}_label_noise_ceiling.py`；测试 4 项
+- 产物：`runs/20260912_label_noise_ceiling/LABEL_NOISE.json`、
+  `reports/progress/20260912_label_noise_ceiling.md`、`results/by_run/20260912_label_noise_ceiling/metrics.json`
+
+## (1) M4Singer 不是可比的复现语料 ⇒ 第 30 轮的否证强度要下调
+M4 面板（研究用 detector_v2 的**拼接时间线**）中位误差 **525.0ms**、误差>100ms 流行率 **96.4%**；
+GTSinger 中位 **40.0ms**、流行率 **19.6%**。
+⇒ 在 M4 上"判别"退化成**在普遍错的里面排先后**。
+`gap_over_core` 的结论仍是"除 GTSinger 外无正证据 ⇒ 不上线"，
+但**不能再表述为已被独立语料证伪**（B37 已加 ♻️）。
+
+## (2) 100ms 阈值被 80ms 格点污染（影响全项目 headline 口径）
+- 落在阈值 ±1 格（±80ms）内的单元：**GTSinger 22,458 个（73.4%）**、M4 547（12.9%）；
+- 剔除这些"标签可能被量化翻转"的单元后，同一分数的 AUC：
+  GTSinger **0.7993 → 0.8662（Δ +0.067）**、M4 0.6619 → 0.7003（Δ +0.038）；
+- 原因：GTSinger 中位误差 40ms **远小于量化格 80ms**，大量单元挤在 100ms 判定线附近。
+⇒ **以 100ms 为界的判别力评估会系统性低估真实判别力**；
+detector_v2 的 SAFE ≤100ms 带正落在该区间（第 20 轮已给出 50ms 侧同类警告）。
+
+## (3) 判别力随容差单调上升
+| 容差 | GTSinger AUC | M4 AUC |
+|---:|---:|---:|
+| 80ms | 0.7763 | 0.6914 |
+| 100ms | 0.7993 | 0.6619 |
+| 160ms | 0.8353 | 0.6681 |
+| 250ms | 0.8525 | 0.6876 |
+⇒ 触发器擅长抓"粗错"，不擅长抓边缘错；分层里 M4 的"邻居无歧义"子集 AUC 升到 0.759，
+但 `baseline_legal_only` 只有 0.627 ⇒ **标签质量解释不了全部差距，语料差异仍在**，
+不能声称熵的跨语料一致性已被证明。
+
+## 动作
+- 索引 B37 加 ♻️（不可比语料）、新增 B39（阈值量化污染）；
+- 清单新增一条：**报 AUC/判别力必须同时报标签流行率、量化歧义比例、容差敏感性**；
+- 第 29 轮预算表口径不变，但引用时应注明「100ms 阈值下的 AUC 是保守值」。
+
+自查：这是本会话**第四次**因"中文串里嵌 ASCII 双引号"导致语法错误，已在文件里改用「」；
+另修一处手抄数字（报告里写死的 96% 改为取自 JSON，遵守"报告数字由结构化数据生成"）。

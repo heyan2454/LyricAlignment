@@ -93,8 +93,10 @@
   + 间隙残余（切早 AUC 0.92、长音层 0.94、精度 98% 但覆盖 12–15%）；融合 AUC 0.850、
   20% 复核预算召回 67.1%；真实歌任一触发 29.0%，中文歌无一进重解码队列前十。
 
-| B37 | **跨语料复现失败：`gap_over_core` 是语料特异信号**——同一代码路径下 GTSinger ρ=+0.777（十分位跨度 483ms、AUC 0.921）而 **M4Singer ρ=−0.060、跨度 97ms、AUC 0.506**（且切早流行率 65.7% ⇒ 标签近常数使 AUC 失去意义，必须并报连续量排序）；**只有边界置信度勉强同向**（M4 对误差>100ms AUC 0.662，train 0.676/val 0.639，弱于 GTSinger 0.845）；margin 方向反（0.397）⇒ **间隙残余不得上线**，第 27 轮融合里可移植成分仅熵（预算结论不变，实现应只用熵） | ❌→♻️ | `reports/progress/20260912_trigger_replication.md` |
+| B37 | ♻️**复现语料不可比（见 B39）**，原表述"跨语料复现失败"应降级为"除 GTSinger 外无正证据"：`gap_over_core` 是语料特异信号——同一代码路径下 GTSinger ρ=+0.777（十分位跨度 483ms、AUC 0.921）而 **M4Singer ρ=−0.060、跨度 97ms、AUC 0.506**（且切早流行率 65.7% ⇒ 标签近常数使 AUC 失去意义，必须并报连续量排序）；**只有边界置信度勉强同向**（M4 对误差>100ms AUC 0.662，train 0.676/val 0.639，弱于 GTSinger 0.845）；margin 方向反（0.397）⇒ **间隙残余不得上线**，第 27 轮融合里可移植成分仅熵（预算结论不变，实现应只用熵） | ❌→♻️ | `reports/progress/20260912_trigger_replication.md` |
 | B38 | 方法学：**跨语料复现必须同时报 AUC 与抗饱和连续量（ρ/十分位）+ 标签流行率**；只看 AUC 会在近常数标签语料上得出"全都无效"的错误结论，只看 ρ 会漏掉覆盖率差异 | ✅ | 同上 |
+
+| B39 | **100ms 阈值被 80ms 格点污染**：GTSinger 上 **73.4%** 单元的误差落在阈值 ±1 格内（M4 12.9%）；剔除后同一分数 AUC 0.7993→**0.8662**（M4 0.6619→0.7003）⇒ **以 100ms 为界的判别力评估系统性低估真实判别力**，detector_v2 SAFE ≤100ms 正落在该区间；且 AUC 随容差单调上升（80→250ms：0.776→0.853）⇒ 触发器擅长抓粗错。另：M4 面板中位误差 525ms、96.4% 单元超 100ms ⇒ **它不是可比的复现语料**（第 30 轮否证强度下调），而 M4 的 `baseline_legal_only` 子集 AUC 仅 0.627 ⇒ 标签质量解释不了全部差距，不得声称熵的跨语料一致性已被证明 | ✅ | `reports/progress/20260912_label_noise_ceiling.md`、`runs/20260912_label_noise_ceiling/LABEL_NOISE.json` |
 
 ## C. 后处理与选择环节的可挽回空间（预算决策类）
 
@@ -156,8 +158,8 @@
   `runs/20260912_real_song_views/`（1.0M）、`runs/20260912_gtsinger_multiview/`
 - 代码：`src/lyricalign/analysis/{gtsinger_gt_evidence,gtsinger_gt_deep,postprocess_replay,m4_longform_weakgt,mir1k_natural_panel,real_song_views,cleanup_simulation,joint_cleanup,longform_signed_gt,cross_window_selection,longform_pipeline_candidate,gtsinger_multiview}.py`
 - 入口：`scripts/evaluation/` 下同名 `extract_/analyze_/report_/run_/solve_` 脚本
-- 测试：本会话新增 162 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
-  `tests/test_inversion_clamp_observability.py`），全量 `1604 passed / 3 pre-existing failed`（第 30 轮后隔离复跑）。
+- 测试：本会话新增 166 项（`tests/evaluation/` + `tests/test_alignment_artifacts_degeneracy.py` +
+  `tests/test_inversion_clamp_observability.py`），全量 `1608 passed / 3 pre-existing failed`（第 31 轮后隔离复跑）。
   负载敏感现象再次确认：大批量写盘后紧接着跑全套会多出 2 项 LP 相关失败 + 1 项 skip（第 14 轮定位的
   "高 I/O 负载下 scipy.optimize 导入失败"），隔离复跑即干净 ⇒ 收尾必须单独跑测试
 - gate 清单（`audit_batch.py`）：attributable_identity / structural_legality 5% / stage_attribution 1% /
