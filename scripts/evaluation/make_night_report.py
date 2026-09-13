@@ -319,7 +319,9 @@ def sec_exposure(root: Path) -> list[str]:
             f"- **设计层发现**：按条目复制会自我稀释（含长字符的条目占 {doc['items_with_long_share']:.1%} 条目、"
             f"{doc['characters_in_long_items_share']:.1%} 字符），份额增益饱和于 **×{1 / doc['characters_in_long_items_share']:.2f}**；"
             f"因此 B 臂 factor 从 3 改成 8（实际 ×{doc['effective_exposure_gain']}）；",
-            f"- 预先登记的数值预测（05:43，早于臂完成）：{cells}；",
+            f"- 预先登记的数值预测：**05:43 首次登记**（当时 factor=3，混合曲线）⇒ 1–2s 6.60%→4.96%、"
+            f"≥2s 11.06%→8.32%；**07:33 按臂的真实设定重登记**（factor=8、留出曲线）⇒ {cells}；"
+            f"两次都早于 B 臂完成；",
             "- 三种结果都 informative：落在带内 ⇒ 暴露解释成立；优于带 ⇒ 还有别的机制在帮忙；"
             "几乎不动 ⇒ 暴露相关是假象，需要结构级改动（时长参数化）。"]
 
