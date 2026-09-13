@@ -38,7 +38,7 @@ def paired(keys, old, new, *, long=None):
     mean = st.mean(diff)
     se = st.stdev(diff) / len(diff) ** 0.5 if len(diff) > 1 else 0.0
     return {"n": len(keys), "mean_delta_ms": round(mean, 2), "se_ms": round(se, 2),
-            "z": round(mean / se, 2) if se else None,
+            "z": round(mean / se, 2) if se > 1e-12 else None,
             "better": sum(1 for x in diff if x < -1), "worse": sum(1 for x in diff if x > 1),
             "miss_rate_old": round(sum(1 for k in keys if old[k]["abs_err_argmax"] > 0.2) / len(keys), 4),
             "miss_rate_new": round(sum(1 for k in keys if new[k]["abs_err_argmax"] > 0.2) / len(keys), 4)}
@@ -75,7 +75,7 @@ def main() -> None:
         mean = st.mean(diff)
         se = st.stdev(diff) / len(diff) ** 0.5
         result["sides"][label] = {"n": len(keys), "mean_delta_ms": round(mean, 2), "se_ms": round(se, 2),
-                                  "z": round(mean / se, 2) if se else None,
+                                  "z": round(mean / se, 2) if se > 1e-12 else None,
                                   "miss_rate_old": round(sum(1 for i, j in keys if maxerr(old, i, j) > args.tolerance) / len(keys), 4),
                                   "miss_rate_new": round(sum(1 for i, j in keys if maxerr(new, i, j) > args.tolerance) / len(keys), 4)}
     args.out.parent.mkdir(parents=True, exist_ok=True)

@@ -117,7 +117,7 @@ def paired_vs_single(accepted: dict[Any, tuple[float, float]], estimates: dict[A
     mean = st.mean(diffs)
     se = st.stdev(diffs) / len(diffs) ** 0.5 if len(diffs) > 1 else 0.0
     return {"n": len(diffs), "mean_delta_ms": round(1000 * mean, 2), "se_ms": round(1000 * se, 2),
-            "z": round(mean / se, 2) if se else None,
+            "z": round(mean / se, 2) if se > 1e-12 else None,   # 零方差给 None，不造荒谬的 z
             "better": sum(1 for value in diffs if value < -1e-6),
             "worse": sum(1 for value in diffs if value > 1e-6),
             "coverage_median_windows": int(st.median([len(estimates[key]["end"]) for key in keys]))}
