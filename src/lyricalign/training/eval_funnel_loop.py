@@ -128,15 +128,23 @@ def evaluate_variants(model: Any, processor: Any, collator: Any, records: list[d
                       batch_size: int, segment_sec: float,
                       tolerances: tuple[float, ...] = DEFAULT_TOLERANCES_SEC,
                       keep_per_unit: bool = False) -> dict[str, Any]:
-    """One forward pass, three decodes, per-song test-scale metrics for each."""
+    """One forward pass, several decodes, per-song test-scale metrics for each.
+
+    `dp` is the monotone Viterbi decode of the same logits (no greedy per-slot argmax, no upstream
+    block filling), and `dp_targeted` layers the targeted repair on top of it.  They are computed in
+    the same pass as `fixed`/`raw`/`raw_targeted` so a decoder change is compared on identical
+    predictions rather than on a re-run.
+    """
     import torch
 
+    from lyricalign.inference.constrained_timestamps import constrained_rows
     from lyricalign.training.qwen_fa_runtime import move_inputs
 
     model.eval()
     reference = [row for record in records for row in references[record["item_id"]]]
     fixed_rows: list[dict[str, Any]] = []
     raw_rows: list[dict[str, Any]] = []
+    dp_rows: list[dict[str, Any]] = []
     losses: list[float] = []
     with torch.no_grad():
         for offset in range(0, len(records), int(batch_size)):
@@ -157,8 +165,12 @@ def evaluate_variants(model: Any, processor: Any, collator: Any, records: list[d
             raw_rows.extend(argmax_character_predictions(
                 output.logits, batch["input_ids"], words, model.config.timestamp_token_id, chunk,
                 segment_sec=segment_sec))
+            dp_rows.extend(constrained_rows(output.logits, batch["input_ids"], chunk, words,
+                                            timestamp_token_id=model.config.timestamp_token_id,
+                                            segment_sec=segment_sec))
     variants = {"fixed": fixed_rows, "raw": raw_rows,
-                "raw_targeted": raw_plus_targeted_rows(raw_rows, grid_sec=segment_sec)}
+                "raw_targeted": raw_plus_targeted_rows(raw_rows, grid_sec=segment_sec),
+                "dp": dp_rows, "dp_targeted": raw_plus_targeted_rows(dp_rows, grid_sec=segment_sec)}
     out: dict[str, Any] = {"val_loss": round(float(np.mean(losses)), 6) if losses else None,
                            "items": len(records), "characters": len(reference), "variants": {}}
     for name, rows in variants.items():
