@@ -1,0 +1,3628 @@
+{
+  "schema_version": "long_context_view_v1",
+  "config": "/home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_concat20c_seed20260724/config.yaml",
+  "concat_stats": {
+    "schema_version": "concat_view_v1",
+    "target_sec": 20.0,
+    "max_sec": 28.0,
+    "gap_sec": 0.4,
+    "min_parts": 2,
+    "input_items": 1711,
+    "output_records": 418,
+    "merged_records": 403,
+    "dropped_or_unmergeable": 0,
+    "total_audio_sec": 8926.5
+  },
+  "eval_records": 418,
+  "eval_characters": 15204,
+  "eval_songs": 29,
+  "tolerances_sec": [
+    0.1,
+    0.2,
+    0.25
+  ],
+  "checkpoints": {
+    "concat-step3000": {
+      "checkpoint": "/home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_concat20c_seed20260724/checkpoints/step-003000",
+      "loaded_step": 3000,
+      "drift_profile": {
+        "fixed": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 51.1,
+            "miss_rate": 0.0255
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 52.4,
+            "miss_rate": 0.0306
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 57.2,
+            "miss_rate": 0.0342
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 56.3,
+            "miss_rate": 0.0338
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 56.1,
+            "miss_rate": 0.0284
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 90.5,
+            "miss_rate": 0.0526
+          }
+        },
+        "raw": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 43.8,
+            "miss_rate": 0.018
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 48.3,
+            "miss_rate": 0.0249
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 49.9,
+            "miss_rate": 0.0271
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 48.6,
+            "miss_rate": 0.0266
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 51.7,
+            "miss_rate": 0.0247
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 61.1,
+            "miss_rate": 0.0263
+          }
+        },
+        "raw_targeted": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 43.1,
+            "miss_rate": 0.0175
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 48.7,
+            "miss_rate": 0.0249
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 48.8,
+            "miss_rate": 0.0274
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 48.5,
+            "miss_rate": 0.0269
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 51.3,
+            "miss_rate": 0.0241
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 61.1,
+            "miss_rate": 0.0263
+          }
+        },
+        "dp": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 41.5,
+            "miss_rate": 0.0134
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 45.9,
+            "miss_rate": 0.0216
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.8,
+            "miss_rate": 0.0243
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 46.0,
+            "miss_rate": 0.0218
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 52.1,
+            "miss_rate": 0.0241
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 37.9,
+            "miss_rate": 0.0263
+          }
+        },
+        "dp_targeted": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 41.5,
+            "miss_rate": 0.0134
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 45.9,
+            "miss_rate": 0.0216
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.8,
+            "miss_rate": 0.0243
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 46.0,
+            "miss_rate": 0.0218
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 52.1,
+            "miss_rate": 0.0241
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 37.9,
+            "miss_rate": 0.0263
+          }
+        }
+      },
+      "val_loss": 0.652984,
+      "variants": {
+        "fixed": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 0.9909,
+          "unusable_count": 139,
+          "mae_all_ms": 54.37,
+          "mae_valid_only_ms": 44.95,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 0.9903,
+              "mae_all_ms": 74.17,
+              "within_100ms": 0.8883,
+              "within_200ms": 0.9272,
+              "within_250ms": 0.966
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 0.9832,
+              "mae_all_ms": 103.53,
+              "within_100ms": 0.8319,
+              "within_200ms": 0.9076,
+              "within_250ms": 0.9412
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 0.9907,
+              "mae_all_ms": 73.93,
+              "within_100ms": 0.904,
+              "within_200ms": 0.9536,
+              "within_250ms": 0.9628
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 0.9851,
+              "mae_all_ms": 61.49,
+              "within_100ms": 0.9403,
+              "within_200ms": 0.9478,
+              "within_250ms": 0.9701
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 0.9843,
+              "mae_all_ms": 61.87,
+              "within_100ms": 0.9403,
+              "within_200ms": 0.9679,
+              "within_250ms": 0.9739
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 0.9908,
+              "mae_all_ms": 55.39,
+              "within_100ms": 0.9345,
+              "within_200ms": 0.9724,
+              "within_250ms": 0.9846
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 39.15,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 0.9841,
+              "mae_all_ms": 58.5,
+              "within_100ms": 0.9483,
+              "within_200ms": 0.9655,
+              "within_250ms": 0.9717
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 0.9982,
+              "mae_all_ms": 44.26,
+              "within_100ms": 0.9601,
+              "within_200ms": 0.9831,
+              "within_250ms": 0.9929
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 0.9857,
+              "mae_all_ms": 76.0,
+              "within_100ms": 0.9286,
+              "within_200ms": 0.9286,
+              "within_250ms": 0.9571
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 0.9944,
+              "mae_all_ms": 34.59,
+              "within_100ms": 0.9761,
+              "within_200ms": 0.9859,
+              "within_250ms": 0.9873
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 0.9918,
+              "mae_all_ms": 51.02,
+              "within_100ms": 0.9388,
+              "within_200ms": 0.9673,
+              "within_250ms": 0.9765
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 0.9915,
+              "mae_all_ms": 44.65,
+              "within_100ms": 0.945,
+              "within_200ms": 0.9704,
+              "within_250ms": 0.9831
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 0.994,
+              "mae_all_ms": 52.37,
+              "within_100ms": 0.9369,
+              "within_200ms": 0.967,
+              "within_250ms": 0.988
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 0.9859,
+              "mae_all_ms": 73.78,
+              "within_100ms": 0.9071,
+              "within_200ms": 0.9616,
+              "within_250ms": 0.9717
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 0.9952,
+              "mae_all_ms": 46.6,
+              "within_100ms": 0.9508,
+              "within_200ms": 0.9739,
+              "within_250ms": 0.9894
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 0.9962,
+              "mae_all_ms": 57.56,
+              "within_100ms": 0.9275,
+              "within_200ms": 0.9618,
+              "within_250ms": 0.9733
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 0.9876,
+              "mae_all_ms": 67.58,
+              "within_100ms": 0.9006,
+              "within_200ms": 0.9441,
+              "within_250ms": 0.9503
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 0.9987,
+              "mae_all_ms": 38.61,
+              "within_100ms": 0.9513,
+              "within_200ms": 0.9833,
+              "within_250ms": 0.9947
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 0.9973,
+              "mae_all_ms": 37.87,
+              "within_100ms": 0.992,
+              "within_200ms": 0.9973,
+              "within_250ms": 0.9973
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 0.9954,
+              "mae_all_ms": 49.07,
+              "within_100ms": 0.9444,
+              "within_200ms": 0.9722,
+              "within_250ms": 0.9769
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 0.9863,
+              "mae_all_ms": 56.69,
+              "within_100ms": 0.943,
+              "within_200ms": 0.9624,
+              "within_250ms": 0.9715
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 0.9371,
+              "mae_all_ms": 209.51,
+              "within_100ms": 0.8741,
+              "within_200ms": 0.8811,
+              "within_250ms": 0.8881
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 0.957,
+              "mae_all_ms": 92.81,
+              "within_100ms": 0.8867,
+              "within_200ms": 0.9141,
+              "within_250ms": 0.9258
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.37,
+              "within_100ms": 0.9262,
+              "within_200ms": 0.9779,
+              "within_250ms": 0.9889
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 0.997,
+              "mae_all_ms": 52.5,
+              "within_100ms": 0.9256,
+              "within_200ms": 0.9494,
+              "within_250ms": 0.9911
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 0.9953,
+              "mae_all_ms": 40.0,
+              "within_100ms": 0.9844,
+              "within_200ms": 0.9922,
+              "within_250ms": 0.9937
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 0.9951,
+              "mae_all_ms": 71.18,
+              "within_100ms": 0.9167,
+              "within_200ms": 0.9608,
+              "within_250ms": 0.9706
+            }
+          },
+          "within_100ms_all": 0.9428,
+          "within_100ms_valid_only": 0.9515,
+          "within_200ms_all": 0.9695,
+          "within_200ms_valid_only": 0.9784,
+          "within_250ms_all": 0.9799,
+          "within_250ms_valid_only": 0.9889,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.9613,
+          "macro_song_se_primary": 0.0052,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 0.9909,
+              "mae_all_ms": 54.37,
+              "within_100ms": 0.9428,
+              "within_200ms": 0.9695,
+              "within_250ms": 0.9799,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 0.9853,
+              "mae_all_ms": 109.89,
+              "within_100ms": 0.8442,
+              "within_200ms": 0.9263,
+              "within_250ms": 0.9495,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 0.9952,
+              "mae_all_ms": 47.72,
+              "within_100ms": 0.9513,
+              "within_200ms": 0.9724,
+              "within_250ms": 0.985,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 0.9851,
+              "mae_all_ms": 77.12,
+              "within_100ms": 0.902,
+              "within_200ms": 0.9549,
+              "within_250ms": 0.9688,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "raw": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 0.998,
+          "unusable_count": 31,
+          "mae_all_ms": 47.95,
+          "mae_valid_only_ms": 45.72,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 1.0,
+              "mae_all_ms": 66.02,
+              "within_100ms": 0.8932,
+              "within_200ms": 0.932,
+              "within_250ms": 0.9757
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 0.9916,
+              "mae_all_ms": 95.13,
+              "within_100ms": 0.8487,
+              "within_200ms": 0.916,
+              "within_250ms": 0.9496
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 0.9876,
+              "mae_all_ms": 70.84,
+              "within_100ms": 0.9102,
+              "within_200ms": 0.9567,
+              "within_250ms": 0.9659
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.75,
+              "within_100ms": 0.9328,
+              "within_200ms": 0.9627,
+              "within_250ms": 0.9851
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 0.9985,
+              "mae_all_ms": 48.81,
+              "within_100ms": 0.9515,
+              "within_200ms": 0.9813,
+              "within_250ms": 0.9873
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 0.998,
+              "mae_all_ms": 48.56,
+              "within_100ms": 0.9406,
+              "within_200ms": 0.9806,
+              "within_250ms": 0.9918
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.85,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 0.9979,
+              "mae_all_ms": 46.23,
+              "within_100ms": 0.9586,
+              "within_200ms": 0.9773,
+              "within_250ms": 0.9841
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 0.9991,
+              "mae_all_ms": 42.84,
+              "within_100ms": 0.9618,
+              "within_200ms": 0.9849,
+              "within_250ms": 0.9938
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 66.29,
+              "within_100ms": 0.9143,
+              "within_200ms": 0.9286,
+              "within_250ms": 0.9714
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 29.41,
+              "within_100ms": 0.9803,
+              "within_200ms": 0.9915,
+              "within_250ms": 0.993
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 0.999,
+              "mae_all_ms": 47.22,
+              "within_100ms": 0.9439,
+              "within_200ms": 0.9724,
+              "within_250ms": 0.9827
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.7,
+              "within_100ms": 0.9514,
+              "within_200ms": 0.9767,
+              "within_250ms": 0.9894
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.05,
+              "within_100ms": 0.9429,
+              "within_200ms": 0.973,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 0.996,
+              "mae_all_ms": 62.06,
+              "within_100ms": 0.9172,
+              "within_200ms": 0.9717,
+              "within_250ms": 0.9818
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.47,
+              "within_100ms": 0.9546,
+              "within_200ms": 0.9778,
+              "within_250ms": 0.9932
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 54.96,
+              "within_100ms": 0.9275,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 54.66,
+              "within_100ms": 0.913,
+              "within_200ms": 0.9565,
+              "within_250ms": 0.9689
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 37.01,
+              "within_100ms": 0.9533,
+              "within_200ms": 0.986,
+              "within_250ms": 0.996
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.84,
+              "within_100ms": 0.9893,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9491,
+              "within_200ms": 0.9769,
+              "within_250ms": 0.9815
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 0.9943,
+              "mae_all_ms": 50.26,
+              "within_100ms": 0.9475,
+              "within_200ms": 0.9681,
+              "within_250ms": 0.9783
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 0.965,
+              "mae_all_ms": 189.37,
+              "within_100ms": 0.8881,
+              "within_200ms": 0.8951,
+              "within_250ms": 0.9021
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 0.9844,
+              "mae_all_ms": 68.28,
+              "within_100ms": 0.9141,
+              "within_200ms": 0.9375,
+              "within_250ms": 0.9531
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.37,
+              "within_100ms": 0.9262,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9889
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 49.76,
+              "within_100ms": 0.9286,
+              "within_200ms": 0.9524,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 0.9984,
+              "mae_all_ms": 37.25,
+              "within_100ms": 0.9875,
+              "within_200ms": 0.9953,
+              "within_250ms": 0.9969
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 64.71,
+              "within_100ms": 0.9216,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.9484,
+          "within_100ms_valid_only": 0.9504,
+          "within_200ms_all": 0.9761,
+          "within_200ms_valid_only": 0.9781,
+          "within_250ms_all": 0.9865,
+          "within_250ms_valid_only": 0.9885,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.9677,
+          "macro_song_se_primary": 0.0047,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 0.998,
+              "mae_all_ms": 47.95,
+              "within_100ms": 0.9484,
+              "within_200ms": 0.9761,
+              "within_250ms": 0.9865,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 0.9937,
+              "mae_all_ms": 97.52,
+              "within_100ms": 0.8484,
+              "within_200ms": 0.9326,
+              "within_250ms": 0.9558,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 0.9976,
+              "mae_all_ms": 47.76,
+              "within_100ms": 0.9519,
+              "within_200ms": 0.973,
+              "within_250ms": 0.9856,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 0.9957,
+              "mae_all_ms": 65.09,
+              "within_100ms": 0.9087,
+              "within_200ms": 0.9645,
+              "within_250ms": 0.9789,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "raw_targeted": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 1.0,
+          "unusable_count": 0,
+          "mae_all_ms": 47.57,
+          "mae_valid_only_ms": 47.57,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 1.0,
+              "mae_all_ms": 68.74,
+              "within_100ms": 0.8932,
+              "within_200ms": 0.932,
+              "within_250ms": 0.9709
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 1.0,
+              "mae_all_ms": 87.39,
+              "within_100ms": 0.8571,
+              "within_200ms": 0.9244,
+              "within_250ms": 0.958
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 1.0,
+              "mae_all_ms": 73.19,
+              "within_100ms": 0.9102,
+              "within_200ms": 0.9567,
+              "within_250ms": 0.9659
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.75,
+              "within_100ms": 0.9328,
+              "within_200ms": 0.9627,
+              "within_250ms": 0.9851
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.16,
+              "within_100ms": 0.9507,
+              "within_200ms": 0.9821,
+              "within_250ms": 0.9881
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.93,
+              "within_100ms": 0.9406,
+              "within_200ms": 0.9795,
+              "within_250ms": 0.9908
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.85,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.49,
+              "within_100ms": 0.9573,
+              "within_200ms": 0.9766,
+              "within_250ms": 0.9848
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.24,
+              "within_100ms": 0.961,
+              "within_200ms": 0.984,
+              "within_250ms": 0.9947
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 66.29,
+              "within_100ms": 0.9143,
+              "within_200ms": 0.9286,
+              "within_250ms": 0.9714
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 29.41,
+              "within_100ms": 0.9803,
+              "within_200ms": 0.9915,
+              "within_250ms": 0.993
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.43,
+              "within_100ms": 0.9429,
+              "within_200ms": 0.9714,
+              "within_250ms": 0.9827
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.7,
+              "within_100ms": 0.9514,
+              "within_200ms": 0.9767,
+              "within_250ms": 0.9894
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.05,
+              "within_100ms": 0.9429,
+              "within_200ms": 0.973,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 1.0,
+              "mae_all_ms": 61.09,
+              "within_100ms": 0.9152,
+              "within_200ms": 0.9697,
+              "within_250ms": 0.9798
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.47,
+              "within_100ms": 0.9546,
+              "within_200ms": 0.9778,
+              "within_250ms": 0.9932
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 54.96,
+              "within_100ms": 0.9275,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 54.66,
+              "within_100ms": 0.913,
+              "within_200ms": 0.9565,
+              "within_250ms": 0.9689
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 37.01,
+              "within_100ms": 0.9533,
+              "within_200ms": 0.986,
+              "within_250ms": 0.996
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.84,
+              "within_100ms": 0.9893,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9491,
+              "within_200ms": 0.9769,
+              "within_250ms": 0.9815
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 1.0,
+              "mae_all_ms": 49.85,
+              "within_100ms": 0.943,
+              "within_200ms": 0.9704,
+              "within_250ms": 0.9795
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 1.0,
+              "mae_all_ms": 173.99,
+              "within_100ms": 0.8741,
+              "within_200ms": 0.8811,
+              "within_250ms": 0.9021
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 1.0,
+              "mae_all_ms": 66.56,
+              "within_100ms": 0.9062,
+              "within_200ms": 0.9336,
+              "within_250ms": 0.9531
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.37,
+              "within_100ms": 0.9262,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9889
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.33,
+              "within_100ms": 0.9286,
+              "within_200ms": 0.9524,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.18,
+              "within_100ms": 0.9859,
+              "within_200ms": 0.9969,
+              "within_250ms": 0.9984
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 64.71,
+              "within_100ms": 0.9216,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.9475,
+          "within_100ms_valid_only": 0.9475,
+          "within_200ms_all": 0.9761,
+          "within_200ms_valid_only": 0.9761,
+          "within_250ms_all": 0.9867,
+          "within_250ms_valid_only": 0.9867,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 160.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.9674,
+          "macro_song_se_primary": 0.005,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.57,
+              "within_100ms": 0.9475,
+              "within_200ms": 0.9761,
+              "within_250ms": 0.9867,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 1.0,
+              "mae_all_ms": 96.76,
+              "within_100ms": 0.8484,
+              "within_200ms": 0.9316,
+              "within_250ms": 0.9547,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.97,
+              "within_100ms": 0.9507,
+              "within_200ms": 0.9712,
+              "within_250ms": 0.9838,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 1.0,
+              "mae_all_ms": 65.49,
+              "within_100ms": 0.9087,
+              "within_200ms": 0.964,
+              "within_250ms": 0.9784,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "dp": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 1.0,
+          "unusable_count": 0,
+          "mae_all_ms": 45.83,
+          "mae_valid_only_ms": 45.83,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 1.0,
+              "mae_all_ms": 68.35,
+              "within_100ms": 0.8981,
+              "within_200ms": 0.932,
+              "within_250ms": 0.9757
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 1.0,
+              "mae_all_ms": 82.69,
+              "within_100ms": 0.8739,
+              "within_200ms": 0.9328,
+              "within_250ms": 0.958
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 1.0,
+              "mae_all_ms": 74.55,
+              "within_100ms": 0.9102,
+              "within_200ms": 0.9536,
+              "within_250ms": 0.9628
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.94,
+              "within_100ms": 0.9254,
+              "within_200ms": 0.9627,
+              "within_250ms": 0.9851
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.3,
+              "within_100ms": 0.9544,
+              "within_200ms": 0.9881,
+              "within_250ms": 0.994
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.57,
+              "within_100ms": 0.9406,
+              "within_200ms": 0.9836,
+              "within_250ms": 0.9939
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.55,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.95,
+              "within_100ms": 0.9642,
+              "within_200ms": 0.9828,
+              "within_250ms": 0.9876
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 1.0,
+              "mae_all_ms": 41.1,
+              "within_100ms": 0.9645,
+              "within_200ms": 0.9867,
+              "within_250ms": 0.9965
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 67.43,
+              "within_100ms": 0.9,
+              "within_200ms": 0.9286,
+              "within_250ms": 0.9857
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 28.85,
+              "within_100ms": 0.9817,
+              "within_200ms": 0.993,
+              "within_250ms": 0.9944
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.04,
+              "within_100ms": 0.9408,
+              "within_200ms": 0.9694,
+              "within_250ms": 0.9806
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.35,
+              "within_100ms": 0.9535,
+              "within_200ms": 0.981,
+              "within_250ms": 0.9915
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.29,
+              "within_100ms": 0.9459,
+              "within_200ms": 0.976,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 1.0,
+              "mae_all_ms": 59.8,
+              "within_100ms": 0.9273,
+              "within_200ms": 0.9737,
+              "within_250ms": 0.9838
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.93,
+              "within_100ms": 0.9575,
+              "within_200ms": 0.9807,
+              "within_250ms": 0.9952
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 54.05,
+              "within_100ms": 0.9351,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.22,
+              "within_100ms": 0.9317,
+              "within_200ms": 0.9752,
+              "within_250ms": 0.9876
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.43,
+              "within_100ms": 0.956,
+              "within_200ms": 0.9887,
+              "within_250ms": 0.996
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.05,
+              "within_100ms": 0.984,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.96,
+              "within_100ms": 0.9537,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9861
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.78,
+              "within_100ms": 0.9578,
+              "within_200ms": 0.9829,
+              "within_250ms": 0.9909
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 1.0,
+              "mae_all_ms": 191.33,
+              "within_100ms": 0.8881,
+              "within_200ms": 0.8951,
+              "within_250ms": 0.8951
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 1.0,
+              "mae_all_ms": 58.75,
+              "within_100ms": 0.9102,
+              "within_200ms": 0.9492,
+              "within_250ms": 0.9688
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.07,
+              "within_100ms": 0.9262,
+              "within_200ms": 0.9779,
+              "within_250ms": 0.9889
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 49.05,
+              "within_100ms": 0.9286,
+              "within_200ms": 0.9524,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 1.0,
+              "mae_all_ms": 34.8,
+              "within_100ms": 0.9922,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.24,
+              "within_100ms": 0.9216,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.9513,
+          "within_100ms_valid_only": 0.9513,
+          "within_200ms_all": 0.9796,
+          "within_200ms_valid_only": 0.9796,
+          "within_250ms_all": 0.9893,
+          "within_250ms_valid_only": 0.9893,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.971,
+          "macro_song_se_primary": 0.0046,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.83,
+              "within_100ms": 0.9513,
+              "within_200ms": 0.9796,
+              "within_250ms": 0.9893,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 1.0,
+              "mae_all_ms": 104.08,
+              "within_100ms": 0.8453,
+              "within_200ms": 0.9295,
+              "within_250ms": 0.9516,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 1.0,
+              "mae_all_ms": 41.92,
+              "within_100ms": 0.9603,
+              "within_200ms": 0.9826,
+              "within_250ms": 0.9922,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 1.0,
+              "mae_all_ms": 69.01,
+              "within_100ms": 0.9039,
+              "within_200ms": 0.9597,
+              "within_250ms": 0.9741,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "dp_targeted": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 1.0,
+          "unusable_count": 0,
+          "mae_all_ms": 45.83,
+          "mae_valid_only_ms": 45.83,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 1.0,
+              "mae_all_ms": 68.35,
+              "within_100ms": 0.8981,
+              "within_200ms": 0.932,
+              "within_250ms": 0.9757
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 1.0,
+              "mae_all_ms": 82.69,
+              "within_100ms": 0.8739,
+              "within_200ms": 0.9328,
+              "within_250ms": 0.958
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 1.0,
+              "mae_all_ms": 74.55,
+              "within_100ms": 0.9102,
+              "within_200ms": 0.9536,
+              "within_250ms": 0.9628
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.94,
+              "within_100ms": 0.9254,
+              "within_200ms": 0.9627,
+              "within_250ms": 0.9851
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.3,
+              "within_100ms": 0.9544,
+              "within_200ms": 0.9881,
+              "within_250ms": 0.994
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.57,
+              "within_100ms": 0.9406,
+              "within_200ms": 0.9836,
+              "within_250ms": 0.9939
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.55,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.95,
+              "within_100ms": 0.9642,
+              "within_200ms": 0.9828,
+              "within_250ms": 0.9876
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 1.0,
+              "mae_all_ms": 41.1,
+              "within_100ms": 0.9645,
+              "within_200ms": 0.9867,
+              "within_250ms": 0.9965
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 67.43,
+              "within_100ms": 0.9,
+              "within_200ms": 0.9286,
+              "within_250ms": 0.9857
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 28.85,
+              "within_100ms": 0.9817,
+              "within_200ms": 0.993,
+              "within_250ms": 0.9944
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.04,
+              "within_100ms": 0.9408,
+              "within_200ms": 0.9694,
+              "within_250ms": 0.9806
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.35,
+              "within_100ms": 0.9535,
+              "within_200ms": 0.981,
+              "within_250ms": 0.9915
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.29,
+              "within_100ms": 0.9459,
+              "within_200ms": 0.976,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 1.0,
+              "mae_all_ms": 59.8,
+              "within_100ms": 0.9273,
+              "within_200ms": 0.9737,
+              "within_250ms": 0.9838
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.93,
+              "within_100ms": 0.9575,
+              "within_200ms": 0.9807,
+              "within_250ms": 0.9952
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 54.05,
+              "within_100ms": 0.9351,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.22,
+              "within_100ms": 0.9317,
+              "within_200ms": 0.9752,
+              "within_250ms": 0.9876
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.43,
+              "within_100ms": 0.956,
+              "within_200ms": 0.9887,
+              "within_250ms": 0.996
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.05,
+              "within_100ms": 0.984,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.96,
+              "within_100ms": 0.9537,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9861
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.78,
+              "within_100ms": 0.9578,
+              "within_200ms": 0.9829,
+              "within_250ms": 0.9909
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 1.0,
+              "mae_all_ms": 191.33,
+              "within_100ms": 0.8881,
+              "within_200ms": 0.8951,
+              "within_250ms": 0.8951
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 1.0,
+              "mae_all_ms": 58.75,
+              "within_100ms": 0.9102,
+              "within_200ms": 0.9492,
+              "within_250ms": 0.9688
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.07,
+              "within_100ms": 0.9262,
+              "within_200ms": 0.9779,
+              "within_250ms": 0.9889
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 49.05,
+              "within_100ms": 0.9286,
+              "within_200ms": 0.9524,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 1.0,
+              "mae_all_ms": 34.8,
+              "within_100ms": 0.9922,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.24,
+              "within_100ms": 0.9216,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.9513,
+          "within_100ms_valid_only": 0.9513,
+          "within_200ms_all": 0.9796,
+          "within_200ms_valid_only": 0.9796,
+          "within_250ms_all": 0.9893,
+          "within_250ms_valid_only": 0.9893,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.971,
+          "macro_song_se_primary": 0.0046,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.83,
+              "within_100ms": 0.9513,
+              "within_200ms": 0.9796,
+              "within_250ms": 0.9893,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 1.0,
+              "mae_all_ms": 104.08,
+              "within_100ms": 0.8453,
+              "within_200ms": 0.9295,
+              "within_250ms": 0.9516,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 1.0,
+              "mae_all_ms": 41.92,
+              "within_100ms": 0.9603,
+              "within_200ms": 0.9826,
+              "within_250ms": 0.9922,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 1.0,
+              "mae_all_ms": 69.01,
+              "within_100ms": 0.9039,
+              "within_200ms": 0.9597,
+              "within_250ms": 0.9741,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        }
+      },
+      "summary": {
+        "fixed": {
+          "macro_within_primary": 0.9613,
+          "usable_rate": 0.9909,
+          "mae_all_ms": 54.37,
+          "collapse_longest_run": 0
+        },
+        "raw": {
+          "macro_within_primary": 0.9677,
+          "usable_rate": 0.998,
+          "mae_all_ms": 47.95,
+          "collapse_longest_run": 0
+        },
+        "raw_targeted": {
+          "macro_within_primary": 0.9674,
+          "usable_rate": 1.0,
+          "mae_all_ms": 47.57,
+          "collapse_longest_run": 0
+        },
+        "dp": {
+          "macro_within_primary": 0.971,
+          "usable_rate": 1.0,
+          "mae_all_ms": 45.83,
+          "collapse_longest_run": 0
+        },
+        "dp_targeted": {
+          "macro_within_primary": 0.971,
+          "usable_rate": 1.0,
+          "mae_all_ms": 45.83,
+          "collapse_longest_run": 0
+        }
+      }
+    },
+    "concat-final-3600": {
+      "checkpoint": "/home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_concat20c_seed20260724/checkpoints/step-003600",
+      "loaded_step": 3600,
+      "drift_profile": {
+        "fixed": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 49.7,
+            "miss_rate": 0.0237
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 52.4,
+            "miss_rate": 0.0306
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 56.6,
+            "miss_rate": 0.0335
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 53.6,
+            "miss_rate": 0.0289
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 54.8,
+            "miss_rate": 0.0259
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 40.0,
+            "mean_err_ms": 94.7,
+            "miss_rate": 0.0526
+          }
+        },
+        "raw": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 43.2,
+            "miss_rate": 0.017
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 48.5,
+            "miss_rate": 0.0258
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 49.1,
+            "miss_rate": 0.0268
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 46.9,
+            "miss_rate": 0.0231
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 51.2,
+            "miss_rate": 0.0234
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 63.2,
+            "miss_rate": 0.0263
+          }
+        },
+        "raw_targeted": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 42.5,
+            "miss_rate": 0.0165
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 48.6,
+            "miss_rate": 0.0258
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.8,
+            "miss_rate": 0.0271
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.0,
+            "miss_rate": 0.0231
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 50.7,
+            "miss_rate": 0.0228
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 63.2,
+            "miss_rate": 0.0263
+          }
+        },
+        "dp": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 41.4,
+            "miss_rate": 0.0131
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.1,
+            "miss_rate": 0.0228
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.3,
+            "miss_rate": 0.0243
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 44.3,
+            "miss_rate": 0.0192
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 51.9,
+            "miss_rate": 0.0234
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 37.9,
+            "miss_rate": 0.0263
+          }
+        },
+        "dp_targeted": {
+          "0-5s": {
+            "characters": 3883,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 41.4,
+            "miss_rate": 0.0131
+          },
+          "5-10s": {
+            "characters": 3333,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.1,
+            "miss_rate": 0.0228
+          },
+          "10-15s": {
+            "characters": 3249,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 47.3,
+            "miss_rate": 0.0243
+          },
+          "15-20s": {
+            "characters": 3080,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 44.3,
+            "miss_rate": 0.0192
+          },
+          "20-25s": {
+            "characters": 1621,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 51.9,
+            "miss_rate": 0.0234
+          },
+          "25-30s": {
+            "characters": 38,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 37.9,
+            "miss_rate": 0.0263
+          }
+        }
+      },
+      "val_loss": 0.648974,
+      "variants": {
+        "fixed": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 0.9916,
+          "unusable_count": 127,
+          "mae_all_ms": 53.21,
+          "mae_valid_only_ms": 44.56,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 0.9854,
+              "mae_all_ms": 79.03,
+              "within_100ms": 0.8835,
+              "within_200ms": 0.9223,
+              "within_250ms": 0.9612
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 0.9748,
+              "mae_all_ms": 113.28,
+              "within_100ms": 0.8235,
+              "within_200ms": 0.8992,
+              "within_250ms": 0.9328
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 0.9907,
+              "mae_all_ms": 73.93,
+              "within_100ms": 0.9009,
+              "within_200ms": 0.9567,
+              "within_250ms": 0.9628
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 0.9851,
+              "mae_all_ms": 62.09,
+              "within_100ms": 0.9403,
+              "within_200ms": 0.9478,
+              "within_250ms": 0.9701
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 0.9858,
+              "mae_all_ms": 60.67,
+              "within_100ms": 0.9417,
+              "within_200ms": 0.9701,
+              "within_250ms": 0.9761
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 0.9908,
+              "mae_all_ms": 54.74,
+              "within_100ms": 0.9355,
+              "within_200ms": 0.9724,
+              "within_250ms": 0.9836
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 37.45,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 0.9855,
+              "mae_all_ms": 56.24,
+              "within_100ms": 0.9518,
+              "within_200ms": 0.969,
+              "within_250ms": 0.9745
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 0.9982,
+              "mae_all_ms": 43.62,
+              "within_100ms": 0.9601,
+              "within_200ms": 0.9831,
+              "within_250ms": 0.9929
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 76.57,
+              "within_100ms": 0.9143,
+              "within_200ms": 0.9429,
+              "within_250ms": 0.9714
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 0.9944,
+              "mae_all_ms": 34.14,
+              "within_100ms": 0.9761,
+              "within_200ms": 0.9873,
+              "within_250ms": 0.9887
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 0.9929,
+              "mae_all_ms": 50.73,
+              "within_100ms": 0.9398,
+              "within_200ms": 0.9684,
+              "within_250ms": 0.9776
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 0.9915,
+              "mae_all_ms": 46.34,
+              "within_100ms": 0.945,
+              "within_200ms": 0.9683,
+              "within_250ms": 0.981
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 0.997,
+              "mae_all_ms": 47.45,
+              "within_100ms": 0.9489,
+              "within_200ms": 0.967,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 0.9899,
+              "mae_all_ms": 69.49,
+              "within_100ms": 0.9172,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9778
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 0.9961,
+              "mae_all_ms": 45.71,
+              "within_100ms": 0.9517,
+              "within_200ms": 0.9739,
+              "within_250ms": 0.9913
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 0.9962,
+              "mae_all_ms": 56.34,
+              "within_100ms": 0.9275,
+              "within_200ms": 0.9618,
+              "within_250ms": 0.9733
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.21,
+              "within_100ms": 0.9317,
+              "within_200ms": 0.9752,
+              "within_250ms": 0.9876
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 0.9987,
+              "mae_all_ms": 38.77,
+              "within_100ms": 0.9507,
+              "within_200ms": 0.9833,
+              "within_250ms": 0.994
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 0.9973,
+              "mae_all_ms": 37.44,
+              "within_100ms": 0.992,
+              "within_200ms": 0.9973,
+              "within_250ms": 0.9973
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 0.9954,
+              "mae_all_ms": 45.74,
+              "within_100ms": 0.9491,
+              "within_200ms": 0.9769,
+              "within_250ms": 0.9815
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 0.9875,
+              "mae_all_ms": 53.55,
+              "within_100ms": 0.9464,
+              "within_200ms": 0.9681,
+              "within_250ms": 0.9761
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 0.9371,
+              "mae_all_ms": 210.07,
+              "within_100ms": 0.8741,
+              "within_200ms": 0.8811,
+              "within_250ms": 0.8881
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 0.9609,
+              "mae_all_ms": 88.91,
+              "within_100ms": 0.9023,
+              "within_200ms": 0.9219,
+              "within_250ms": 0.9336
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 49.89,
+              "within_100ms": 0.9225,
+              "within_200ms": 0.9852,
+              "within_250ms": 0.9963
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 0.997,
+              "mae_all_ms": 51.31,
+              "within_100ms": 0.9286,
+              "within_200ms": 0.9554,
+              "within_250ms": 0.9911
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 0.9953,
+              "mae_all_ms": 40.38,
+              "within_100ms": 0.9844,
+              "within_200ms": 0.9922,
+              "within_250ms": 0.9937
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 0.9951,
+              "mae_all_ms": 68.82,
+              "within_100ms": 0.9363,
+              "within_200ms": 0.9608,
+              "within_250ms": 0.9706
+            }
+          },
+          "within_100ms_all": 0.9449,
+          "within_100ms_valid_only": 0.9528,
+          "within_200ms_all": 0.9713,
+          "within_200ms_valid_only": 0.9795,
+          "within_250ms_all": 0.9816,
+          "within_250ms_valid_only": 0.9899,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.9639,
+          "macro_song_se_primary": 0.0052,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 0.9916,
+              "mae_all_ms": 53.21,
+              "within_100ms": 0.9449,
+              "within_200ms": 0.9713,
+              "within_250ms": 0.9816,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 0.9863,
+              "mae_all_ms": 112.17,
+              "within_100ms": 0.8453,
+              "within_200ms": 0.9232,
+              "within_250ms": 0.9463,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 0.9952,
+              "mae_all_ms": 48.0,
+              "within_100ms": 0.9507,
+              "within_200ms": 0.9718,
+              "within_250ms": 0.985,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 0.987,
+              "mae_all_ms": 76.56,
+              "within_100ms": 0.9054,
+              "within_200ms": 0.9553,
+              "within_250ms": 0.9693,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "raw": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 0.9982,
+          "unusable_count": 28,
+          "mae_all_ms": 47.27,
+          "mae_valid_only_ms": 45.3,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 0.9951,
+              "mae_all_ms": 70.49,
+              "within_100ms": 0.8883,
+              "within_200ms": 0.9272,
+              "within_250ms": 0.9709
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 0.9832,
+              "mae_all_ms": 103.53,
+              "within_100ms": 0.8403,
+              "within_200ms": 0.9076,
+              "within_250ms": 0.9412
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 0.9907,
+              "mae_all_ms": 71.46,
+              "within_100ms": 0.904,
+              "within_200ms": 0.9598,
+              "within_250ms": 0.9659
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.15,
+              "within_100ms": 0.9328,
+              "within_200ms": 0.9627,
+              "within_250ms": 0.9851
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 0.9978,
+              "mae_all_ms": 49.68,
+              "within_100ms": 0.9507,
+              "within_200ms": 0.9813,
+              "within_250ms": 0.9873
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 0.998,
+              "mae_all_ms": 48.15,
+              "within_100ms": 0.9406,
+              "within_200ms": 0.9795,
+              "within_250ms": 0.9908
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.85,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 0.9979,
+              "mae_all_ms": 45.68,
+              "within_100ms": 0.96,
+              "within_200ms": 0.9786,
+              "within_250ms": 0.9848
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 0.9991,
+              "mae_all_ms": 42.2,
+              "within_100ms": 0.9618,
+              "within_200ms": 0.9849,
+              "within_250ms": 0.9938
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 78.86,
+              "within_100ms": 0.9,
+              "within_200ms": 0.9286,
+              "within_250ms": 0.9714
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 28.96,
+              "within_100ms": 0.9803,
+              "within_200ms": 0.993,
+              "within_250ms": 0.9944
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.71,
+              "within_100ms": 0.9429,
+              "within_200ms": 0.9735,
+              "within_250ms": 0.9837
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 0.9979,
+              "mae_all_ms": 39.83,
+              "within_100ms": 0.9514,
+              "within_200ms": 0.9746,
+              "within_250ms": 0.9873
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.65,
+              "within_100ms": 0.9489,
+              "within_200ms": 0.97,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 0.996,
+              "mae_all_ms": 62.06,
+              "within_100ms": 0.9232,
+              "within_200ms": 0.9717,
+              "within_250ms": 0.9838
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.7,
+              "within_100ms": 0.9546,
+              "within_200ms": 0.9759,
+              "within_250ms": 0.9942
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 53.74,
+              "within_100ms": 0.9275,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.21,
+              "within_100ms": 0.9317,
+              "within_200ms": 0.9752,
+              "within_250ms": 0.9876
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 37.12,
+              "within_100ms": 0.9527,
+              "within_200ms": 0.986,
+              "within_250ms": 0.9953
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.41,
+              "within_100ms": 0.9893,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 41.11,
+              "within_100ms": 0.9537,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9861
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 0.9966,
+              "mae_all_ms": 45.25,
+              "within_100ms": 0.9532,
+              "within_200ms": 0.9761,
+              "within_250ms": 0.9852
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 0.972,
+              "mae_all_ms": 177.62,
+              "within_100ms": 0.8951,
+              "within_200ms": 0.9021,
+              "within_250ms": 0.9091
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 0.9922,
+              "mae_all_ms": 58.75,
+              "within_100ms": 0.9297,
+              "within_200ms": 0.9492,
+              "within_250ms": 0.9648
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.77,
+              "within_100ms": 0.9225,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9926
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.33,
+              "within_100ms": 0.9315,
+              "within_200ms": 0.9583,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 0.9984,
+              "mae_all_ms": 37.37,
+              "within_100ms": 0.9875,
+              "within_200ms": 0.9953,
+              "within_250ms": 0.9969
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 64.31,
+              "within_100ms": 0.9412,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.9496,
+          "within_100ms_valid_only": 0.9513,
+          "within_200ms_all": 0.977,
+          "within_200ms_valid_only": 0.9788,
+          "within_250ms_all": 0.9875,
+          "within_250ms_valid_only": 0.9893,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.9692,
+          "macro_song_se_primary": 0.0047,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 0.9982,
+              "mae_all_ms": 47.27,
+              "within_100ms": 0.9496,
+              "within_200ms": 0.977,
+              "within_250ms": 0.9875,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 0.9958,
+              "mae_all_ms": 98.44,
+              "within_100ms": 0.8505,
+              "within_200ms": 0.9284,
+              "within_250ms": 0.9526,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 0.997,
+              "mae_all_ms": 47.84,
+              "within_100ms": 0.9513,
+              "within_200ms": 0.9724,
+              "within_250ms": 0.9856,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 0.9966,
+              "mae_all_ms": 65.17,
+              "within_100ms": 0.9111,
+              "within_200ms": 0.9635,
+              "within_250ms": 0.9779,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "raw_targeted": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 1.0,
+          "unusable_count": 0,
+          "mae_all_ms": 46.8,
+          "mae_valid_only_ms": 46.8,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 1.0,
+              "mae_all_ms": 78.06,
+              "within_100ms": 0.8883,
+              "within_200ms": 0.9272,
+              "within_250ms": 0.966
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 1.0,
+              "mae_all_ms": 98.15,
+              "within_100ms": 0.8403,
+              "within_200ms": 0.9076,
+              "within_250ms": 0.9412
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 1.0,
+              "mae_all_ms": 71.08,
+              "within_100ms": 0.904,
+              "within_200ms": 0.9598,
+              "within_250ms": 0.9659
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.15,
+              "within_100ms": 0.9328,
+              "within_200ms": 0.9627,
+              "within_250ms": 0.9851
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.39,
+              "within_100ms": 0.95,
+              "within_200ms": 0.9828,
+              "within_250ms": 0.9888
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.52,
+              "within_100ms": 0.9406,
+              "within_200ms": 0.9785,
+              "within_250ms": 0.9898
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.85,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.36,
+              "within_100ms": 0.96,
+              "within_200ms": 0.9793,
+              "within_250ms": 0.9855
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 1.0,
+              "mae_all_ms": 41.38,
+              "within_100ms": 0.9627,
+              "within_200ms": 0.9858,
+              "within_250ms": 0.9947
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 78.86,
+              "within_100ms": 0.9,
+              "within_200ms": 0.9286,
+              "within_250ms": 0.9714
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 28.96,
+              "within_100ms": 0.9803,
+              "within_200ms": 0.993,
+              "within_250ms": 0.9944
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.88,
+              "within_100ms": 0.9418,
+              "within_200ms": 0.9724,
+              "within_250ms": 0.9837
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 1.0,
+              "mae_all_ms": 39.07,
+              "within_100ms": 0.9493,
+              "within_200ms": 0.9746,
+              "within_250ms": 0.9873
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.65,
+              "within_100ms": 0.9489,
+              "within_200ms": 0.97,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 1.0,
+              "mae_all_ms": 61.25,
+              "within_100ms": 0.9212,
+              "within_200ms": 0.9697,
+              "within_250ms": 0.9818
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.7,
+              "within_100ms": 0.9546,
+              "within_200ms": 0.9759,
+              "within_250ms": 0.9942
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 53.74,
+              "within_100ms": 0.9275,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 44.44,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.21,
+              "within_100ms": 0.9317,
+              "within_200ms": 0.9752,
+              "within_250ms": 0.9876
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 37.12,
+              "within_100ms": 0.9527,
+              "within_200ms": 0.986,
+              "within_250ms": 0.9953
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.41,
+              "within_100ms": 0.9893,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 41.11,
+              "within_100ms": 0.9537,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9861
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 1.0,
+              "mae_all_ms": 43.83,
+              "within_100ms": 0.951,
+              "within_200ms": 0.9772,
+              "within_250ms": 0.9863
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 1.0,
+              "mae_all_ms": 161.12,
+              "within_100ms": 0.8881,
+              "within_200ms": 0.8951,
+              "within_250ms": 0.9091
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 1.0,
+              "mae_all_ms": 57.5,
+              "within_100ms": 0.9258,
+              "within_200ms": 0.9492,
+              "within_250ms": 0.9648
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 50.77,
+              "within_100ms": 0.9225,
+              "within_200ms": 0.9815,
+              "within_250ms": 0.9926
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.9,
+              "within_100ms": 0.9315,
+              "within_200ms": 0.9583,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.31,
+              "within_100ms": 0.9859,
+              "within_200ms": 0.9969,
+              "within_250ms": 0.9984
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 64.31,
+              "within_100ms": 0.9412,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.949,
+          "within_100ms_valid_only": 0.949,
+          "within_200ms_all": 0.9772,
+          "within_200ms_valid_only": 0.9772,
+          "within_250ms_all": 0.9877,
+          "within_250ms_valid_only": 0.9877,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 160.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.969,
+          "macro_song_se_primary": 0.0048,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.8,
+              "within_100ms": 0.949,
+              "within_200ms": 0.9772,
+              "within_250ms": 0.9877,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 1.0,
+              "mae_all_ms": 97.6,
+              "within_100ms": 0.8505,
+              "within_200ms": 0.9274,
+              "within_250ms": 0.9516,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.92,
+              "within_100ms": 0.9501,
+              "within_200ms": 0.9712,
+              "within_250ms": 0.9844,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 1.0,
+              "mae_all_ms": 65.27,
+              "within_100ms": 0.9111,
+              "within_200ms": 0.963,
+              "within_250ms": 0.9774,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "dp": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 1.0,
+          "unusable_count": 0,
+          "mae_all_ms": 45.61,
+          "mae_valid_only_ms": 45.61,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 1.0,
+              "mae_all_ms": 67.96,
+              "within_100ms": 0.8981,
+              "within_200ms": 0.932,
+              "within_250ms": 0.9757
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 1.0,
+              "mae_all_ms": 82.69,
+              "within_100ms": 0.8739,
+              "within_200ms": 0.9328,
+              "within_250ms": 0.958
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 1.0,
+              "mae_all_ms": 74.55,
+              "within_100ms": 0.9009,
+              "within_200ms": 0.9567,
+              "within_250ms": 0.9628
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.57,
+              "within_100ms": 0.9403,
+              "within_200ms": 0.9776,
+              "within_250ms": 1.0
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 1.0,
+              "mae_all_ms": 49.59,
+              "within_100ms": 0.9544,
+              "within_200ms": 0.9866,
+              "within_250ms": 0.9925
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.74,
+              "within_100ms": 0.9396,
+              "within_200ms": 0.9816,
+              "within_250ms": 0.9928
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 39.15,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.45,
+              "within_100ms": 0.9642,
+              "within_200ms": 0.9828,
+              "within_250ms": 0.9876
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.46,
+              "within_100ms": 0.9645,
+              "within_200ms": 0.9867,
+              "within_250ms": 0.9965
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 76.57,
+              "within_100ms": 0.9143,
+              "within_200ms": 0.9429,
+              "within_250ms": 0.9714
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 28.51,
+              "within_100ms": 0.9817,
+              "within_200ms": 0.993,
+              "within_250ms": 0.9944
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.35,
+              "within_100ms": 0.9388,
+              "within_200ms": 0.9704,
+              "within_250ms": 0.9806
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.69,
+              "within_100ms": 0.9577,
+              "within_200ms": 0.9831,
+              "within_250ms": 0.9937
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.13,
+              "within_100ms": 0.9489,
+              "within_200ms": 0.973,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 1.0,
+              "mae_all_ms": 61.74,
+              "within_100ms": 0.9273,
+              "within_200ms": 0.9717,
+              "within_250ms": 0.9838
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.24,
+              "within_100ms": 0.9566,
+              "within_200ms": 0.9768,
+              "within_250ms": 0.9952
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.91,
+              "within_100ms": 0.9351,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 43.89,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.21,
+              "within_100ms": 0.9317,
+              "within_200ms": 0.9752,
+              "within_250ms": 0.9876
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.75,
+              "within_100ms": 0.9547,
+              "within_200ms": 0.9873,
+              "within_250ms": 0.9953
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.41,
+              "within_100ms": 0.9893,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 39.63,
+              "within_100ms": 0.9583,
+              "within_200ms": 0.9861,
+              "within_250ms": 0.9907
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.32,
+              "within_100ms": 0.9612,
+              "within_200ms": 0.9875,
+              "within_250ms": 0.9932
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 1.0,
+              "mae_all_ms": 159.44,
+              "within_100ms": 0.9091,
+              "within_200ms": 0.9161,
+              "within_250ms": 0.9161
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 1.0,
+              "mae_all_ms": 55.63,
+              "within_100ms": 0.9258,
+              "within_200ms": 0.957,
+              "within_250ms": 0.9766
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.37,
+              "within_100ms": 0.9225,
+              "within_200ms": 0.9779,
+              "within_250ms": 0.9889
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.33,
+              "within_100ms": 0.9315,
+              "within_200ms": 0.9583,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.05,
+              "within_100ms": 0.9922,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.88,
+              "within_100ms": 0.9412,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.9522,
+          "within_100ms_valid_only": 0.9522,
+          "within_200ms_all": 0.98,
+          "within_200ms_valid_only": 0.98,
+          "within_250ms_all": 0.9897,
+          "within_250ms_valid_only": 0.9897,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.9733,
+          "macro_song_se_primary": 0.004,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.61,
+              "within_100ms": 0.9522,
+              "within_200ms": 0.98,
+              "within_250ms": 0.9897,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 1.0,
+              "mae_all_ms": 106.02,
+              "within_100ms": 0.8474,
+              "within_200ms": 0.9263,
+              "within_250ms": 0.9495,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.93,
+              "within_100ms": 0.9615,
+              "within_200ms": 0.9838,
+              "within_250ms": 0.9928,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 1.0,
+              "mae_all_ms": 69.78,
+              "within_100ms": 0.9068,
+              "within_200ms": 0.9592,
+              "within_250ms": 0.9731,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        },
+        "dp_targeted": {
+          "metric_schema_version": "test_scale_interval_metrics_v1",
+          "reference_count": 15204,
+          "usable_rate": 1.0,
+          "unusable_count": 0,
+          "mae_all_ms": 45.61,
+          "mae_valid_only_ms": 45.61,
+          "per_song": {
+            "我喜欢上你时的内心活动": {
+              "units": 206,
+              "usable_rate": 1.0,
+              "mae_all_ms": 67.96,
+              "within_100ms": 0.8981,
+              "within_200ms": 0.932,
+              "within_250ms": 0.9757
+            },
+            "宝贝": {
+              "units": 119,
+              "usable_rate": 1.0,
+              "mae_all_ms": 82.69,
+              "within_100ms": 0.8739,
+              "within_200ms": 0.9328,
+              "within_250ms": 0.958
+            },
+            "真实": {
+              "units": 323,
+              "usable_rate": 1.0,
+              "mae_all_ms": 74.55,
+              "within_100ms": 0.9009,
+              "within_200ms": 0.9567,
+              "within_250ms": 0.9628
+            },
+            "解脱": {
+              "units": 134,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.57,
+              "within_100ms": 0.9403,
+              "within_200ms": 0.9776,
+              "within_250ms": 1.0
+            },
+            "修炼爱情": {
+              "units": 1339,
+              "usable_rate": 1.0,
+              "mae_all_ms": 49.59,
+              "within_100ms": 0.9544,
+              "within_200ms": 0.9866,
+              "within_250ms": 0.9925
+            },
+            "晚婚": {
+              "units": 977,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.74,
+              "within_100ms": 0.9396,
+              "within_200ms": 0.9816,
+              "within_250ms": 0.9928
+            },
+            "依然爱你": {
+              "units": 47,
+              "usable_rate": 1.0,
+              "mae_all_ms": 39.15,
+              "within_100ms": 1.0,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "平凡之路": {
+              "units": 1451,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.45,
+              "within_100ms": 0.9642,
+              "within_200ms": 0.9828,
+              "within_250ms": 0.9876
+            },
+            "慢慢喜欢你": {
+              "units": 1127,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.46,
+              "within_100ms": 0.9645,
+              "within_200ms": 0.9867,
+              "within_250ms": 0.9965
+            },
+            "手心的蔷薇": {
+              "units": 70,
+              "usable_rate": 1.0,
+              "mae_all_ms": 76.57,
+              "within_100ms": 0.9143,
+              "within_200ms": 0.9429,
+              "within_250ms": 0.9714
+            },
+            "最初的梦想": {
+              "units": 710,
+              "usable_rate": 1.0,
+              "mae_all_ms": 28.51,
+              "within_100ms": 0.9817,
+              "within_200ms": 0.993,
+              "within_250ms": 0.9944
+            },
+            "最长的电影": {
+              "units": 980,
+              "usable_rate": 1.0,
+              "mae_all_ms": 47.35,
+              "within_100ms": 0.9388,
+              "within_200ms": 0.9704,
+              "within_250ms": 0.9806
+            },
+            "流着泪说分手": {
+              "units": 473,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.69,
+              "within_100ms": 0.9577,
+              "within_200ms": 0.9831,
+              "within_250ms": 0.9937
+            },
+            "至少还有你": {
+              "units": 333,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.13,
+              "within_100ms": 0.9489,
+              "within_200ms": 0.973,
+              "within_250ms": 0.991
+            },
+            "贝加尔湖畔": {
+              "units": 495,
+              "usable_rate": 1.0,
+              "mae_all_ms": 61.74,
+              "within_100ms": 0.9273,
+              "within_200ms": 0.9717,
+              "within_250ms": 0.9838
+            },
+            "残酷月光": {
+              "units": 1036,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.24,
+              "within_100ms": 0.9566,
+              "within_200ms": 0.9768,
+              "within_250ms": 0.9952
+            },
+            "某人": {
+              "units": 262,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.91,
+              "within_100ms": 0.9351,
+              "within_200ms": 0.9656,
+              "within_250ms": 0.9771
+            },
+            "一把破吉他1999": {
+              "units": 144,
+              "usable_rate": 1.0,
+              "mae_all_ms": 43.89,
+              "within_100ms": 0.9653,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "一瞬间": {
+              "units": 161,
+              "usable_rate": 1.0,
+              "mae_all_ms": 46.21,
+              "within_100ms": 0.9317,
+              "within_200ms": 0.9752,
+              "within_250ms": 0.9876
+            },
+            "老街": {
+              "units": 1500,
+              "usable_rate": 1.0,
+              "mae_all_ms": 36.75,
+              "within_100ms": 0.9547,
+              "within_200ms": 0.9873,
+              "within_250ms": 0.9953
+            },
+            "我爱你中国": {
+              "units": 375,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.41,
+              "within_100ms": 0.9893,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "缘起": {
+              "units": 216,
+              "usable_rate": 1.0,
+              "mae_all_ms": 39.63,
+              "within_100ms": 0.9583,
+              "within_200ms": 0.9861,
+              "within_250ms": 0.9907
+            },
+            "落叶归根": {
+              "units": 877,
+              "usable_rate": 1.0,
+              "mae_all_ms": 40.32,
+              "within_100ms": 0.9612,
+              "within_200ms": 0.9875,
+              "within_250ms": 0.9932
+            },
+            "一抹夕阳": {
+              "units": 143,
+              "usable_rate": 1.0,
+              "mae_all_ms": 159.44,
+              "within_100ms": 0.9091,
+              "within_200ms": 0.9161,
+              "within_250ms": 0.9161
+            },
+            "飞云之下": {
+              "units": 256,
+              "usable_rate": 1.0,
+              "mae_all_ms": 55.63,
+              "within_100ms": 0.9258,
+              "within_200ms": 0.957,
+              "within_250ms": 0.9766
+            },
+            "全世界失眠": {
+              "units": 271,
+              "usable_rate": 1.0,
+              "mae_all_ms": 51.37,
+              "within_100ms": 0.9225,
+              "within_200ms": 0.9779,
+              "within_250ms": 0.9889
+            },
+            "阴天快乐": {
+              "units": 336,
+              "usable_rate": 1.0,
+              "mae_all_ms": 48.33,
+              "within_100ms": 0.9315,
+              "within_200ms": 0.9583,
+              "within_250ms": 0.994
+            },
+            "已是两条路上的人": {
+              "units": 639,
+              "usable_rate": 1.0,
+              "mae_all_ms": 35.05,
+              "within_100ms": 0.9922,
+              "within_200ms": 1.0,
+              "within_250ms": 1.0
+            },
+            "我喜欢上你的内心活动": {
+              "units": 204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.88,
+              "within_100ms": 0.9412,
+              "within_200ms": 0.9657,
+              "within_250ms": 0.9755
+            }
+          },
+          "within_100ms_all": 0.9522,
+          "within_100ms_valid_only": 0.9522,
+          "within_200ms_all": 0.98,
+          "within_200ms_valid_only": 0.98,
+          "within_250ms_all": 0.9897,
+          "within_250ms_valid_only": 0.9897,
+          "error_percentiles_ms": {
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 80.0,
+            "p90": 80.0,
+            "p95": 80.0,
+            "p99": 320.0
+          },
+          "error_percentiles_scope": "valid_units",
+          "primary_tolerance_sec": 0.2,
+          "macro_song_within_primary": 0.9733,
+          "macro_song_se_primary": 0.004,
+          "song_count": 29,
+          "collapse_blocks": 0,
+          "collapse_units": 0,
+          "collapse_longest_run": 0,
+          "subsets": {
+            "all": {
+              "units": 15204,
+              "usable_rate": 1.0,
+              "mae_all_ms": 45.61,
+              "within_100ms": 0.9522,
+              "within_200ms": 0.98,
+              "within_250ms": 0.9897,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "long": {
+              "units": 950,
+              "usable_rate": 1.0,
+              "mae_all_ms": 106.02,
+              "within_100ms": 0.8474,
+              "within_200ms": 0.9263,
+              "within_250ms": 0.9495,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 160.0
+              }
+            },
+            "post_gap": {
+              "units": 1664,
+              "usable_rate": 1.0,
+              "mae_all_ms": 42.93,
+              "within_100ms": 0.9615,
+              "within_200ms": 0.9838,
+              "within_250ms": 0.9928,
+              "error_percentiles_ms": {
+                "p50": 0.0,
+                "p90": 80.0
+              }
+            },
+            "phrase_final": {
+              "units": 2082,
+              "usable_rate": 1.0,
+              "mae_all_ms": 69.78,
+              "within_100ms": 0.9068,
+              "within_200ms": 0.9592,
+              "within_250ms": 0.9731,
+              "error_percentiles_ms": {
+                "p50": 80.0,
+                "p90": 80.0
+              }
+            }
+          }
+        }
+      },
+      "summary": {
+        "fixed": {
+          "macro_within_primary": 0.9639,
+          "usable_rate": 0.9916,
+          "mae_all_ms": 53.21,
+          "collapse_longest_run": 0
+        },
+        "raw": {
+          "macro_within_primary": 0.9692,
+          "usable_rate": 0.9982,
+          "mae_all_ms": 47.27,
+          "collapse_longest_run": 0
+        },
+        "raw_targeted": {
+          "macro_within_primary": 0.969,
+          "usable_rate": 1.0,
+          "mae_all_ms": 46.8,
+          "collapse_longest_run": 0
+        },
+        "dp": {
+          "macro_within_primary": 0.9733,
+          "usable_rate": 1.0,
+          "mae_all_ms": 45.61,
+          "collapse_longest_run": 0
+        },
+        "dp_targeted": {
+          "macro_within_primary": 0.9733,
+          "usable_rate": 1.0,
+          "mae_all_ms": 45.61,
+          "collapse_longest_run": 0
+        }
+      }
+    }
+  }
+}
