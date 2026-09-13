@@ -1,0 +1,38 @@
+{
+  "schema_version": "warmstart_control_terminal_validation_v1",
+  "note": "同一验证集、同一训练器评测代码路径（terminal validation）、同一指标 schema；A = 从均匀终点借权重再训 600 步、LR 减半、数据配比不变",
+  "checkpoints": {
+    "online_old750": {
+      "song_macro_boundary_mae_sec": 0.04715958845875161,
+      "joint_within_80ms": 0.8873980531439095,
+      "joint_within_160ms": 0.9634964483030781,
+      "offset_mae_sec": 0.045665285451197066,
+      "onset_mae_sec": 0.038455998421468046,
+      "zero_duration_rate": 0.007761115495922126,
+      "mean_iou": 0.8420313804427682
+    },
+    "uniform_12000": {
+      "song_macro_boundary_mae_sec": 0.04387452314095182,
+      "joint_within_80ms": 0.8950276243093923,
+      "joint_within_160ms": 0.9673770060510392,
+      "offset_mae_sec": 0.043313601683767446,
+      "onset_mae_sec": 0.03699355432780848,
+      "zero_duration_rate": 0.007169166008945014,
+      "mean_iou": 0.8463760273573815
+    },
+    "warmstart_control_600": {
+      "song_macro_boundary_mae_sec": 0.04381022936193829,
+      "joint_within_80ms": 0.895093396474612,
+      "joint_within_160ms": 0.9673112338858195,
+      "offset_mae_sec": 0.04360069718495134,
+      "onset_mae_sec": 0.03693337279663247,
+      "zero_duration_rate": 0.007103393843725336,
+      "mean_iou": 0.8461879479213489
+    }
+  },
+  "delta_control_minus_uniform": {
+    "mae_ms": -0.064,
+    "joint80_pp": 0.007,
+    "zero_pp": -0.007
+  }
+}
