@@ -126,7 +126,8 @@ def raw_plus_targeted_rows(raw_rows: list[dict[str, Any]], *, grid_sec: float) -
 def evaluate_variants(model: Any, processor: Any, collator: Any, records: list[dict[str, Any]],
                       references: dict[str, list[dict[str, Any]]], *, device: str, dtype: Any,
                       batch_size: int, segment_sec: float,
-                      tolerances: tuple[float, ...] = DEFAULT_TOLERANCES_SEC) -> dict[str, Any]:
+                      tolerances: tuple[float, ...] = DEFAULT_TOLERANCES_SEC,
+                      keep_per_unit: bool = False) -> dict[str, Any]:
     """One forward pass, three decodes, per-song test-scale metrics for each."""
     import torch
 
@@ -162,7 +163,8 @@ def evaluate_variants(model: Any, processor: Any, collator: Any, records: list[d
                            "items": len(records), "characters": len(reference), "variants": {}}
     for name, rows in variants.items():
         metric = test_scale_metrics(reference, rows, tolerances=tolerances)
-        metric.pop("per_unit", None)
+        if not keep_per_unit:
+            metric.pop("per_unit", None)          # per-unit rows are only kept when a caller needs them
         out["variants"][name] = metric
     out["variants_summary"] = {name: {"macro_within_primary": v["macro_song_within_primary"],
                                        "usable_rate": v["usable_rate"],

@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import statistics as st
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +54,37 @@ def merged_reference(record: dict[str, Any]) -> list[dict[str, Any]]:
              if index < len(record.get("lyrics_normalized", "")) else "?",
              "start_sec": ids[2 * index] * STEP_SEC, "end_sec": ids[2 * index + 1] * STEP_SEC}
             for index in range(len(ids) // 2)]
+
+
+def drift_profile(variants: dict[str, Any], references: dict[str, list[dict[str, Any]]],
+                  *, bucket_sec: float = 5.0, tolerance: float = 0.2) -> dict[str, Any]:
+    """Error as a function of elapsed stream time — the absolute-time-tracking signature.
+
+    If the model tracked a long stream well, the error would be flat in elapsed time; growth means
+    the timestamp head loses registration as the stream goes on, which is exactly what the
+    long-context arm is meant to fix, and it is invisible in the short-item view.
+    """
+    onset_of: dict[tuple[str, int], float] = {}
+    for item, rows in references.items():
+        for row in rows:
+            onset_of[(item, int(row["character_index"]))] = float(row["start_sec"])
+    out: dict[str, Any] = {}
+    for variant, metric in variants.items():
+        per_unit = metric.get("per_unit") or []
+        groups: dict[int, list[float]] = {}
+        for row in per_unit:
+            key = (str(row["item_id"]), int(row["character_index"]))
+            if key not in onset_of:
+                continue
+            bucket = int(onset_of[key] // bucket_sec)
+            groups.setdefault(bucket, []).append(float(row["max_boundary_err_sec"]))
+        out[variant] = {f"{index * bucket_sec:g}-{(index + 1) * bucket_sec:g}s": {
+            "characters": len(values),
+            "median_err_ms": round(1000.0 * st.median(values), 1),
+            "mean_err_ms": round(1000.0 * sum(values) / len(values), 1),
+            "miss_rate": round(sum(1 for value in values if value > tolerance) / len(values), 4)}
+            for index, values in sorted(groups.items()) if values}
+    return out
 
 
 def main() -> None:
@@ -103,8 +135,10 @@ def main() -> None:
                                           device=args.device,
                                           dtype=getattr(torch, cfg["training"].get("dtype", "bfloat16")),
                                           batch_size=args.batch_size,
-                                          segment_sec=float(cfg["training"].get("timestamp_segment_sec", STEP_SEC)))
+                                          segment_sec=float(cfg["training"].get("timestamp_segment_sec", STEP_SEC)),
+                                          keep_per_unit=True)
         payload["checkpoints"][label] = {"checkpoint": str(path), "loaded_step": loaded_step,
+                                         "drift_profile": drift_profile(outcome["variants"], references),
                                          "val_loss": outcome["val_loss"],
                                          "variants": outcome["variants"],
                                          "summary": outcome["variants_summary"]}
