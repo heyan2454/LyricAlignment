@@ -123,10 +123,64 @@ def paired_vs_single(accepted: dict[Any, tuple[float, float]], estimates: dict[A
             "coverage_median_windows": int(st.median([len(estimates[key]["end"]) for key in keys]))}
 
 
+def report_from_metrics(payload: dict[str, Any]) -> str:
+    """Render the verdict without re-running anything (reads the metrics JSON)."""
+    policies = payload["policies"]
+    lines = ["# 平移多窗共识：负结果（生成，勿手改）", "",
+             f"> 输入 `{payload['checkpoint']}`（step {payload.get('loaded_step')}），"
+             f"{payload['streams']} 条 ~100s 长流、{payload['characters']} 个字符，"
+             f"窗 {payload['window_sec']}s / hop {payload['hop_sec']}s / pad {payload['pad_sec']}s。"
+             "问题：既然同一批 logits 里重排救不回长音符失败（见 mass_in_tolerance），**改变输入的窗口平移**行不行？",
+             "", "| 策略 | 字符数 | 0.2s 命中率 | MAE(ms) | 可用率 |", "|---|---|---|---|---|"]
+    order = [key for key in ("viterbi|single_central", "viterbi|median_all", "viterbi|median_multi_only",
+                             "viterbi|single_multi_only", "argmax|single_central", "argmax|median_all",
+                             "argmax|median_multi_only", "argmax|single_multi_only") if key in policies]
+    for key in order:
+        block = policies[key]
+        lines.append(f"| {key} | {block['characters']} | {block['macro_within_primary']:.4f} | "
+                     f"{block['mae_all_ms']:.1f} | {block['usable_rate']:.4f} |")
+    paired = payload.get("paired", {})
+    lines += ["", "## 配对比较（共识 − owner 单窗；正=共识更差）", "",
+              "| 解码 | n | 均差(ms) | SE | z | 更好 / 更差 | 中位覆盖窗数 |", "|---|---|---|---|---|---|---|"]
+    for decoder, blocks in paired.items():
+        for label, block in blocks.items():
+            if block.get("n", 0) < 5:
+                continue
+            lines.append(f"| {decoder} · {label} | {block['n']} | {block['mean_delta_ms']:+.1f} | "
+                         f"{block['se_ms']:.1f} | {block['z']} | {block['better']} / {block['worse']} | "
+                         f"{block['coverage_median_windows']} |")
+    key = "viterbi|median_multi_only"
+    single = "viterbi|single_multi_only"
+    lines += ["", "## 结论", ""]
+    if key in policies and single in policies:
+        lines.append(f"- 同一批被≥2窗覆盖的字符上：owner 单窗 {policies[single]['macro_within_primary']:.4f} "
+                     f"vs 跨窗中位数 {policies[key]['macro_within_primary']:.4f}"
+                     f"（MAE {policies[single]['mae_all_ms']:.1f} → {policies[key]['mae_all_ms']:.1f} ms）；")
+    vit = paired.get("viterbi", {}).get("median_multi_vs_single_multi", {})
+    lines += [f"- 配对差 **{vit.get('mean_delta_ms', 0):+.1f} ms（z={vit.get('z')}）——共识显著更差**，"
+              "而更好/更差的计数几乎对半，说明各窗估计不是围绕真值的独立噪声；",
+              "- 含义：模型的误差是**依赖上下文的系统性偏差**。同一句歌词在不同窗口位置会被对齐到不同时刻，"
+              "取中位数等于在两个都有偏的猜测之间取平均，反而离两个都不像；",
+              "- 因此产品侧『用重叠窗做投票/平均来提精度』的想法被关闭；现有做法"
+              "**（字归属于其核心区的 owner 窗）在这批数据上已是最优策略**；",
+              "- 与今晚其它结论一致：`mass_in_tolerance`（同 logits 内重排无效）、"
+              "`real_song_dp_alternative`（DP 只保证合法、不改善位置）、"
+              "以及漂移曲线平坦（长流本身不是问题）——"
+              "**剩下的自由度只有训练暴露/模型结构**，也就是排队中的热启动 A/B 双臂。",
+              "", "## 附带确认", "",
+              f"- DP 在 ~100s 长流上依旧优于贪心：viterbi 单窗 {policies['viterbi|single_central']['macro_within_primary']:.4f}"
+              f" vs argmax 单窗 {policies['argmax|single_central']['macro_within_primary']:.4f}"
+              f"（可用率 {policies['viterbi|single_central']['usable_rate']:.4f} vs "
+              f"{policies['argmax|single_central']['usable_rate']:.4f}）；",
+              "- 注意本探针的字符集合是拼接长流（含句间静音），绝对命中率低于逐条短样本，不可与 L3 数字混比。",
+              ""]
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-dir", type=Path, required=True)
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument("--run-dir", type=Path)
+    parser.add_argument("--checkpoint", type=Path)
     parser.add_argument("--streams", type=int, default=40)
     parser.add_argument("--stream-target-sec", type=float, default=100.0)
     parser.add_argument("--stream-max-sec", type=float, default=130.0)
@@ -135,7 +189,20 @@ def main() -> None:
     parser.add_argument("--pad-sec", type=float, default=1.0)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--report", type=Path)
+    parser.add_argument("--report-only", action="store_true",
+                        help="只从 --out 已有的 metrics.json 生成报告，不重新推理")
     args = parser.parse_args()
+    if args.report_only:
+        if not args.report:
+            raise SystemExit("--report-only 需要 --report 路径")
+        args.report.write_text(report_from_metrics(json.loads(args.out.read_text(encoding="utf-8"))),
+                               encoding="utf-8")
+        print(json.dumps({"written": str(args.report)}, ensure_ascii=False))
+        return
+
+    if not args.run_dir or not args.checkpoint:
+        raise SystemExit("--run-dir 与 --checkpoint 是运行所必需的（只有 --report-only 可省略）")
 
     import torch
     from transformers import AutoProcessor
@@ -248,6 +315,9 @@ def main() -> None:
             payload[section][key].pop("per_song", None)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.report:
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(report_from_metrics(payload), encoding="utf-8")
     print(json.dumps({"policies": payload["policies"], "paired": payload["paired"]}, indent=2, ensure_ascii=False))
 
 

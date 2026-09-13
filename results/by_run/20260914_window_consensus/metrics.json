@@ -1,0 +1,110 @@
+{
+  "schema_version": "window_consensus_v1",
+  "checkpoint": "/home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724/checkpoints/step-012000",
+  "loaded_step": 12000,
+  "streams": 40,
+  "characters": 5408,
+  "window_sec": 25.0,
+  "hop_sec": 12.5,
+  "pad_sec": 1.0,
+  "policies": {
+    "argmax|single_central": {
+      "characters": 5408,
+      "macro_within_primary": 0.9664,
+      "se": 0.0079,
+      "mae_all_ms": 55.1,
+      "usable_rate": 0.9983
+    },
+    "argmax|median_all": {
+      "characters": 5408,
+      "macro_within_primary": 0.9424,
+      "se": 0.0094,
+      "mae_all_ms": 71.36,
+      "usable_rate": 0.9974
+    },
+    "argmax|median_multi_only": {
+      "characters": 4308,
+      "macro_within_primary": 0.9343,
+      "se": 0.0091,
+      "mae_all_ms": 75.45,
+      "usable_rate": 0.9972
+    },
+    "argmax|single_multi_only": {
+      "characters": 4308,
+      "macro_within_primary": 0.9657,
+      "se": 0.0091,
+      "mae_all_ms": 55.03,
+      "usable_rate": 0.9984
+    },
+    "viterbi|single_central": {
+      "characters": 5408,
+      "macro_within_primary": 0.9717,
+      "se": 0.0067,
+      "mae_all_ms": 53.39,
+      "usable_rate": 1.0
+    },
+    "viterbi|median_all": {
+      "characters": 5408,
+      "macro_within_primary": 0.9495,
+      "se": 0.0083,
+      "mae_all_ms": 68.31,
+      "usable_rate": 1.0
+    },
+    "viterbi|median_multi_only": {
+      "characters": 4308,
+      "macro_within_primary": 0.9424,
+      "se": 0.0079,
+      "mae_all_ms": 72.34,
+      "usable_rate": 1.0
+    },
+    "viterbi|single_multi_only": {
+      "characters": 4308,
+      "macro_within_primary": 0.9716,
+      "se": 0.0078,
+      "mae_all_ms": 53.6,
+      "usable_rate": 1.0
+    }
+  },
+  "paired": {
+    "argmax": {
+      "median_multi_vs_single_multi": {
+        "n": 4308,
+        "mean_delta_ms": 20.24,
+        "se_ms": 2.0,
+        "z": 10.13,
+        "better": 2216,
+        "worse": 2092,
+        "coverage_median_windows": 2
+      },
+      "median_all_vs_single": {
+        "n": 5408,
+        "mean_delta_ms": 16.12,
+        "se_ms": 1.6,
+        "z": 10.11,
+        "better": 2216,
+        "worse": 2092,
+        "coverage_median_windows": 2
+      }
+    },
+    "viterbi": {
+      "median_multi_vs_single_multi": {
+        "n": 4308,
+        "mean_delta_ms": 18.73,
+        "se_ms": 1.89,
+        "z": 9.9,
+        "better": 2211,
+        "worse": 2097,
+        "coverage_median_windows": 2
+      },
+      "median_all_vs_single": {
+        "n": 5408,
+        "mean_delta_ms": 14.92,
+        "se_ms": 1.51,
+        "z": 9.88,
+        "better": 2211,
+        "worse": 2097,
+        "coverage_median_windows": 2
+      }
+    }
+  }
+}
