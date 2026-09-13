@@ -140,6 +140,10 @@ def main() -> None:
     parser.add_argument("--config", type=Path,
                         default=ROOT / "configs" / "training" / "qwen_fa_lora_from_official_20260913.yaml")
     parser.add_argument("--stage", default="r2")
+    parser.add_argument("--splits", default="validation",
+                        help="逗号分隔；默认只用 validation（机制数字若被当作留出性能引用，必须先确认这一点）")
+    parser.add_argument("--allow-test", action="store_true",
+                        help="显式允许包含 test 条目（选点防火墙）")
     parser.add_argument("--limit", type=int, default=300)
     parser.add_argument("--longest-first", action="store_true")
     parser.add_argument("--sample-seed", type=int, default=20260913,
@@ -165,6 +169,13 @@ def main() -> None:
 
     import random
     rows = [json.loads(line) for line in args.labels.read_text(encoding="utf-8").splitlines() if line.strip()]
+    # split filter: mechanism dumps must never mix in training items when they are quoted as
+    # held-out behaviour, and test items are off-limits for anything that could inform selection.
+    wanted = {name.strip() for name in args.splits.split(",") if name.strip()}
+    if "test" in wanted and not args.allow_test:
+        raise SystemExit("refusing to sample test items without --allow-test (selection firewall)")
+    if wanted:
+        rows = [row for row in rows if str(row.get("split")) in wanted]
     rows = [row for row in rows if (args.audio_root / row["audio_relpath"]).exists()]
     rows = [row for row in rows
             if any((row["timestamp_class_ids"][2 * index + 1] - row["timestamp_class_ids"][2 * index]) * 0.08
