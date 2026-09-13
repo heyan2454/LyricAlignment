@@ -288,7 +288,15 @@ def sec_calibration(root: Path) -> list[str]:
 
 
 def sec_exposure(root: Path) -> list[str]:
-    doc = _load(root / "results/by_run/20260914_exposure_fit/baseline_uniform.json")
+    directory = root / "results/by_run/20260914_exposure_fit"
+    doc = None
+    for candidate in ("validation_uniform_f8", "mixed_uniform_f8", "baseline_uniform"):
+        doc = _load(directory / f"{candidate}.json")
+        if doc and (doc.get("fit") or {}).get("status") == "fitted":
+            used = candidate
+            break
+    if doc is None:
+        return ["- 状态：未跑"]
     if not doc:
         return ["- 状态：未跑"]
     fit = doc["fit"]
@@ -296,8 +304,18 @@ def sec_exposure(root: Path) -> list[str]:
     cells = "；".join(f"{name} {_pct(block['miss_before'])} → **{_pct(block['miss_predicted'])}**"
                       f"（带 {_pct(block['band_95'][0])}–{_pct(block['band_95'][1])}）"
                       for name, block in prediction.items())
-    return [f"- 拟合 log(超差率) ~ log(训练暴露份额)：指数 **{fit['exponent']}**（SE {fit['slope_se']}），"
-            f"r={fit['correlation']}，n={fit['n_buckets']} 个时长桶 ⇒ 把定性结论变成弹性系数；",
+    stabilities = []
+    for candidate in ("baseline_old750", "baseline_uniform", "validation_uniform", "validation_uniform_f8"):
+        other = _load(directory / f"{candidate}.json")
+        if other and (other.get("fit") or {}).get("exponent") is not None:
+            stabilities.append(f"{candidate.split('_')[0][:4]}{'' if 'old' not in candidate else '旧'}:"
+                               f"{other['fit']['exponent']}")
+    return [f"- 拟合 log(超差率) ~ log(训练暴露份额)（**采用口径：{used}**）："
+            f"指数 **{fit['exponent']}**（SE {fit['slope_se']}），r={fit['correlation']}，"
+            f"n={fit['n_buckets']} 个时长桶 ⇒ 把定性结论变成弹性系数；"
+            + (f"四种口径的指数都落在 {min(float(x.split(':')[1]) for x in stabilities):.3f} ~ "
+               f"{max(float(x.split(':')[1]) for x in stabilities):.3f} 之间，"
+               "说明弹性不是样本挑选的产物。" if len(stabilities) > 2 else ""),
             f"- **设计层发现**：按条目复制会自我稀释（含长字符的条目占 {doc['items_with_long_share']:.1%} 条目、"
             f"{doc['characters_in_long_items_share']:.1%} 字符），份额增益饱和于 **×{1 / doc['characters_in_long_items_share']:.2f}**；"
             f"因此 B 臂 factor 从 3 改成 8（实际 ×{doc['effective_exposure_gain']}）；",

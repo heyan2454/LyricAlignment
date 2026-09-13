@@ -1,0 +1,95 @@
+{
+  "schema_version": "exposure_fit_v1",
+  "labels": "/home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/labels/m4singer_qwen_fa_labels.jsonl",
+  "dump": "results/by_run/20260914_mech_validation_uniform/per_character.jsonl",
+  "split": "train",
+  "oversample_factor": 3,
+  "long_sec": 1.0,
+  "items_with_long_share": 0.4488,
+  "characters_in_long_items_share": 0.3882,
+  "pool_multiplier": 1.7764,
+  "effective_exposure_gain": 1.689,
+  "gain_semantics": "share multiplier（拟合自变量是暴露份额）；旧版误用了条目复制的总数乘子",
+  "counts": {
+    "items_with_long": 7966,
+    "items_total": 17748,
+    "characters_total": 164148,
+    "characters_in_long_items": 63726
+  },
+  "exposure_shares": {
+    "0-0.25s": 0.24737,
+    "0.25-0.5s": 0.49396,
+    "0.5-1s": 0.19859,
+    "1-2s": 0.05095,
+    "2s+": 0.00913
+  },
+  "observed_miss": {
+    "0.25-0.5s": 0.01335,
+    "0.5-1s": 0.04033,
+    "1-2s": 0.05535,
+    "0-0.25s": 0.01125,
+    "2s+": 0.10236
+  },
+  "fit": {
+    "status": "fitted",
+    "buckets": [
+      "0-0.25s",
+      "0.25-0.5s",
+      "0.5-1s",
+      "1-2s",
+      "2s+"
+    ],
+    "slope": -0.532,
+    "slope_se": 0.155,
+    "correlation": -0.893,
+    "exponent": -0.532,
+    "n_buckets": 5,
+    "observed": [
+      {
+        "bucket": "0-0.25s",
+        "exposure_share": 0.2474,
+        "miss_rate": 0.0112
+      },
+      {
+        "bucket": "0.25-0.5s",
+        "exposure_share": 0.494,
+        "miss_rate": 0.0133
+      },
+      {
+        "bucket": "0.5-1s",
+        "exposure_share": 0.1986,
+        "miss_rate": 0.0403
+      },
+      {
+        "bucket": "1-2s",
+        "exposure_share": 0.0509,
+        "miss_rate": 0.0554
+      },
+      {
+        "bucket": "2s+",
+        "exposure_share": 0.0091,
+        "miss_rate": 0.1024
+      }
+    ]
+  },
+  "prediction": {
+    "1-2s": {
+      "exposure_gain": 1.69,
+      "miss_before": 0.0554,
+      "miss_predicted": 0.0419,
+      "band_95": [
+        0.0356,
+        0.0493
+      ]
+    },
+    "2s+": {
+      "exposure_gain": 1.69,
+      "miss_before": 0.1024,
+      "miss_predicted": 0.0775,
+      "band_95": [
+        0.0658,
+        0.0911
+      ]
+    }
+  }
+}

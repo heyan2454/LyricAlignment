@@ -1,0 +1,68 @@
+{
+  "schema_version": "error_vs_duration_v1",
+  "tolerance_sec": 0.2,
+  "checkpoints": {
+    "uniform-val": {
+      "items": 808,
+      "characters": 6415,
+      "buckets": {
+        "0-0.25": {
+          "characters": 889,
+          "miss_rate": 0.0112,
+          "median_max_err_ms": 35.0,
+          "median_offset_err_ms": 20.0,
+          "median_onset_err_ms": 20.0,
+          "se_miss": 0.35
+        },
+        "0.25-0.5": {
+          "characters": 3371,
+          "miss_rate": 0.0133,
+          "median_max_err_ms": 35.0,
+          "median_offset_err_ms": 25.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 0.2
+        },
+        "0.5-1": {
+          "characters": 1215,
+          "miss_rate": 0.0403,
+          "median_max_err_ms": 40.0,
+          "median_offset_err_ms": 25.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 0.56
+        },
+        "1-1.5": {
+          "characters": 596,
+          "miss_rate": 0.0554,
+          "median_max_err_ms": 45.0,
+          "median_offset_err_ms": 30.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 0.94
+        },
+        "1.5-2": {
+          "characters": 217,
+          "miss_rate": 0.0553,
+          "median_max_err_ms": 50.0,
+          "median_offset_err_ms": 40.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 1.55
+        },
+        "2-3": {
+          "characters": 115,
+          "miss_rate": 0.0957,
+          "median_max_err_ms": 50.0,
+          "median_offset_err_ms": 35.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 2.74
+        },
+        "3.0+": {
+          "characters": 12,
+          "miss_rate": 0.1667,
+          "median_max_err_ms": 65.0,
+          "median_offset_err_ms": 65.0,
+          "median_onset_err_ms": 40.0,
+          "se_miss": 10.76
+        }
+      }
+    }
+  }
+}
