@@ -337,6 +337,17 @@ def main() -> None:
         "seed": seed,
         "stage": args.stage,
     })
+    loss_weighting = dict(cfg["training"].get("loss_weighting") or {})
+    if loss_weighting.get("enabled"):
+        from lyricalign.training.timestamp_loss import weighted_timestamp_loss  # noqa: F401
+        loss_weighting = {"long_sec": float(loss_weighting.get("long_sec", 1.0)),
+                          "weight": float(loss_weighting.get("weight", 1.0)),
+                          "step_sec": float(cfg["training"].get("timestamp_segment_sec", 0.08))}
+        atomic_json(run_dir / "loss_weighting.json", {**loss_weighting,
+                    "semantics": "per-character slot weights on the training CE only; validation loss stays unweighted so arms remain comparable"})
+        print(json.dumps({"loss_weighting": loss_weighting}), flush=True)
+    else:
+        loss_weighting = None
     collator_cls = QwenFABatchCollator
     if concat_cfg.get("enabled"):
         from lyricalign.training.qwen_fa_concat import QwenFAConcatCollator
@@ -396,7 +407,11 @@ def main() -> None:
         accumulated_loss = 0.0
         ordered = sorted(train, key=lambda row: hashlib.sha256(f"{seed}:{epoch}:{row['item_id']}".encode()).hexdigest())
         for offset in range(resume_offset, len(ordered), micro):
-            chunk = ordered[offset:offset + micro]; inputs, _ = collator(chunk); output = model(**move_inputs(inputs, args.device, dtype)); (output.loss / accum).backward(); accumulated_loss += float(output.loss.detach())
+            chunk = ordered[offset:offset + micro]; inputs, _ = collator(chunk); moved = move_inputs(inputs, args.device, dtype); output = model(**moved)
+            # weighted path is opt-in via training.loss_weighting; with weight=1 it provably
+            # reproduces the plain mean cross-entropy (tests/training/test_timestamp_loss.py)
+            loss = weighted_timestamp_loss(output.logits, moved["labels"], **loss_weighting) if loss_weighting else output.loss
+            (loss / accum).backward(); accumulated_loss += float(loss.detach())
             if ((offset // micro) + 1) % accum: continue
             torch.nn.utils.clip_grad_norm_(trainable, float(cfg["training"]["max_grad_norm"])); optimizer.step(); scheduler.step(); optimizer.zero_grad(set_to_none=True); step += 1
             line = {"step": step, "epoch": epoch, "training_loss": accumulated_loss / accum, "lr": scheduler.get_last_lr()[0], "wall_sec": time.time() - started}
