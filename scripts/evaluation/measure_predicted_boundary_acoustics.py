@@ -76,6 +76,29 @@ def prominence_pair(signal: np.ndarray, gt: float, predicted: float, note_span: 
     return gt_value, pred_value, gt_peak, pred_peak
 
 
+def mass_within_tolerance(probabilities: np.ndarray, label_bins: np.ndarray, *, tolerance_sec: float,
+                          segment_sec: float) -> np.ndarray:
+    """Probability the model places inside the acceptance window around the *label* bin.
+
+    `label_rank` says how well the annotation is ranked but says nothing about where those ranks sit
+    in time, so a high rank can still be useless for re-ranking.  This is the honest ceiling for any
+    decoder that only re-picks among the model's own bins: mass inside the tolerance means the
+    correct answer is where the model believes it is.
+    """
+    probs = np.exp(probabilities - probabilities.max(axis=2, keepdims=True))
+    probs = probs / probs.sum(axis=2, keepdims=True)
+    n_characters, _, n_bins = probs.shape
+    half = int(round(tolerance_sec / segment_sec))
+    out = np.zeros((n_characters, 2), dtype=np.float32)
+    for index in range(n_characters):
+        for slot in range(2):
+            centre = int(label_bins[index, slot])
+            low = max(0, centre - half)
+            high = min(n_bins, centre + half + 1)
+            out[index, slot] = float(probs[index, slot, low:high].sum())
+    return out
+
+
 def slot_diagnostics(probabilities: np.ndarray, label_bins: np.ndarray):
     """Per slot: top-1 probability, entropy, rank of the *label's* bin, and top-5 mass.
 
@@ -189,6 +212,8 @@ def main() -> None:
                                      .reshape(-1, 2), 0, probabilities.shape[2] - 1)
                 diag = slot_diagnostics(probabilities, label_bins) if len(label_bins) == probabilities.shape[0] \
                     else None
+                in_tol = mass_within_tolerance(probabilities, label_bins, tolerance_sec=0.2,
+                                               segment_sec=step) if diag is not None else None
                 argmax_starts = probabilities[:, 0, :].argmax(axis=1) * step
                 argmax_ends = probabilities[:, 1, :].argmax(axis=1) * step
                 decoded = viterbi_monotone(probabilities[:, 0, :], probabilities[:, 1, :], min_duration=1)
@@ -229,6 +254,7 @@ def main() -> None:
                                            "entropy_nats": (None if diag is None else round(float(diag[1][index, 0 if kind == "onset" else 1]), 3)),
                                            "label_rank": (None if diag is None else int(diag[2][index, 0 if kind == "onset" else 1])),
                                            "top5_mass": (None if diag is None else round(float(diag[3][index, 0 if kind == "onset" else 1]), 4)),
+                                           "mass_in_tol": (None if in_tol is None else round(float(in_tol[index, 0 if kind == "onset" else 1]), 4)),
                                            "peak_gt": (None if gt_peak is None else round(gt_peak, 4)),
                                            "peak_gt_snapped": (None if snapped_peak is None else round(snapped_peak, 4)),
                                            "peak_pred_argmax": (None if am_peak is None else round(am_peak, 4)),

@@ -1,0 +1,85 @@
+{
+  "schema_version": "mass_in_tolerance_v1",
+  "dump": "/tmp/mass_probe/per_character.jsonl",
+  "rows": 3334,
+  "tolerance_sec": 0.2,
+  "table": {
+    "onset|0.5-1s|hit": {
+      "n": 385,
+      "median_mass_in_tol": 0.99,
+      "share_mass_gt_0.5": 0.9974,
+      "share_mass_gt_0.9": 0.9688,
+      "share_mass_lt_0.05": 0.0
+    },
+    "offset|0.5-1s|hit": {
+      "n": 376,
+      "median_mass_in_tol": 0.987,
+      "share_mass_gt_0.5": 1.0,
+      "share_mass_gt_0.9": 0.9335,
+      "share_mass_lt_0.05": 0.0
+    },
+    "onset|0-0.5s|hit": {
+      "n": 988,
+      "median_mass_in_tol": 0.991,
+      "share_mass_gt_0.5": 0.999,
+      "share_mass_gt_0.9": 0.9899,
+      "share_mass_lt_0.05": 0.0
+    },
+    "offset|0-0.5s|hit": {
+      "n": 984,
+      "median_mass_in_tol": 0.991,
+      "share_mass_gt_0.5": 1.0,
+      "share_mass_gt_0.9": 0.9888,
+      "share_mass_lt_0.05": 0.0
+    },
+    "onset|1-2s|hit": {
+      "n": 220,
+      "median_mass_in_tol": 0.989,
+      "share_mass_gt_0.5": 1.0,
+      "share_mass_gt_0.9": 0.9636,
+      "share_mass_lt_0.05": 0.0
+    },
+    "offset|1-2s|hit": {
+      "n": 214,
+      "median_mass_in_tol": 0.974,
+      "share_mass_gt_0.5": 0.9953,
+      "share_mass_gt_0.9": 0.8598,
+      "share_mass_lt_0.05": 0.0
+    },
+    "onset|2s+|hit": {
+      "n": 49,
+      "median_mass_in_tol": 0.985,
+      "share_mass_gt_0.5": 1.0,
+      "share_mass_gt_0.9": 0.8776,
+      "share_mass_lt_0.05": 0.0
+    },
+    "offset|2s+|hit": {
+      "n": 43,
+      "median_mass_in_tol": 0.931,
+      "share_mass_gt_0.5": 0.9535,
+      "share_mass_gt_0.9": 0.5814,
+      "share_mass_lt_0.05": 0.0
+    },
+    "offset|0-0.5s|miss": {
+      "n": 11,
+      "median_mass_in_tol": 0.24,
+      "share_mass_gt_0.5": 0.0,
+      "share_mass_gt_0.9": 0.0,
+      "share_mass_lt_0.05": 0.3636
+    },
+    "offset|1-2s|miss": {
+      "n": 14,
+      "median_mass_in_tol": 0.202,
+      "share_mass_gt_0.5": 0.0714,
+      "share_mass_gt_0.9": 0.0,
+      "share_mass_lt_0.05": 0.2857
+    },
+    "offset|0.5-1s|miss": {
+      "n": 16,
+      "median_mass_in_tol": 0.165,
+      "share_mass_gt_0.5": 0.0625,
+      "share_mass_gt_0.9": 0.0,
+      "share_mass_lt_0.05": 0.0625
+    }
+  }
+}
