@@ -364,6 +364,13 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("事后校准（时长 + 中心）：失败", "results/by_run/20260914_duration_calibration", sec_calibration),
     ("暴露—误差拟合与 B 臂的数值预期", "results/by_run/20260914_exposure_fit", sec_exposure),
     ("三条臂的终值与判决", "results/by_run/20260914_long_context_view", sec_arms),
+    ("数据路径能否补足长音暴露", "docs/status/20260914_concat_arm_prereg.md", lambda root: [
+        "- GTSinger Chinese 全库只有 544 个 TextGrid / 13,750 个歌词单元，其中 ≥1s 仅 300、≥2s 仅 70"
+        "（对比 M4Singer 已有 9,861 / 1,498）⇒ 新增供给约 +5%，不值得为它做一套标签管线；",
+        "- MIR-1K（真实伴奏）这份发行**没有字符级时间边界**（只有整句音频、逐帧 F0、人声标记、big5 歌词）"
+        "⇒ 要用它就必须生成伪标签，按既定约束不做；audio_works 同理被明确禁止；",
+        "- ⇒ **在现有数据条件下，'用新数据增加长音暴露'这条路是关闭的**；若条目级上采样（B）拿不到效应，"
+        "唯一还能加强暴露机制的是 C 臂（字符级 loss 加权，代码与测试已备好），再往上是结构改动。"]),
     ("待办", "", sec_pending),
 ]
 
