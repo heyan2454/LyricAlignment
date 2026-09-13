@@ -1,0 +1,130 @@
+{
+  "units": 13735,
+  "zero_rate": 0.108,
+  "auc": {
+    "start_entropy": 0.9181,
+    "neg_start_entropy": 0.0819,
+    "end_entropy": 0.9227,
+    "neg_end_entropy": 0.0773,
+    "start_margin": 0.1173,
+    "neg_start_margin": 0.8827,
+    "end_margin": 0.1116,
+    "neg_end_margin": 0.8884
+  },
+  "abstention": {
+    "start_entropy": {
+      "drop_1pct": {
+        "removed_units": 137,
+        "removed_error_share": 0.0546,
+        "residual_rate": 0.1031,
+        "original_rate": 0.108
+      },
+      "drop_2pct": {
+        "removed_units": 275,
+        "removed_error_share": 0.1133,
+        "residual_rate": 0.0977,
+        "original_rate": 0.108
+      },
+      "drop_5pct": {
+        "removed_units": 687,
+        "removed_error_share": 0.2697,
+        "residual_rate": 0.083,
+        "original_rate": 0.108
+      },
+      "drop_10pct": {
+        "removed_units": 1374,
+        "removed_error_share": 0.5084,
+        "residual_rate": 0.059,
+        "original_rate": 0.108
+      },
+      "drop_20pct": {
+        "removed_units": 2747,
+        "removed_error_share": 0.8112,
+        "residual_rate": 0.0255,
+        "original_rate": 0.108
+      }
+    }
+  },
+  "gating_crossval": {
+    "start_entropy": {
+      "songs": 33,
+      "units": 13735,
+      "defects": 1483,
+      "score": "start_entropy",
+      "out_of_sample": {
+        "review_5pct": {
+          "dropped_units": 802,
+          "removed_defect_share": 0.3136,
+          "residual_rate": 0.0787,
+          "original_rate": 0.108
+        },
+        "review_10pct": {
+          "dropped_units": 1469,
+          "removed_defect_share": 0.5367,
+          "residual_rate": 0.056,
+          "original_rate": 0.108
+        },
+        "review_20pct": {
+          "dropped_units": 2797,
+          "removed_defect_share": 0.8166,
+          "residual_rate": 0.0249,
+          "original_rate": 0.108
+        }
+      }
+    },
+    "end_entropy": {
+      "songs": 33,
+      "units": 13735,
+      "defects": 1483,
+      "score": "end_entropy",
+      "out_of_sample": {
+        "review_5pct": {
+          "dropped_units": 783,
+          "removed_defect_share": 0.3365,
+          "residual_rate": 0.076,
+          "original_rate": 0.108
+        },
+        "review_10pct": {
+          "dropped_units": 1476,
+          "removed_defect_share": 0.5509,
+          "residual_rate": 0.0543,
+          "original_rate": 0.108
+        },
+        "review_20pct": {
+          "dropped_units": 2779,
+          "removed_defect_share": 0.8227,
+          "residual_rate": 0.024,
+          "original_rate": 0.108
+        }
+      }
+    },
+    "neg_start_margin": {
+      "songs": 33,
+      "units": 13735,
+      "defects": 1483,
+      "score": "neg_start_margin",
+      "out_of_sample": {
+        "review_5pct": {
+          "dropped_units": 735,
+          "removed_defect_share": 0.1841,
+          "residual_rate": 0.0931,
+          "original_rate": 0.108
+        },
+        "review_10pct": {
+          "dropped_units": 1441,
+          "removed_defect_share": 0.4282,
+          "residual_rate": 0.069,
+          "original_rate": 0.108
+        },
+        "review_20pct": {
+          "dropped_units": 2779,
+          "removed_defect_share": 0.7572,
+          "residual_rate": 0.0329,
+          "original_rate": 0.108
+        }
+      }
+    }
+  },
+  "source": "batch",
+  "input": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence"
+}

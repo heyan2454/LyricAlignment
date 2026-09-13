@@ -1,0 +1,93 @@
+{
+  "units": 18803,
+  "error_rate": 0.0155,
+  "auc": {
+    "entropy_nats": 0.9336,
+    "neg_p_top1": 0.8963,
+    "label_rank": 0.9786,
+    "neg_top5_mass": 0.9452,
+    "duration": 0.6835
+  },
+  "abstention": {
+    "entropy_nats": {
+      "drop_1pct": {
+        "removed_units": 188,
+        "removed_error_share": 0.3265,
+        "residual_rate": 0.0105,
+        "original_rate": 0.0155
+      },
+      "drop_2pct": {
+        "removed_units": 376,
+        "removed_error_share": 0.4605,
+        "residual_rate": 0.0085,
+        "original_rate": 0.0155
+      },
+      "drop_5pct": {
+        "removed_units": 940,
+        "removed_error_share": 0.677,
+        "residual_rate": 0.0053,
+        "original_rate": 0.0155
+      },
+      "drop_10pct": {
+        "removed_units": 1880,
+        "removed_error_share": 0.8488,
+        "residual_rate": 0.0026,
+        "original_rate": 0.0155
+      },
+      "drop_20pct": {
+        "removed_units": 3761,
+        "removed_error_share": 0.9175,
+        "residual_rate": 0.0016,
+        "original_rate": 0.0155
+      }
+    },
+    "label_rank": {
+      "drop_1pct": {
+        "removed_units": 188,
+        "removed_error_share": 0.5361,
+        "residual_rate": 0.0073,
+        "original_rate": 0.0155
+      },
+      "drop_2pct": {
+        "removed_units": 376,
+        "removed_error_share": 0.7216,
+        "residual_rate": 0.0044,
+        "original_rate": 0.0155
+      },
+      "drop_5pct": {
+        "removed_units": 940,
+        "removed_error_share": 0.8797,
+        "residual_rate": 0.002,
+        "original_rate": 0.0155
+      },
+      "drop_10pct": {
+        "removed_units": 1880,
+        "removed_error_share": 0.921,
+        "residual_rate": 0.0014,
+        "original_rate": 0.0155
+      },
+      "drop_20pct": {
+        "removed_units": 3761,
+        "removed_error_share": 0.9691,
+        "residual_rate": 0.0006,
+        "original_rate": 0.0155
+      }
+    }
+  },
+  "by_duration": {
+    "short": {
+      "units": 15831,
+      "error_rate": 0.0111,
+      "auc_entropy": 0.9363,
+      "auc_label_rank": 0.9766
+    },
+    "long": {
+      "units": 2972,
+      "error_rate": 0.0387,
+      "auc_entropy": 0.8869,
+      "auc_label_rank": 0.9785
+    }
+  },
+  "source": "dump",
+  "input": "results/by_run/20260914_long_mech_new12000/per_character.jsonl"
+}

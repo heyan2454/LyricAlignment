@@ -137,8 +137,13 @@ def main() -> None:
                                           batch_size=args.batch_size,
                                           segment_sec=float(cfg["training"].get("timestamp_segment_sec", STEP_SEC)),
                                           keep_per_unit=True)
+        drift = drift_profile(outcome["variants"], references)
+        # keep_per_unit only exists so the drift profile can be computed; the per-unit rows are
+        # 15k+ records per variant and would bloat a canonical `results/` JSON by ~20 MB
+        for metric in outcome["variants"].values():
+            metric.pop("per_unit", None)
         payload["checkpoints"][label] = {"checkpoint": str(path), "loaded_step": loaded_step,
-                                         "drift_profile": drift_profile(outcome["variants"], references),
+                                         "drift_profile": drift,
                                          "val_loss": outcome["val_loss"],
                                          "variants": outcome["variants"],
                                          "summary": outcome["variants_summary"]}
