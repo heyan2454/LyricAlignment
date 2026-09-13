@@ -84,8 +84,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--out-png", type=Path, required=True)
+    parser.add_argument("--out-svg", type=Path, help="vector copy; useful for verifying labels by text")
     parser.add_argument("--out-csv", type=Path)
     parser.add_argument("--window", type=int, default=3, help="rolling window in L1 points")
+    parser.add_argument("--trend-from-step", type=int, default=None,
+                        help="annotate the block-bootstrap slope from this step (see analyze_val_trend.py)")
     parser.add_argument("--baseline-fixed", type=float, default=None)
     parser.add_argument("--baseline-raw-targeted", type=float, default=None)
     args = parser.parse_args()
@@ -146,6 +149,26 @@ def main() -> None:
         top.axhline(args.baseline_fixed, color=colors["fixed"], linestyle=":", linewidth=1.2)
     if args.baseline_raw_targeted is not None:
         top.axhline(args.baseline_raw_targeted, color=colors["raw_targeted"], linestyle=":", linewidth=1.2)
+    if args.trend_from_step is not None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "analyze_val_trend", Path(__file__).resolve().parent / "analyze_val_trend.py")
+        assert spec and spec.loader
+        trend = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(trend)
+        notes = []
+        for variant in VARIANTS:
+            points = [(step, value) for step, value in trend.read_points(args.run_dir / "funnel_evals.jsonl", variant)
+                      if step >= args.trend_from_step]
+            result = trend.analyse(points, block=5, resamples=2000)
+            slope = result["slope_pp_per_1000"]
+            notes.append(f"{variant}: +{slope['estimate']:.3f} pp/1000 steps "
+                         f"(90% CI +{slope['low']:.3f}..+{slope['high']:.3f}, n={result['points']}) "
+                         f"-> {result['verdict']}")
+        top.text(0.01, 0.02, "block-bootstrap trend from step %d:\n%s"
+                 % (args.trend_from_step, "\n".join(notes)), transform=top.transAxes, fontsize=7.5,
+                 va="bottom", ha="left", family="monospace",
+                 bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "#cccccc"})
     top.set_ylabel("fraction of characters within 0.2 s\n(song macro average)")
     top.set_title("Validation curve — funnelled protocol (L1 every 50 steps, rolling view)")
     top.grid(alpha=0.25)
@@ -156,6 +179,9 @@ def main() -> None:
     args.out_png.parent.mkdir(parents=True, exist_ok=True)
     figure.tight_layout()
     figure.savefig(args.out_png, dpi=140)
+    if args.out_svg:
+        args.out_svg.parent.mkdir(parents=True, exist_ok=True)
+        figure.savefig(args.out_svg)
     peak = max((point["rolling"], point["step"]) for point in curves["fixed"]) if curves["fixed"] else None
     print(json.dumps({"png": str(args.out_png), "csv": str(args.out_csv) if args.out_csv else None,
                       "l1_points": {variant: len(points) for variant, points in curves.items()},

@@ -1,0 +1,68 @@
+{
+  "schema_version": "error_vs_duration_v1",
+  "tolerance_sec": 0.2,
+  "checkpoints": {
+    "old-r2-750@1200": {
+      "items": 1200,
+      "characters": 9397,
+      "buckets": {
+        "0-0.25": {
+          "characters": 1082,
+          "miss_rate": 0.0166,
+          "median_max_err_ms": 35.0,
+          "median_offset_err_ms": 25.0,
+          "median_onset_err_ms": 20.0,
+          "se_miss": 0.39
+        },
+        "0.25-0.5": {
+          "characters": 4633,
+          "miss_rate": 0.0177,
+          "median_max_err_ms": 40.0,
+          "median_offset_err_ms": 25.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 0.19
+        },
+        "0.5-1": {
+          "characters": 2192,
+          "miss_rate": 0.0406,
+          "median_max_err_ms": 40.0,
+          "median_offset_err_ms": 30.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 0.42
+        },
+        "1-1.5": {
+          "characters": 951,
+          "miss_rate": 0.0705,
+          "median_max_err_ms": 45.0,
+          "median_offset_err_ms": 35.0,
+          "median_onset_err_ms": 25.0,
+          "se_miss": 0.83
+        },
+        "1.5-2": {
+          "characters": 322,
+          "miss_rate": 0.087,
+          "median_max_err_ms": 57.5,
+          "median_offset_err_ms": 45.0,
+          "median_onset_err_ms": 30.0,
+          "se_miss": 1.57
+        },
+        "2-3": {
+          "characters": 178,
+          "miss_rate": 0.1236,
+          "median_max_err_ms": 65.0,
+          "median_offset_err_ms": 50.0,
+          "median_onset_err_ms": 30.0,
+          "se_miss": 2.47
+        },
+        "3.0+": {
+          "characters": 39,
+          "miss_rate": 0.0769,
+          "median_max_err_ms": 65.0,
+          "median_offset_err_ms": 45.0,
+          "median_onset_err_ms": 30.0,
+          "se_miss": 4.27
+        }
+      }
+    }
+  }
+}
