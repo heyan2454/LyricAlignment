@@ -141,6 +141,15 @@ def test_scale_metrics(reference: list[dict[str, Any]], prediction: list[dict[st
         out[f"within_{tag}_all"] = round(float((all_err <= tol).mean()), 4) if count else None
         out[f"within_{tag}_valid_only"] = (round(float((valid_err <= tol).mean()), 4)
                                            if valid_err.size else None)
+    # A fixed-tolerance hit rate saturates once the bulk of the error distribution sits well inside
+    # the tolerance (that is the regime this project is in: MAE ~55-65 ms against a 200 ms window).
+    # Percentiles of the per-unit max-boundary error keep the resolution of the continuous error
+    # while staying comparable across checkpoints; they are cheap and never replace the rates above.
+    if count:
+        out["error_percentiles_ms"] = {
+            f"p{int(q * 100)}": round(float(np.percentile(valid_err if valid_err.size else all_err, q * 100)) * 1000, 2)
+            for q in (0.25, 0.5, 0.75, 0.9, 0.95, 0.99)}
+        out["error_percentiles_scope"] = "valid_units" if valid_err.size else "all_units"
     song_within: dict[str, dict[str, Any]] = {}
     for song, values in per_song.items():
         err = np.array(values["err"], dtype=float)

@@ -99,3 +99,16 @@ def test_tolerant_non_finite_and_negative_start_are_invalid() -> None:
     assert result["invalid_prediction_count"] == 2
     assert result["non_finite_interval_rate"] == 0.5
     assert result["missing_prediction_count"] == 0
+
+
+def test_test_scale_metrics_reports_error_percentiles_in_milliseconds():
+    """A saturated hit rate hides the continuous error; percentiles keep the resolution."""
+    from lyricalign.metrics.scale_metrics import test_scale_metrics
+
+    reference = [{"item_id": "i", "song_id": "s", "character_index": i,
+                  "start_sec": 1.0 + i * 0.1, "end_sec": 1.05 + i * 0.1} for i in range(10)]
+    prediction = [{"item_id": "i", "song_id": "s", "character_index": i,
+                   "start_sec": 1.01 + i * 0.1, "end_sec": 1.06 + i * 0.1} for i in range(10)]
+    metric = test_scale_metrics(reference, prediction)
+    assert metric["error_percentiles_ms"] == {f"p{q}": 10.0 for q in (25, 50, 75, 90, 95, 99)}
+    assert metric["error_percentiles_scope"] == "valid_units"
