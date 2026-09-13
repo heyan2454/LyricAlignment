@@ -1,0 +1,71 @@
+{
+  "schema_version": "duration_ratio_v1",
+  "buckets": {
+    "0.5-1.0s": {
+      "characters": 2192,
+      "median_annotated_sec": 0.62,
+      "median_predicted_sec": 0.64,
+      "median_duration_ratio": 0.99,
+      "share_predicted_shorter": 0.5255,
+      "median_abs_centre_shift_ms": 20.0,
+      "median_signed_centre_shift_ms": 5.0,
+      "misses": 75,
+      "miss_share": 0.0342,
+      "miss_median_signed_centre_shift_ms": 125.0,
+      "miss_median_duration_ratio": 0.899
+    },
+    "0.25-0.5s": {
+      "characters": 4633,
+      "median_annotated_sec": 0.36,
+      "median_predicted_sec": 0.32,
+      "median_duration_ratio": 1.0,
+      "share_predicted_shorter": 0.4835,
+      "median_abs_centre_shift_ms": 15.0,
+      "median_signed_centre_shift_ms": 0.0,
+      "misses": 70,
+      "miss_share": 0.0151,
+      "miss_median_signed_centre_shift_ms": 160.0,
+      "miss_median_duration_ratio": 1.829
+    },
+    "1-2.0s": {
+      "characters": 1273,
+      "median_annotated_sec": 1.27,
+      "median_predicted_sec": 1.28,
+      "median_duration_ratio": 0.991,
+      "share_predicted_shorter": 0.5625,
+      "median_abs_centre_shift_ms": 25.0,
+      "median_signed_centre_shift_ms": -5.0,
+      "misses": 84,
+      "miss_share": 0.066,
+      "miss_median_signed_centre_shift_ms": -110.0,
+      "miss_median_duration_ratio": 0.776
+    },
+    "0-0.25s": {
+      "characters": 1082,
+      "median_annotated_sec": 0.21,
+      "median_predicted_sec": 0.24,
+      "median_duration_ratio": 1.043,
+      "share_predicted_shorter": 0.3272,
+      "median_abs_centre_shift_ms": 15.0,
+      "median_signed_centre_shift_ms": 0.0,
+      "misses": 14,
+      "miss_share": 0.0129,
+      "miss_median_signed_centre_shift_ms": 132.5,
+      "miss_median_duration_ratio": 2.533
+    },
+    "2-+s": {
+      "characters": 217,
+      "median_annotated_sec": 2.35,
+      "median_predicted_sec": 2.32,
+      "median_duration_ratio": 0.99,
+      "share_predicted_shorter": 0.6359,
+      "median_abs_centre_shift_ms": 30.0,
+      "median_signed_centre_shift_ms": -20.0,
+      "misses": 24,
+      "miss_share": 0.1106,
+      "miss_median_signed_centre_shift_ms": -327.5,
+      "miss_median_duration_ratio": 0.709
+    }
+  },
+  "dump": "results/by_run/20260914_long_mech_new12000/per_character.jsonl"
+}

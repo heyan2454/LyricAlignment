@@ -1,0 +1,45 @@
+{
+  "schema_version": "boundary_context_v1",
+  "textgrids": 20896,
+  "characters": 193666,
+  "buckets": {
+    "0-0.25s": {
+      "characters": 32496,
+      "share_end_is_sound_to_silence": 0.2335,
+      "share_start_is_silence_to_sound": 0.3678,
+      "median_next_pause_sec": 0.01,
+      "median_duration_ms": 210.0
+    },
+    "0.25-0.5s": {
+      "characters": 106512,
+      "share_end_is_sound_to_silence": 0.2717,
+      "share_start_is_silence_to_sound": 0.3444,
+      "median_next_pause_sec": 0.01,
+      "median_duration_ms": 350.0
+    },
+    "0.5-1.0s": {
+      "characters": 42778,
+      "share_end_is_sound_to_silence": 0.4307,
+      "share_start_is_silence_to_sound": 0.3024,
+      "median_next_pause_sec": 0.16,
+      "median_duration_ms": 620.0
+    },
+    "1-2.0s": {
+      "characters": 10156,
+      "share_end_is_sound_to_silence": 0.7696,
+      "share_start_is_silence_to_sound": 0.245,
+      "median_next_pause_sec": 0.265,
+      "median_duration_ms": 1270.0
+    },
+    "2-+s": {
+      "characters": 1724,
+      "share_end_is_sound_to_silence": 0.9147,
+      "share_start_is_silence_to_sound": 0.1676,
+      "median_next_pause_sec": 0.28,
+      "median_duration_ms": 2370.0
+    }
+  },
+  "overall": {
+    "share_end_is_sound_to_silence": 0.3323
+  }
+}
