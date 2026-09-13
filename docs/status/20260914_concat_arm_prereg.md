@@ -127,11 +127,18 @@ python scripts/evaluation/eval_long_context_view.py --run-dir $A \
   --checkpoint "warmstart-oversample=$B/checkpoints/step-000600" \
   --batch-size 4 --out results/by_run/20260914_long_context_view/ab_arms.json
 
-# 2) 机制检查（CPU，同一条 300 条长音符富集样本，与已有基线同种子）
+# 2) 机制检查 + 逐字符配对（CPU，可与另一臂的 GPU 训练并行；**必须 1200 条才有功效**）
+#    功效算术：300 条只给 ~378 个长字符，配对 SE≈12.8ms，检测不到 −14ms 级别的效应；
+#    1200 条给 ~1490 个长字符，SE≈4ms ⇒ z=2 可检出的最小效应约 ±8ms。同一种子 => 与已有基线可配对。
+for ARM in control treatment; do :; done
 python scripts/evaluation/measure_predicted_boundary_acoustics.py --checkpoint $A/checkpoints/step-000600 \
-  --limit 300 --context-sec 0.06 --batch-size 4 --device cpu --out results/by_run/20260914_mech_control/metrics.json
+  --limit 1200 --context-sec 0.06 --batch-size 4 --device cpu --out results/by_run/20260914_mech_control/metrics.json
 python scripts/evaluation/measure_predicted_boundary_acoustics.py --checkpoint $B/checkpoints/step-000600 \
-  --limit 300 --context-sec 0.06 --batch-size 4 --device cpu --out results/by_run/20260914_mech_treatment/metrics.json
+  --limit 1200 --context-sec 0.06 --batch-size 4 --device cpu --out results/by_run/20260914_mech_treatment/metrics.json
+python scripts/evaluation/paired_checkpoint_comparison.py \
+  --old results/by_run/20260914_mech_control/per_character.jsonl \
+  --new results/by_run/20260914_mech_treatment/per_character.jsonl \
+  --out results/by_run/20260914_mech_ab_paired/metrics.json
 python scripts/evaluation/duration_ratio_profile.py --dump results/by_run/20260914_mech_control/per_character.jsonl \
   --out results/by_run/20260914_mech_control/duration_ratio.json
 python scripts/evaluation/duration_ratio_profile.py --dump results/by_run/20260914_mech_treatment/per_character.jsonl \
@@ -145,5 +152,9 @@ python scripts/evaluation/warmstart_ab_verdict.py \
   --duration "warmstart-oversample=results/by_run/20260914_mech_treatment/duration_ratio.json" \
   --out results/by_run/20260914_warmstart_ab
 ```
+灵敏度说明：`measure_predicted_boundary_acoustics.py` 的样本用同一 `--sample-seed`，
+所以 A/B 是**同一批字符上的配对比较**（比歌平均灵敏一个量级）；300 条的版本只用于机制画像，
+主配对必须用 1200 条。
+
 判决规则（预注册，写在代码里）：**净效应 = 逐歌配对 B vs A**，z≥2 且为正 ⇒ 时长上采样有效；
 |z|<2 ⇒ 写"无净效应"的负结果；机制项（失败子集时长比是否向 1 收敛）只解释成因、不参与判决。
