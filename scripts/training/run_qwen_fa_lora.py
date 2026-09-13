@@ -50,6 +50,35 @@ def legacy_execution_identity(identity: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def init_from_checkpoint(model: Any, path: Path) -> int:
+    """Borrow another run's trainable weights, then start a fresh optimiser and step counter.
+
+    Continuation, not resume: resume must keep the identity of the same run, while this deliberately
+    changes the data mixture and wants to know the *marginal* effect.  Starting from the official
+    base instead would spend ~1000 steps relearning what the previous arm already knows, which is
+    what made the first long-context arm uninformative at equal cost.
+    """
+    import torch
+
+    state_file = path / "trainer_state.pt"
+    if not state_file.exists():
+        raise SystemExit(f"init_from_checkpoint: no trainer_state.pt under {path}")
+    state = torch.load(state_file, map_location="cpu", weights_only=False)
+    trainable = state.get("trainable_state") or {}
+    if not trainable:
+        raise SystemExit(f"init_from_checkpoint: empty trainable_state under {path}")
+    current = dict(model.named_parameters())
+    unknown = sorted(set(trainable) - set(current))
+    if unknown:
+        raise SystemExit(f"init_from_checkpoint: {len(unknown)} parameter(s) not in this model, "
+                         f"e.g. {unknown[:3]}")
+    with torch.no_grad():
+        for name, value in trainable.items():
+            target = current[name]
+            target.data.copy_(value.to(target.device, target.dtype))
+    return int(state.get("step", -1))
+
+
 def apply_duration_oversample(rows: list[dict], *, long_sec: float, factor: int,
                               step_sec_default: float = 0.08) -> tuple[list[dict], dict[str, Any]]:
     """Replicate items that contain at least one labelled character of `long_sec` or more.
@@ -261,6 +290,13 @@ def main() -> None:
             if "multi_modal_projector" in name: parameter.requires_grad = True
     atomic_json(run_dir / "lora_target_modules.json", {"stage": args.stage, "targets": targets})
     atomic_json(run_dir / "trainable_parameter_summary.json", trainable_parameter_summary(model))
+    init_path = cfg["training"].get("init_from_checkpoint")
+    if init_path:
+        loaded_from = init_from_checkpoint(model, Path(str(init_path)))
+        atomic_json(run_dir / "init_from_checkpoint.json",
+                    {"path": str(init_path), "loaded_step": loaded_from,
+                     "semantics": "weights borrowed; optimiser state and step counter start fresh"})
+        print(json.dumps({"init_from_checkpoint": {"path": str(init_path), "step": loaded_from}}), flush=True)
     atomic_json(run_dir / "model_identity.json", {"model_id": model_cfg["id"], "model_revision": model_cfg["revision"], "timestamp_token_id": model.config.timestamp_token_id, "num_labels": model.config.num_labels})
     labels = read_jsonl(Path(cfg["data"]["labels"])); chars = read_jsonl(Path(cfg["data"]["characters"])); references: dict[str, list[dict]] = {}
     for row in chars: references.setdefault(row["item_id"], []).append(row)

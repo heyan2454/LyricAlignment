@@ -26,3 +26,26 @@ def test_read_jsonl_skips_blank_and_malformed_lines(tmp_path: Path):
 def test_process_status_reports_none_for_a_run_that_is_not_running(tmp_path: Path):
     pid, elapsed = SNAPSHOT.process_status(tmp_path / "definitely-not-a-run")
     assert pid in {"none", "unknown"} and isinstance(elapsed, str)
+
+
+def test_match_process_ignores_shells_that_only_mention_the_command(tmp_path):
+    from pathlib import Path
+    run = tmp_path / "runs" / "arm"
+    lines = [
+        # a queued launcher whose command text contains everything: must NOT match
+        " 999 100 bash -c cat <<EOF python scripts/training/run_qwen_fa_lora.py --run-dir "
+        + str(run) + " EOF",
+        # the real trainer
+        " 474070 2700 python scripts/training/run_qwen_fa_lora.py --config c.yaml --run-dir "
+        + str(run) + " --stage r2",
+    ]
+    assert SNAPSHOT.match_process(lines, Path(run)) == ("474070", "0.75h")
+    assert SNAPSHOT.match_process([lines[0]], Path(run)) == ("none", "-")
+
+
+def test_match_process_requires_the_exact_run_dir(tmp_path):
+    from pathlib import Path
+    other = tmp_path / "runs" / "other_arm"
+    wanted = tmp_path / "runs" / "arm"
+    line = " 1 10 python run_qwen_fa_lora.py --run-dir " + str(other)
+    assert SNAPSHOT.match_process([line], Path(wanted)) == ("none", "-")

@@ -38,17 +38,37 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def match_process(lines: list[str], run_dir: Path) -> tuple[str, str]:
+    """Find the trainer for `run_dir`, strictly.
+
+    A launcher shell whose command *text* mentions the script and the directory is not the trainer,
+    so two conditions are required: the command is a python invocation, and `--run-dir <this dir>`
+    appears as an adjacent argument pair.  (Observed bug: a queued `bash -c` carrying the whole
+    here-document was reported as the live training process, with the wrong elapsed time.)
+    """
+    marker = f"--run-dir {run_dir}"
+    for line in lines:
+        parts = line.split(None, 2)
+        if len(parts) < 3:
+            continue
+        pid, elapsed, args = parts
+        if not args.strip().startswith(("python", "/python")) and "/python" not in args.split()[0]:
+            continue
+        if "run_qwen_fa_lora.py" not in args or marker not in args:
+            continue
+        try:
+            return pid, f"{int(elapsed) / 3600:.2f}h"
+        except ValueError:
+            continue
+    return "none", "-"
+
+
 def process_status(run_dir: Path) -> tuple[str, str]:
     try:
         listing = subprocess.run(["ps", "-eo", "pid,etimes,args"], capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return "unknown", "unknown"
-    for line in listing.stdout.splitlines():
-        if "run_qwen_fa_lora.py" in line and "--run-dir" in line and str(run_dir) in line:
-            parts = line.split(None, 2)
-            if len(parts) >= 2:
-                return parts[0], f"{int(parts[1]) / 3600:.2f}h"
-    return "none", "-"
+    return match_process(listing.stdout.splitlines(), run_dir)
 
 
 def main() -> None:
