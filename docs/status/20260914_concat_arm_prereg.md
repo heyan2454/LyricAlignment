@@ -111,3 +111,39 @@ bash scripts/training/launch_qwen_fa_concat20_20260914.sh   # 已启动（02:04�
 # 完成后：用 report_long_note_mechanism.py / run_funnel_topup.py 出主指标与选点
 ```
 预计 3.36 s/步 × 3600 ≈ 3.4 h + 漏斗评估 ≈ **05:45–06:00 完成**。
+
+## 6. 执行清单（臂跑完后照此执行，判决由代码给、不靠临场读数）
+```bash
+source /root/miniconda3/etc/profile.d/conda.sh && conda activate lyricalign-qwen
+export HF_HUB_CACHE=/home/hyan/Data/lyricalign/models/hf_cache HF_HUB_OFFLINE=1 PYTHONPATH=src
+D=/home/hyan/Data/lyricalign/runs
+R=$D/20260914_qwen_fa_r2_concat20c_seed20260724          # 拼接臂
+A=$D/20260914_qwen_fa_r2_warmstart_control_seed20260724   # A 对照
+B=$D/20260914_qwen_fa_r2_warmstart_oversample_seed20260724 # B 上采样
+
+# 1) 长上下文视图（主指标）：一次把基线与两臂放同一个文件里，保证同一视图同一协议
+python scripts/evaluation/eval_long_context_view.py --run-dir $A \
+  --checkpoint "warmstart-control=$A/checkpoints/step-000600" \
+  --checkpoint "warmstart-oversample=$B/checkpoints/step-000600" \
+  --batch-size 4 --out results/by_run/20260914_long_context_view/ab_arms.json
+
+# 2) 机制检查（CPU，同一条 300 条长音符富集样本，与已有基线同种子）
+python scripts/evaluation/measure_predicted_boundary_acoustics.py --checkpoint $A/checkpoints/step-000600 \
+  --limit 300 --context-sec 0.06 --batch-size 4 --device cpu --out results/by_run/20260914_mech_control/metrics.json
+python scripts/evaluation/measure_predicted_boundary_acoustics.py --checkpoint $B/checkpoints/step-000600 \
+  --limit 300 --context-sec 0.06 --batch-size 4 --device cpu --out results/by_run/20260914_mech_treatment/metrics.json
+python scripts/evaluation/duration_ratio_profile.py --dump results/by_run/20260914_mech_control/per_character.jsonl \
+  --out results/by_run/20260914_mech_control/duration_ratio.json
+python scripts/evaluation/duration_ratio_profile.py --dump results/by_run/20260914_mech_treatment/per_character.jsonl \
+  --out results/by_run/20260914_mech_treatment/duration_ratio.json
+
+# 3) 判决（纯读 JSON，不重跑推理）
+python scripts/evaluation/warmstart_ab_verdict.py \
+  --view results/by_run/20260914_long_context_view/baseline_aligned.summary.json \
+  --view results/by_run/20260914_long_context_view/ab_arms.json \
+  --duration "warmstart-control=results/by_run/20260914_mech_control/duration_ratio.json" \
+  --duration "warmstart-oversample=results/by_run/20260914_mech_treatment/duration_ratio.json" \
+  --out results/by_run/20260914_warmstart_ab
+```
+判决规则（预注册，写在代码里）：**净效应 = 逐歌配对 B vs A**，z≥2 且为正 ⇒ 时长上采样有效；
+|z|<2 ⇒ 写"无净效应"的负结果；机制项（失败子集时长比是否向 1 收敛）只解释成因、不参与判决。
