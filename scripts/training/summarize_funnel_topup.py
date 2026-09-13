@@ -125,6 +125,62 @@ def compare(rows: list[dict[str, Any]], topup: list[dict[str, Any]], *, baseline
             "comparisons": comparisons}
 
 
+def variant_effect(topup: list[dict[str, Any]], variants: tuple[str, ...]) -> list[dict[str, Any]]:
+    """Paired per-song effect of the decode variants *inside one checkpoint* (same forward pass).
+
+    This is the tightest comparison available: `fixed` / `raw` / `raw_targeted` are three decodes of
+    the same logits on the same items, so the per-song difference removes both the song difficulty
+    and the checkpoint, leaving only the decode policy.
+    """
+    out: list[dict[str, Any]] = []
+    for block in topup:
+        for candidate_variant in variants:
+            for base_variant in variants:
+                if candidate_variant == base_variant:
+                    continue
+                stats = paired_stats(per_song(block, candidate_variant), per_song(block, base_variant))
+                if stats["mean_delta_pp"] is None:
+                    continue
+                out.append({"label": block["label"], "level": block["level"],
+                            "variant": candidate_variant, "against": base_variant, **stats})
+    return out
+
+
+def versus_history(topup: list[dict[str, Any]], historical: list[dict[str, Any]],
+                   variants: tuple[str, ...], *, metric_key: str = "macro_within_primary") -> dict[str, Any]:
+    """Unpaired comparison against the best *in-training* record at the same level (no per-song data)."""
+    records: dict[str, dict[str, Any]] = {}
+    for block in historical:
+        level = block.get("level")
+        summary = block.get("variants") or {}
+        values = {variant: (summary.get(variant) or {}).get(metric_key) for variant in variants}
+        numeric = [value for value in values.values() if isinstance(value, (int, float))]
+        if level is None or not numeric:
+            continue
+        current = records.get(level)
+        if current is None or max(numeric) > current["_best_value"]:
+            records[level] = {"step": block.get("evaluated_step", block.get("step")),
+                              "variants": values, "_best_value": max(numeric)}
+    rows: list[dict[str, Any]] = []
+    for block in topup:
+        if block.get("source") != "run":
+            continue
+        reference = records.get(block["level"])
+        if reference is None:
+            continue
+        deltas = {}
+        for variant in variants:
+            candidate = ((block.get("variants") or {}).get(variant) or {}).get("macro_song_within_primary")
+            baseline = reference["variants"].get(variant)
+            deltas[variant] = (100.0 * (candidate - baseline)
+                               if candidate is not None and isinstance(baseline, (int, float)) else None)
+        rows.append({"label": block["label"], "level": block["level"],
+                     "historical_step": reference.get("step"), "deltas_pp": deltas})
+    return {"records": {level: {"step": row["step"], "variants": row["variants"]}
+                        for level, row in records.items()},
+            "against_best_in_training": rows}
+
+
 def pick_one_se(rows: list[dict[str, Any]], variant: str) -> dict[str, Any] | None:
     """One-standard-error rule over run candidates at the deepest available level, earliest step."""
     own = [row for row in rows if row.get("source") == "run" and row["variants"].get(variant)]
@@ -194,6 +250,28 @@ def markdown(payload: dict[str, Any], variants: tuple[str, ...], baseline: str) 
             lines.append(f"| {variant} | {pick['level']} | {pick['step']} | {pick['best_step']} | "
                          f"{pick['best']:.4f} | {pick['one_se']:.4f} |")
     lines.append("")
+    lines.append("## 同一存档内三种解码的配对差异（同一次前向，最干净的比较）")
+    lines.append("")
+    lines.append("| 候选 | 层级 | 比较 | 配对均差(pp) | 配对SE(pp) | z | 更好的歌 | 更差的歌 |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+    for row in payload["variant_effect"]:
+        lines.append(f"| {row['label']} | {row['level']} | {row['variant']} − {row['against']} | "
+                     f"{row['mean_delta_pp']:+.2f} | {row['se_pp']:.2f} | {row['z']:+.2f} | "
+                     f"{row['wins']} | {row['losses']} |")
+    lines.append("")
+    history_cmp = payload.get("versus_history") or {}
+    if history_cmp.get("against_best_in_training"):
+        best_bits = ", ".join(f"`{level}` 最好记录 = step {row['step']}"
+                              for level, row in history_cmp["records"].items())
+        lines.append(f"## 与训练内历史最好记录的对照（{best_bits}；无逐歌数据，只能比宏观值）")
+        lines.append("")
+        lines.append("| 候选 | 层级 | " + " | ".join(f"{v} 差(pp)" for v in variants) + " |")
+        lines.append("| --- | --- | " + " | ".join("---" for _ in variants) + " |")
+        for row in history_cmp["against_best_in_training"]:
+            values = " | ".join("" if row["deltas_pp"].get(v) is None else f"{row['deltas_pp'][v]:+.2f}"
+                                for v in variants)
+            lines.append(f"| {row['label']} | {row['level']} | {values} |")
+        lines.append("")
     lines.append("## 行内历史记录（仅汇总，无逐歌数据，供对照）")
     lines.append("")
     lines.append("| 步 | 层级 | " + " | ".join(variants) + " |")
@@ -224,6 +302,8 @@ def main() -> None:
     payload = {"schema_version": 1, "source": str(topup_path), "funnel_source": str(funnel_path),
                "run_dir": str(args.run_dir), "summary": summary,
                "comparison": compare(summary["topup"], topup, baseline=args.baseline, variants=variants),
+               "variant_effect": variant_effect(topup, variants),
+               "versus_history": versus_history(topup, historical, variants),
                "pick": {variant: pick_one_se(summary["topup"], variant) for variant in variants}}
     args.out_dir.mkdir(parents=True, exist_ok=True)
     (args.out_dir / "metrics.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
