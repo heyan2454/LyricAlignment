@@ -83,3 +83,23 @@ def test_item_sample_falls_back_to_the_full_split():
     assert TOPUP.item_sample(rows, 0, 7) == rows
     assert len(TOPUP.item_sample(rows, 99, 7)) == 5
     assert len(TOPUP.item_sample(rows, 2, 7)) == 2
+
+
+def _block(step: int, value: float, se: float, *, source: str = "run", level: str = "l2") -> dict:
+    return {"level": level, "label": f"step-{step:06d}", "step": step, "source": source,
+            "variants": {"fixed": {"macro_song_within_primary": value, "macro_song_se_primary": se}}}
+
+
+def test_next_level_shortlist_merges_historical_records_and_drops_foreign_baselines():
+    historical = {50: {"step": 50, "value": 0.785, "se": 0.01}}
+    rounds = [_block(100, 0.80, 0.01), _block(200, 0.79, 0.01),
+              _block(750, 0.99, 0.0, source="foreign")]  # collides with the run's own step 750
+    picked = TOPUP.next_level_shortlist(current_records=historical, round_results=rounds, done_next=set(),
+                                        selection=SELECTION, cap=5, se_scale=1.0)
+    assert [row["step"] for row in picked] == [100, 200]          # foreign never promoted
+    picked = TOPUP.next_level_shortlist(current_records=historical, round_results=rounds, done_next={100},
+                                        selection=SELECTION, cap=5, se_scale=1.0)
+    assert [row["step"] for row in picked] == [200, 50]           # already-done step excluded, 1-SE band kept
+    picked = TOPUP.next_level_shortlist(current_records=historical, round_results=rounds, done_next=set(),
+                                        selection=SELECTION, cap=1, se_scale=0.0)
+    assert [row["step"] for row in picked] == [100]               # se_scale=0 -> strict argmax

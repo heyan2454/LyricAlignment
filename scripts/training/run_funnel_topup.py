@@ -132,6 +132,25 @@ def one_se_shortlist(rows: list[dict[str, Any]], *, top_k: int, se_scale: float,
     return eligible[: max(1, int(top_k))]
 
 
+def next_level_shortlist(*, current_records: dict[int, dict[str, Any]], round_results: list[dict[str, Any]],
+                         done_next: set[int], selection: dict[str, str], cap: int,
+                         se_scale: float) -> list[dict[str, Any]]:
+    """Merge historical records at the level just run with the fresh ones, minus what is already done.
+
+    Foreign (`source != "run"`) blocks are a comparison baseline only: their step numbers collide
+    with the run's own and would be loaded from the wrong checkpoint directory.
+    """
+    pool = dict(current_records)
+    for block in round_results:
+        if block["source"] != "run":
+            continue
+        metric = block["variants"][selection["variant"]]
+        pool[int(block["step"])] = {"step": int(block["step"]),
+                                    "value": float(metric[selection["metric"]]),
+                                    "se": float(metric.get("macro_song_se_primary") or 0.0)}
+    return one_se_shortlist(list(pool.values()), top_k=cap, se_scale=se_scale, exclude=done_next)
+
+
 # --------------------------------------------------------------------------------------- model io
 def build_stage_model(cfg: dict[str, Any], stage: str, device: str, local_files_only: bool) -> tuple[Any, Any]:
     import torch
@@ -301,22 +320,15 @@ def main() -> None:
             break
         # promote the leaders of this level into the next (cheapest next level is the natural one)
         next_level = levels[levels.index(level) + 1]
-        existing = rows_from_jsonl(evals_path, next_level, selection)
-        for block in round_results:
-            # foreign checkpoints are a comparison baseline, never candidates for this run's pick:
-            # their step numbers collide with the run's own and would be loaded from the wrong dir.
-            if block["source"] != "run":
-                continue
-            metric = block["variants"][selection["variant"]]
-            existing[int(block["step"])] = {"step": int(block["step"]), "value": float(metric[selection["metric"]]),
-                                            "se": float(metric.get("macro_song_se_primary") or 0.0)}
-        for block in completed:
-            if block["level"] == next_level:
-                existing.pop(int(block["step"]), None)
+        # never re-run a level a candidate already has (historical records included)
+        done_next = set(rows_from_jsonl(evals_path, next_level, selection))
+        done_next.update(int(block["step"]) for block in completed if block["level"] == next_level)
         cap = args.top_k if next_level == "l2" else args.l3_top_k
         current = [{"level": next_level, "label": f"step-{row['step']:06d}", "step": row["step"],
                     "l1_value": None, "source": "run"}
-                   for row in one_se_shortlist(list(existing.values()), top_k=cap, se_scale=args.se_scale)]
+                   for row in next_level_shortlist(current_records=rows_from_jsonl(evals_path, level, selection),
+                                                   round_results=round_results, done_next=done_next,
+                                                   selection=selection, cap=cap, se_scale=args.se_scale)]
         print(f"[plan] {next_level}: {[entry['label'] for entry in current]}", flush=True)
 
     ranked: dict[str, Any] = {}
@@ -327,7 +339,7 @@ def main() -> None:
                 for block in completed
                 if block["level"] == levels[-1] and block["source"] == "run"]
         if rows:
-            from lyricalign.metrics.test_scale import select_with_one_se
+            from lyricalign.metrics.scale_metrics import select_with_one_se
             chosen = select_with_one_se(rows, score_key="score", se_key="macro_song_se_primary",
                                         higher_is_better=True)
             ranked[variant] = chosen
