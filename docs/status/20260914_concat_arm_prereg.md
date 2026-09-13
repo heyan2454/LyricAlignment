@@ -130,7 +130,6 @@ python scripts/evaluation/eval_long_context_view.py --run-dir $A \
 # 2) 机制检查 + 逐字符配对（CPU，可与另一臂的 GPU 训练并行；**必须 1200 条才有功效**）
 #    功效算术：300 条只给 ~378 个长字符，配对 SE≈12.8ms，检测不到 −14ms 级别的效应；
 #    1200 条给 ~1490 个长字符，SE≈4ms ⇒ z=2 可检出的最小效应约 ±8ms。同一种子 => 与已有基线可配对。
-for ARM in control treatment; do :; done
 python scripts/evaluation/measure_predicted_boundary_acoustics.py --checkpoint $A/checkpoints/step-000600 \
   --limit 1200 --context-sec 0.06 --batch-size 4 --device cpu --out results/by_run/20260914_mech_control/metrics.json
 python scripts/evaluation/measure_predicted_boundary_acoustics.py --checkpoint $B/checkpoints/step-000600 \
