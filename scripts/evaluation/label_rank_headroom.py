@@ -85,7 +85,7 @@ def markdown(payload: dict[str, Any]) -> str:
                      f"{block['share_rank_le_10']:.3f} | {block['share_rank_le_50']:.3f} | "
                      f"{block['median_rank']} | {block.get('miss_median_rank', '—')} | "
                      f"{block.get('miss_share_rank_le_10', 0):.2f} |")
-    offset_long = payload["headroom"].get("offset|2.0+s") or {}
+    offset_long = payload["headroom"].get("offset|2-+s") or {}
     onset_short = payload["headroom"].get("onset|0-0.5s") or {}
     lines += ["", "## 读法（决定该投解码还是投训练）", ""]
     if offset_long:
@@ -95,13 +95,14 @@ def markdown(payload: dict[str, Any]) -> str:
             f"这些失败的中位排名 {offset_long.get('miss_median_rank')}，其中只有 "
             f"{recoverable:.0%} 的失败真值还留在前 10 名内，"
             f"{offset_long.get('miss_share_rank_le_50', 0):.0%} 在前 50 名内；",
-            "- 换句话说：**大多数长音符失败不是排序没排好，而是真值被模型压到了分布深处**，"
-            "重排/DP 只能救回一小部分；",
-            f"- 对照短字符起始点：排名≤1 的比例 {onset_short.get('share_rank_le_1', 0):.3f}、"
-            f"超差率 {onset_short.get('miss_rate', 0):.2%} ⇒ 多数情形模型本来就是对的，"
-            "解码只需保证顺序合法；",
-            "- 因此优先级：**增加非常见时长的训练暴露（B 臂）> 解码侧重排**；"
-            "DP 解码的价值仍是结构合法性与短字符的小幅增益（已单独测得 z=−4.5）。",
+            ("**判决：解码侧仍有实质空间** —— 失败里真值大多留在前 10 名内，"
+             "说明信息在模型里、只是 argmax 没选到；"
+             if recoverable > 0.5 else
+             "**判决：解码侧空间有限** —— 失败的真值大多已被压到分布深处，只能靠训练暴露；"),
+            "- 但要注意**简单的单调 DP 吃不到这块收益**（同批前向实测长结束点只改善 −7.1ms，z=−1.94），"
+            "因为它只约束顺序与下界；要用上 top-10 里的信息，需要**跨槽位的联合约束**"
+            "（例如相邻字共享边界：标注的字符层是连续的）——这正是 contiguity_offset_test.py 验证有效的方向；",            "- 两条线并不互斥：训练暴露（B 臂）针对『真值本身排名低』的那部分，"
+            "联合解码针对『真值在 top-10 但没被选中』的那部分；本报告只量化后者的大小。",
             ""]
     return "\n".join(lines)
 
