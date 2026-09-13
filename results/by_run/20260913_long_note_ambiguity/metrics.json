@@ -1,0 +1,19 @@
+{
+  "schema_version": "long_note_ambiguity_v1",
+  "tolerance_sec": 0.2,
+  "characters": 2335,
+  "items": 300,
+  "long_characters": 378,
+  "long_share": 0.1619,
+  "misses": 96,
+  "miss_rate": 0.0411,
+  "miss_share_that_is_long": 0.4688,
+  "misses_on_no_evidence_boundary": 12,
+  "share_of_misses_on_no_evidence": 0.125,
+  "share_of_all_characters_on_no_evidence_and_missing": 0.0051,
+  "no_evidence_offset_share_long": 0.3704,
+  "no_evidence_offset_share_short": 0.0399,
+  "miss_rate_long": 0.119,
+  "miss_rate_short": 0.0261,
+  "median_error_miss_ms": 380.0
+}
