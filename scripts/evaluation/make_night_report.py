@@ -266,6 +266,22 @@ def sec_gating(root: Path) -> list[str]:
     return lines or ["- 状态：未跑"]
 
 
+def sec_calibration(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_duration_calibration/metrics.json")
+    if not doc or doc.get("status") != "measured":
+        return ["- 状态：未跑"]
+    buckets = doc["buckets"]
+    long_block = buckets.get("2s+", {})
+    return [f"- 留出歌交叉验证的事后仿射校准（把预测区间按预测时长分桶映射到真值中位）：",
+            f"  all {_pct(buckets['all']['miss_rate_raw'])} → {_pct(buckets['all']['miss_rate_corrected'])}；"
+            f"≥2s 桶 {_pct(long_block['miss_rate_raw'])} → **{_pct(long_block['miss_rate_corrected'])}**；",
+            f"- 按模型熵条件化的版本把 ≥2s 的伤害压到 {_pct(long_block.get('miss_rate_conditional'))}，"
+            "但仍不如不修 ⇒ **事后校准这条路关闭**；",
+            "- 原因：诊断到的「压短 + 偏早」是**失败子集的条件性偏差**（全体中点位移只有 20–30 ms，"
+            "失败子集才 −328 ms），拿全体中位数去修会把本来正确的九成一起挪坏。"
+            "给未来的警示：**不要在未条件化时给时间戳做事后校准**。"]
+
+
 def sec_exposure(root: Path) -> list[str]:
     doc = _load(root / "results/by_run/20260914_exposure_fit/baseline_uniform.json")
     if not doc:
@@ -345,6 +361,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("跨窗共识：负结果", "results/by_run/20260914_window_consensus", sec_consensus),
     ("真歌批塌陷画像与 DP 的真实作用", "results/by_run/20260914_real_song_collapse", sec_real_song),
     ("置信度门控（可交付）", "results/by_run/20260914_confidence_abstention", sec_gating),
+    ("事后校准（时长 + 中心）：失败", "results/by_run/20260914_duration_calibration", sec_calibration),
     ("暴露—误差拟合与 B 臂的数值预期", "results/by_run/20260914_exposure_fit", sec_exposure),
     ("三条臂的终值与判决", "results/by_run/20260914_long_context_view", sec_arms),
     ("待办", "", sec_pending),
@@ -361,6 +378,10 @@ def main() -> None:
              "> 由 `scripts/evaluation/make_night_report.py` 从 `results/by_run/**` 的 JSON 生成；"
              "每个小节都指向自己的数据源，缺数据显示「未跑」而不是沉默。"
              "所有结论的原始数字都在 git 里的 metrics.json 中。", "",
+             "> **读数字前先看这条口径声明**：性能类数字（漏斗 L1/L2/L3、全量 top-up、长上下文视图）"
+             "一律只含**验证集**；而机制类绝对误差率（时长曲线、容差内质量、邻接先验、校准）来自较早"
+             "一次**未按 split 过滤**的 dump（含训练条目），因此描述的是模型在训练分布上的行为，"
+             "**不得当作留出性能**；配对比较与机制结论不受影响。验证集专用重跑正在进行。", "",
              "## 一句话总览", "",
              "1. **重训有效但边际小**（MAE −3.3 ms / −7%，逐字符配对 z=−5），而且**长流、窗口边缘、"
              "流长、重排、跨窗共识**这四个候选解释全部被测量否证或削弱；",
@@ -377,7 +398,8 @@ def main() -> None:
     lines += ["---", "", "## 资源与安全", "",
               "- 所有既有产物未删除；大体积逐条文件已解除 git 跟踪但保留在磁盘；",
               "- GPU 全程单卡串行（臂与评测交接由哨兵驱动，无并发训练）；磁盘余量约 23 G；",
-              "- 自我纠错记录：仓库膨胀 117 MB（我的 `keep_per_unit` 造成）、`status_snapshot` 误判进程、"
+              "- 自我纠错记录：仓库膨胀 117 MB（我的 `keep_per_unit` 造成）、机制 dump 漏了 split 过滤"
+              "（已加 --splits 与 test 防火墙）、`status_snapshot` 误判进程、"
               "`pgrep -f` 三次自匹配、headroom 的乐观判断被 mass_in_tol 否证、"
               "300 条样本的 24.6% 高估、以及若干次「替换没命中却报成功」的文档编辑。", ""]
     args.out.parent.mkdir(parents=True, exist_ok=True)
