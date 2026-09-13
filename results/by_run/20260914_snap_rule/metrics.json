@@ -1,0 +1,395 @@
+{
+  "schema_version": "snap_rule_v1",
+  "checkpoint": "/home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724/checkpoints/step-012000",
+  "items": 1711,
+  "gap_bins": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "segment_sec": 0.08,
+  "policies": {
+    "argmax": {
+      "macro_song_within_primary": 0.9743,
+      "macro_song_se_primary": 0.0039,
+      "mae_all_ms": 50.81,
+      "usable_rate": 0.9986,
+      "collapse_longest_run": 0,
+      "subsets": {
+        "all": {
+          "units": 15204,
+          "usable_rate": 0.9986,
+          "mae_all_ms": 50.81,
+          "within_100ms": 0.9379,
+          "within_200ms": 0.9812,
+          "within_250ms": 0.9877,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 80.0
+          }
+        },
+        "long": {
+          "units": 958,
+          "usable_rate": 0.9948,
+          "mae_all_ms": 105.92,
+          "within_100ms": 0.8225,
+          "within_200ms": 0.9374,
+          "within_250ms": 0.9499,
+          "error_percentiles_ms": {
+            "p50": 45.0,
+            "p90": 150.0
+          }
+        },
+        "post_gap": {
+          "units": 310,
+          "usable_rate": 0.9935,
+          "mae_all_ms": 58.48,
+          "within_100ms": 0.9355,
+          "within_200ms": 0.9774,
+          "within_250ms": 0.9806,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 75.0
+          }
+        },
+        "phrase_final": {
+          "units": 2021,
+          "usable_rate": 0.9955,
+          "mae_all_ms": 74.97,
+          "within_100ms": 0.8872,
+          "within_200ms": 0.9659,
+          "within_250ms": 0.9743,
+          "error_percentiles_ms": {
+            "p50": 40.0,
+            "p90": 110.0
+          }
+        }
+      }
+    },
+    "viterbi": {
+      "macro_song_within_primary": 0.9784,
+      "macro_song_se_primary": 0.0038,
+      "mae_all_ms": 48.46,
+      "usable_rate": 1.0,
+      "collapse_longest_run": 0,
+      "subsets": {
+        "all": {
+          "units": 15204,
+          "usable_rate": 1.0,
+          "mae_all_ms": 48.46,
+          "within_100ms": 0.9409,
+          "within_200ms": 0.9845,
+          "within_250ms": 0.9903,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 80.0
+          }
+        },
+        "long": {
+          "units": 958,
+          "usable_rate": 1.0,
+          "mae_all_ms": 101.14,
+          "within_100ms": 0.8257,
+          "within_200ms": 0.9395,
+          "within_250ms": 0.952,
+          "error_percentiles_ms": {
+            "p50": 45.0,
+            "p90": 151.5
+          }
+        },
+        "post_gap": {
+          "units": 310,
+          "usable_rate": 1.0,
+          "mae_all_ms": 42.94,
+          "within_100ms": 0.9452,
+          "within_200ms": 0.9871,
+          "within_250ms": 0.9903,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 70.5
+          }
+        },
+        "phrase_final": {
+          "units": 2021,
+          "usable_rate": 1.0,
+          "mae_all_ms": 72.59,
+          "within_100ms": 0.8847,
+          "within_200ms": 0.9649,
+          "within_250ms": 0.9733,
+          "error_percentiles_ms": {
+            "p50": 40.0,
+            "p90": 110.0
+          }
+        }
+      }
+    },
+    "snap1": {
+      "macro_song_within_primary": 0.9784,
+      "macro_song_se_primary": 0.0038,
+      "mae_all_ms": 48.59,
+      "usable_rate": 1.0,
+      "collapse_longest_run": 0,
+      "subsets": {
+        "all": {
+          "units": 15204,
+          "usable_rate": 1.0,
+          "mae_all_ms": 48.59,
+          "within_100ms": 0.9404,
+          "within_200ms": 0.9845,
+          "within_250ms": 0.9903,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 80.0
+          }
+        },
+        "long": {
+          "units": 958,
+          "usable_rate": 1.0,
+          "mae_all_ms": 100.92,
+          "within_100ms": 0.8278,
+          "within_200ms": 0.9395,
+          "within_250ms": 0.952,
+          "error_percentiles_ms": {
+            "p50": 45.0,
+            "p90": 151.5
+          }
+        },
+        "post_gap": {
+          "units": 310,
+          "usable_rate": 1.0,
+          "mae_all_ms": 42.9,
+          "within_100ms": 0.9452,
+          "within_200ms": 0.9871,
+          "within_250ms": 0.9903,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 70.5
+          }
+        },
+        "phrase_final": {
+          "units": 2021,
+          "usable_rate": 1.0,
+          "mae_all_ms": 72.59,
+          "within_100ms": 0.8847,
+          "within_200ms": 0.9649,
+          "within_250ms": 0.9733,
+          "error_percentiles_ms": {
+            "p50": 40.0,
+            "p90": 110.0
+          }
+        }
+      }
+    },
+    "snap2": {
+      "macro_song_within_primary": 0.9779,
+      "macro_song_se_primary": 0.0037,
+      "mae_all_ms": 49.08,
+      "usable_rate": 1.0,
+      "collapse_longest_run": 0,
+      "subsets": {
+        "all": {
+          "units": 15204,
+          "usable_rate": 1.0,
+          "mae_all_ms": 49.08,
+          "within_100ms": 0.9372,
+          "within_200ms": 0.9836,
+          "within_250ms": 0.9903,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 80.0
+          }
+        },
+        "long": {
+          "units": 958,
+          "usable_rate": 1.0,
+          "mae_all_ms": 101.14,
+          "within_100ms": 0.8267,
+          "within_200ms": 0.9395,
+          "within_250ms": 0.952,
+          "error_percentiles_ms": {
+            "p50": 45.0,
+            "p90": 155.0
+          }
+        },
+        "post_gap": {
+          "units": 310,
+          "usable_rate": 1.0,
+          "mae_all_ms": 42.39,
+          "within_100ms": 0.9452,
+          "within_200ms": 0.9903,
+          "within_250ms": 0.9935,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 70.5
+          }
+        },
+        "phrase_final": {
+          "units": 2021,
+          "usable_rate": 1.0,
+          "mae_all_ms": 72.59,
+          "within_100ms": 0.8847,
+          "within_200ms": 0.9649,
+          "within_250ms": 0.9733,
+          "error_percentiles_ms": {
+            "p50": 40.0,
+            "p90": 110.0
+          }
+        }
+      }
+    },
+    "snap3": {
+      "macro_song_within_primary": 0.9695,
+      "macro_song_se_primary": 0.0035,
+      "mae_all_ms": 51.17,
+      "usable_rate": 1.0,
+      "collapse_longest_run": 0,
+      "subsets": {
+        "all": {
+          "units": 15204,
+          "usable_rate": 1.0,
+          "mae_all_ms": 51.17,
+          "within_100ms": 0.9277,
+          "within_200ms": 0.974,
+          "within_250ms": 0.9858,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 85.0
+          }
+        },
+        "long": {
+          "units": 958,
+          "usable_rate": 1.0,
+          "mae_all_ms": 102.48,
+          "within_100ms": 0.8205,
+          "within_200ms": 0.9342,
+          "within_250ms": 0.9489,
+          "error_percentiles_ms": {
+            "p50": 50.0,
+            "p90": 155.0
+          }
+        },
+        "post_gap": {
+          "units": 310,
+          "usable_rate": 1.0,
+          "mae_all_ms": 42.39,
+          "within_100ms": 0.9452,
+          "within_200ms": 0.9903,
+          "within_250ms": 0.9935,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 70.5
+          }
+        },
+        "phrase_final": {
+          "units": 2021,
+          "usable_rate": 1.0,
+          "mae_all_ms": 74.2,
+          "within_100ms": 0.8778,
+          "within_200ms": 0.9579,
+          "within_250ms": 0.9673,
+          "error_percentiles_ms": {
+            "p50": 45.0,
+            "p90": 115.0
+          }
+        }
+      }
+    },
+    "snap4": {
+      "macro_song_within_primary": 0.9561,
+      "macro_song_se_primary": 0.0045,
+      "mae_all_ms": 54.75,
+      "usable_rate": 1.0,
+      "collapse_longest_run": 0,
+      "subsets": {
+        "all": {
+          "units": 15204,
+          "usable_rate": 1.0,
+          "mae_all_ms": 54.75,
+          "within_100ms": 0.9152,
+          "within_200ms": 0.9615,
+          "within_250ms": 0.9738,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 90.0
+          }
+        },
+        "long": {
+          "units": 958,
+          "usable_rate": 1.0,
+          "mae_all_ms": 108.6,
+          "within_100ms": 0.7985,
+          "within_200ms": 0.9113,
+          "within_250ms": 0.929,
+          "error_percentiles_ms": {
+            "p50": 50.0,
+            "p90": 185.0
+          }
+        },
+        "post_gap": {
+          "units": 310,
+          "usable_rate": 1.0,
+          "mae_all_ms": 42.39,
+          "within_100ms": 0.9452,
+          "within_200ms": 0.9903,
+          "within_250ms": 0.9935,
+          "error_percentiles_ms": {
+            "p50": 35.0,
+            "p90": 70.5
+          }
+        },
+        "phrase_final": {
+          "units": 2021,
+          "usable_rate": 1.0,
+          "mae_all_ms": 92.77,
+          "within_100ms": 0.8164,
+          "within_200ms": 0.8961,
+          "within_250ms": 0.9055,
+          "error_percentiles_ms": {
+            "p50": 45.0,
+            "p90": 215.0
+          }
+        }
+      }
+    }
+  },
+  "paired_vs_argmax": {
+    "argmax": {
+      "n": 15204,
+      "mean_delta_ms": 0.0,
+      "se_ms": 0.0,
+      "z": null
+    },
+    "viterbi": {
+      "n": 15204,
+      "mean_delta_ms": -2.24,
+      "se_ms": 0.42,
+      "z": -5.27
+    },
+    "snap1": {
+      "n": 15204,
+      "mean_delta_ms": -2.07,
+      "se_ms": 0.43,
+      "z": -4.84
+    },
+    "snap2": {
+      "n": 15204,
+      "mean_delta_ms": -1.57,
+      "se_ms": 0.44,
+      "z": -3.58
+    },
+    "snap3": {
+      "n": 15204,
+      "mean_delta_ms": 0.66,
+      "se_ms": 0.49,
+      "z": 1.36
+    },
+    "snap4": {
+      "n": 15204,
+      "mean_delta_ms": 4.39,
+      "se_ms": 0.56,
+      "z": 7.83
+    }
+  }
+}
