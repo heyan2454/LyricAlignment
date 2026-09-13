@@ -46,12 +46,12 @@ def paired_by_song(left: dict[str, float], right: dict[str, float], *, minimum_s
             "better": sum(1 for value in diffs if value > 0), "worse": sum(1 for value in diffs if value < 0)}
 
 
-def song_scores(view_documents: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
+def song_scores(view_documents: list[dict[str, Any]], *, decoder: str = PRIMARY_DECODER) -> dict[str, dict[str, float]]:
     out: dict[str, dict[str, float]] = {}
     for document in view_documents:
         for label, block in document.get("checkpoints", {}).items():
             variants = block.get("variants") or {}
-            per_song = (variants.get(PRIMARY_DECODER) or {}).get("per_song") or {}
+            per_song = (variants.get(decoder) or {}).get("per_song") or {}
             scores = {song: float(values["within_200ms"]) for song, values in per_song.items()
                       if isinstance(values, dict) and values.get("within_200ms") is not None}
             if scores:
@@ -83,6 +83,8 @@ def main() -> None:
     parser.add_argument("--baseline", default="old-r2-750")
     parser.add_argument("--reference", default="uniform-12000", help="两臂共同的热启动来源")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--decoder", default=PRIMARY_DECODER,
+                        help="用哪个判据做配对；换 dp 属于**另一份预注册**，两者都报才诚实")
     args = parser.parse_args()
     views: list[dict[str, Any]] = []
     for spec in args.view:
@@ -94,7 +96,7 @@ def main() -> None:
         block = json.loads(Path(location or label).read_text(encoding="utf-8"))
         block["label"] = label
         durations.append(block)
-    scores = song_scores(views)
+    scores = song_scores(views, decoder=args.decoder)
     missing = [name for name in (args.baseline, args.control, args.treatment, args.reference) if name not in scores]
     reference = scores.get(args.reference, {})
     baseline = scores.get(args.baseline, {})
@@ -102,7 +104,7 @@ def main() -> None:
     treatment = scores.get(args.treatment, {})
     payload: dict[str, Any] = {"schema_version": "warmstart_ab_verdict_v1",
                                "available_checkpoints": sorted(scores), "missing": missing,
-                               "primary_decoder": PRIMARY_DECODER, "tolerance": "within_200ms",
+                               "primary_decoder": args.decoder, "tolerance": "within_200ms",
                                "comparisons": {
                                    "treatment_vs_baseline": paired_by_song(baseline, treatment),
                                    "control_vs_baseline": paired_by_song(baseline, control),

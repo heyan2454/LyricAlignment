@@ -1,0 +1,82 @@
+{
+  "schema_version": "warmstart_ab_verdict_v1",
+  "available_checkpoints": [
+    "concat-final-3600",
+    "concat-step3000",
+    "old-r2-750",
+    "uniform-12000"
+  ],
+  "missing": [],
+  "primary_decoder": "fixed",
+  "tolerance": "within_200ms",
+  "comparisons": {
+    "treatment_vs_baseline": {
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.315,
+      "se_pp": 0.188,
+      "z": 1.67,
+      "better": 11,
+      "worse": 9
+    },
+    "control_vs_baseline": {
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.383,
+      "se_pp": 0.204,
+      "z": 1.87,
+      "better": 13,
+      "worse": 8
+    },
+    "treatment_vs_control": {
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": -0.068,
+      "se_pp": 0.143,
+      "z": -0.47,
+      "better": 10,
+      "worse": 15
+    },
+    "treatment_vs_reference": {
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": -0.068,
+      "se_pp": 0.143,
+      "z": -0.47,
+      "better": 10,
+      "worse": 15
+    },
+    "control_vs_reference": {
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.0,
+      "se_pp": 0.0,
+      "z": null,
+      "better": 0,
+      "worse": 0
+    }
+  },
+  "mechanism": {
+    "control": {
+      "status": "not_run"
+    },
+    "treatment": {
+      "status": "not_run"
+    }
+  },
+  "verdict": {
+    "main_vs_online_baseline": "measured",
+    "net_effect_vs_control": "measured",
+    "control_drift": "measured",
+    "treatment_vs_control_paired": {
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": -0.068,
+      "se_pp": 0.143,
+      "z": -0.47,
+      "better": 10,
+      "worse": 15
+    },
+    "note": "净效应以**逐歌配对 B vs A** 为准（treatment_vs_control_paired），两臂各自对基线的差仅作参考。机制项不参与判决。"
+  }
+}
