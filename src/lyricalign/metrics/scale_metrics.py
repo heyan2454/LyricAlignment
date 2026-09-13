@@ -1,5 +1,9 @@
 """Test-scale interval metrics plus per-song storage, for checkpoint selection after the fact.
 
+Named `scale_metrics` and **not** `test_scale` on purpose: a module whose filename matches pytest's
+default `test_*.py` collection pattern is imported as a test module by a bare `pytest` run, and its
+`test_scale_metrics(...)` entry point then errors out as a missing-fixture test.
+
 The training loop's own metric (`character_interval_metrics_v3_tolerant`) aggregates
 `(onset_err + offset_err) / 2` and reports tolerances of 80/160/240 ms, while the project's test
 reporting uses `max(onset_err, offset_err)` at 100/200/250 ms.  Selecting a checkpoint on one scale

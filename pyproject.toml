@@ -27,3 +27,10 @@ test = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+# A bare `pytest` must not walk `src/`: library modules are not tests, and a module whose
+# filename happens to match `test_*.py` would be imported as one (that is why the project's
+# reporting-scale metric module is `metrics/scale_metrics.py`, not `metrics/test_scale.py`).
+testpaths = ["tests"]
+
