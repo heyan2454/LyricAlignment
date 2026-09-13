@@ -292,6 +292,9 @@ def main() -> None:
                                     tolerances=DEFAULT_TOLERANCES_SEC)
         block = {"level": level, "label": label, "step": step if step is not None else loaded_step,
                  "checkpoint": str(path), "subset_items": len(subsets[level]),
+                 # batch size is part of the measurement identity: bf16 padding changes the argmax at
+                 # near-ties (observed: old-r2/750 at L2 = 0.9555 with batch 4 vs 0.9561 with batch 6)
+                 "eval_batch_size": int(args.batch_size),
                  "source": ("run" if run_dir in path.parents else "foreign"),
                  "elapsed_sec": round(time.time() - started, 1),
                  "variants": outcome["variants"], "variants_summary": outcome["variants_summary"],
