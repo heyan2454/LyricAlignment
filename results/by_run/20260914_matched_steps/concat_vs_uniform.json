@@ -1,0 +1,63 @@
+{
+  "schema_version": "matched_steps_v1",
+  "label_a": "uniform-12000",
+  "label_b": "concat-20s",
+  "shared_points": 36,
+  "step_range": [
+    100,
+    3600
+  ],
+  "variants": {
+    "fixed": {
+      "points": 36,
+      "mean_delta_pp": 0.084,
+      "median_delta_pp": -0.14,
+      "se_pp": 0.207,
+      "b_better_points": 12,
+      "b_worse_points": 24,
+      "last_shared": {
+        "step": 3600,
+        "a": 0.9508,
+        "b": 0.9469
+      }
+    },
+    "raw": {
+      "points": 36,
+      "mean_delta_pp": 0.091,
+      "median_delta_pp": -0.055,
+      "se_pp": 0.19,
+      "b_better_points": 14,
+      "b_worse_points": 21,
+      "last_shared": {
+        "step": 3600,
+        "a": 0.9607,
+        "b": 0.9586
+      }
+    },
+    "raw_targeted": {
+      "points": 36,
+      "mean_delta_pp": 0.21,
+      "median_delta_pp": 0.115,
+      "se_pp": 0.172,
+      "b_better_points": 21,
+      "b_worse_points": 14,
+      "last_shared": {
+        "step": 3600,
+        "a": 0.9601,
+        "b": 0.9627
+      }
+    }
+  },
+  "own_progress": {
+    "uniform-12000": {
+      "from_step": 100,
+      "to_step": 3600,
+      "fixed_delta_pp": 13.9
+    },
+    "concat-20s": {
+      "from_step": 100,
+      "to_step": 3600,
+      "fixed_delta_pp": 6.48
+    }
+  }
+}

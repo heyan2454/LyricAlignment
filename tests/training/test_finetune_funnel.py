@@ -263,3 +263,27 @@ def test_concat_shifts_are_grid_exact_and_leave_the_nominal_gap():
             assert abs(start_sec - round(start_sec / step) * step) < 1e-9
     assert stats["input_items"] == 9 and stats["merged_records"] >= 1
 
+
+
+def test_matched_steps_comparison_uses_only_shared_points():
+    import importlib.util
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "compare_arms_at_matched_steps",
+        root / "scripts" / "training" / "compare_arms_at_matched_steps.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    def curve(points):
+        return {step: {"fixed": value, "raw": value + 0.01, "raw_targeted": value + 0.02}
+                for step, value in points.items()}
+
+    a = curve({50: 0.90, 100: 0.92, 150: 0.93, 200: 0.94})
+    b = curve({100: 0.93, 150: 0.925, 200: 0.95, 250: 0.96})       # 250 无对应点，必须被忽略
+    payload = module.summarise(a, b, label_a="A", label_b="B")
+    assert payload["shared_points"] == 3 and payload["step_range"] == [100, 200]
+    block = payload["variants"]["fixed"]
+    assert block["points"] == 3
+    assert block["mean_delta_pp"] == round(100 * ((0.01 - 0.005 + 0.01) / 3), 3)
+    assert block["b_better_points"] == 2 and block["b_worse_points"] == 1
+    assert block["last_shared"] == {"step": 200, "a": 0.94, "b": 0.95}
