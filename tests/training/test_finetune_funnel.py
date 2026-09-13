@@ -228,3 +228,38 @@ def test_duration_oversample_replicates_only_items_with_long_characters():
     assert record["items_with_long"] == 1 and record["extra_slots"] == 2 and record["total_slots"] == 5
     untouched, off = trainer.apply_duration_oversample(rows, long_sec=1.0, factor=1)
     assert untouched == rows and off["enabled"] is False
+
+
+def test_concat_shifts_are_grid_exact_and_leave_the_nominal_gap():
+    """The audio must start each part exactly where the shifted labels say it does."""
+    from lyricalign.training.qwen_fa_concat import group_concat_records
+    step = 0.08
+
+    def item(index: int, seconds: float, chars: int) -> dict:
+        bins = int(round(seconds / step))
+        ids: list[int] = []
+        for c in range(chars):
+            ids.extend([int(c * bins / chars), int((c + 1) * bins / chars)])
+        return {"item_id": f"song#{index}", "audio_relpath": f"singer#song/{index:04d}.wav",
+                "singer_id": "singer", "song_id": "song", "split": "train",
+                "lyrics_normalized": "字" * chars, "timestamp_class_ids": ids,
+                "timestamp_segment_sec": step, "duration_sec": seconds}
+
+    rows = [item(i, 3.7 + 0.13 * i, 8) for i in range(9)]
+    duration_of = {row["audio_relpath"]: float(row["duration_sec"]) for row in rows}
+    merged, stats = group_concat_records(rows, target_sec=12.0, max_sec=20.0, gap_sec=0.4)
+    groups = [row for row in merged if row.get("audio_parts")]
+    assert groups, "expected at least one merged group"
+    for group in groups:
+        shifts = group["part_shift_bins"]
+        parts = group["audio_parts"]
+        assert shifts[0] == 0 and shifts == sorted(shifts)
+        for index in range(1, len(shifts)):
+            start_sec = shifts[index] * step
+            previous_end = shifts[index - 1] * step + duration_of[parts[index - 1]]
+            gap = start_sec - previous_end
+            assert 0.4 - step <= gap <= 0.4 + step, (group["item_id"], index, gap)
+            # 标签整体平移后仍必须落在格点上（这正是修掉的 40ms 半格偏移）
+            assert abs(start_sec - round(start_sec / step) * step) < 1e-9
+    assert stats["input_items"] == 9 and stats["merged_records"] >= 1
+

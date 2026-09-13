@@ -88,12 +88,19 @@ def merge_group(parts: list[dict[str, Any]], *, singer: str, song: str, gap_sec:
     """One merged record, or None when the parts cannot be aligned safely."""
     class_ids: list[int] = []
     lyrics: list[str] = []
+    part_shifts: list[int] = []
     offset_sec = 0.0
     for index, part in enumerate(parts):
         ids = [int(value) for value in part["timestamp_class_ids"]]
         if len(ids) % 2:
             return None
         shift = int(round(offset_sec / step_sec))
+        # Record the exact bin offset so the collator can place this part at `shift * step_sec`:
+        # rounding the offset to the grid otherwise leaves up to half a bin (40 ms) of label/audio
+        # disagreement, which flips the model's prediction to the neighbouring bin for most
+        # characters after the first phrase (measured: median max-error 0 ms -> 80 ms across a join).
+        part_shifts.append(shift)
+        offset_sec = shift * step_sec          # the audio will be built to match this, not the nominal gap
         shifted = [value + shift for value in ids]
         if shifted and max(shifted) >= 5000:
             return None
@@ -113,7 +120,8 @@ def merge_group(parts: list[dict[str, Any]], *, singer: str, song: str, gap_sec:
             "character_count": len(class_ids) // 2, "timestamp_class_ids": class_ids,
             "timestamp_segment_sec": float(first.get("timestamp_segment_sec") or step_sec),
             "num_timestamp_labels": int(first.get("num_timestamp_labels") or 5000),
-            "duration_sec": round(offset_sec, 3), "validation_basis": first.get("validation_basis"),
+            "duration_sec": round(offset_sec, 3), "part_shift_bins": part_shifts,
+            "validation_basis": first.get("validation_basis"),
             "mapping_status": "concatenated_from_accepted",
             "source_item_ids": [str(part.get("item_id")) for part in parts]}
 
@@ -122,21 +130,32 @@ class QwenFAConcatCollator(QwenFABatchCollator):
     """Collator that reads `audio_parts` and concatenates them in memory (gap = real silence)."""
 
     def __init__(self, processor: Any, *, audio_root: Path, language: str, timestamp_token_id: int,
-                 gap_sec: float = 0.4, sample_rate: int = SAMPLE_RATE) -> None:
+                 gap_sec: float = 0.4, sample_rate: int = SAMPLE_RATE, step_sec: float = 0.08) -> None:
         super().__init__(processor, audio_root=audio_root, language=language,
                          timestamp_token_id=timestamp_token_id)
         self.gap_sec = float(gap_sec)
         self.sample_rate = int(sample_rate)
+        self.step_sec = float(step_sec)
 
     def load_audio(self, row: dict[str, Any]) -> np.ndarray:
         parts = row.get("audio_parts")
         if not parts:
             return super().load_audio(row)
         chunks = [decode_audio(self.audio_root / str(part)) for part in parts]
-        gap = np.zeros(int(round(self.gap_sec * self.sample_rate)), dtype=np.float32)
+        shifts = row.get("part_shift_bins")
         joined: list[np.ndarray] = []
+        written = 0
         for index, chunk in enumerate(chunks):
+            if index == 0:
+                joined.append(chunk)
+                written = len(chunk)
+                continue
+            target = int(round(shifts[index] * self.step_sec * self.sample_rate)) if shifts \
+                else written + int(round(self.gap_sec * self.sample_rate))
+            pad = target - written
+            if pad < 0:                      # never cut audio; fall back to a bare adjacency
+                pad = 0
+            joined.append(np.zeros(pad, dtype=np.float32))
             joined.append(chunk)
-            if index < len(chunks) - 1:
-                joined.append(gap)
+            written = target + len(chunk)
         return np.concatenate(joined)
