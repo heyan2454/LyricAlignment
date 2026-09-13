@@ -1,0 +1,86 @@
+{
+  "schema_version": "paired_checkpoint_comparison_v1",
+  "old": "results/by_run/20260914_long_mech_old750/per_character.jsonl",
+  "new": "results/by_run/20260914_long_mech_new12000/per_character.jsonl",
+  "shared_measurements": 18803,
+  "items": 1200,
+  "tolerance_sec": 0.2,
+  "sides": {
+    "onset_all": {
+      "n": 9404,
+      "mean_delta_ms": -2.76,
+      "se_ms": 0.65,
+      "z": -4.24,
+      "better": 551,
+      "worse": 328,
+      "miss_rate_old": 0.0119,
+      "miss_rate_new": 0.0104
+    },
+    "onset_long": {
+      "n": 1486,
+      "mean_delta_ms": -5.44,
+      "se_ms": 2.03,
+      "z": -2.68,
+      "better": 116,
+      "worse": 54,
+      "miss_rate_old": 0.0323,
+      "miss_rate_new": 0.0289
+    },
+    "onset_short": {
+      "n": 7918,
+      "mean_delta_ms": -2.25,
+      "se_ms": 0.67,
+      "z": -3.35,
+      "better": 435,
+      "worse": 274,
+      "miss_rate_old": 0.0081,
+      "miss_rate_new": 0.0069
+    },
+    "offset_all": {
+      "n": 9399,
+      "mean_delta_ms": -3.23,
+      "se_ms": 0.86,
+      "z": -3.78,
+      "better": 666,
+      "worse": 394,
+      "miss_rate_old": 0.0235,
+      "miss_rate_new": 0.0205
+    },
+    "offset_long": {
+      "n": 1486,
+      "mean_delta_ms": -5.27,
+      "se_ms": 4.23,
+      "z": -1.25,
+      "better": 174,
+      "worse": 79,
+      "miss_rate_old": 0.0525,
+      "miss_rate_new": 0.0485
+    },
+    "offset_short": {
+      "n": 7913,
+      "mean_delta_ms": -2.85,
+      "se_ms": 0.63,
+      "z": -4.48,
+      "better": 492,
+      "worse": 315,
+      "miss_rate_old": 0.0181,
+      "miss_rate_new": 0.0153
+    },
+    "combined_all": {
+      "n": 9397,
+      "mean_delta_ms": -4.21,
+      "se_ms": 0.85,
+      "z": -4.97,
+      "miss_rate_old": 0.0329,
+      "miss_rate_new": 0.0284
+    },
+    "combined_long": {
+      "n": 1486,
+      "mean_delta_ms": -7.99,
+      "se_ms": 4.29,
+      "z": -1.86,
+      "miss_rate_old": 0.0808,
+      "miss_rate_new": 0.0727
+    }
+  }
+}

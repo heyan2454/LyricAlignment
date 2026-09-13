@@ -1,0 +1,349 @@
+{
+  "schema_version": "review_gating_v1",
+  "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+  "budget": 0.1,
+  "signal": "raw_end_entropy 优先，缺失时退回 raw_start_entropy",
+  "threshold_policy": "leave-one-song-out（阈值不含被评的歌自身）",
+  "songs": 33,
+  "characters": 13735,
+  "defects": 1483,
+  "defect_rate": 0.108,
+  "flagged_units": 1476,
+  "flagged_share": 0.1075,
+  "defects_caught": 817,
+  "defect_capture_share": 0.5509,
+  "residual_defect_rate_after_review": 0.0543,
+  "per_song": [
+    {
+      "song": "初音未来的消失",
+      "characters": 561,
+      "threshold": 5.2423,
+      "flagged": 440,
+      "flagged_share": 0.7843,
+      "defects_total": 266,
+      "defects_flagged": 243,
+      "residual_defect_rate_if_reviewed": 0.1901
+    },
+    {
+      "song": "I See Fire",
+      "characters": 311,
+      "threshold": 5.4191,
+      "flagged": 255,
+      "flagged_share": 0.8199,
+      "defects_total": 160,
+      "defects_flagged": 149,
+      "residual_defect_rate_if_reviewed": 0.1964
+    },
+    {
+      "song": "p.h",
+      "characters": 271,
+      "threshold": 5.5095,
+      "flagged": 162,
+      "flagged_share": 0.5978,
+      "defects_total": 122,
+      "defects_flagged": 99,
+      "residual_defect_rate_if_reviewed": 0.211
+    },
+    {
+      "song": "画下灯塔水母",
+      "characters": 532,
+      "threshold": 5.5774,
+      "flagged": 112,
+      "flagged_share": 0.2105,
+      "defects_total": 112,
+      "defects_flagged": 75,
+      "residual_defect_rate_if_reviewed": 0.0881
+    },
+    {
+      "song": "冬之花",
+      "characters": 222,
+      "threshold": 5.5837,
+      "flagged": 73,
+      "flagged_share": 0.3288,
+      "defects_total": 98,
+      "defects_flagged": 50,
+      "residual_defect_rate_if_reviewed": 0.3221
+    },
+    {
+      "song": "皱鳃鲨",
+      "characters": 261,
+      "threshold": 5.5278,
+      "flagged": 142,
+      "flagged_share": 0.5441,
+      "defects_total": 86,
+      "defects_flagged": 65,
+      "residual_defect_rate_if_reviewed": 0.1765
+    },
+    {
+      "song": "炉心融解",
+      "characters": 326,
+      "threshold": 5.5693,
+      "flagged": 100,
+      "flagged_share": 0.3067,
+      "defects_total": 79,
+      "defects_flagged": 48,
+      "residual_defect_rate_if_reviewed": 0.1372
+    },
+    {
+      "song": "电灯胆",
+      "characters": 350,
+      "threshold": 5.6572,
+      "flagged": 28,
+      "flagged_share": 0.08,
+      "defects_total": 75,
+      "defects_flagged": 17,
+      "residual_defect_rate_if_reviewed": 0.1801
+    },
+    {
+      "song": "月半小夜曲",
+      "characters": 388,
+      "threshold": 5.6582,
+      "flagged": 30,
+      "flagged_share": 0.0773,
+      "defects_total": 66,
+      "defects_flagged": 14,
+      "residual_defect_rate_if_reviewed": 0.1453
+    },
+    {
+      "song": "红日",
+      "characters": 534,
+      "threshold": 5.6947,
+      "flagged": 3,
+      "flagged_share": 0.0056,
+      "defects_total": 66,
+      "defects_flagged": 2,
+      "residual_defect_rate_if_reviewed": 0.1205
+    },
+    {
+      "song": "Camelia",
+      "characters": 334,
+      "threshold": 5.6488,
+      "flagged": 34,
+      "flagged_share": 0.1018,
+      "defects_total": 57,
+      "defects_flagged": 13,
+      "residual_defect_rate_if_reviewed": 0.1467
+    },
+    {
+      "song": "乙女解剖",
+      "characters": 341,
+      "threshold": 5.6458,
+      "flagged": 40,
+      "flagged_share": 0.1173,
+      "defects_total": 54,
+      "defects_flagged": 19,
+      "residual_defect_rate_if_reviewed": 0.1163
+    },
+    {
+      "song": "难念的经",
+      "characters": 680,
+      "threshold": 5.6993,
+      "flagged": 16,
+      "flagged_share": 0.0235,
+      "defects_total": 51,
+      "defects_flagged": 6,
+      "residual_defect_rate_if_reviewed": 0.0678
+    },
+    {
+      "song": "浮夸",
+      "characters": 487,
+      "threshold": 5.6912,
+      "flagged": 1,
+      "flagged_share": 0.0021,
+      "defects_total": 31,
+      "defects_flagged": 1,
+      "residual_defect_rate_if_reviewed": 0.0617
+    },
+    {
+      "song": "Renegade",
+      "characters": 671,
+      "threshold": 5.7154,
+      "flagged": 1,
+      "flagged_share": 0.0015,
+      "defects_total": 28,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0418
+    },
+    {
+      "song": "Take Me To Church",
+      "characters": 430,
+      "threshold": 5.687,
+      "flagged": 1,
+      "flagged_share": 0.0023,
+      "defects_total": 23,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0536
+    },
+    {
+      "song": "Immortals",
+      "characters": 200,
+      "threshold": 5.6547,
+      "flagged": 14,
+      "flagged_share": 0.07,
+      "defects_total": 14,
+      "defects_flagged": 6,
+      "residual_defect_rate_if_reviewed": 0.043
+    },
+    {
+      "song": "TH讠NK",
+      "characters": 450,
+      "threshold": 5.687,
+      "flagged": 2,
+      "flagged_share": 0.0044,
+      "defects_total": 14,
+      "defects_flagged": 1,
+      "residual_defect_rate_if_reviewed": 0.029
+    },
+    {
+      "song": "六重不忠",
+      "characters": 579,
+      "threshold": 5.7054,
+      "flagged": 1,
+      "flagged_share": 0.0017,
+      "defects_total": 14,
+      "defects_flagged": 1,
+      "residual_defect_rate_if_reviewed": 0.0225
+    },
+    {
+      "song": "四季折之羽",
+      "characters": 637,
+      "threshold": 5.7026,
+      "flagged": 9,
+      "flagged_share": 0.0141,
+      "defects_total": 14,
+      "defects_flagged": 5,
+      "residual_defect_rate_if_reviewed": 0.0143
+    },
+    {
+      "song": "为何入眠",
+      "characters": 285,
+      "threshold": 5.6658,
+      "flagged": 11,
+      "flagged_share": 0.0386,
+      "defects_total": 8,
+      "defects_flagged": 3,
+      "residual_defect_rate_if_reviewed": 0.0182
+    },
+    {
+      "song": "画下灯塔水母 - 副本",
+      "characters": 381,
+      "threshold": 5.6819,
+      "flagged": 1,
+      "flagged_share": 0.0026,
+      "defects_total": 8,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0211
+    },
+    {
+      "song": "伊卡洛斯奔向月亮",
+      "characters": 537,
+      "threshold": 5.7004,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 7,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.013
+    },
+    {
+      "song": "权御天下",
+      "characters": 762,
+      "threshold": 5.7214,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 5,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0066
+    },
+    {
+      "song": "梦良衣",
+      "characters": 112,
+      "threshold": 5.6621,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 5,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0446
+    },
+    {
+      "song": "何时何地",
+      "characters": 368,
+      "threshold": 5.6813,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 4,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0109
+    },
+    {
+      "song": "本草纲目",
+      "characters": 499,
+      "threshold": 5.6947,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 4,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.008
+    },
+    {
+      "song": "若梦境来袭",
+      "characters": 427,
+      "threshold": 5.687,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 4,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0094
+    },
+    {
+      "song": "Past Lives",
+      "characters": 162,
+      "threshold": 5.6657,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 3,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0185
+    },
+    {
+      "song": "安全词",
+      "characters": 411,
+      "threshold": 5.6866,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 3,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0073
+    },
+    {
+      "song": "人造卫星",
+      "characters": 477,
+      "threshold": 5.6912,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 1,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0021
+    },
+    {
+      "song": "此处通往天空",
+      "characters": 286,
+      "threshold": 5.6753,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 1,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0035
+    },
+    {
+      "song": "祈愿花开",
+      "characters": 463,
+      "threshold": 5.6898,
+      "flagged": 0,
+      "flagged_share": 0.0,
+      "defects_total": 0,
+      "defects_flagged": 0,
+      "residual_defect_rate_if_reviewed": 0.0
+    }
+  ],
+  "note": "完整复核清单在数据目录 /home/hyan/Data/lyricalign/runs/20260914_review_gating/review_list.jsonl（13k 字级别，不入库）"
+}
