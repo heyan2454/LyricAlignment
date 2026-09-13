@@ -1,0 +1,68 @@
+{
+  "source": "/home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724/funnel_evals.jsonl",
+  "from_step": 1000,
+  "block": 5,
+  "resamples": 4000,
+  "variants": {
+    "fixed": {
+      "points": 33,
+      "first_step": 1000,
+      "last_step": 2600,
+      "span_steps": 1600,
+      "slope_pp_per_1000": {
+        "estimate": 0.02018716577540314,
+        "low": -0.3899484536082478,
+        "high": 0.15977326035966075,
+        "resamples": 4000
+      },
+      "half_split_pp": {
+        "estimate": -0.058345588235286794,
+        "low": -0.1524632352941091,
+        "high": 0.16459558823529452,
+        "resamples": 4000
+      },
+      "implied_change_over_span_pp": 0.032299465240645024,
+      "verdict": "flat_within_noise"
+    },
+    "raw": {
+      "points": 33,
+      "first_step": 1000,
+      "last_step": 2600,
+      "span_steps": 1600,
+      "slope_pp_per_1000": {
+        "estimate": 0.09979946524064201,
+        "low": -0.18047424194732578,
+        "high": 0.18864637876509993,
+        "resamples": 4000
+      },
+      "half_split_pp": {
+        "estimate": 0.033933823529408436,
+        "low": -0.10713235294117496,
+        "high": 0.11176470588234455,
+        "resamples": 4000
+      },
+      "implied_change_over_span_pp": 0.15967914438502723,
+      "verdict": "flat_within_noise"
+    },
+    "raw_targeted": {
+      "points": 33,
+      "first_step": 1000,
+      "last_step": 2600,
+      "span_steps": 1600,
+      "slope_pp_per_1000": {
+        "estimate": 0.046390374331550965,
+        "low": -0.2218257508177222,
+        "high": 0.11153846153846071,
+        "resamples": 4000
+      },
+      "half_split_pp": {
+        "estimate": 0.0017279411764770103,
+        "low": -0.09066176470586829,
+        "high": 0.09963235294117023,
+        "resamples": 4000
+      },
+      "implied_change_over_span_pp": 0.07422459893048154,
+      "verdict": "flat_within_noise"
+    }
+  }
+}
