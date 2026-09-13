@@ -1,0 +1,49 @@
+{
+  "schema_version": "contiguity_offset_v1",
+  "dump": "results/by_run/20260914_long_mech_new12000/per_character.jsonl",
+  "pairs": 7473,
+  "skipped_noncontiguous": 589,
+  "tolerance_sec": 0.2,
+  "buckets": {
+    "0-0.5s": {
+      "characters": 5294,
+      "median_argmax_err_ms": 25.0,
+      "median_borrowed_err_ms": 25.0,
+      "mean_delta_ms": -3.36,
+      "se_ms": 0.95,
+      "z": -3.53,
+      "miss_rate_argmax": 0.0125,
+      "miss_rate_borrowed": 0.0079
+    },
+    "0.5-1s": {
+      "characters": 1795,
+      "median_argmax_err_ms": 25.0,
+      "median_borrowed_err_ms": 25.0,
+      "mean_delta_ms": -9.77,
+      "se_ms": 3.02,
+      "z": -3.23,
+      "miss_rate_argmax": 0.0279,
+      "miss_rate_borrowed": 0.0167
+    },
+    "1-2s": {
+      "characters": 370,
+      "median_argmax_err_ms": 30.0,
+      "median_borrowed_err_ms": 30.0,
+      "mean_delta_ms": -38.92,
+      "se_ms": 12.43,
+      "z": -3.13,
+      "miss_rate_argmax": 0.0865,
+      "miss_rate_borrowed": 0.0459
+    }
+  },
+  "overall": {
+    "characters": 7473,
+    "median_argmax_err_ms": 25.0,
+    "median_borrowed_err_ms": 25.0,
+    "mean_delta_ms": -6.76,
+    "se_ms": 1.17,
+    "z": -5.76,
+    "miss_rate_argmax": 0.0205,
+    "miss_rate_borrowed": 0.0123
+  }
+}
