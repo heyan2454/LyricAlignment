@@ -66,7 +66,23 @@ def prominence_pair(signal: np.ndarray, gt: float, predicted: float, note_span: 
     pred_value = (ACOUSTICS.prominence(signal, predicted, interior(predicted),
                                       context_sec=context_sec, scale=scale)
                   if predicted is not None and np.isfinite(predicted) else None)
-    return gt_value, pred_value
+    # Controlled version: the same *local peak* at both positions, no position-dependent baseline.
+    # The prominence above uses each boundary's own interior, which drifts with the boundary; a
+    # predicted boundary that overshoots into the next note would then be compared against a
+    # different baseline and could look better for the wrong reason.
+    gt_peak = local_peak(signal, gt, context_sec=context_sec)
+    pred_peak = (local_peak(signal, predicted, context_sec=context_sec)
+                 if predicted is not None and np.isfinite(predicted) else None)
+    return gt_value, pred_value, gt_peak, pred_peak
+
+
+def local_peak(signal: np.ndarray, position: float, *, context_sec: float) -> float | None:
+    """Max novelty within +/- context of a position (the controlled, baseline-free comparison)."""
+    low = max(0, int((position - context_sec) / ACOUSTICS.HOP_SEC))
+    high = min(len(signal), int((position + context_sec) / ACOUSTICS.HOP_SEC) + 1)
+    if high <= low:
+        return None
+    return float(np.max(signal[low:high]))
 
 
 def summarise(values: list[float]) -> dict[str, Any]:
@@ -164,12 +180,12 @@ def main() -> None:
                         for kind, gt, predicted_am, predicted_dp in (
                                 ("onset", float(interval["start"]), float(argmax_starts[index]), float(dp_starts[index])),
                                 ("offset", float(interval["end"]), float(argmax_ends[index]), float(dp_ends[index]))):
-                            gt_value, am_value = prominence_pair(signal, gt, predicted_am, (interval["start"], interval["end"]),
-                                                                 kind=kind, context_sec=args.context_sec,
-                                                                 scale=scales[channel])
-                            _, dp_value = prominence_pair(signal, gt, predicted_dp, (interval["start"], interval["end"]),
-                                                          kind=kind, context_sec=args.context_sec,
-                                                          scale=scales[channel])
+                            gt_value, am_value, gt_peak, am_peak = prominence_pair(
+                                signal, gt, predicted_am, (interval["start"], interval["end"]),
+                                kind=kind, context_sec=args.context_sec, scale=scales[channel])
+                            _, dp_value, _, dp_peak = prominence_pair(
+                                signal, gt, predicted_dp, (interval["start"], interval["end"]),
+                                kind=kind, context_sec=args.context_sec, scale=scales[channel])
                             if gt_value is None:
                                 continue
                             observation = {"item_id": record["item_id"], "index": index, "channel": channel,
@@ -178,7 +194,10 @@ def main() -> None:
                                            "pred_argmax": (None if am_value is None else round(am_value, 3)),
                                            "pred_constrained": (None if dp_value is None else round(dp_value, 3)),
                                            "abs_err_argmax": round(abs(gt - predicted_am), 3),
-                                           "abs_err_constrained": round(abs(gt - predicted_dp), 3)}
+                                           "abs_err_constrained": round(abs(gt - predicted_dp), 3),
+                                           "peak_gt": (None if gt_peak is None else round(gt_peak, 4)),
+                                           "peak_pred_argmax": (None if am_peak is None else round(am_peak, 4)),
+                                           "peak_pred_constrained": (None if dp_peak is None else round(dp_peak, 4))}
                             observations.append(observation)
                             handle.write(json.dumps(observation, ensure_ascii=False) + "\n")
                 processed += 1
