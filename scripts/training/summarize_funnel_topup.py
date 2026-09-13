@@ -88,6 +88,13 @@ def summarise(topup: list[dict[str, Any]], historical: list[dict[str, Any]],
                 "se": metric.get("macro_song_se_primary"), "usable_rate": metric.get("usable_rate"),
                 "mae_all_ms": metric.get("mae_all_ms"),
                 "collapse_longest_run": metric.get("collapse_longest_run")}
+            subsets = metric.get("subsets") or {}
+            if subsets:
+                # label-defined hard subsets (Track 1's conclusion): the whole-set hit rate is
+                # saturated, so the differences that matter live here.  Older records lack it.
+                row["variants"][variant]["subsets"] = {
+                    name: {key: values.get(key) for key in ("units", "within_200ms", "mae_all_ms", "usable_rate")}
+                    for name, values in subsets.items()}
         rows.append(row)
     history: list[dict[str, Any]] = []
     for block in historical:
@@ -224,6 +231,30 @@ def markdown(payload: dict[str, Any], variants: tuple[str, ...], baseline: str) 
                          f"{metric['macro_within_primary']:.4f} | {metric.get('se') or 0:.4f} | "
                          f"{metric.get('usable_rate'):.4f} | {metric.get('mae_all_ms'):.1f} | "
                          f"{metric.get('collapse_longest_run')} |")
+        lines.append("")
+    subset_rows = [row for row in payload["summary"]["topup"]
+                   if any("subsets" in (metric or {}) for metric in row["variants"].values())]
+    if subset_rows:
+        lines.append("## 困难子集（子集成员只由标签决定，不看预测）")
+        lines.append("")
+        lines.append("`long` = 标注时长 ≥1.0s 的字符；`post_gap` = 前面有 ≥0.3s 停顿/换气的字符；"
+                     "`phrase_final` = 乐句（以 ≥0.3s 间隔断开）最后一个字符。整体命中率已饱和，这些子集才有分辨力。")
+        lines.append("")
+        lines.append("| 候选 | 层级 | 判据 | 长字符数 | 长字符 ≤0.2s | 长字符 MAE(ms) | 停顿后 ≤0.2s | 乐句末 ≤0.2s |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+        for row in subset_rows:
+            for variant, metric in row["variants"].items():
+                subsets = (metric or {}).get("subsets")
+                if not subsets:
+                    continue
+                def cell(name: str, key: str) -> str:
+                    value = (subsets.get(name) or {}).get(key)
+                    return "—" if value is None else (f"{value:.4f}" if key.startswith("within") else f"{value}")
+                source = "run" if row.get("source") == "run" else "外来"
+                lines.append(f"| {row['label']} ({source}) | {row['level']} | {variant} | "
+                             f"{cell('long', 'units')} | {cell('long', 'within_200ms')} | "
+                             f"{cell('long', 'mae_all_ms')} | {cell('post_gap', 'within_200ms')} | "
+                             f"{cell('phrase_final', 'within_200ms')} |")
         lines.append("")
     comparison = payload.get("comparison") or {}
     if comparison.get("found"):

@@ -103,3 +103,55 @@ def test_next_level_shortlist_merges_historical_records_and_drops_foreign_baseli
     picked = TOPUP.next_level_shortlist(current_records=historical, round_results=rounds, done_next=set(),
                                         selection=SELECTION, cap=1, se_scale=0.0)
     assert [row["step"] for row in picked] == [100]               # se_scale=0 -> strict argmax
+
+
+def _block_with_subsets(step: int, value: float, long_within: float, *, level: str = "l2",
+                        source: str = "run") -> dict:
+    metric = {"macro_song_within_primary": value, "macro_song_se_primary": 0.01,
+              "usable_rate": 0.99, "mae_all_ms": 60.0, "collapse_longest_run": 0,
+              "per_song": {"s1": {"within_200ms": value}, "s2": {"within_200ms": value}},
+              "subsets": {"all": {"units": 100, "within_200ms": value, "mae_all_ms": 60.0, "usable_rate": 0.99},
+                          "long": {"units": 20, "within_200ms": long_within, "mae_all_ms": 120.0,
+                                   "usable_rate": 1.0},
+                          "post_gap": {"units": 10, "within_200ms": 0.98, "mae_all_ms": 40.0,
+                                       "usable_rate": 1.0},
+                          "phrase_final": {"units": 8, "within_200ms": 0.95, "mae_all_ms": 55.0,
+                                           "usable_rate": 1.0}}}
+    return {"level": level, "label": f"step-{step:06d}", "step": step, "source": source,
+            "subset_items": 918, "variants": {"fixed": metric, "raw": metric, "raw_targeted": metric},
+            "variants_summary": {v: {"macro_within_primary": value} for v in ("fixed", "raw", "raw_targeted")}}
+
+
+def test_summariser_surfaces_the_label_defined_hard_subsets():
+    import importlib.util
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "summarize_funnel_topup", root / "scripts" / "training" / "summarize_funnel_topup.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    topup = [_block_with_subsets(100, 0.960, 0.900), _block_with_subsets(200, 0.965, 0.940)]
+    summary = module.summarise(topup, [], ("fixed", "raw", "raw_targeted"))
+    by_label = {row["label"]: row for row in summary["topup"]}
+    assert by_label["step-000100"]["variants"]["fixed"]["subsets"]["long"]["within_200ms"] == 0.900
+    assert by_label["step-000200"]["variants"]["fixed"]["subsets"]["long"]["within_200ms"] == 0.940
+    report = module.markdown({"source": "x", "summary": summary,
+                              "comparison": {"found": False}, "variant_effect": [],
+                              "pick": {}, "versus_history": {}}, ("fixed",), "old-r2-750")
+    assert "困难子集" in report and "0.9400" in report and "0.9000" in report
+
+
+def test_summariser_omits_the_subset_section_for_older_records_without_subsets():
+    import importlib.util
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "summarize_funnel_topup", root / "scripts" / "training" / "summarize_funnel_topup.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    legacy = {"level": "l2", "label": "step-000050", "step": 50, "source": "run", "subset_items": 918,
+              "variants": {"fixed": {"macro_song_within_primary": 0.9, "macro_song_se_primary": 0.01,
+                                     "usable_rate": 0.99, "mae_all_ms": 70.0, "collapse_longest_run": 0}}}
+    summary = module.summarise([legacy], [], ("fixed",))
+    assert "subsets" not in summary["topup"][0]["variants"]["fixed"]
+    report = module.markdown({"source": "x", "summary": summary, "comparison": {"found": False},
+                              "variant_effect": [], "pick": {}, "versus_history": {}}, ("fixed",), "b")
+    assert "困难子集" not in report
