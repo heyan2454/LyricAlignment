@@ -1,0 +1,141 @@
+{
+  "schema_version": "long_note_confidence_v1",
+  "tolerance_sec": 0.2,
+  "checkpoints": {
+    "new12000": {
+      "rows": 18803,
+      "by_bucket": {
+        "0-0.5s": {
+          "hit": {
+            "n": 11342,
+            "median_p_top1": 0.798,
+            "median_entropy_nats": 0.598,
+            "share_label_is_top1": 0.773,
+            "share_label_rank_gt2": 0.027,
+            "share_label_rank_gt10": 0.0,
+            "median_top5_mass": 0.999,
+            "median_signed_err_ms": 0.0,
+            "confidently_wrong_share": 0.019,
+            "diffuse_share": 0.001
+          },
+          "miss": {
+            "n": 97,
+            "median_p_top1": 0.36,
+            "median_entropy_nats": 1.742,
+            "share_label_is_top1": 0.0,
+            "share_label_rank_gt2": 0.835,
+            "share_label_rank_gt10": 0.237,
+            "median_top5_mass": 0.918,
+            "median_signed_err_ms": 330.0,
+            "confidently_wrong_share": 0.299,
+            "diffuse_share": 0.186
+          }
+        },
+        "0.5-1.0s": {
+          "hit": {
+            "n": 4305,
+            "median_p_top1": 0.728,
+            "median_entropy_nats": 0.72,
+            "share_label_is_top1": 0.722,
+            "share_label_rank_gt2": 0.052,
+            "share_label_rank_gt10": 0.0,
+            "median_top5_mass": 0.998,
+            "median_signed_err_ms": 0.0,
+            "confidently_wrong_share": 0.033,
+            "diffuse_share": 0.004
+          },
+          "miss": {
+            "n": 79,
+            "median_p_top1": 0.387,
+            "median_entropy_nats": 1.729,
+            "share_label_is_top1": 0.0,
+            "share_label_rank_gt2": 0.886,
+            "share_label_rank_gt10": 0.165,
+            "median_top5_mass": 0.918,
+            "median_signed_err_ms": 255.0,
+            "confidently_wrong_share": 0.241,
+            "diffuse_share": 0.228
+          }
+        },
+        "1-1.5s": {
+          "hit": {
+            "n": 1839,
+            "median_p_top1": 0.66,
+            "median_entropy_nats": 0.847,
+            "share_label_is_top1": 0.7,
+            "share_label_rank_gt2": 0.07,
+            "share_label_rank_gt10": 0.0,
+            "median_top5_mass": 0.994,
+            "median_signed_err_ms": 0.0,
+            "confidently_wrong_share": 0.039,
+            "diffuse_share": 0.004
+          },
+          "miss": {
+            "n": 63,
+            "median_p_top1": 0.359,
+            "median_entropy_nats": 1.846,
+            "share_label_is_top1": 0.016,
+            "share_label_rank_gt2": 0.921,
+            "share_label_rank_gt10": 0.254,
+            "median_top5_mass": 0.9,
+            "median_signed_err_ms": -225.0,
+            "confidently_wrong_share": 0.206,
+            "diffuse_share": 0.222
+          }
+        },
+        "1.5-2.0s": {
+          "hit": {
+            "n": 617,
+            "median_p_top1": 0.618,
+            "median_entropy_nats": 0.982,
+            "share_label_is_top1": 0.619,
+            "share_label_rank_gt2": 0.102,
+            "share_label_rank_gt10": 0.002,
+            "median_top5_mass": 0.988,
+            "median_signed_err_ms": -10.0,
+            "confidently_wrong_share": 0.058,
+            "diffuse_share": 0.01
+          },
+          "miss": {
+            "n": 27,
+            "median_p_top1": 0.388,
+            "median_entropy_nats": 2.098,
+            "share_label_is_top1": 0.0,
+            "share_label_rank_gt2": 1.0,
+            "share_label_rank_gt10": 0.296,
+            "median_top5_mass": 0.824,
+            "median_signed_err_ms": -255.0,
+            "confidently_wrong_share": 0.259,
+            "diffuse_share": 0.259
+          }
+        },
+        "2-+s": {
+          "hit": {
+            "n": 409,
+            "median_p_top1": 0.566,
+            "median_entropy_nats": 1.159,
+            "share_label_is_top1": 0.616,
+            "share_label_rank_gt2": 0.098,
+            "share_label_rank_gt10": 0.0,
+            "median_top5_mass": 0.977,
+            "median_signed_err_ms": -10.0,
+            "confidently_wrong_share": 0.027,
+            "diffuse_share": 0.029
+          },
+          "miss": {
+            "n": 25,
+            "median_p_top1": 0.239,
+            "median_entropy_nats": 3.078,
+            "share_label_is_top1": 0.0,
+            "share_label_rank_gt2": 1.0,
+            "share_label_rank_gt10": 0.32,
+            "median_top5_mass": 0.575,
+            "median_signed_err_ms": -710.0,
+            "confidently_wrong_share": 0.2,
+            "diffuse_share": 0.52
+          }
+        }
+      }
+    }
+  }
+}
