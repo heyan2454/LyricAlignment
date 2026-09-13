@@ -62,6 +62,6 @@ reports/**/*.docx
 
 # 大型逐条产物外置于数据目录，results/ 只留轻量指标（AGENTS.md 约定）
 results/**/per_character.jsonl
-results/**/*_baseline_drift.json
+results/**/baseline_drift.json
 results/**/baseline_aligned.json
 results/**/long60_baseline.json
