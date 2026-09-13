@@ -50,6 +50,38 @@ def legacy_execution_identity(identity: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def apply_duration_oversample(rows: list[dict], *, long_sec: float, factor: int,
+                              step_sec_default: float = 0.08) -> tuple[list[dict], dict[str, Any]]:
+    """Replicate items that contain at least one labelled character of `long_sec` or more.
+
+    Motivation is measured, not assumed: characters ≥1.0 s are 6.0% of the M4Singer training signal
+    but 47% of the >0.2 s misses, and there are only 1,498 characters ≥2.0 s in the whole corpus.
+    More optimisation steps cannot fix that (they re-see the same 1,498 examples), but re-weighting
+    the sampling can, and it needs no model-code change and no new data.
+
+    Returns the augmented list plus a record for the run's audit trail.
+    """
+    factor = int(factor)
+    if factor <= 1:
+        return list(rows), {"enabled": False, "factor": factor, "long_sec": long_sec,
+                            "items": len(rows), "items_with_long": 0, "extra_slots": 0}
+    def has_long(row: dict) -> bool:
+        ids = row.get("timestamp_class_ids") or []
+        step = float(row.get("timestamp_segment_sec", step_sec_default))
+        return any((ids[2 * index + 1] - ids[2 * index]) * step >= long_sec
+                   for index in range(len(ids) // 2))
+    out: list[dict] = []
+    with_long = 0
+    for row in rows:
+        out.append(row)
+        if has_long(row):
+            with_long += 1
+            out.extend([row] * (factor - 1))
+    return out, {"enabled": True, "long_sec": long_sec, "factor": factor,
+                 "items": len(rows), "items_with_long": with_long,
+                 "extra_slots": len(out) - len(rows), "total_slots": len(out)}
+
+
 def song_sample(rows: list[dict], count: int, seed: int) -> list[dict]:
     if not count or count >= len(rows): return rows
     songs: dict[str, list[dict]] = {}
@@ -235,6 +267,11 @@ def main() -> None:
     available_train = [row for row in labels if row["split"] == "train"]
     available_valid = [row for row in labels if row["split"] == "validation"]
     train = song_sample(available_train, train_limit, seed)
+    oversample_cfg = dict(cfg["training"].get("duration_oversample") or {})
+    train, augmentation = apply_duration_oversample(
+        train, long_sec=float(oversample_cfg.get("long_sec", 1.0)),
+        factor=int(oversample_cfg.get("factor", 1)))
+    atomic_json(run_dir / "training_augmentation.json", augmentation)
     valid = available_valid
     if args.stage == "overfit":
         train = item_sample(available_train, train_limit, seed)

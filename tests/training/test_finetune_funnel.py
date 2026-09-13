@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -210,3 +211,20 @@ def test_without_a_budget_keep_best_admission_never_admits_a_challenger():
     planner.record(10, "l2", 0.30, se=0.0, at_step=10)
     planner.record(20, "l1", 0.99, se=0.0, at_step=20)
     assert [job for job in planner.pending(20) if job[0] == "l2"] == []   # default budget == l2_max
+
+
+def test_duration_oversample_replicates_only_items_with_long_characters():
+    import importlib.util
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "run_qwen_fa_lora_trainer", root / "scripts" / "training" / "run_qwen_fa_lora.py")
+    trainer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(trainer)
+    rows = [{"item_id": "a", "timestamp_class_ids": [0, 20, 20, 25]},      # 1.6 s char -> long
+            {"item_id": "b", "timestamp_class_ids": [0, 5, 5, 9]},         # all short
+            {"item_id": "c", "timestamp_class_ids": [0, 12, 12, 13]}]      # 0.08s bins
+    augmented, record = trainer.apply_duration_oversample(rows, long_sec=1.0, factor=3)
+    assert [row["item_id"] for row in augmented] == ["a", "a", "a", "b", "c"]   # factor=3 -> 共 3 份
+    assert record["items_with_long"] == 1 and record["extra_slots"] == 2 and record["total_slots"] == 5
+    untouched, off = trainer.apply_duration_oversample(rows, long_sec=1.0, factor=1)
+    assert untouched == rows and off["enabled"] is False
