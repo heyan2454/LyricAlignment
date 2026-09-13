@@ -76,6 +76,24 @@ def prominence_pair(signal: np.ndarray, gt: float, predicted: float, note_span: 
     return gt_value, pred_value, gt_peak, pred_peak
 
 
+def slot_diagnostics(probabilities: np.ndarray, label_bins: np.ndarray):
+    """Per slot: top-1 probability, entropy, rank of the *label's* bin, and top-5 mass.
+
+    These separate the two very different ways a character can be wrong: the model is diffuse
+    (high entropy, label buried deep but the answer is not confidently elsewhere) versus the model
+    is confidently wrong (low entropy, label ranked far down).  Only the second one is a modelling
+    failure the decoder or the training signal could plausibly fix.
+    """
+    probs = np.exp(probabilities - probabilities.max(axis=2, keepdims=True))
+    probs = probs / probs.sum(axis=2, keepdims=True)
+    top1 = probs.max(axis=2)
+    entropy = -(probs * np.log(np.maximum(probs, 1e-12))).sum(axis=2)
+    top5 = np.sort(probs, axis=2)[..., -5:].sum(axis=2)
+    label_prob = np.take_along_axis(probs, label_bins[:, :, None], axis=2)[..., 0]
+    rank = (probs > label_prob[:, :, None]).sum(axis=2) + 1
+    return top1, entropy, rank, top5
+
+
 def local_peak(signal: np.ndarray, position: float, *, context_sec: float) -> float | None:
     """Max novelty within +/- context of a position (the controlled, baseline-free comparison)."""
     low = max(0, int((position - context_sec) / ACOUSTICS.HOP_SEC))
@@ -166,6 +184,11 @@ def main() -> None:
                                               inputs["input_ids"][sample: sample + 1],
                                               timestamp_token_id=model.config.timestamp_token_id)
                 step = float(record["timestamp_segment_sec"])
+                class_ids = record["timestamp_class_ids"]
+                label_bins = np.clip(np.asarray(class_ids[:2 * len(words[sample])], dtype=np.int64)
+                                     .reshape(-1, 2), 0, probabilities.shape[2] - 1)
+                diag = slot_diagnostics(probabilities, label_bins) if len(label_bins) == probabilities.shape[0] \
+                    else None
                 argmax_starts = probabilities[:, 0, :].argmax(axis=1) * step
                 argmax_ends = probabilities[:, 1, :].argmax(axis=1) * step
                 decoded = viterbi_monotone(probabilities[:, 0, :], probabilities[:, 1, :], min_duration=1)
@@ -188,6 +211,11 @@ def main() -> None:
                                 kind=kind, context_sec=args.context_sec, scale=scales[channel])
                             if gt_value is None:
                                 continue
+                            # Control for the grid: predictions live on the 80 ms grid, annotations
+                            # do not.  Snapping the label to the same grid removes the possibility
+                            # that the model "wins" merely because its window is grid-aligned.
+                            snapped = round(gt / step) * step
+                            snapped_peak = local_peak(signal, snapped, context_sec=args.context_sec)
                             observation = {"item_id": record["item_id"], "index": index, "channel": channel,
                                            "kind": kind, "long": bool(is_long), "duration": round(duration, 3),
                                            "gt": round(gt_value, 3),
@@ -195,7 +223,14 @@ def main() -> None:
                                            "pred_constrained": (None if dp_value is None else round(dp_value, 3)),
                                            "abs_err_argmax": round(abs(gt - predicted_am), 3),
                                            "abs_err_constrained": round(abs(gt - predicted_dp), 3),
+                                           "pred_sec": round(predicted_am, 3),
+                                           "signed_err": round(predicted_am - gt, 3),
+                                           "p_top1": (None if diag is None else round(float(diag[0][index, 0 if kind == "onset" else 1]), 4)),
+                                           "entropy_nats": (None if diag is None else round(float(diag[1][index, 0 if kind == "onset" else 1]), 3)),
+                                           "label_rank": (None if diag is None else int(diag[2][index, 0 if kind == "onset" else 1])),
+                                           "top5_mass": (None if diag is None else round(float(diag[3][index, 0 if kind == "onset" else 1]), 4)),
                                            "peak_gt": (None if gt_peak is None else round(gt_peak, 4)),
+                                           "peak_gt_snapped": (None if snapped_peak is None else round(snapped_peak, 4)),
                                            "peak_pred_argmax": (None if am_peak is None else round(am_peak, 4)),
                                            "peak_pred_constrained": (None if dp_peak is None else round(dp_peak, 4))}
                             observations.append(observation)
