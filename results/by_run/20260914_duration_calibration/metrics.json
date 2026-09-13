@@ -1,6 +1,7 @@
 {
-  "schema_version": "duration_calibration_v1",
+  "schema_version": "duration_calibration_v2",
   "dump": "results/by_run/20260914_long_mech_new12000/per_character.jsonl",
+  "out_of_range_policy": "identity（超出拟合节点范围时不做修正；旧版钳位造成 ≥2s 桶伪影）",
   "tolerance_sec": 0.2,
   "knots": [
     0.1,
@@ -18,10 +19,10 @@
     "all": {
       "characters": 9368,
       "miss_rate_raw": 0.026,
-      "miss_rate_corrected": 0.0319,
+      "miss_rate_corrected": 0.0263,
       "median_err_raw_ms": 40.0,
       "median_err_corrected_ms": 40.0,
-      "mean_delta_ms": 2.49,
+      "mean_delta_ms": 0.28,
       "miss_rate_conditional": 0.0279,
       "median_err_conditional_ms": 40.0,
       "conditional_mean_delta_ms": 1.7
@@ -29,10 +30,10 @@
     "0-0.5s": {
       "characters": 5702,
       "miss_rate_raw": 0.0125,
-      "miss_rate_corrected": 0.0114,
+      "miss_rate_corrected": 0.0123,
       "median_err_raw_ms": 35.0,
       "median_err_corrected_ms": 35.0,
-      "mean_delta_ms": -0.87,
+      "mean_delta_ms": -0.26,
       "miss_rate_conditional": 0.0125,
       "median_err_conditional_ms": 35.0,
       "conditional_mean_delta_ms": 0.15
@@ -43,7 +44,7 @@
       "miss_rate_corrected": 0.0343,
       "median_err_raw_ms": 40.0,
       "median_err_corrected_ms": 40.0,
-      "mean_delta_ms": -0.01,
+      "mean_delta_ms": 1.66,
       "miss_rate_conditional": 0.0325,
       "median_err_conditional_ms": 44.0,
       "conditional_mean_delta_ms": 2.71
@@ -54,7 +55,7 @@
       "miss_rate_corrected": 0.0617,
       "median_err_raw_ms": 45.0,
       "median_err_corrected_ms": 43.8,
-      "mean_delta_ms": -2.76,
+      "mean_delta_ms": -0.11,
       "miss_rate_conditional": 0.0625,
       "median_err_conditional_ms": 49.4,
       "conditional_mean_delta_ms": 3.28
@@ -62,10 +63,10 @@
     "2s+": {
       "characters": 215,
       "miss_rate_raw": 0.1023,
-      "miss_rate_corrected": 0.3767,
+      "miss_rate_corrected": 0.107,
       "median_err_raw_ms": 55.0,
-      "median_err_corrected_ms": 135.0,
-      "mean_delta_ms": 148.04,
+      "median_err_corrected_ms": 65.0,
+      "mean_delta_ms": 2.72,
       "miss_rate_conditional": 0.186,
       "median_err_conditional_ms": 79.3,
       "conditional_mean_delta_ms": 23.38

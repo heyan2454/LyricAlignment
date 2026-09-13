@@ -115,12 +115,20 @@ def fit_map(rows: list[dict[str, Any]], *, target: str) -> tuple[list[float], li
     return [xs[index] for index in order], [ys[index] for index in order]
 
 
-def interp(x: float, xs: list[float], ys: list[float]) -> float:
+def interp(x: float, xs: list[float], ys: list[float], *, outside: str = "identity") -> float:
+    """Piecewise-linear interpolation; `outside` decides what happens beyond the fitted knots.
+
+    Clamping (the obvious choice) is an artefact generator here: a 5 s prediction pulled to the last
+    bin's median *shortens* an already-long interval and wrecked the ≥2s bucket until this was fixed.
+    `identity` returns the input for durations and 0 for biases, i.e. "no evidence, no correction".
+    """
+    def unmodified() -> float:
+        return 0.0 if outside == "zero" else x
     if not xs:
-        return 0.0
-    if x <= xs[0]:
-        return ys[0]
-    if x >= xs[-1]:
+        return unmodified()
+    if x < xs[0] or x > xs[-1]:
+        return unmodified() if outside in ("identity", "zero") else (ys[0] if x < xs[0] else ys[-1])
+    if x == xs[-1]:
         return ys[-1]
     for index in range(len(xs) - 1):
         if xs[index] <= x <= xs[index + 1]:
@@ -162,10 +170,10 @@ def evaluate(rows: list[dict[str, Any]], *, min_fit_rows: int = 60) -> dict[str,
         for row in test:
             raw[bucket_of(row["gt_dur_label"])].append(row["raw_max_err"])
             raw["all"].append(row["raw_max_err"])
-            new_dur = interp(row["pred_dur"], *duration_map)
+            new_dur = interp(row["pred_dur"], *duration_map, outside="identity")
             # the centre correction is a duration-conditioned bias, so keep the centre where the
             # duration map says nothing rather than inventing a shift
-            bias = interp(row["pred_dur"], *centre_map) if len(centre_map[0]) >= 2 else 0.0
+            bias = interp(row["pred_dur"], *centre_map, outside="zero") if len(centre_map[0]) >= 2 else 0.0
             new_centre = row["pred_centre"] + bias
             corrected_error = max(abs(new_centre - new_dur / 2.0 - row["gt_centre"] + row["gt_dur"] / 2.0),
                                   abs(new_centre + new_dur / 2.0 - row["gt_centre"] - row["gt_dur"] / 2.0))
@@ -208,7 +216,8 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     rows = characters(args.dump)
-    payload = {"schema_version": "duration_calibration_v1", "dump": str(args.dump),
+    payload = {"schema_version": "duration_calibration_v2", "dump": str(args.dump),
+               "out_of_range_policy": "identity（超出拟合节点范围时不做修正；旧版钳位造成 ≥2s 桶伪影）",
                "tolerance_sec": TOL, "knots": list(KNOTS), **evaluate(rows)}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

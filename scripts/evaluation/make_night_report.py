@@ -272,14 +272,19 @@ def sec_calibration(root: Path) -> list[str]:
         return ["- 状态：未跑"]
     buckets = doc["buckets"]
     long_block = buckets.get("2s+", {})
-    return [f"- 留出歌交叉验证的事后仿射校准（把预测区间按预测时长分桶映射到真值中位）：",
-            f"  all {_pct(buckets['all']['miss_rate_raw'])} → {_pct(buckets['all']['miss_rate_corrected'])}；"
-            f"≥2s 桶 {_pct(long_block['miss_rate_raw'])} → **{_pct(long_block['miss_rate_corrected'])}**；",
-            f"- 按模型熵条件化的版本把 ≥2s 的伤害压到 {_pct(long_block.get('miss_rate_conditional'))}，"
-            "但仍不如不修 ⇒ **事后校准这条路关闭**；",
+    policy = doc.get("out_of_range_policy", "")
+    return [f"- 留出歌交叉验证的事后仿射校准（按预测时长分桶映射到真值中位；"
+            f"越界策略：{policy or '见脚本'}）：",
+            f"  all {_pct(buckets['all']['miss_rate_raw'])} → 无条件校准 {_pct(buckets['all']['miss_rate_corrected'])}"
+            f"（均差 {buckets['all']['mean_delta_ms']:+.2f} ms）；"
+            f"≥2s 桶 {_pct(long_block['miss_rate_raw'])} → {_pct(long_block['miss_rate_corrected'])}；"
+            f"按模型熵条件化反而把 ≥2s 推到 {_pct(long_block.get('miss_rate_conditional'))}",
+            "- ⇒ **事后校准没有收益**（无条件≈中性，条件化对长音有害），该路径关闭；",
             "- 原因：诊断到的「压短 + 偏早」是**失败子集的条件性偏差**（全体中点位移只有 20–30 ms，"
-            "失败子集才 −328 ms），拿全体中位数去修会把本来正确的九成一起挪坏。"
-            "给未来的警示：**不要在未条件化时给时间戳做事后校准**。"]
+            "失败子集才 −328 ms），拿全体中位数去修会把本来正确的九成一起挪坏；",
+            "- **口径更正记录**：本节先前给出的「≥2s 10.23% → 37.67%（灾难性）」大部分是**我自己实现的"
+            "钳位伪影**（预测时长超出拟合节点时被拉回最后一桶中位数）。改成「越界即不修正」后真实结果是"
+            " 10.23% → 10.70%。结论方向（无收益）不变，但量级被夸大了 —— 已在脚本 v2、测试与预注册中一并更正。"]
 
 
 def sec_exposure(root: Path) -> list[str]:
