@@ -1,0 +1,208 @@
+{
+  "schema_version": "real_song_decoder_probe_v1",
+  "checkpoint": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750",
+  "span_sec": 120.0,
+  "model_revision": "c07281df297b9905d24a508279258cccf987a064",
+  "songs": [
+    {
+      "song": "I See Fire",
+      "units_in_span": 80,
+      "shipped_collapse_rate": 0.5145,
+      "official": {
+        "intervals": 80,
+        "zero_length": 36,
+        "zero_share": 0.45,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 15,
+        "span_sec": 46.96
+      },
+      "dp": {
+        "intervals": 80,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 56.48
+      },
+      "agreement_median_end_delta_ms": 472.0,
+      "agreement_p90_end_delta_ms": 6960.0,
+      "dp_shifts_official_zero_to_nonzero": 36
+    },
+    {
+      "song": "初音未来的消失",
+      "units_in_span": 204,
+      "shipped_collapse_rate": 0.4742,
+      "official": {
+        "intervals": 281,
+        "zero_length": 240,
+        "zero_share": 0.8541,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 85,
+        "span_sec": 120.0
+      },
+      "dp": {
+        "intervals": 281,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 99.04
+      },
+      "agreement_median_end_delta_ms": 2720.0,
+      "agreement_p90_end_delta_ms": 90320.0,
+      "dp_shifts_official_zero_to_nonzero": 240
+    },
+    {
+      "song": "p.h",
+      "units_in_span": 238,
+      "shipped_collapse_rate": 0.4502,
+      "official": {
+        "intervals": 326,
+        "zero_length": 326,
+        "zero_share": 1.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 326,
+        "span_sec": 0.0
+      },
+      "dp": {
+        "intervals": 326,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 118.24
+      },
+      "agreement_median_end_delta_ms": 45440.0,
+      "agreement_p90_end_delta_ms": 103280.0,
+      "dp_shifts_official_zero_to_nonzero": 326
+    },
+    {
+      "song": "冬之花",
+      "units_in_span": 182,
+      "shipped_collapse_rate": 0.4414,
+      "official": {
+        "intervals": 228,
+        "zero_length": 59,
+        "zero_share": 0.2588,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 20,
+        "span_sec": 110.72
+      },
+      "dp": {
+        "intervals": 228,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 110.72
+      },
+      "agreement_median_end_delta_ms": 197.0,
+      "agreement_p90_end_delta_ms": 4675.0,
+      "dp_shifts_official_zero_to_nonzero": 59
+    },
+    {
+      "song": "皱鳃鲨",
+      "units_in_span": 201,
+      "shipped_collapse_rate": 0.3295,
+      "official": {
+        "intervals": 259,
+        "zero_length": 168,
+        "zero_share": 0.6486,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 22,
+        "span_sec": 120.64
+      },
+      "dp": {
+        "intervals": 259,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 120.64
+      },
+      "agreement_median_end_delta_ms": 320.0,
+      "agreement_p90_end_delta_ms": 3760.0,
+      "dp_shifts_official_zero_to_nonzero": 168
+    },
+    {
+      "song": "炉心融解",
+      "units_in_span": 155,
+      "shipped_collapse_rate": 0.2423,
+      "official": {
+        "intervals": 208,
+        "zero_length": 86,
+        "zero_share": 0.4135,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 17,
+        "span_sec": 116.08
+      },
+      "dp": {
+        "intervals": 208,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 120.08
+      },
+      "agreement_median_end_delta_ms": 3400.0,
+      "agreement_p90_end_delta_ms": 23360.0,
+      "dp_shifts_official_zero_to_nonzero": 86
+    },
+    {
+      "song": "电灯胆",
+      "units_in_span": 208,
+      "shipped_collapse_rate": 0.2143,
+      "official": {
+        "intervals": 208,
+        "zero_length": 144,
+        "zero_share": 0.6923,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 78,
+        "span_sec": 105.92
+      },
+      "dp": {
+        "intervals": 208,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 91.12
+      },
+      "agreement_median_end_delta_ms": 840.0,
+      "agreement_p90_end_delta_ms": 44160.0,
+      "dp_shifts_official_zero_to_nonzero": 144
+    },
+    {
+      "song": "画下灯塔水母",
+      "units_in_span": 210,
+      "shipped_collapse_rate": 0.2105,
+      "official": {
+        "intervals": 210,
+        "zero_length": 50,
+        "zero_share": 0.2381,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 7,
+        "span_sec": 88.24
+      },
+      "dp": {
+        "intervals": 210,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 88.24
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 320.0,
+      "dp_shifts_official_zero_to_nonzero": 50
+    }
+  ],
+  "totals": {
+    "songs": 8,
+    "official_zero": 1109,
+    "dp_zero": 0,
+    "intervals": 1800,
+    "official_zero_share": 0.6161,
+    "dp_zero_share": 0.0
+  }
+}

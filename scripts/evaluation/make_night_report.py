@@ -363,6 +363,34 @@ def sec_arms(root: Path) -> list[str]:
     return lines
 
 
+def sec_real_decoder(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_real_song_decoder/metrics.json")
+    if not doc:
+        return ["- 状态：未跑"]
+    totals = doc["totals"]
+    songs = [e for e in doc["songs"] if "official" in e]
+    mild = [e for e in songs if e["official"]["zero_share"] < 0.30]
+    severe = [e for e in songs if e["official"]["zero_share"] >= 0.60]
+    lines = [
+        f"- **口径先说清**：这是把整段 120 s 人声**一次性**喂进模型的**压力条件**，"
+        "不是产品的分窗路径（分窗下线上 raw 塌陷是 10.80%）。所以这里的数字**不可与 10.80% 混读**；",
+        f"- 压力条件下（{totals['songs']} 首 / {totals['intervals']} 个区间，线上 checkpoint r2/750）："
+        f"官方解码零长度 **{_pct(totals['official_zero_share'])}**，DP **{_pct(totals['dp_zero_share'])}**"
+        f"（{totals['official_zero']} → 0）；",
+        f"- 最极端一例 `p.h`：官方把 **326/326 个区间放在同一时刻**（时间轴跨度 0.00 s），"
+        "DP 给出跨度 118.24 s 的合法单调轴 —— 官方那条**必然是错的**，DP 那条对不对无法验证（无真值）；",
+        f"- 轻中度塌陷的歌（{len(mild)} 首 <30%）里 DP 几乎不改时间轴："
+        "end 位移中位 " + "、".join(f"{e['song'][:8]} {e['agreement_median_end_delta_ms']:.0f} ms" for e in mild)
+        + " ⇒ **DP 是局部修补而非重排**，这正是它风险低的原因；",
+        f"- 重度塌陷的歌（{len(severe)} 首 ≥60%）里 DP 的改动幅度**差异极大**（end 位移中位 "
+        + "、".join(f"{e['song'][:8]} {e['agreement_median_end_delta_ms'] / 1000:.1f} s" for e in severe)
+        + "）：有的只是将少量非法区间就近合法化，有的则整条重排；"
+        "**只要位移达到秒级，就不可能靠『合法』来判定好坏 ⇒ 这类歌必须走门控复核**，"
+        "不能因为结构合法了就放过。",
+    ]
+    return lines
+
+
 def sec_pending(root: Path) -> list[str]:
     return ["- **决策树已写死**（不临场判断）：B 落在 §3g 预测带内 ⇒ 暴露假设成立；"
             "B 为 null 或弱于预测带 ⇒ 启动 C 臂（字符级 loss 加权，"
@@ -427,6 +455,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
         "⇒ 要用它就必须生成伪标签，按既定约束不做；audio_works 同理被明确禁止；",
         "- ⇒ **在现有数据条件下，'用新数据增加长音暴露'这条路是关闭的**；若条目级上采样（B）拿不到效应，"
         "唯一还能加强暴露机制的是 C 臂（字符级 loss 加权，代码与测试已备好），再往上是结构改动。"]),
+    ("真歌端到端解码探针（压力条件）", "results/by_run/20260914_real_song_decoder", sec_real_decoder),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
 ]
