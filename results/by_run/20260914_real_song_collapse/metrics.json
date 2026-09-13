@@ -1,0 +1,313 @@
+{
+  "schema_version": "real_song_collapse_v1",
+  "batch": "/home/hyan/Data/lyricalign/runs/20260814_ktv_current_silence",
+  "songs": 33,
+  "characters": 13735,
+  "raw_zero_share": 0.108,
+  "official_zero_share": 0.1628,
+  "gpu_zero_share": 0.0,
+  "amplified_songs": 31,
+  "mean_amplification_pp": 5.55,
+  "corr_raw_zero_vs_median_duration": 0.815,
+  "corr_raw_zero_vs_chars_per_sec": -0.253,
+  "songs_below_3pct_raw_zero": 14,
+  "per_song": [
+    {
+      "song": "I See Fire",
+      "characters": 311,
+      "raw_zero_share": 0.5145,
+      "official_zero_share": 0.881,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 1280.0,
+      "chars_per_sec": 1.491
+    },
+    {
+      "song": "初音未来的消失",
+      "characters": 561,
+      "raw_zero_share": 0.4742,
+      "official_zero_share": 0.7647,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 1280.0,
+      "chars_per_sec": 2.198
+    },
+    {
+      "song": "p.h",
+      "characters": 271,
+      "raw_zero_share": 0.4502,
+      "official_zero_share": 0.2583,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 480.0,
+      "chars_per_sec": 2.227
+    },
+    {
+      "song": "冬之花",
+      "characters": 222,
+      "raw_zero_share": 0.4414,
+      "official_zero_share": 0.6261,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 880.0,
+      "chars_per_sec": 1.441
+    },
+    {
+      "song": "皱鳃鲨",
+      "characters": 261,
+      "raw_zero_share": 0.3295,
+      "official_zero_share": 0.433,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 640.0,
+      "chars_per_sec": 1.981
+    },
+    {
+      "song": "炉心融解",
+      "characters": 326,
+      "raw_zero_share": 0.2423,
+      "official_zero_share": 0.4233,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 560.0,
+      "chars_per_sec": 1.161
+    },
+    {
+      "song": "电灯胆",
+      "characters": 350,
+      "raw_zero_share": 0.2143,
+      "official_zero_share": 0.2286,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 1.982
+    },
+    {
+      "song": "画下灯塔水母",
+      "characters": 532,
+      "raw_zero_share": 0.2105,
+      "official_zero_share": 0.3853,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 400.0,
+      "chars_per_sec": 2.25
+    },
+    {
+      "song": "Camelia",
+      "characters": 334,
+      "raw_zero_share": 0.1707,
+      "official_zero_share": 0.1976,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 480.0,
+      "chars_per_sec": 1.375
+    },
+    {
+      "song": "月半小夜曲",
+      "characters": 388,
+      "raw_zero_share": 0.1701,
+      "official_zero_share": 0.2191,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 400.0,
+      "chars_per_sec": 1.791
+    },
+    {
+      "song": "乙女解剖",
+      "characters": 341,
+      "raw_zero_share": 0.1584,
+      "official_zero_share": 0.2229,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 400.0,
+      "chars_per_sec": 1.848
+    },
+    {
+      "song": "红日",
+      "characters": 534,
+      "raw_zero_share": 0.1236,
+      "official_zero_share": 0.161,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 240.0,
+      "chars_per_sec": 2.672
+    },
+    {
+      "song": "难念的经",
+      "characters": 680,
+      "raw_zero_share": 0.075,
+      "official_zero_share": 0.1059,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 240.0,
+      "chars_per_sec": 2.939
+    },
+    {
+      "song": "Immortals",
+      "characters": 200,
+      "raw_zero_share": 0.07,
+      "official_zero_share": 0.12,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 400.0,
+      "chars_per_sec": 1.351
+    },
+    {
+      "song": "浮夸",
+      "characters": 487,
+      "raw_zero_share": 0.0637,
+      "official_zero_share": 0.0719,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 2.032
+    },
+    {
+      "song": "Take Me To Church",
+      "characters": 430,
+      "raw_zero_share": 0.0535,
+      "official_zero_share": 0.0488,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 1.905
+    },
+    {
+      "song": "梦良衣",
+      "characters": 112,
+      "raw_zero_share": 0.0446,
+      "official_zero_share": 0.0982,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 560.0,
+      "chars_per_sec": 0.776
+    },
+    {
+      "song": "Renegade",
+      "characters": 671,
+      "raw_zero_share": 0.0417,
+      "official_zero_share": 0.1028,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 240.0,
+      "chars_per_sec": 3.101
+    },
+    {
+      "song": "TH讠NK",
+      "characters": 450,
+      "raw_zero_share": 0.0311,
+      "official_zero_share": 0.0667,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 1.969
+    },
+    {
+      "song": "为何入眠",
+      "characters": 285,
+      "raw_zero_share": 0.0281,
+      "official_zero_share": 0.0491,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 1.564
+    },
+    {
+      "song": "六重不忠",
+      "characters": 579,
+      "raw_zero_share": 0.0242,
+      "official_zero_share": 0.0432,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 240.0,
+      "chars_per_sec": 2.672
+    },
+    {
+      "song": "四季折之羽",
+      "characters": 637,
+      "raw_zero_share": 0.022,
+      "official_zero_share": 0.0518,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 2.359
+    },
+    {
+      "song": "画下灯塔水母 - 副本",
+      "characters": 381,
+      "raw_zero_share": 0.021,
+      "official_zero_share": 0.0577,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 400.0,
+      "chars_per_sec": 1.761
+    },
+    {
+      "song": "Past Lives",
+      "characters": 162,
+      "raw_zero_share": 0.0185,
+      "official_zero_share": 0.0432,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 480.0,
+      "chars_per_sec": 1.62
+    },
+    {
+      "song": "伊卡洛斯奔向月亮",
+      "characters": 537,
+      "raw_zero_share": 0.013,
+      "official_zero_share": 0.0447,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 2.756
+    },
+    {
+      "song": "何时何地",
+      "characters": 368,
+      "raw_zero_share": 0.0109,
+      "official_zero_share": 0.0272,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 1.933
+    },
+    {
+      "song": "若梦境来袭",
+      "characters": 427,
+      "raw_zero_share": 0.0094,
+      "official_zero_share": 0.0281,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 2.066
+    },
+    {
+      "song": "本草纲目",
+      "characters": 499,
+      "raw_zero_share": 0.008,
+      "official_zero_share": 0.022,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 160.0,
+      "chars_per_sec": 3.81
+    },
+    {
+      "song": "安全词",
+      "characters": 411,
+      "raw_zero_share": 0.0073,
+      "official_zero_share": 0.0122,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 400.0,
+      "chars_per_sec": 1.613
+    },
+    {
+      "song": "权御天下",
+      "characters": 762,
+      "raw_zero_share": 0.0066,
+      "official_zero_share": 0.0381,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 160.0,
+      "chars_per_sec": 3.774
+    },
+    {
+      "song": "此处通往天空",
+      "characters": 286,
+      "raw_zero_share": 0.0035,
+      "official_zero_share": 0.0175,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 400.0,
+      "chars_per_sec": 1.584
+    },
+    {
+      "song": "人造卫星",
+      "characters": 477,
+      "raw_zero_share": 0.0021,
+      "official_zero_share": 0.0189,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 240.0,
+      "chars_per_sec": 3.047
+    },
+    {
+      "song": "祈愿花开",
+      "characters": 463,
+      "raw_zero_share": 0.0,
+      "official_zero_share": 0.0151,
+      "gpu_zero_share": null,
+      "median_char_duration_ms": 320.0,
+      "chars_per_sec": 1.918
+    }
+  ]
+}
