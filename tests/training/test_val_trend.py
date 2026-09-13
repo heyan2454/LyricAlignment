@@ -22,9 +22,14 @@ def test_ols_slope_is_percentage_points_per_thousand_steps():
     assert TREND.ols_slope([(0, 0.3)]) == 0.0
 
 
-def test_half_split_difference_reports_percentage_points():
+def test_window_difference_reports_percentage_points_and_its_interval_contains_it():
     points = [(step, 0.5) for step in range(0, 500, 50)] + [(step, 0.6) for step in range(500, 1000, 50)]
-    assert TREND.half_split_difference(points) == pytest.approx(10.0, abs=1e-9)
+    assert TREND.window_difference(points, window=5) == pytest.approx(10.0, abs=1e-9)
+    out = TREND.analyse(points, block=2, resamples=300, window=5)
+    interval = out["window_difference_pp"]
+    assert interval["low"] == pytest.approx(interval["estimate"], abs=1e-9)
+    assert interval["high"] == pytest.approx(interval["estimate"], abs=1e-9)
+    assert out["verdict"] == "rising"
 
 
 def test_block_bootstrap_of_a_constant_series_has_a_zero_width_interval():

@@ -80,20 +80,38 @@ def block_bootstrap(points: list[tuple[int, float]], statistic: Callable[[list[t
     return {"estimate": statistic(points), "low": low, "high": high, "resamples": len(samples)}
 
 
-def half_split_difference(points: list[tuple[int, float]]) -> float:
-    """Second-half mean minus first-half mean, in percentage points."""
-    middle = len(points) // 2
-    first = [value for _, value in points[:middle]]
-    second = [value for _, value in points[middle:]]
-    if not first or not second:
+def window_difference(points: list[tuple[int, float]], *, window: int = 40) -> float:
+    """Mean of the last `window` points minus the mean of the first `window`, in percentage points.
+
+    Deliberately a difference of two *means*: a moving-block bootstrap concatenates resampled blocks
+    in a random order, so any statistic that depends on the global ordering of the series (an
+    "earlier half vs later half" computed on the resample) is destroyed by the resampling and would
+    report a confidence interval that does not even contain its own point estimate.
+    """
+    if len(points) < 2:
         return 0.0
-    return 100.0 * (sum(second) / len(second) - sum(first) / len(first))
+    window = max(1, min(window, len(points) // 2))
+    early = [value for _, value in points[:window]]
+    late = [value for _, value in points[-window:]]
+    return 100.0 * (sum(late) / len(late) - sum(early) / len(early))
 
 
 def analyse(points: list[tuple[int, float]], *, block: int = 5, resamples: int = 2000,
-            seed: int = 20260724) -> dict[str, Any]:
+            window: int = 40, seed: int = 20260724) -> dict[str, Any]:
     slope = block_bootstrap(points, ols_slope, block=block, resamples=resamples, seed=seed)
-    halves = block_bootstrap(points, half_split_difference, block=block, resamples=resamples, seed=seed)
+    # the window difference needs its own bootstrap: both means must be resampled *within their own
+    # window*, otherwise the windows mix and the statistic collapses towards zero
+    early, late = (points[:window], points[-window:]) if len(points) >= 2 else (points, points)
+    early_ci = block_bootstrap(early, lambda rows: 100.0 * sum(v for _, v in rows) / max(1, len(rows)),
+                               block=block, resamples=resamples, seed=seed)
+    late_ci = block_bootstrap(late, lambda rows: 100.0 * sum(v for _, v in rows) / max(1, len(rows)),
+                              block=block, resamples=resamples, seed=seed + 1)
+    halves = {"estimate": window_difference(points, window=window),
+              "low": (None if early_ci["low"] is None or late_ci["low"] is None
+                      else late_ci["low"] - early_ci["high"]),
+              "high": (None if early_ci["high"] is None or late_ci["high"] is None
+                       else late_ci["high"] - early_ci["low"]),
+              "window_points": min(window, max(1, len(points) // 2)), "resamples": resamples}
     span = (points[-1][0] - points[0][0]) if points else 0
     verdict = "inconclusive"
     if slope["low"] is not None:
@@ -105,7 +123,7 @@ def analyse(points: list[tuple[int, float]], *, block: int = 5, resamples: int =
             verdict = "flat_within_noise"
     return {"points": len(points), "first_step": points[0][0] if points else None,
             "last_step": points[-1][0] if points else None, "span_steps": span,
-            "slope_pp_per_1000": slope, "half_split_pp": halves,
+            "slope_pp_per_1000": slope, "window_difference_pp": halves,
             "implied_change_over_span_pp": (None if slope["low"] is None else
                                             slope["estimate"] * span / 1000.0),
             "verdict": verdict}
