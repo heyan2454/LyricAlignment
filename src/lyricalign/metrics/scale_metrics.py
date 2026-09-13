@@ -170,7 +170,66 @@ def test_scale_metrics(reference: list[dict[str, Any]], prediction: list[dict[st
             if song_primary.size > 1 else None)
         out["song_count"] = int(song_primary.size)
     out.update(collapse_runs(prediction))
+    out["subsets"] = subset_metrics(rows_out, reference, tolerances=tolerances)
     out["per_unit"] = rows_out
+    return out
+
+
+def reference_subsets(reference: list[dict[str, Any]], *, long_sec: float = 1.0,
+                      gap_sec: float = 0.3) -> dict[str, set[tuple[str, int]]]:
+    """Subsets defined **only** from the reference intervals (never from a prediction).
+
+    Reading the subset off the prediction would let a model choose which units it is graded on, so
+    the membership keys are (item_id, character_index) computed from the labels alone:
+
+    * ``long``          — the labelled character lasts at least `long_sec` (Track 1's hard case);
+    * ``post_gap``      — at least `gap_sec` of rest/breath before it (the `<SP>`/`<AP>` cases);
+    * ``phrase_final``  — the last character before such a gap (or the item's last character).
+    """
+    by_item: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in reference:
+        by_item[str(row["item_id"])].append(row)
+    masks: dict[str, set[tuple[str, int]]] = {name: set() for name in ("all", "long", "post_gap", "phrase_final")}
+    for item, rows in by_item.items():
+        ordered = sorted(rows, key=lambda row: int(row["character_index"]))
+        for index, row in enumerate(ordered):
+            key = (item, int(row["character_index"]))
+            masks["all"].add(key)
+            if float(row["end_sec"]) - float(row["start_sec"]) >= long_sec:
+                masks["long"].add(key)
+            if index > 0 and float(row["start_sec"]) - float(ordered[index - 1]["end_sec"]) >= gap_sec:
+                masks["post_gap"].add(key)
+            if index == len(ordered) - 1 or \
+                    float(ordered[index + 1]["start_sec"]) - float(row["end_sec"]) >= gap_sec:
+                masks["phrase_final"].add(key)
+    return masks
+
+
+def subset_metrics(rows_out: list[dict[str, Any]], reference: list[dict[str, Any]], *,
+                   tolerances: tuple[float, ...]) -> dict[str, Any]:
+    """Same metric restricted to label-defined subsets, so a saturated whole-set number stays interpretable."""
+    masks = reference_subsets(reference)
+    out: dict[str, Any] = {}
+    for name, keys in masks.items():
+        if not keys:
+            continue
+        selected = [row for row in rows_out
+                    if (str(row["item_id"]), int(row["character_index"])) in keys]
+        if not selected:
+            continue
+        errors = np.array([row["max_boundary_err_sec"] for row in selected], dtype=float)
+        usable = np.array([row["usable"] for row in selected], dtype=bool)
+        valid = errors[usable]
+        block: dict[str, Any] = {"units": len(selected),
+                                 "usable_rate": round(float(usable.mean()), 4),
+                                 "mae_all_ms": round(float(np.mean(errors)) * 1000, 2)}
+        for tol in tolerances:
+            block[f"within_{int(tol * 1000)}ms"] = round(float((errors <= tol).mean()), 4)
+        if valid.size:
+            block["error_percentiles_ms"] = {
+                f"p{int(q * 100)}": round(float(np.percentile(valid, q * 100)) * 1000, 2)
+                for q in (0.5, 0.9)}
+        out[name] = block
     return out
 
 

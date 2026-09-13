@@ -112,3 +112,36 @@ def test_test_scale_metrics_reports_error_percentiles_in_milliseconds():
     metric = test_scale_metrics(reference, prediction)
     assert metric["error_percentiles_ms"] == {f"p{q}": 10.0 for q in (25, 50, 75, 90, 95, 99)}
     assert metric["error_percentiles_scope"] == "valid_units"
+
+
+def test_reference_subsets_are_defined_by_labels_only():
+    from lyricalign.metrics.scale_metrics import reference_subsets
+
+    def character(index: int, start: float, end: float) -> dict:
+        return {"item_id": "i", "song_id": "s", "character_index": index,
+                "start_sec": start, "end_sec": end}
+
+    reference = [character(0, 0.0, 0.3),      # followed by a 0.5 s gap -> phrase final
+                 character(1, 0.8, 1.1),      # preceded by that gap    -> post gap
+                 character(2, 1.2, 2.7),      # 1.5 s long
+                 character(3, 2.8, 3.1)]      # last character          -> phrase final
+    masks = reference_subsets(reference)
+    assert masks["long"] == {("i", 2)}
+    assert masks["post_gap"] == {("i", 1)}
+    assert masks["phrase_final"] == {("i", 0), ("i", 3)}
+    assert masks["all"] == {("i", index) for index in range(4)}
+
+
+def test_subset_metrics_restrict_to_the_long_characters():
+    from lyricalign.metrics.scale_metrics import test_scale_metrics
+
+    reference = [{"item_id": "i", "song_id": "s", "character_index": 0, "start_sec": 0.0, "end_sec": 0.3},
+                 {"item_id": "i", "song_id": "s", "character_index": 1, "start_sec": 0.4, "end_sec": 1.9}]
+    prediction = [{"item_id": "i", "song_id": "s", "character_index": 0, "start_sec": 0.01, "end_sec": 0.31},
+                  {"item_id": "i", "song_id": "s", "character_index": 1, "start_sec": 0.9, "end_sec": 2.4}]
+    metric = test_scale_metrics(reference, prediction)
+    assert metric["subsets"]["all"]["units"] == 2
+    assert metric["subsets"]["long"]["units"] == 1
+    # the short character is a 10 ms miss; the long one is 500 ms off -> the long subset must show it
+    assert metric["subsets"]["long"]["within_200ms"] == 0.0
+    assert metric["subsets"]["all"]["within_200ms"] == 0.5
