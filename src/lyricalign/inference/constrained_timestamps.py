@@ -141,3 +141,33 @@ def constrained_rows(logits: Any, input_ids: Any, records: list[dict[str, Any]],
                          "constrained_score": (None if result["score"] is None
                                                else round(result["score"], 4))})
     return rows
+
+
+def dp_timestamp_items(logits: Any, input_ids: Any, word_lists: list[list[str]], *,
+                       timestamp_token_id: int, segment_sec: float,
+                       min_duration: int = 1) -> list[list[dict[str, Any]]]:
+    """Monotone Viterbi decode in the *upstream item shape*, so a caller can swap decoders.
+
+    `processor.decode_forced_alignment` returns, per sample, a list of ``{"text", "start_time",
+    "end_time"}`` dicts.  The product path is written against that shape, so this adapter reproduces
+    it from the constrained decode instead of the greedy per-slot argmax plus upstream block filling
+    (which is what turns 10.8% zero-length into 16.3% on real songs).
+    """
+    array = logits.detach().float().cpu().numpy() if hasattr(logits, "detach") else np.asarray(logits)
+    ids = input_ids.detach().cpu().numpy() if hasattr(input_ids, "detach") else np.asarray(input_ids)
+    batch = array.shape[0] if array.ndim == 3 else 1
+    out: list[list[dict[str, Any]]] = []
+    for sample in range(batch):
+        probabilities = slot_logprobs(array[sample: sample + 1], ids[sample: sample + 1],
+                                      timestamp_token_id=timestamp_token_id)
+        result = viterbi_monotone(probabilities[:, 0, :], probabilities[:, 1, :],
+                                  min_duration=min_duration)
+        items: list[dict[str, Any]] = []
+        for index, word in enumerate(word_lists[sample]):
+            if index >= len(result["starts"]):
+                break
+            items.append({"text": word,
+                          "start_time": float(result["starts"][index]) * segment_sec,
+                          "end_time": float(result["ends"][index]) * segment_sec})
+        out.append(items)
+    return out

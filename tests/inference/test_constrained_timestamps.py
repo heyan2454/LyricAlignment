@@ -85,3 +85,38 @@ def test_empty_input_is_feasible_and_empty():
 def test_bad_min_duration_is_rejected():
     with pytest.raises(ValueError):
         viterbi_monotone(np.zeros((1, 5)), np.zeros((1, 5)), min_duration=0)
+
+
+def test_dp_timestamp_items_matches_the_upstream_item_shape():
+    """The adapter must speak the upstream item shape so the product path can swap decoders."""
+    from lyricalign.inference.constrained_timestamps import dp_timestamp_items
+
+    timestamp_token_id = 7
+    vocabulary = 5010                     # slot_logprobs reads the first 5000 classes
+    # slot_logprobs reads the logits AT each timestamp position and pairs them (start, end)
+    input_ids = np.array([[1, timestamp_token_id, timestamp_token_id, 3,
+                           timestamp_token_id, timestamp_token_id, 9]], dtype=np.int64)
+    logits = np.full((1, 7, vocabulary), -5.0, dtype=np.float32)
+    for position, peak in ((1, 2), (2, 6), (4, 8), (5, 14)):
+        logits[0, position, peak] = 6.0
+    items = dp_timestamp_items(logits, input_ids, [["啊", "吧"]],
+                               timestamp_token_id=timestamp_token_id, segment_sec=0.08)
+    assert len(items) == 1 and len(items[0]) == 2
+    assert set(items[0][0]) == {"text", "start_time", "end_time"}
+    assert [item["text"] for item in items[0]] == ["啊", "吧"]
+    first, second = items[0]
+    assert first["start_time"] == pytest.approx(2 * 0.08, abs=1e-6)
+    assert first["end_time"] == pytest.approx(6 * 0.08, abs=1e-6)
+    assert second["start_time"] == pytest.approx(8 * 0.08, abs=1e-6)
+    assert second["end_time"] == pytest.approx(14 * 0.08, abs=1e-6)
+    # monotone by construction: a character cannot end after the next one starts
+    assert first["end_time"] <= second["start_time"] and first["start_time"] < first["end_time"]
+
+
+def test_dp_timestamp_items_truncates_gracefully_without_timestamp_slots():
+    from lyricalign.inference.constrained_timestamps import dp_timestamp_items
+
+    logits = np.zeros((1, 3, 5010), dtype=np.float32)
+    ids = np.array([[1, 2, 3]], dtype=np.int64)
+    assert dp_timestamp_items(logits, ids, [["啊"]], timestamp_token_id=7,
+                              segment_sec=0.08) == [[]]
