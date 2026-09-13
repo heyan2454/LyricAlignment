@@ -1,6 +1,6 @@
-# 热启动续训臂：从均匀训练终点 step-012000 借权重，优化器与步数从零开始。
-# A 臂 = 对照：数据配比不变，只测『同样 LR 再训 1000 步』本身的影响。
-# LR 取原值一半（两臂相同），其余与原 run 逐位一致；早停关闭，选点离线按主指标做。
+# 热启动续训臂：从均匀训练终点 step-012000 借权重（优化器与步数从零开始），LR 取原值一半。
+# A 臂＝对照：数据配比不变，只测同样 LR 再训 600 步本身的影响。
+# 600 步 / cycle 300 / save 100 / 早停关闭；预算见 docs/status/20260914_concat_arm_prereg.md。
 model:
   id: Qwen/Qwen3-ForcedAligner-0.6B-hf
   revision: c07281df297b9905d24a508279258cccf987a064
@@ -28,7 +28,7 @@ training:
   disk_floor_gb: 22.0
   lr_schedule:
     type: cyclic_cosine
-    cycle_len: 500
+    cycle_len: 300
     cycle_peak_decay: 0.8
   eval_funnel:
     enabled: true
@@ -36,16 +36,16 @@ training:
     l1_fraction: 0.25
     l2_max: 16
     l2_fraction: 0.5
-    l3_every: 500
-    l3_top_k: 3
+    l3_every: 300
+    l3_top_k: 2
     ucb_scale: 1.5
     selection_variant: fixed
     selection_metric: macro_song_within_primary
     patience_cycles: 99
     min_gain_se: 1.0
-    l2_every: 500
+    l2_every: 300
     l2_per_round: 1
-    l2_budget: 4
+    l2_budget: 3
   init_from_checkpoint: /home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724/checkpoints/step-012000
 stages:
   overfit:
@@ -56,10 +56,10 @@ stages:
     train_items: 0
   r1:
     train_items: 0
-    max_steps: 1000
+    max_steps: 600
   r2:
     train_items: 0
-    max_steps: 1000
+    max_steps: 600
   r3:
     train_items: 2000
     max_steps: 500
