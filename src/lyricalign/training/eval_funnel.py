@@ -12,7 +12,7 @@ bookkeeping for exactly those rules:
 Screening uses an upper confidence bound (`value + ucb_scale * se`) rather than a raw top-N, because
 the smallest subset is only a handful of songs: a candidate with a mediocre mean but a large standard
 error may well be the best model, and hard pruning would throw it away on subset noise.  The final
-pick is delegated to `metrics.test_scale.select_with_one_se`.
+pick is delegated to `metrics.scale_metrics.select_with_one_se`.
 """
 
 from __future__ import annotations
@@ -28,15 +28,17 @@ class FunnelPlanner:
     Parameters
     ----------
     l1_every:      candidate cadence; a candidate enters L1 once, at/after this interval.
-    l2_max:        cap on how many candidates ever get the medium subset.  With `l2_per_round`
-                   left at None this cap is first-come-first-served, so early (usually worst)
-                   checkpoints can consume it and later checkpoints are never promoted; that
-                   starvation happened in the first from-official run (16/16 L2 slots filled by
-                   steps <= 900, everything after step 900 stuck at L1).
-    l2_per_round:  if set, at most this many *new* L2 admissions per `l3_every` round, still
-                   bounded by `l2_max` in total.  This spreads the same L2 budget over the whole
-                   run so late checkpoints can still be promoted.  Requires `record(..., at_step=)`
-                   to be supplied by the caller.
+    l2_max:        size of the **finalist set**: only this many candidates are meant to hold a
+                   medium-subset score.  Admission is quality-ranked, not arrival-ordered — once the
+                   set is full, a newcomer is evaluated only when it looks at least as good as the
+                   *weakest finalist* (UCB on L1), so a late-but-better checkpoint is never locked
+                   out by earlier arrivals.
+    l2_budget:     total number of medium evaluations allowed (defaults to `l2_max`, i.e. no churn).
+                   Displacing a finalist costs one extra evaluation, so this is what actually bounds
+                   the cost of keep-best admission; `2 * l2_max` is a reasonable setting.
+    l2_per_round:  if set, at most this many *new* L2 admissions per `l3_every` round, still bounded
+                   by `l2_budget` in total.  Smooths the load instead of admitting a burst in round 1.
+                   Requires `record(..., at_step=)` to be supplied by the caller.
     l3_every:      L3 may only be queued on multiples of this step (aligned with cycle ends).
     l3_top_k:      how many *new* candidates one L3 round may admit.  A candidate is never
                    evaluated at the same level twice, so over a long run the number of full-set
@@ -48,13 +50,15 @@ class FunnelPlanner:
 
     def __init__(self, *, l1_every: int = 50, l2_max: int = 16, l3_every: int = 1000,
                  l3_top_k: int = 8, ucb_scale: float = 1.5, l2_ucb_scale: float | None = None,
-                 l2_per_round: int | None = None) -> None:
+                 l2_per_round: int | None = None, l2_budget: int | None = None) -> None:
         for name, value in (("l1_every", l1_every), ("l2_max", l2_max), ("l3_every", l3_every),
                             ("l3_top_k", l3_top_k)):
             if int(value) < 1:
                 raise ValueError(f"{name} must be >= 1, got {value!r}")
         if l2_per_round is not None and int(l2_per_round) < 1:
             raise ValueError(f"l2_per_round must be >= 1 or None, got {l2_per_round!r}")
+        if l2_budget is not None and int(l2_budget) < 1:
+            raise ValueError(f"l2_budget must be >= 1 or None, got {l2_budget!r}")
         if float(ucb_scale) < 0:
             raise ValueError("ucb_scale must be >= 0")
         self.l1_every = int(l1_every)
@@ -62,6 +66,7 @@ class FunnelPlanner:
         self.l3_every = int(l3_every)
         self.l3_top_k = int(l3_top_k)
         self.l2_per_round = (int(l2_per_round) if l2_per_round is not None else None)
+        self.l2_budget = (int(l2_budget) if l2_budget is not None else None)
         self.ucb_scale = float(ucb_scale)
         self.l2_ucb_scale = float(l2_ucb_scale) if l2_ucb_scale is not None else float(ucb_scale)
         self.candidates: dict[int, dict[str, dict[str, float]]] = {}
@@ -128,20 +133,34 @@ class FunnelPlanner:
             ranked = sorted(l1_scored, key=lambda s: self._ucb(self.candidates[s]["l1"], self.ucb_scale),
                             reverse=True)
             already_l2 = {s for s, r in self.candidates.items() if "l2" in r}
-            capacity = max(0, self.l2_max - len(already_l2))
+            spent = len(already_l2)
+            budget = self.l2_max if self.l2_budget is None else self.l2_budget
+            capacity = max(0, budget - spent)
             if self.l2_per_round is not None:
                 round_index = int(step_now) // self.l3_every
                 admitted = sum(1 for s, r in self.candidates.items()
                                if "l2" in r and r["l2"].get("round") == round_index)
                 capacity = min(capacity, max(0, self.l2_per_round - admitted))
+            # Keep-best (heap) admission: once the finalist set is full, a challenger is worth a
+            # medium evaluation only if it looks at least as good as the *weakest finalist* — that is
+            # what stops a late-but-better checkpoint from being locked out by earlier arrivals.
+            displace_floor: float | None = None
+            if spent >= self.l2_max:
+                weakest_step = min(already_l2, key=lambda s: self.candidates[s]["l2"]["value"])
+                weakest_l1 = self.candidates[weakest_step].get("l1")
+                if weakest_l1 is not None:
+                    displace_floor = self._ucb(weakest_l1, self.ucb_scale)
             for step in ranked:
                 if capacity <= 0:
                     break
                 entry = self.candidates[step]["l1"]
                 if step in already_l2:
                     continue
+                score = self._ucb(entry, self.ucb_scale)
+                if displace_floor is not None and score < displace_floor:
+                    break  # `ranked` is descending, so nothing further can displace either
                 # promote on UCB overlap, but always keep the raw leader in play
-                if self._ucb(entry, self.ucb_scale) >= threshold or step == best_l1[0]:
+                if score >= threshold or step == best_l1[0]:
                     jobs.append(("l2", step))
                     capacity -= 1
         if int(step_now) > 0 and int(step_now) % self.l3_every == 0:
@@ -183,7 +202,7 @@ class FunnelPlanner:
 
     def pick(self) -> dict[str, Any]:
         """Final selection: best available level, one-standard-error rule, earliest such step."""
-        from lyricalign.metrics.test_scale import select_with_one_se
+        from lyricalign.metrics.scale_metrics import select_with_one_se
 
         for level in reversed(LEVELS):  # l3 first, then l2, then l1
             rows = [{"step": s, "score": r[level]["value"], "se": r[level]["se"]}
@@ -204,7 +223,7 @@ class FunnelPlanner:
             "scored": {level: sum(1 for r in self.candidates.values() if level in r)
                        for level in LEVELS},
             "params": {"l1_every": self.l1_every, "l2_max": self.l2_max,
-                       "l2_per_round": self.l2_per_round,
+                       "l2_per_round": self.l2_per_round, "l2_budget": self.l2_budget,
                        "l3_every": self.l3_every, "l3_top_k": self.l3_top_k,
                        "ucb_scale": self.ucb_scale, "l2_ucb_scale": self.l2_ucb_scale},
             "leaderboard": self.leaderboard(),

@@ -26,7 +26,7 @@ from typing import Any, Callable
 import numpy as np
 
 from lyricalign.analysis.monotone_repair import repair_targeted_blocks
-from lyricalign.metrics.test_scale import test_scale_metrics
+from lyricalign.metrics.scale_metrics import test_scale_metrics
 from lyricalign.training.eval_funnel import FunnelPlanner
 from lyricalign.training.lr_schedule import cyclic_cosine_factor
 
@@ -200,7 +200,9 @@ def build_funnel(cfg: dict[str, Any], valid: list[dict[str, Any]],
                             l3_top_k=int(funnel_cfg.get("l3_top_k", 8)),
                             ucb_scale=float(funnel_cfg.get("ucb_scale", 1.5)),
                             l2_per_round=(int(funnel_cfg["l2_per_round"])
-                                          if funnel_cfg.get("l2_per_round") else None))
+                                          if funnel_cfg.get("l2_per_round") else None),
+                            l2_budget=(int(funnel_cfg["l2_budget"])
+                                       if funnel_cfg.get("l2_budget") else None))
     fractions = {"l1": float(funnel_cfg.get("l1_fraction", 0.25)),
                  "l2": float(funnel_cfg.get("l2_fraction", 0.5)),
                  "l3": 1.0}

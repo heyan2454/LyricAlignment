@@ -160,3 +160,37 @@ def test_public_best_level_reports_the_incumbent():
     with pytest.raises(ValueError):
         planner.best("bogus")
     assert planner.status(20)["params"]["l2_per_round"] is None
+
+
+def test_keep_best_admission_lets_a_late_challenger_displace_a_weak_early_finalist():
+    """The first from-official run filled all 16 finalist slots with steps <= 900."""
+    planner = FunnelPlanner(l1_every=10, l2_max=2, l2_budget=3, l3_every=100, l3_top_k=1,
+                            ucb_scale=0.0)
+    planner.register(10)
+    planner.record(10, "l1", 0.60, se=0.0, at_step=10)   # weak on the medium subset, arrives first
+    planner.record(20, "l1", 0.60, se=0.0, at_step=20)
+    jobs = [job for job in planner.pending(20) if job[0] == "l2"]
+    assert sorted(job[1] for job in jobs) == [10, 20]
+    planner.record(10, "l2", 0.30, se=0.0, at_step=20)
+    planner.record(20, "l2", 0.60, se=0.0, at_step=20)
+    # the finalist set is full and the budget is not: a weak newcomer is not worth an evaluation ...
+    planner.record(30, "l1", 0.31, se=0.0, at_step=30)
+    assert [job for job in planner.pending(30) if job[0] == "l2"] == []
+    # ... but a strong one displaces step 10, whose L2 (0.30) is the weakest finalist
+    planner.record(40, "l1", 0.95, se=0.0, at_step=40)
+    assert [job[1] for job in planner.pending(40) if job[0] == "l2"] == [40]
+    planner.record(40, "l2", 0.90, se=0.0, at_step=40)
+    assert planner.best("l2")[0] == 40
+    # with the budget (3 = 2 initial + 1 churn) spent, not even a perfect newcomer gets in
+    planner.record(50, "l1", 0.99, se=0.0, at_step=50)
+    assert [job for job in planner.pending(50) if job[0] == "l2"] == []
+
+
+def test_without_a_budget_keep_best_admission_never_admits_a_challenger():
+    planner = FunnelPlanner(l1_every=10, l2_max=1, l3_every=100, ucb_scale=0.0)
+    planner.register(10)
+    planner.record(10, "l1", 0.30, se=0.0, at_step=10)
+    assert [job[1] for job in planner.pending(10) if job[0] == "l2"] == [10]
+    planner.record(10, "l2", 0.30, se=0.0, at_step=10)
+    planner.record(20, "l1", 0.99, se=0.0, at_step=20)
+    assert [job for job in planner.pending(20) if job[0] == "l2"] == []   # default budget == l2_max
