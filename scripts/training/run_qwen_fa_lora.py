@@ -320,24 +320,27 @@ def main() -> None:
                 checkpoint(run_dir, model, optimizer, scheduler, step, epoch, next_offset,
                            save_optimizer_state=keep_full)
                 if funnel_enabled and planner.register(step):
-                    funnel_done = run_pending_evals(
+                    run_pending_evals(
                         planner, step=step, model=model, processor=processor, collator=collator,
                         subsets=subsets, references=references, device=args.device, dtype=dtype,
                         batch_size=evaluation_batch,
                         segment_sec=float(cfg["training"].get("timestamp_segment_sec", 0.08)),
                         selection=funnel_selection, run_dir=run_dir, log=_log_funnel)
-                    l3_now = [d for d in funnel_done if d["level"] == "l3"]
-                    if l3_now:
-                        best_row = max(l3_now, key=lambda d: d["value"])
-                        l3_rounds.append({"step": step, "best": best_row["value"],
-                                          "best_se": best_row["se"]})
-                        decision = early_stop_decision(
-                            l3_rounds, patience_cycles=int(funnel_cfg.get("patience_cycles", 2)),
-                            min_gain_se=float(funnel_cfg.get("min_gain_se", 1.0)))
-                        atomic_json(run_dir / "EARLY_STOP.json",
-                                    {"history": l3_rounds, "decision": decision})
-                        if decision["stop"]:
-                            run_until_step = step
+                    # Round bookkeeping runs on every `l3_every` boundary, not only when a *new*
+                    # full-set evaluation happened: otherwise a saturated funnel never produces
+                    # another L3 job and the early-stop rule can never fire (that is exactly what
+                    # happened in the first from-official run).
+                    if step % int(planner.l3_every) == 0:
+                        top = planner.best("l3") or planner.best("l2") or planner.best("l1")
+                        if top is not None:
+                            l3_rounds.append({"step": step, "best": top[1], "best_se": top[2]})
+                            decision = early_stop_decision(
+                                l3_rounds, patience_cycles=int(funnel_cfg.get("patience_cycles", 2)),
+                                min_gain_se=float(funnel_cfg.get("min_gain_se", 1.0)))
+                            atomic_json(run_dir / "EARLY_STOP.json",
+                                        {"history": l3_rounds, "decision": decision})
+                            if decision["stop"]:
+                                run_until_step = step
             if step % int(cfg["training"]["eval_steps"]) == 0:
                 validation = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
                 validation["evaluation_step"] = step

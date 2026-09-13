@@ -110,3 +110,53 @@ def test_funnel_status_is_json_serialisable():
     planner.register(10)
     planner.record(10, "l1", 0.5, se=0.1)
     assert json.loads(json.dumps(planner.status(10)))["candidates"] == 1
+
+
+def test_l2_per_round_spreads_promotions_instead_of_letting_early_steps_starve_the_budget():
+    """Reproduces the first from-official run: 16/16 L2 slots eaten by steps <= 900."""
+    planner = FunnelPlanner(l1_every=10, l2_max=4, l3_every=100, l3_top_k=8,
+                            ucb_scale=0.0, l2_per_round=1)
+    for step in range(10, 60, 10):
+        planner.register(step)
+        planner.record(step, "l1", 0.5, se=0.0, at_step=step)
+    first = [job for job in planner.pending(10) if job[0] == "l2"]
+    assert len(first) == 1, first
+    planner.record(first[0][1], "l2", 0.5, se=0.0, at_step=10)
+    # the round quota is spent, so no further promotion inside the same round ...
+    assert [job for job in planner.pending(10) if job[0] == "l2"] == []
+    # ... but the next round may promote the next-ranked candidate
+    second = [job for job in planner.pending(100) if job[0] == "l2"]
+    assert len(second) == 1 and second[0][1] != first[0][1], second
+
+
+def test_saturated_l2_pool_still_feeds_later_l3_rounds_with_a_per_round_quota():
+    planner = FunnelPlanner(l1_every=10, l2_max=2, l3_every=100, l3_top_k=1,
+                            ucb_scale=0.0, l2_per_round=1)
+    for step in (10, 20, 30):
+        planner.register(step)
+        planner.record(step, "l1", 0.5, se=0.0, at_step=step)
+    for job in list(planner.pending(10)):
+        planner.record(job[1], job[0], 0.5, se=0.0, at_step=10)
+    assert planner.best("l2") is not None
+    l3_first = [job for job in planner.pending(100) if job[0] == "l3"]
+    assert len(l3_first) == 1
+    planner.record(l3_first[0][1], "l3", 0.5, se=0.0, at_step=100)
+    # a candidate promoted in round 1 is eligible for the round-2 full-set evaluation
+    promoted = [job for job in planner.pending(200) if job[0] == "l2"]
+    assert len(promoted) == 1
+    planner.record(promoted[0][1], "l2", 0.5, se=0.0, at_step=200)
+    l3_second = [job for job in planner.pending(200) if job[0] == "l3"]
+    assert len(l3_second) == 1 and l3_second[0][1] != l3_first[0][1]
+
+
+def test_public_best_level_reports_the_incumbent():
+    planner = FunnelPlanner(l1_every=10, l2_max=4, l3_every=100)
+    planner.register(10)
+    planner.record(10, "l1", 0.5, se=0.01, at_step=10)
+    planner.register(20)
+    planner.record(20, "l1", 0.7, se=0.02, at_step=20)
+    assert planner.best("l1") == (20, 0.7, 0.02)
+    assert planner.best("l2") is None
+    with pytest.raises(ValueError):
+        planner.best("bogus")
+    assert planner.status(20)["params"]["l2_per_round"] is None

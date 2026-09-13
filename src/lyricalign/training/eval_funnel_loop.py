@@ -198,7 +198,9 @@ def build_funnel(cfg: dict[str, Any], valid: list[dict[str, Any]],
                             l2_max=int(funnel_cfg.get("l2_max", 16)),
                             l3_every=int(funnel_cfg.get("l3_every", 1000)),
                             l3_top_k=int(funnel_cfg.get("l3_top_k", 8)),
-                            ucb_scale=float(funnel_cfg.get("ucb_scale", 1.5)))
+                            ucb_scale=float(funnel_cfg.get("ucb_scale", 1.5)),
+                            l2_per_round=(int(funnel_cfg["l2_per_round"])
+                                          if funnel_cfg.get("l2_per_round") else None))
     fractions = {"l1": float(funnel_cfg.get("l1_fraction", 0.25)),
                  "l2": float(funnel_cfg.get("l2_fraction", 0.5)),
                  "l3": 1.0}
@@ -230,7 +232,7 @@ def run_pending_evals(planner: FunnelPlanner, *, step: int, model: Any, processo
                                    dtype=dtype, batch_size=batch_size, segment_sec=segment_sec)
         block = result["variants"][selection["variant"]]
         value, se = _read_selection(block, selection)
-        planner.record(candidate, level, value, se=se)
+        planner.record(candidate, level, value, se=se, at_step=step)
         entry = {"step_now": int(step), "evaluated_step": int(candidate), "level": level,
                  "selection": selection, "value": round(value, 4),
                  "se": (round(se, 4) if se else None), "val_loss": result["val_loss"],

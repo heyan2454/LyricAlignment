@@ -28,7 +28,15 @@ class FunnelPlanner:
     Parameters
     ----------
     l1_every:      candidate cadence; a candidate enters L1 once, at/after this interval.
-    l2_max:        cap on how many candidates ever get the medium subset.
+    l2_max:        cap on how many candidates ever get the medium subset.  With `l2_per_round`
+                   left at None this cap is first-come-first-served, so early (usually worst)
+                   checkpoints can consume it and later checkpoints are never promoted; that
+                   starvation happened in the first from-official run (16/16 L2 slots filled by
+                   steps <= 900, everything after step 900 stuck at L1).
+    l2_per_round:  if set, at most this many *new* L2 admissions per `l3_every` round, still
+                   bounded by `l2_max` in total.  This spreads the same L2 budget over the whole
+                   run so late checkpoints can still be promoted.  Requires `record(..., at_step=)`
+                   to be supplied by the caller.
     l3_every:      L3 may only be queued on multiples of this step (aligned with cycle ends).
     l3_top_k:      how many *new* candidates one L3 round may admit.  A candidate is never
                    evaluated at the same level twice, so over a long run the number of full-set
@@ -39,17 +47,21 @@ class FunnelPlanner:
     """
 
     def __init__(self, *, l1_every: int = 50, l2_max: int = 16, l3_every: int = 1000,
-                 l3_top_k: int = 8, ucb_scale: float = 1.5, l2_ucb_scale: float | None = None) -> None:
+                 l3_top_k: int = 8, ucb_scale: float = 1.5, l2_ucb_scale: float | None = None,
+                 l2_per_round: int | None = None) -> None:
         for name, value in (("l1_every", l1_every), ("l2_max", l2_max), ("l3_every", l3_every),
                             ("l3_top_k", l3_top_k)):
             if int(value) < 1:
                 raise ValueError(f"{name} must be >= 1, got {value!r}")
+        if l2_per_round is not None and int(l2_per_round) < 1:
+            raise ValueError(f"l2_per_round must be >= 1 or None, got {l2_per_round!r}")
         if float(ucb_scale) < 0:
             raise ValueError("ucb_scale must be >= 0")
         self.l1_every = int(l1_every)
         self.l2_max = int(l2_max)
         self.l3_every = int(l3_every)
         self.l3_top_k = int(l3_top_k)
+        self.l2_per_round = (int(l2_per_round) if l2_per_round is not None else None)
         self.ucb_scale = float(ucb_scale)
         self.l2_ucb_scale = float(l2_ucb_scale) if l2_ucb_scale is not None else float(ucb_scale)
         self.candidates: dict[int, dict[str, dict[str, float]]] = {}
@@ -71,14 +83,19 @@ class FunnelPlanner:
         return sum(1 for s in steps if self.register(s))
 
     # ---- results -------------------------------------------------------------------
-    def record(self, step: int, level: str, value: float, *, se: float | None = None) -> None:
+    def record(self, step: int, level: str, value: float, *, se: float | None = None,
+               at_step: int | None = None) -> None:
         if level not in LEVELS:
             raise ValueError(f"unknown funnel level {level!r}")
         step = int(step)
         if step not in self.candidates:
             self.register(step)
-        self.candidates[step][level] = {"value": float(value),
-                                        "se": (float(se) if se is not None and se > 0 else 0.0)}
+        entry: dict[str, Any] = {"value": float(value),
+                                   "se": (float(se) if se is not None and se > 0 else 0.0)}
+        if at_step is not None:
+            entry["at_step"] = int(at_step)
+            entry["round"] = int(at_step) // self.l3_every
+        self.candidates[step][level] = entry
 
     def _best(self, level: str) -> tuple[int, float, float] | None:
         scored = [(s, r[level]["value"], r[level]["se"]) for s, r in self.candidates.items()
@@ -86,6 +103,12 @@ class FunnelPlanner:
         if not scored:
             return None
         return max(scored, key=lambda row: row[1])
+
+    def best(self, level: str) -> tuple[int, float, float] | None:
+        """Public (step, value, se) of the best candidate at `level`, or None if unscored."""
+        if level not in LEVELS:
+            raise ValueError(f"unknown funnel level {level!r}")
+        return self._best(level)
 
     @staticmethod
     def _ucb(entry: dict[str, float], scale: float) -> float:
@@ -106,6 +129,11 @@ class FunnelPlanner:
                             reverse=True)
             already_l2 = {s for s, r in self.candidates.items() if "l2" in r}
             capacity = max(0, self.l2_max - len(already_l2))
+            if self.l2_per_round is not None:
+                round_index = int(step_now) // self.l3_every
+                admitted = sum(1 for s, r in self.candidates.items()
+                               if "l2" in r and r["l2"].get("round") == round_index)
+                capacity = min(capacity, max(0, self.l2_per_round - admitted))
             for step in ranked:
                 if capacity <= 0:
                     break
@@ -125,7 +153,9 @@ class FunnelPlanner:
                                                              self.l2_ucb_scale), reverse=True)
                 threshold = best_l2[1] + self.l2_ucb_scale * best_l2[2]
                 already_l3 = {s for s, r in self.candidates.items() if "l3" in r}
-                slots = max(0, self.l3_top_k - len(already_l3 % set(ranked) if False else set()))
+                # at most l3_top_k *new* full-set evaluations per round; a candidate is never
+                # re-evaluated at the same level, so this bounds the expensive work by
+                # ceil(steps / l3_every) * l3_top_k.
                 slots = max(0, self.l3_top_k)
                 for step in ranked:
                     if slots <= 0:
@@ -174,6 +204,7 @@ class FunnelPlanner:
             "scored": {level: sum(1 for r in self.candidates.values() if level in r)
                        for level in LEVELS},
             "params": {"l1_every": self.l1_every, "l2_max": self.l2_max,
+                       "l2_per_round": self.l2_per_round,
                        "l3_every": self.l3_every, "l3_top_k": self.l3_top_k,
                        "ucb_scale": self.ucb_scale, "l2_ucb_scale": self.l2_ucb_scale},
             "leaderboard": self.leaderboard(),

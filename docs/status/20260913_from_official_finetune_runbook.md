@@ -54,6 +54,34 @@ python scripts/training/run_qwen_fa_lora.py --config configs/training/qwen_fa_lo
 3. 三判据若排序不同（例如 `raw` 挑的点与 `fixed` 不同），就把两个点都留下，
    交主线决定上线用哪个后处理——这正是本次同时记三条判据的目的。
 
+## 已知缺陷：本次运行的漏斗在 step 900 之后“饿死”（2026-09-13 10:15 发现）
+`l2_max` 是**总量**预算且先到先得，于是 16 个 L2 名额被 step ≤ 900 的早期 ckpt 全部吃掉；
+之后每个 ckpt 只做 L1，`pending()` 再也产不出新的 L3 任务，`EARLY_STOP.json` 也自 step 1000
+起不再更新（提前停止永远不会触发）。实测 L1 曲线在 step 1050 之后仍在缓慢上升
+（step 1250 的 L1 = 0.9469 > step 900 的 0.9348），也就是说**当前 `pick`（step 900）大概率不是最优点**。
+
+已在代码里修好（对**将来**的运行生效，本次进程已加载旧代码、不受影响）：
+`FunnelPlanner(l2_per_round=N)` 把 L2 名额按 `l3_every` 轮次发放；`record(..., at_step=)` 带轮次；
+`run_qwen_fa_lora.py` 的提前停止改为在**每个 `l3_every` 边界**记账（用当前 L3/L2/L1 的领先者），
+所以即使没有新的 L3 任务也能停。建议以后的新 config 在 `eval_funnel` 里加 `l2_per_round: 2`
+（12 轮 × 2 = 24 ≥ `l2_max: 16`，全程都有名额）。
+
+## 跑完后的权威选点：top-up 复评（本次必做）
+因为上面的缺陷没法热修，本次运行的**权威选点**由事后脚本给出，协议与训练内完全一致
+（同样本、同三判据、同容差、同 1SE 规则）：
+```bash
+cd /home/hyan/LyricAlignment && source /root/miniconda3/etc/profile.d/conda.sh && conda activate lyricalign-qwen
+export HF_HUB_CACHE=/home/hyan/Data/lyricalign/models/hf_cache HF_HUB_OFFLINE=1 PYTHONPATH=src
+R=/home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724
+OLD=/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750
+python scripts/training/run_funnel_topup.py --run-dir "$R" --dry-run --top-k 8   # 只出计划，不占 GPU
+python scripts/training/run_funnel_topup.py --run-dir "$R" --verify-weights --device cpu  # 权重可装载性
+python scripts/training/run_funnel_topup.py --run-dir "$R" --levels l2,l3 --top-k 8 --l3-top-k 3 \
+  --extra old-r2-750=$OLD        # 真正复评，写 TOPUP.json + topup_evals.jsonl（追加，不覆盖任何旧文件）
+```
+成本：L2 = 918 项 ≈ 100 s/ckpt，L3 = 1711 项 ≈ 210 s/ckpt；8 个 L2 + 3 个 L3 ≈ 24 min（单卡）。
+`TOPUP.json` 里 `pick_by_variant` 同时给 `fixed` / `raw` / `raw_targeted` 三条判据各自的选点。
+
 ## 第二臂（仅在本次提前结束、时间富余时）
 软标签版（目标桶 ±1 格三角/高斯权重）。**必须先实现自定义 soft-CE**（模型自带 CE 只支持硬标签），
 约 25–30 行 + 单测；其余（数据/seed/预算/漏斗）保持不变，这样两臂只差一个变量。
