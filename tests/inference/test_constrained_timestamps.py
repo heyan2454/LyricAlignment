@@ -120,3 +120,44 @@ def test_dp_timestamp_items_truncates_gracefully_without_timestamp_slots():
     ids = np.array([[1, 2, 3]], dtype=np.int64)
     assert dp_timestamp_items(logits, ids, [["啊"]], timestamp_token_id=7,
                               segment_sec=0.08) == [[]]
+
+
+def test_decode_timestamps_official_path_uses_the_processor_unchanged():
+    from lyricalign.inference.qwen_forced_aligner import decode_timestamps
+
+    calls = {}
+
+    class FakeProcessor:
+        def decode_forced_alignment(self, **kwargs):
+            calls.update(kwargs)
+            return [[{"text": "啊", "start_time": 0.1, "end_time": 0.4}]]
+
+    items = decode_timestamps(FakeProcessor(), decoder="official", logits="L", input_ids="I",
+                              word_lists=[["啊"]], timestamp_token_id=7, segment_sec=0.08)
+    assert items == [{"text": "啊", "start_time": 0.1, "end_time": 0.4}]
+    assert set(calls) == {"logits", "input_ids", "word_lists", "timestamp_token_id"}
+
+
+def test_decode_timestamps_rejects_unknown_decoder():
+    from lyricalign.inference.qwen_forced_aligner import decode_timestamps
+
+    try:
+        decode_timestamps(object(), decoder="greedy", logits=None, input_ids=None,
+                          word_lists=[[]], timestamp_token_id=7, segment_sec=0.08)
+        raise AssertionError("expected ValueError")
+    except ValueError as exc:
+        assert "unknown timestamp decoder" in str(exc)
+
+
+def test_aligner_constructor_validates_and_defaults_the_decoder():
+    from lyricalign.inference.qwen_forced_aligner import QwenForcedAligner
+
+    default = QwenForcedAligner("some/model")
+    assert default.timestamp_decoder == "official"
+    dp = QwenForcedAligner("some/model", timestamp_decoder="dp")
+    assert dp.timestamp_decoder == "dp"
+    try:
+        QwenForcedAligner("some/model", timestamp_decoder="beam")
+        raise AssertionError("expected ValueError")
+    except ValueError as exc:
+        assert "unknown timestamp decoder" in str(exc)
