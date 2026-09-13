@@ -36,8 +36,12 @@ class QwenFABatchCollator:
         self.language = language
         self.timestamp_token_id = timestamp_token_id
 
+    def load_audio(self, row: dict[str, Any]) -> Any:
+        """Hook for subclasses: one record -> mono float32 waveform at the processor rate."""
+        return decode_audio(self.audio_root / row["audio_relpath"])
+
     def __call__(self, records: list[dict[str, Any]]) -> tuple[Any, list[list[str]]]:
-        audio = [decode_audio(self.audio_root / row["audio_relpath"]) for row in records]
+        audio = [self.load_audio(row) for row in records]
         inputs, words = self.processor.prepare_forced_aligner_inputs(
             audio=audio, transcript=[row["lyrics_normalized"] for row in records], language=self.language
         )

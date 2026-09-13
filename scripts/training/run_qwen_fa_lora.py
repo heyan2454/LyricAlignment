@@ -267,11 +267,22 @@ def main() -> None:
     available_train = [row for row in labels if row["split"] == "train"]
     available_valid = [row for row in labels if row["split"] == "validation"]
     train = song_sample(available_train, train_limit, seed)
+    concat_cfg = dict(cfg["training"].get("concat_samples") or {})
     oversample_cfg = dict(cfg["training"].get("duration_oversample") or {})
     train, augmentation = apply_duration_oversample(
         train, long_sec=float(oversample_cfg.get("long_sec", 1.0)),
         factor=int(oversample_cfg.get("factor", 1)))
     atomic_json(run_dir / "training_augmentation.json", augmentation)
+    if concat_cfg.get("enabled"):
+        if oversample_cfg.get("factor", 1) > 1:
+            raise SystemExit("concat_samples and duration_oversample are mutually exclusive: "
+                             "picking one variable per experiment keeps the arms comparable")
+        from lyricalign.training.qwen_fa_concat import group_concat_records
+        train, concat_stats = group_concat_records(
+            train, target_sec=float(concat_cfg.get("target_sec", 20.0)),
+            max_sec=float(concat_cfg.get("max_sec", 28.0)), gap_sec=float(concat_cfg.get("gap_sec", 0.4)))
+        atomic_json(run_dir / "concat_train_view.json", concat_stats)
+        print(json.dumps({"concat_view": concat_stats}), flush=True)
     valid = available_valid
     if args.stage == "overfit":
         train = item_sample(available_train, train_limit, seed)
@@ -290,7 +301,13 @@ def main() -> None:
         "seed": seed,
         "stage": args.stage,
     })
-    collator = QwenFABatchCollator(processor, audio_root=Path(cfg["data"]["audio_root"]), language=cfg["data"]["language"], timestamp_token_id=model.config.timestamp_token_id)
+    collator_cls = QwenFABatchCollator
+    if concat_cfg.get("enabled"):
+        from lyricalign.training.qwen_fa_concat import QwenFAConcatCollator
+        collator_cls = QwenFAConcatCollator
+    collator = collator_cls(processor, audio_root=Path(cfg["data"]["audio_root"]),
+                            language=cfg["data"]["language"], timestamp_token_id=model.config.timestamp_token_id,
+                            **({"gap_sec": float(concat_cfg.get("gap_sec", 0.4))} if concat_cfg.get("enabled") else {}))
     evaluation_batch = int(cfg["training"].get("evaluation_micro_batch_size", cfg["training"]["micro_batch_size"]))
     if args.stage == "r0":
         result = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
