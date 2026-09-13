@@ -133,6 +133,10 @@
 - 长字符子集（≥1.0 s / ≥2.0 s）超容差率。
 
 ## 5. 停止规则与风险
+- **配置冻结时刻**：A 臂启动（约 07:00）后不得再改 `qwen_fa_lora_warmstart_control_20260914.yaml`，
+  B 臂启动（约 08:00）后不得再改 `..._oversample_...yaml`——trainer 会用 run 目录里的 config.yaml 副本
+  做 resume 身份校验，事后改配置会让续跑直接失败（这个坑今晚已踩过一次）。
+  两臂的一致性由 `tests/training/test_warmstart_arm_configs.py` 守护。
 - 训练进程异常退出 ⇒ 记一次 stderr，不自动重试第三次，转人工；
 - 磁盘 < 22 G ⇒ 自动降级为仅权重（`disk_floor_gb: 22`），不删任何旧内容；
 - 若 06:00 前未跑完 ⇒ 用已有存档照常评估（每 100 步都有完整状态存档）；
