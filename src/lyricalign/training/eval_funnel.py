@@ -36,9 +36,14 @@ class FunnelPlanner:
     l2_budget:     total number of medium evaluations allowed (defaults to `l2_max`, i.e. no churn).
                    Displacing a finalist costs one extra evaluation, so this is what actually bounds
                    the cost of keep-best admission; `2 * l2_max` is a reasonable setting.
-    l2_per_round:  if set, at most this many *new* L2 admissions per `l3_every` round, still bounded
-                   by `l2_budget` in total.  Smooths the load instead of admitting a burst in round 1.
-                   Requires `record(..., at_step=)` to be supplied by the caller.
+    l2_per_round:  if set, tier 2 opens its gates only on multiples of `l2_every` (default
+                   `l3_every`) and then admits the round's best `l2_per_round` candidates, still
+                   bounded by `l2_budget`.  This is the literal "the new champion of the lower tier
+                   challenges this tier" rule; admitting continuously with a per-round quota would
+                   let whoever leads at the start of a round eat the quota and lock out a better
+                   late arrival.  Requires `record(..., at_step=)` to be supplied by the caller.
+    l2_every:      round length for tier-2 challenges (default = `l3_every`); only used together
+                   with `l2_per_round`.
     l3_every:      L3 may only be queued on multiples of this step (aligned with cycle ends).
     l3_top_k:      how many *new* candidates one L3 round may admit.  A candidate is never
                    evaluated at the same level twice, so over a long run the number of full-set
@@ -50,7 +55,8 @@ class FunnelPlanner:
 
     def __init__(self, *, l1_every: int = 50, l2_max: int = 16, l3_every: int = 1000,
                  l3_top_k: int = 8, ucb_scale: float = 1.5, l2_ucb_scale: float | None = None,
-                 l2_per_round: int | None = None, l2_budget: int | None = None) -> None:
+                 l2_per_round: int | None = None, l2_budget: int | None = None,
+                 l2_every: int | None = None) -> None:
         for name, value in (("l1_every", l1_every), ("l2_max", l2_max), ("l3_every", l3_every),
                             ("l3_top_k", l3_top_k)):
             if int(value) < 1:
@@ -59,6 +65,8 @@ class FunnelPlanner:
             raise ValueError(f"l2_per_round must be >= 1 or None, got {l2_per_round!r}")
         if l2_budget is not None and int(l2_budget) < 1:
             raise ValueError(f"l2_budget must be >= 1 or None, got {l2_budget!r}")
+        if l2_every is not None and int(l2_every) < 1:
+            raise ValueError(f"l2_every must be >= 1 or None, got {l2_every!r}")
         if float(ucb_scale) < 0:
             raise ValueError("ucb_scale must be >= 0")
         self.l1_every = int(l1_every)
@@ -67,6 +75,7 @@ class FunnelPlanner:
         self.l3_top_k = int(l3_top_k)
         self.l2_per_round = (int(l2_per_round) if l2_per_round is not None else None)
         self.l2_budget = (int(l2_budget) if l2_budget is not None else None)
+        self.l2_every = (int(l2_every) if l2_every is not None else None)
         self.ucb_scale = float(ucb_scale)
         self.l2_ucb_scale = float(l2_ucb_scale) if l2_ucb_scale is not None else float(ucb_scale)
         self.candidates: dict[int, dict[str, dict[str, float]]] = {}
@@ -127,7 +136,15 @@ class FunnelPlanner:
             if "l1" not in self.candidates[step]:
                 jobs.append(("l1", step))
         best_l1 = self._best("l1")
-        if best_l1 is not None:
+        l2_window_open = True
+        if self.l2_per_round is not None:
+            # Literal "the new champion challenges tier 2" semantics: tier 2 only opens its gates on
+            # round boundaries and then takes the round's *best* `l2_per_round` candidates.  Admitting
+            # continuously with a per-round quota instead would let whoever happens to be leading at
+            # the start of the round consume the quota and lock out a better late arrival.
+            l2_every = self.l2_every or self.l3_every
+            l2_window_open = int(step_now) > 0 and int(step_now) % l2_every == 0
+        if best_l1 is not None and l2_window_open:
             threshold = best_l1[1] + self.ucb_scale * best_l1[2]
             l1_scored = [s for s, r in self.candidates.items() if "l1" in r]
             ranked = sorted(l1_scored, key=lambda s: self._ucb(self.candidates[s]["l1"], self.ucb_scale),
@@ -137,10 +154,7 @@ class FunnelPlanner:
             budget = self.l2_max if self.l2_budget is None else self.l2_budget
             capacity = max(0, budget - spent)
             if self.l2_per_round is not None:
-                round_index = int(step_now) // self.l3_every
-                admitted = sum(1 for s, r in self.candidates.items()
-                               if "l2" in r and r["l2"].get("round") == round_index)
-                capacity = min(capacity, max(0, self.l2_per_round - admitted))
+                capacity = min(capacity, self.l2_per_round)
             # Keep-best (heap) admission: once the finalist set is full, a challenger is worth a
             # medium evaluation only if it looks at least as good as the *weakest finalist* — that is
             # what stops a late-but-better checkpoint from being locked out by earlier arrivals.
@@ -224,6 +238,7 @@ class FunnelPlanner:
                        for level in LEVELS},
             "params": {"l1_every": self.l1_every, "l2_max": self.l2_max,
                        "l2_per_round": self.l2_per_round, "l2_budget": self.l2_budget,
+                       "l2_every": self.l2_every,
                        "l3_every": self.l3_every, "l3_top_k": self.l3_top_k,
                        "ucb_scale": self.ucb_scale, "l2_ucb_scale": self.l2_ucb_scale},
             "leaderboard": self.leaderboard(),

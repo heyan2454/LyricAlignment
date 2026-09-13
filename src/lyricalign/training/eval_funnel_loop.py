@@ -202,7 +202,9 @@ def build_funnel(cfg: dict[str, Any], valid: list[dict[str, Any]],
                             l2_per_round=(int(funnel_cfg["l2_per_round"])
                                           if funnel_cfg.get("l2_per_round") else None),
                             l2_budget=(int(funnel_cfg["l2_budget"])
-                                       if funnel_cfg.get("l2_budget") else None))
+                                       if funnel_cfg.get("l2_budget") else None),
+                            l2_every=(int(funnel_cfg["l2_every"])
+                                      if funnel_cfg.get("l2_every") else None))
     fractions = {"l1": float(funnel_cfg.get("l1_fraction", 0.25)),
                  "l2": float(funnel_cfg.get("l2_fraction", 0.5)),
                  "l3": 1.0}
