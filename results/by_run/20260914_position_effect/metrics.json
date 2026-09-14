@@ -1,0 +1,65 @@
+{
+  "schema_version": "position_effect_v1",
+  "dump": "results/by_run/20260914_mech_validation_uniform/per_character.jsonl",
+  "tolerance_sec": 0.2,
+  "characters": 6299,
+  "raw": {
+    "combined": {
+      "status": "measured",
+      "last_characters": 742,
+      "interior_characters": 5557,
+      "miss_last": 0.0566,
+      "miss_interior": 0.0202,
+      "delta_pp": 3.64,
+      "z": 6.04,
+      "p": 0.0,
+      "median_err_last_ms": 45.0,
+      "median_err_interior_ms": 35.0
+    }
+  },
+  "stratified": {
+    "0-0.5s": {
+      "status": "insufficient_data",
+      "last_characters": 27,
+      "interior_characters": 4202
+    },
+    "0.5-1s": {
+      "status": "measured",
+      "last_characters": 80,
+      "interior_characters": 1119,
+      "miss_last": 0.0875,
+      "miss_interior": 0.0375,
+      "delta_pp": 5.0,
+      "z": 2.18,
+      "p": 0.0292,
+      "median_err_last_ms": 40.0,
+      "median_err_interior_ms": 40.0,
+      "p_times_strata": 0.1168,
+      "verdict": "迹象（未过校正）"
+    },
+    "1-2s": {
+      "status": "measured",
+      "last_characters": 542,
+      "interior_characters": 226,
+      "miss_last": 0.0443,
+      "miss_interior": 0.0708,
+      "delta_pp": -2.65,
+      "z": -1.51,
+      "p": 0.1318,
+      "median_err_last_ms": 50.0,
+      "median_err_interior_ms": 40.0,
+      "p_times_strata": 0.5272,
+      "verdict": "无证据"
+    },
+    "2s+": {
+      "status": "insufficient_data",
+      "last_characters": 93,
+      "interior_characters": 10
+    }
+  },
+  "confound": {
+    "share_long_last": 0.8558,
+    "share_long_interior": 0.0425
+  },
+  "strata_tested": 4
+}

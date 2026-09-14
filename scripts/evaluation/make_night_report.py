@@ -468,6 +468,35 @@ def sec_long_offset_drift(root: Path) -> list[str]:
     return lines
 
 
+def sec_position_effect(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_position_effect/metrics.json")
+    if "stratified" not in doc:
+        return ["- 状态：未跑"]
+    confound = doc["confound"]
+    raw = doc["raw"]["combined"]
+    lines = ["- **一个诱人的免费改动被分层检验否证**：留出 dump 里末字符超差率 "
+             f"{_pct(raw['miss_last'])} vs 内部 {_pct(raw['miss_interior'])}（原始差 "
+             f"{raw['delta_pp']:+.2f} pp，z={raw['z']}），看起来像「尾部缺少后续上下文」，"
+             "直觉修法是把音频尾部多裁一点（不需重训）；",
+             f"- 但**混杂近乎共线**：末字符里 ≥1s 占 **{100 * confound['share_long_last']:.1f}%**，"
+             f"内部字符只有 **{100 * confound['share_long_interior']:.1f}%** ⇒ 长音本来就几乎总在句尾；",
+             "", "| 时长层 | 末字 | 内部 | 差(pp) | p | p×K | 判定 |", "|---|---|---|---|---|---|---|"]
+    for label, block in doc["stratified"].items():
+        if block.get("status") != "measured":
+            lines.append(f"| {label} | — | — | — | — | — | 样本不足（{block.get('last_characters', 0)}/"
+                         f"{block.get('interior_characters', 0)}） |")
+            continue
+        lines.append(f"| {label} | {_pct(block['miss_last'])} | {_pct(block['miss_interior'])} | "
+                     f"{block['delta_pp']:+.2f} | {block['p']:.3f} | {block['p_times_strata']:.3f} | "
+                     f"**{block['verdict']}** |")
+    lines += ["", "- ⇒ **没有任何一层通过 ×K 校正**（最好的 0.5–1s 层 p=0.029 → ×4 = 0.117，"
+              "且 1–2s 层方向相反）⇒ **不做「延长裁剪尾部」**；",
+              "- 方法学收获（写进规则）：**位置与时长在本语料里近乎共线**，"
+              "任何按位置/段落报告的结果都必须先做时长分层，"
+              "否则会把「长音总在句尾」误读成「句尾更难」。"]
+    return lines
+
+
 def sec_gating_calibration(root: Path) -> list[str]:
     doc = _load(root / "results/by_run/20260914_gating_calibration/metrics.json")
     if doc.get("status") != "measured":
@@ -556,6 +585,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("真歌端到端解码探针（压力条件）", "results/by_run/20260914_real_song_decoder", sec_real_decoder),
     ("置信度 × 时长交叉（否证天真版机制 + 新发现）", "results/by_run/20260914_confidence_duration", sec_confidence_duration),
     ("按预测时长分档的门控阈值：假设被否证", "results/by_run/20260914_gating_calibration", sec_gating_calibration),
+    ("位置效应（末字）：被时长混杂解释，不成立", "results/by_run/20260914_position_effect", sec_position_effect),
     ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
