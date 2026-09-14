@@ -431,31 +431,40 @@ def sec_confidence_duration(root: Path) -> list[str]:
 
 
 def sec_long_offset_drift(root: Path) -> list[str]:
-    doc = _load(root / "results/by_run/20260914_paired_A_vs_start/metrics.json")
+    doc = _load(root / "results/by_run/20260914_paired_A_vs_start/robustness.json")
+    history = _load(root / "results/by_run/20260914_paired_1200/robustness.json")
     if "sides" not in doc:
         return ["- 状态：未跑"]
-    sides = doc["sides"]
-    lines = ["- 对照臂 A 是**未改配比的 600 步续训**，它给了今晚唯一一次**操作性检验**：",
-             "", "| 位置 | n | Δ（A − 起点，正=更差） | z | 超差率 |", "|---|---|---|---|---|"]
-    for key, label in (("onset_short", "起始点·短字符"), ("offset_short", "结束点·短字符"),
-                       ("onset_long", "起始点·长字符"), ("offset_long", "**结束点·长字符**"),
-                       ("combined_long", "长字符合计"), ("combined_all", "全体")):
-        block = sides.get(key)
-        if not block:
+    lines = ["- **这一节修正了我自己几小时前说过头的话**：A（未改配比的 600 步续训）在长字符结束点上"
+             "的退化只是**迹象**，不是确证。四位置稳健性检查（含 ×4 多重比较校正）：",
+             "", "| 位置 | n | 均值Δ | 中位Δ | 截尾均值 | 均值 p(×4) | McNemar p(×4) | 判定 |",
+             "|---|---|---|---|---|---|---|---|"]
+    order = ("onset_short", "onset_long", "offset_short", "offset_long")
+    for name in order:
+        block = doc["sides"].get(name) or {}
+        if block.get("status") != "measured":
             continue
-        lines.append(f"| {label} | {block['n']} | {block['mean_delta_ms']:+.2f} ms | {block['z']} | "
-                     f"{_pct(block['miss_rate_old'])} → {_pct(block['miss_rate_new'])} |")
-    drift = _load(root / "results/by_run/20260914_mech_control/duration_ratio.json")
-    long_block = ((drift or {}).get("buckets") or {}).get("2-+s", {})
-    lines += ["", "- ⇒ **退化精确落在长字符的结束点上**（z=+2.19），另外三个位置纹丝不动（Δ≈0，z 不显著）；"
-              f"同方向上 A 的 ≥2s 失败子集长度比 {long_block.get('miss_median_duration_ratio', '—')}"
-              "（起点 0.538）、中点位移 "
-              f"{long_block.get('miss_median_signed_centre_shift_ms', 0):+.0f} ms（起点 −490 ms）；",
-              "- 意义：这不再是『暴露少 ↔ 误差大』的横断面相关，而是**在同一配比上多训就更糟、且只糟在缺样本的"
-              "那个自由度上**的因果证据 ⇒ 支持『把长度拉向训练分布众数』这一机制解释；",
-              "- 代价（自我更正）：我 07:36 登记的噪声地板预测（600 步在 ≥2s 上移动 <0.1 pp）**被这条实测否证**，"
-              "已在预注册 §3g-4 就地更正，并据此把 B 的主读法改为**同时报 B vs 起点与 B vs A**"
-              "（因为 A 自身下漂会让 B vs A 高估收益）。"]
+        lines.append(f"| {name} | {block['n']} | {block['mean_delta_ms']:+.2f} ms | {block['median_delta_ms']:+.1f} | "
+                     f"{block['trimmed_mean_delta_ms']:+.2f} | {block['p_t']:.3f} ({block['p_t_times_sides']:.3f}) | "
+                     f"{block['mcnemar_better']}/{block['mcnemar_worse']} → {block['p_mcnemar_exact']:.3f} "
+                     f"({block['p_mcnemar_times_sides']:.3f}) | **{block['verdict']}** |")
+    lines += ["", "  ⇒ **中位数与 2% 截尾均值都是 0.00 ms**：那 +9.55 ms 的均值完全来自极少数字符的大幅移动"
+              "（新坏 5 个 / 新好 0 个，n=940）；且这是从四个位置里挑最差的来讲，必须校正。"
+              "所以正确措辞是『迹象、未过校正』，我先前写的『显著、专一伤害、预测被否证』已撤回。", ""]
+    if "sides" in (history or {}):
+        short = history["sides"].get("offset_short") or {}
+        long_ = history["sides"].get("offset_long") or {}
+        lines += ["- **同一把尺子复查整条训练史（750 → 12000 步）**：短字符结束点的改善是**确证**"
+                  f"（{short.get('mean_delta_ms'):+.2f} ms，McNemar {short.get('mcnemar_better')}/"
+                  f"{short.get('mcnemar_worse')}，p×4={short.get('p_mcnemar_times_sides')}）；"
+                  f"而**长字符结束点的改善是无证据**（{long_.get('mean_delta_ms'):+.2f} ms，"
+                  f"p×4={long_.get('p_t_times_sides')}；McNemar {long_.get('mcnemar_better')}/"
+                  f"{long_.get('mcnemar_worse')}，p×4={long_.get('p_mcnemar_times_sides')}）"
+                  "⇒ 这修正了我此前在多处留下的『长音随训练改善』暗示；今晚重训的确证收益在**短字符结束点**，"
+                  "长音并没有被证明被修好（这与主线判断一致，但过去措辞太松）。",
+                  "- 新增流程规则：**任何按位置/子集分开报告的配对效应，必须同时给中位数+截尾均值、"
+                  "二项 McNemar、以及对所考察位置数的 ×K 校正；三者不同向时只能写『迹象』**"
+                  "（工具 `paired_robustness_check.py`）。"]
     return lines
 
 
@@ -547,7 +556,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("真歌端到端解码探针（压力条件）", "results/by_run/20260914_real_song_decoder", sec_real_decoder),
     ("置信度 × 时长交叉（否证天真版机制 + 新发现）", "results/by_run/20260914_confidence_duration", sec_confidence_duration),
     ("按预测时长分档的门控阈值：假设被否证", "results/by_run/20260914_gating_calibration", sec_gating_calibration),
-    ("对照臂给出的因果证据：续训专伤长字符结束点", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
+    ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
 ]
@@ -571,8 +580,8 @@ def main() -> None:
              "1. **重训有效但边际小**（MAE −3.3 ms / −7%，逐字符配对 z=−5），而且**长流、窗口边缘、"
              "流长、重排、跨窗共识**这四个候选解释全部被测量否证或削弱；",
              "2. 机制的准确表述（经两次自我修正）：**典型预测并不收缩**，收缩与偏早是失败子集的条件性偏差；"
-             "而对照臂 A 给出了因果证据——**在未改配比的续训中，只有长字符的结束点显著变差**"
-             "（Δ +9.57 ms，z=+2.19），其余三个位置不动；",
+             "对照臂 A 在长字符结束点上只给出**迹象**（均值 +9.6 ms，但中位数与截尾均值为 0，"
+             "×4 校正后不显著）——**今晚的因果证据仍不充分，这是方法的边界，不是已证的事实**；",
              "3. 两条**已经拿到手**的收益：DP 解码（域内 +0.85pp、塌陷清零）与置信度门控"
              "（复核 10% 消除 55% 缺陷），都不需要重训；",
              "4. 你指定的长样本实验结论是**中性**（不伤短条目精度，故可安全混训）；"
@@ -584,7 +593,9 @@ def main() -> None:
     lines += ["---", "", "## 资源与安全", "",
               "- 所有既有产物未删除；大体积逐条文件已解除 git 跟踪但保留在磁盘；",
               "- GPU 全程单卡串行（臂与评测交接由哨兵驱动，无并发训练）；磁盘余量约 23 G；",
-              "- 自我纠错记录：**自动化脚本里的 bash 陷阱**——`local key=$1 dir=$2 run=$D/$dir` 中所有词元"
+              "- 自我纠错记录：**`pytest ... | tail` 会吞掉退出码**，导致我用 `&&` 串的门禁失效、"
+              "两次在测试仍红时就完成提交（现改用 `set -o pipefail` 或直接看退出码）；"
+              "**自动化脚本里的 bash 陷阱**——`local key=$1 dir=$2 run=$D/$dir` 中所有词元"
               "在任何赋值发生前就展开，于是 `$dir` 未定义、`set -u` 下后台子壳以 127 **静默退出**"
               "（stderr 被 setsid 重定向到 /dev/null），机制 dump 因此空转了 4 分钟没动。已拆开 local、"
               "并把后台任务的 stderr 并进日志；排查过程本身靠的是最小复现（30 秒定位）而不是猜；"
