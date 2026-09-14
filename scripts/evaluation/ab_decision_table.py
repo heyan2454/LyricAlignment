@@ -105,6 +105,8 @@ def main() -> None:
     parser.add_argument("--long-vs-start")
     parser.add_argument("--short")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--challenger", default="B", help="挑战者臂标签，用于报告文字（如 C）")
+    parser.add_argument("--reference-arm", default="A", help="对照臂标签，用于报告文字（如 A）")
     parser.add_argument("--adjust", default="both", choices=("both", "k4", "none"),
                         help="多重比较口径。k4=对四个位置做 ×4 校正（保守）；"
                              "none=按预注册的单一主判据 offset_long 不校正；both=两个都给，不许只挑有利的那个")
@@ -149,15 +151,15 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     report_path = args.out.with_name("REPORT.md")     # --out 指向 metrics.json，报告写在同目录
-    lines = ["# A/B 决策表填表结果（机械判定，勿手改）", "",
-             f"> 规则登记于 08:39（早于 B 的主判据），来源 `§3l`；本文件由 `ab_decision_table.py` 生成。", "",
-             f"- 长字符结束点 B vs A：**{long_state}**"
+    lines = [f"# {args.challenger} vs {args.reference_arm} 决策表填表结果（机械判定，勿手改）", "",
+             f"> 规则登记于 08:39（早于任何主判据），来源 `§3l`；本文件由 `ab_decision_table.py` 生成。", "",
+             f"- 长字符结束点 {args.challenger} vs {args.reference_arm}：**{long_state}**"
              + (f"（Δ={long_block.get('mean_delta_ms')} ms，p_t×K={long_block.get('p_t_times_sides')}，"
                 f"McNemar×K={long_block.get('p_mcnemar_times_sides')}）" if long_block else ""),
-             f"- 长字符结束点 B vs 起点：**{start_state}**"
+             f"- 长字符结束点 {args.challenger} vs 起点：**{start_state}**"
              + (f"（Δ={start_block.get('mean_delta_ms')} ms）" if start_block else ""),
-             f"- 短条目 B−A：**{short_state}**"
-             + (f"（{short_block.get('mean_delta_pp')} pp，B 更好 {short_block.get('b_better_points')}/"
+             f"- 短条目 {args.challenger}−{args.reference_arm}：**{short_state}**"
+             + (f"（{short_block.get('mean_delta_pp')} pp，{args.challenger} 更好 {short_block.get('b_better_points')}/"
                 f"{short_block.get('points')} 点）" if short_block else ""),
              "", f"**所在格（口径：{args.adjust}）**：{row}", "", f"**预定下一步**：{action}", ""]
     if per_mode_rows:
