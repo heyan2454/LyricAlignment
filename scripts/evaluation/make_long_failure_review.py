@@ -27,23 +27,36 @@ TOL = 0.2
 
 
 def classify(row: dict[str, Any]) -> str:
-    """A first-pass label from the numbers; the point of the listening pass is to correct these."""
-    peak_gt = row.get("peak_gt")
-    peak_pred = row.get("peak_pred")
+    """A first-pass label; the listening pass exists to correct these.
+
+    Note (2026-09-14 20:24): in this dump `peak_pred` is null for every long-note failure, because the
+    predicted end often falls outside the per-character analysis window — so any rule that compares
+    prominence at the two places can never fire.  Classifying on it silently produced a fake "systematic"
+    bucket; the honest signals here are the model's own uncertainty, whether the truth carried weight, and
+    the **sign** of the error.
+    """
     entropy = row.get("entropy_nats") or 0.0
     mass = row.get("mass_in_tol") or 0.0
     signed = row.get("signed_err") or 0.0
-    early = signed < 0
-    if peak_gt and peak_pred and peak_pred >= 0.8 * peak_gt:
-        return "真边界与预测处都响 ⇒ 更像「时长本身判错」（不是找不到边界）"
-    if peak_gt and peak_pred and peak_pred < 0.5 * peak_gt:
-        return ("预测处明显不响 ⇒ 边界证据缺失"
-                + ("（提前收）" if early else "（拖后收）"))
+    magnitude = abs(signed)
+    direction = "提前收（把长音切短）" if signed < 0 else "拖后收"
     if entropy >= 2.0:
-        return "模型自己就很犹豫（高熵）⇒ 门控应当已标记它"
-    if mass >= 0.5:
-        return "真值附近其实有权重、只是没被选中 ⇒ 属于挑选/解码问题"
-    return "其他：真值附近既无权重也不犹豫 ⇒ 系统性偏差，最难的一类"
+        reason = "模型自己就很犹豫（高熵）⇒ 门控应当已标记它"
+    elif mass >= 0.5:
+        reason = "真值附近其实有权重、只是没被选中 ⇒ 属于挑选/解码问题"
+    elif magnitude <= 0.5:
+        reason = "低犹豫 + 真值在容差外 ⇒ **边缘失败**（差 0.2~0.5 秒，不是离谱错）"
+    else:
+        reason = "低犹豫 + 真值几乎没权重 + 大幅偏离 ⇒ 自信地错，最难的一类"
+    return f"{direction}｜{reason}"
+
+
+def direction_stats(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    early = sum(1 for row in rows if (row.get("signed_err") or 0) < 0)
+    return {"total": len(rows), "cut_early": early, "cut_late": len(rows) - early,
+            "early_share": round(early / len(rows), 4) if rows else None,
+            "median_signed_err_ms": round(1000 * sorted(
+                float(row.get("signed_err") or 0) for row in rows)[len(rows) // 2], 1) if rows else None}
 
 
 def main() -> None:
@@ -69,7 +82,7 @@ def main() -> None:
     with args.out.open("w", encoding="utf-8") as handle:
         for row in picked:
             hint = classify(row)
-            hints[hint.split(" ⇒")[0]] += 1
+            hints[hint.split("｜", 1)[1]] += 1
             handle.write(json.dumps({
                 "item_id": row["item_id"], "index": row["index"],
                 "character_duration_sec": round(float(row["duration"]), 3),
@@ -88,6 +101,9 @@ def main() -> None:
                "min_duration_sec": args.min_duration, "tolerance_sec": TOL,
                "total_long_failures": len(candidates), "listed": len(picked),
                "hint_counts": dict(hints.most_common()),
+               "direction": direction_stats(picked),
+               "caveat": "本 dump 里预测处的响度全为 null（预测点常在逐字分析窗外），"
+                         "因此任何比较两处响度的分类规则永远不会命中；已改用犹豫度/权重/误差符号分类。",
                "how_to_use": "按 abs_error_ms 从大到小听；每条都给了该听哪一秒（true_end_sec）"
                                        "与模型以为的秒数（predicted_end_sec），听完把 hint 改对即可统计成因分布。"}
     args.out.with_name("summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
