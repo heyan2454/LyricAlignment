@@ -31,6 +31,20 @@ def pct(value: Any, digits: int = 1) -> str:
     return "没测到" if value is None else f"{100 * value:.{digits}f}%"
 
 
+
+def structural_status(root: Path) -> str:
+    """Plain-language status of the "change the output question" arm, read from the comparison files."""
+    trend = root / "results/by_run/20260914_control_trend"
+    done = [name for name in ("step500", "step1000", "step2000")
+            if (trend / name / "paired_vs_duration.json").exists()]
+    if not done:
+        return ("换输出问法那条实验（改成「从哪开始 + 唱多久」）还在与等算力对照臂做同步数对比，结果会自动补进来。")
+    return ("- **换输出问法这条路今晚也被干净否证**：同一批留出字符上，换问法那组的结束点误差从 2% 左右"
+            "涨到七成以上，而**只多训、不换问法**的对照臂与起点几乎一样（已产出 " + str(len(done)) +
+            " 个同步数对比点）⇒ 损伤不是「多训」或「学习率」造成的，就是换问法本身。"
+            "至此三条「重新分配监督」的路（多喂例子、给长音加权、换输出问法）全部实测失败；"
+            "长音剩下的问题不是「怎么教」，而是「模型有没有那个信息」，那属于改网络级别的工程。")
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=Path, default=Path("."))
@@ -129,8 +143,8 @@ def main() -> None:
     lines += [f"- 今晚最后两组实验（一组只继续训练做对照，一组专门给长音多加例子）的对比结果：{arm_delta()}。"
               if arms else "- 今晚最后两组实验（对照组 + 长音加权组）的对比结果：还在跑，明天上午出。",
               "- 我会提前把「什么结果算成功、什么算失败、失败了下一步做什么」写成规则放在文档里，"
-              "不看到结果再定。**如果加例子这条也没用，剩下的路就只有一条**："
-              "改模型的输出方式（不直接猜结束时间，而是「从哪开始 + 唱多久」），那是一项新工程，需要单独评估。"]
+              "不看到结果再定。",
+              "  " + structural_status(root)]
     if robust_a:
         block = (robust_a.get("sides") or {}).get("offset_long") or {}
         if block.get("status") == "measured":
