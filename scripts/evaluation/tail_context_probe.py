@@ -103,11 +103,7 @@ def main() -> None:
     def decode(batch_rows: list[dict[str, Any]]) -> tuple[list[float], list[float]]:
         inputs, words = collator(batch_rows)
         # 断言两次解码真的不同：否则"无差异"是假阴性而不是结论（20:51 自查抓到）
-        frames = int(inputs["input_features"].shape[-1]) if hasattr(inputs.get("input_features"), "shape") else -1
-        batch_rows_len = [float(np.asarray(row.get("_audio_override")).size / 16000.0)
-                          if row.get("_audio_override") is not None else None for row in batch_rows]
-        decode.last_frames = frames
-        decode.last_tailed = bool(any(value is not None for value in batch_rows_len))
+        decode.last_tailed = any(row.get("_audio_override") is not None for row in batch_rows)
         with torch.no_grad():
             output = model(**move_inputs(inputs, args.device, dtype))
         logp = np.asarray(slot_logprobs(output.logits, inputs["input_ids"],
@@ -127,7 +123,7 @@ def main() -> None:
             offset += count
         return final_errors, inner_errors
 
-    base_frames_seen = -1
+    unchanged_items = 0
     final_base: list[float] = []
     final_tail: list[float] = []
     inner_base: list[float] = []
@@ -159,11 +155,13 @@ def main() -> None:
             print(f"skip tail pass {offset}: {error}", flush=True)
             continue
         if not getattr(decode, "last_tailed", False):
-            raise SystemExit("尾窗覆盖没有生效（两遍输入完全相同）⇒ 实验会是假阴性，已停止")
-        frames_base = getattr(decode, "last_frames", -1)
-        if frames_base <= base_frames_seen and offset > 0 and frames_base == base_frames_seen:
-            raise SystemExit("尾窗版本的帧数没有变多 ⇒ 覆盖未生效，已停止")
-        base_frames_seen = frames_base
+            raise SystemExit("尾窗覆盖完全没有生效 ⇒ 实验会是假阴性，已停止")
+        # 逐条目判"补尾是否真的改变了这个条目的解码"：
+        # 处理器会把音频截到固定上限，长条目补 2 秒静音后输入不变 ⇒ 那些条目本实验无法判读，
+        # 只能剔除并计数（用两遍的预测是否有任何差异来判断，不依赖内部帧数语义）。
+        if len(fb) == len(ft) and all(abs(a - b) <= 1e-9 for a, b in zip(fb, ft)):
+            unchanged_items += len(fb)
+            continue
         n = min(len(fb), len(ft))
         final_base += fb[:n]
         final_tail += ft[:n]
@@ -184,7 +182,10 @@ def main() -> None:
                 "improved": sum(1 for b, t in zip(base, tail) if b - t > 0.02),
                 "worsened": sum(1 for b, t in zip(base, tail) if t - b > 0.02)}
 
-    payload = {"schema_version": "tail_context_probe_v1", "checkpoint": str(args.checkpoint),
+    payload = {"schema_version": "tail_context_probe_v2", "checkpoint": str(args.checkpoint),
+               "items_unchanged_by_tail_padding": unchanged_items,
+               "note": "补尾后解码完全未变的条目 = 音频已触及处理器帧数上限，补的静音进不了模型输入；"
+                       "这些条目本实验无法判读，只计数、不参与比较。",
                "extra_tail_sec": args.extra_tail_sec, "items": len(picked),
                "final_long_character": summarise(final_base, final_tail, "条目末尾的长字（受尾窗假设影响的那批）"),
                "inner_characters": summarise(inner_base, inner_tail, "非末尾字（内部对照：音频未变）")}

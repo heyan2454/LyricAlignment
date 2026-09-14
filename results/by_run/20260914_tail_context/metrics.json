@@ -1,0 +1,32 @@
+{
+  "schema_version": "tail_context_probe_v2",
+  "checkpoint": "/home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724/checkpoints/step-012000",
+  "items_unchanged_by_tail_padding": 0,
+  "note": "补尾后解码完全未变的条目 = 音频已触及处理器帧数上限，补的静音进不了模型输入；这些条目本实验无法判读，只计数、不参与比较。",
+  "extra_tail_sec": 2.0,
+  "items": 286,
+  "final_long_character": {
+    "label": "条目末尾的长字（受尾窗假设影响的那批）",
+    "characters": 143,
+    "median_base_ms": 80.0,
+    "median_tail_ms": 4000.0,
+    "miss_base": 0.0699,
+    "miss_tail": 1.0,
+    "improved": 1,
+    "worsened": 142
+  },
+  "inner_characters": {
+    "label": "非末尾字（内部对照：音频未变）",
+    "characters": 978,
+    "median_base_ms": 0.0,
+    "median_tail_ms": 3520.0,
+    "miss_base": 0.0133,
+    "miss_tail": 0.9693,
+    "improved": 0,
+    "worsened": 974
+  },
+  "reading": "看不出超出内部对照噪声的收益 ⇒ 延长尾窗对这个指标无帮助（或样本不足）",
+  "status": "inconclusive_confounded_by_input_cap",
+  "internal_control_moved_ms": 3520.0,
+  "do_not_use_for_conclusions": true
+}

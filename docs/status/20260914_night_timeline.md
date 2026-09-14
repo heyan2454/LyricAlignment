@@ -1,6 +1,6 @@
 # 今晚的时间线（自动汇总：日志与哨兵，不手抄）
 
-> 生成于 2026-09-14 21:09:46，来源目录 `/home/hyan/Data/lyricalign/runs/_launch_logs`；只收录带时间戳的关键行（开始/结束/exit/等待/触发/跳过/停止）。
+> 生成于 2026-09-14 23:05:49，来源目录 `/home/hyan/Data/lyricalign/runs/_launch_logs`；只收录带时间戳的关键行（开始/结束/exit/等待/触发/跳过/停止）。
 
 ## 事件流
 
@@ -67,6 +67,14 @@
 | 20:27:48 | `matched_compare.log` | step 1000 配对完成 exit=0 |
 | 20:27:48 | `matched_compare.log` | 等 /home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_absolute_control_seed20260724/checkpoints/step-002000 |
 | 21:03:05 | `gpu_followups.log` | 等 GPU 空闲 |
+| 21:21:01 | `gpu_followups.log` | 等 GPU 空闲 |
+| 21:39:04 | `matched_compare.log` | step 2000 对照导出 exit=0 |
+| 21:39:04 | `matched_compare.log` | step 2000 配对完成 exit=0 |
+| 21:39:04 | `matched_compare.log` | 同步数对比链结束 |
+| 21:59:06 | `absolute_control.log` | 结束 exit=143 |
+| 22:00:24 | `gpu_followups.log` | 冒烟 exit=1 |
+| 22:00:24 | `gpu_followups.log` | 冒烟失败 ⇒ 跳过全量（不产出可能误导的结论） |
+| 22:00:42 | `gpu_followups.log` | 整首对比 exit=0 |
 
 ## 哨兵与标记文件（存在即说明那一步发生过）
 
@@ -76,11 +84,14 @@
 | `20260914_qwen_fa_r2_concat20.done` | 06:50:06 | DONE 2026-09-14T06:50:06+08:00 |
 | `20260914_qwen_fa_r2_concat20.done.failed` | 02:47:35 | FAILED 143 2026-09-14T02:47:35+08:00 |
 | `START_KILL_TRIGGERED` | 19:10:32 | 0.0722 |
+| `absolute_control.done.failed` | 21:59:06 | FAILED 143 |
 | `absolute_control.done.failed.stale-from-1913-attempt` | 19:13:22 | FAILED 1 |
 | `absolute_control.done.failed.stale-from-1913-attempt.note` | 19:23:30 | [2026-09-14T19:23:30+08:00] 这个 .failed 来自 19:13 那次因配置生成脚本语法错误而失败的启动；对照臂已于 19:16 重新启动并在跑。改名保留以避免误判。 |
+| `absolute_control.stopped_after_verdict` | 21:56:39 | PLANNED_STOP by user-facing checkpoint 21:55 — §9 三个同步数对比点全部产出（step500/1000/2000），继续训练无科学用途；执行者：主会话（原 stop_control_after |
 | `c_verdict.done` | 10:08:00 | DONE 2026-09-14T10:08:00+08:00 |
 | `duration_target.done.failed` | 19:10:33 | FAILED 143 |
 | `duration_verdict.done.failed` | 19:11:32 | SKIP arm-failed FAILED 143 |
+| `gpu_followups.done` | 22:00:44 | DONE 2026-09-14T22:00:44+08:00 |
 | `mech_control.done` | 08:11:32 | DONE 2026-09-14T08:11:32+08:00 /home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_warmstart_control_seed20260724/checkp |
 | `mech_dumps.done` | 09:02:56 | DONE 2026-09-14T09:02:56+08:00 |
 | `mech_treatment.done` | 09:02:55 | DONE 2026-09-14T09:02:55+08:00 /home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_warmstart_oversample_seed20260724/che |
