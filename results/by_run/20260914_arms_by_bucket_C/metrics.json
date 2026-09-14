@@ -1,0 +1,134 @@
+{
+  "schema_version": "arm_bucket_counts_v2",
+  "dumps": {
+    "起点": "results/by_run/20260914_mech_validation_uniform/per_character.jsonl",
+    "A对照": "results/by_run/20260914_mech_control/per_character.jsonl",
+    "C加权": "results/by_run/20260914_mech_C/per_character.jsonl"
+  },
+  "discordant_pair": [
+    "A对照",
+    "C加权"
+  ],
+  "note": "不一致对子只统计结束点侧；把 onset 与 offset 相加会让『字符数』被双计",
+  "shared_characters": 6415,
+  "tolerance_sec": 0.2,
+  "buckets": {
+    "0-0.5s": {
+      "起点": {
+        "n": 4260,
+        "offset_miss": 41,
+        "rate": 0.0096
+      },
+      "A对照": {
+        "n": 4260,
+        "offset_miss": 40,
+        "rate": 0.0094
+      },
+      "C加权": {
+        "n": 4260,
+        "offset_miss": 42,
+        "rate": 0.0099
+      },
+      "discordant_challenger_vs_reference": {
+        "newly_ok": 0,
+        "newly_broken": 2
+      }
+    },
+    "0.5-1s": {
+      "起点": {
+        "n": 1215,
+        "offset_miss": 35,
+        "rate": 0.0288
+      },
+      "A对照": {
+        "n": 1215,
+        "offset_miss": 37,
+        "rate": 0.0305
+      },
+      "C加权": {
+        "n": 1215,
+        "offset_miss": 36,
+        "rate": 0.0296
+      },
+      "discordant_challenger_vs_reference": {
+        "newly_ok": 4,
+        "newly_broken": 3
+      }
+    },
+    "1-1.5s": {
+      "起点": {
+        "n": 596,
+        "offset_miss": 29,
+        "rate": 0.0487
+      },
+      "A对照": {
+        "n": 596,
+        "offset_miss": 30,
+        "rate": 0.0503
+      },
+      "C加权": {
+        "n": 596,
+        "offset_miss": 28,
+        "rate": 0.047
+      },
+      "discordant_challenger_vs_reference": {
+        "newly_ok": 4,
+        "newly_broken": 2
+      }
+    },
+    "1.5-2s": {
+      "起点": {
+        "n": 217,
+        "offset_miss": 10,
+        "rate": 0.0461
+      },
+      "A对照": {
+        "n": 217,
+        "offset_miss": 11,
+        "rate": 0.0507
+      },
+      "C加权": {
+        "n": 217,
+        "offset_miss": 9,
+        "rate": 0.0415
+      },
+      "discordant_challenger_vs_reference": {
+        "newly_ok": 3,
+        "newly_broken": 1
+      }
+    },
+    "2s+": {
+      "起点": {
+        "n": 127,
+        "offset_miss": 8,
+        "rate": 0.063
+      },
+      "A对照": {
+        "n": 127,
+        "offset_miss": 11,
+        "rate": 0.0866
+      },
+      "C加权": {
+        "n": 127,
+        "offset_miss": 7,
+        "rate": 0.0551
+      },
+      "discordant_challenger_vs_reference": {
+        "newly_ok": 4,
+        "newly_broken": 0
+      }
+    }
+  },
+  "totals": {
+    "characters": 6415,
+    "arms": {
+      "起点": 123,
+      "A对照": 129,
+      "C加权": 122
+    },
+    "discordant": {
+      "newly_ok": 15,
+      "newly_broken": 8
+    }
+  }
+}
