@@ -79,8 +79,10 @@ def main() -> None:
             picked.append(row)
         if len(picked) >= args.limit:
             break
-    if len(picked) < 5:
+    if len(picked) < 3:                       # 冒烟只需 3 条；正式跑用 400 条（见 §11e 的功效）
         raise SystemExit(f"可用条目太少（{len(picked)}），不足以做配对比较")
+    if len(picked) < 50:
+        print(f"注意：只取到 {len(picked)} 条，属冒烟/小样本，不用于下结论", flush=True)
 
     model, processor = TOPUP.build_stage_model(cfg, args.stage, args.device, True)
     TOPUP.load_weights(args.checkpoint, model)
