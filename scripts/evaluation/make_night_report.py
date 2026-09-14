@@ -424,9 +424,30 @@ def sec_confidence_duration(root: Path) -> list[str]:
         lines.append(f"  - {name}：桶内共 {total} 个字符，落在最低置信四分位的比例 "
                      f"**{_pct(q4 / total, 0)}**{note}；超差率随熵从 {_pct(first['miss_rate'])} "
                      f"升到 {_pct(last['miss_rate'])}")
-    lines += ["- ⇒ **产品后果（可执行）**：用一个**全局熵阈值**做门控，会系统性地误判长字符"
-              "（长字符本来就在高熵区，短字符的高熵才是异常）。正确的做法是把阈值**按模型自己预测的时长分档校准**"
-              "（预测时长在推理期可得，不需要真值）；这是今晚新识别出的、可以在现有数据上立即验证的改进。"]
+    lines += ["- 我当时据此推断：**全局熵阈值会系统性误判长字符**，应改为按预测时长分档校准。",
+              "  **这个推论已被自己的实验否证**（见下一节）：分档后抓到缺陷反而少 4.3–7.4 pp。"
+              "原因是『时长与出错的相关』本身就是风险信号，分档归一化正好把它丢掉了。"]
+    return lines
+
+
+def sec_gating_calibration(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_gating_calibration/metrics.json")
+    if doc.get("status") != "measured":
+        return ["- 状态：未跑"]
+    lines = [f"- 假设（08:05 由交叉分析提出，08:10 实测）：既然长字符天然高熵，"
+              f"把门控阈值按**模型自己预测的时长**分档校准会更好。留出单位 = 歌（{doc['songs']} 首），"
+              f"字符 {doc['characters']}，缺陷 {doc['defects']} 个（{doc['defect_rate']:.2%}）；",
+             "", "| 复核预算 | 全局阈值抓到 | 按预测时长分档抓到 | 差 |", "|---|---|---|---|"]
+    for budget, block in doc["budgets"].items():
+        lines.append(f"| {budget} | {_pct(block['global']['capture_share'], 1)} | "
+                     f"{_pct(block['duration_conditional']['capture_share'], 1)} | "
+                     f"**{block['paired']['capture_share_delta_pp']:+.2f} pp** |")
+    lines += ["", "- ⇒ **假设被否证**：三个预算下分档版都更差（−4.3 到 −7.4 pp）。"
+              "解释很清楚：**『字符长 ⇒ 更可能错』本身就是最有用的风险信号**，"
+              "在预测时长箱内做归一化等于把这个信号减掉，剩下的是箱内噪声；",
+              "- 所以现行门控工具（`export_review_gating.py` 的全局分位阈值）**保持不变**；"
+              "这条负结果的价值在于**关掉了下一个看起来最合理的改动方向**，"
+              "并给出一条可迁移的设计规则：**风险与某变量相关时，不要按该变量做分层归一化**。"]
     return lines
 
 
@@ -496,6 +517,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
         "唯一还能加强暴露机制的是 C 臂（字符级 loss 加权，代码与测试已备好），再往上是结构改动。"]),
     ("真歌端到端解码探针（压力条件）", "results/by_run/20260914_real_song_decoder", sec_real_decoder),
     ("置信度 × 时长交叉（否证天真版机制 + 新发现）", "results/by_run/20260914_confidence_duration", sec_confidence_duration),
+    ("按预测时长分档的门控阈值：假设被否证", "results/by_run/20260914_gating_calibration", sec_gating_calibration),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
 ]

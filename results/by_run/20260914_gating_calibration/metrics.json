@@ -1,0 +1,110 @@
+{
+  "schema_version": "gating_calibration_v1",
+  "dump": "results/by_run/20260914_mech_validation_uniform/per_character.jsonl",
+  "tolerance_sec": 0.2,
+  "pred_duration_bins": [
+    "0-0.25s",
+    "0.25-0.5s",
+    "0.5-1s",
+    "1-2s",
+    "2-99s"
+  ],
+  "status": "measured",
+  "songs": 55,
+  "characters": 6415,
+  "defects": 162,
+  "defect_rate": 0.0253,
+  "min_bin_rows": 30,
+  "budgets": {
+    "5%": {
+      "global": {
+        "flagged": 324,
+        "flagged_share": 0.0505,
+        "captured_defects": 73,
+        "capture_share": 0.4506,
+        "residual_defects": 89,
+        "residual_defect_rate": 0.0146
+      },
+      "duration_conditional": {
+        "flagged": 333,
+        "flagged_share": 0.0519,
+        "captured_defects": 62,
+        "capture_share": 0.3827,
+        "residual_defects": 100,
+        "residual_defect_rate": 0.0164
+      },
+      "conditional_bins_in_use": [
+        "0-0.25s",
+        "0.25-0.5s",
+        "0.5-1s",
+        "1-2s",
+        "2s+"
+      ],
+      "paired": {
+        "capture_share_delta_pp": -6.79,
+        "conditional_only_defects": 7,
+        "global_only_defects": 18
+      }
+    },
+    "10%": {
+      "global": {
+        "flagged": 647,
+        "flagged_share": 0.1009,
+        "captured_defects": 98,
+        "capture_share": 0.6049,
+        "residual_defects": 64,
+        "residual_defect_rate": 0.0111
+      },
+      "duration_conditional": {
+        "flagged": 656,
+        "flagged_share": 0.1023,
+        "captured_defects": 86,
+        "capture_share": 0.5309,
+        "residual_defects": 76,
+        "residual_defect_rate": 0.0132
+      },
+      "conditional_bins_in_use": [
+        "0-0.25s",
+        "0.25-0.5s",
+        "0.5-1s",
+        "1-2s",
+        "2s+"
+      ],
+      "paired": {
+        "capture_share_delta_pp": -7.4,
+        "conditional_only_defects": 6,
+        "global_only_defects": 18
+      }
+    },
+    "20%": {
+      "global": {
+        "flagged": 1281,
+        "flagged_share": 0.1997,
+        "captured_defects": 120,
+        "capture_share": 0.7407,
+        "residual_defects": 42,
+        "residual_defect_rate": 0.0082
+      },
+      "duration_conditional": {
+        "flagged": 1286,
+        "flagged_share": 0.2005,
+        "captured_defects": 113,
+        "capture_share": 0.6975,
+        "residual_defects": 49,
+        "residual_defect_rate": 0.0096
+      },
+      "conditional_bins_in_use": [
+        "0-0.25s",
+        "0.25-0.5s",
+        "0.5-1s",
+        "1-2s",
+        "2s+"
+      ],
+      "paired": {
+        "capture_share_delta_pp": -4.32,
+        "conditional_only_defects": 5,
+        "global_only_defects": 12
+      }
+    }
+  }
+}
