@@ -107,7 +107,7 @@ class QwenForcedAligner:
 
     def model_identity(self) -> dict[str, Any]:
         self.load()
-        return {
+        identity = {
             "model_id_or_path": self.model_id_or_path,
             "requested_revision": self.requested_revision,
             "resolved_revision": self.resolved_revision,
