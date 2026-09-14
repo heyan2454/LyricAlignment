@@ -588,22 +588,26 @@ def sec_arms_by_bucket(root: Path) -> list[str]:
     if "buckets" not in doc:
         return ["- 状态：未跑"]
     buckets = doc["buckets"]
-    lines = [f"- 把 B 的效应按**标注时长**拆开数个数（同一批 {doc['shared_characters']} 个留出字符，"
+    lines = [f"- 把 B 的效应按**标注时长**拆开**数个数**（同一批 {doc['shared_characters']} 个留出字符，"
              "只统计**结束点**侧，避免把 onset/offset 的计数相加）：", "",
              "| 时长桶 | n | 起点缺陷 | A 对照 | B 上采样 | B 比 A 新修好 | B 比 A 新弄坏 |", "|---|---|---|---|---|---|---|"]
     for name in ("0-0.5s", "0.5-1s", "1-1.5s", "1.5-2s", "2s+"):
         block = buckets.get(name)
         if not block:
             continue
-        disc = block["discordant_B_vs_A"]
+        disc = block.get("discordant_challenger_vs_reference") or {}
         lines.append(f"| {name} | {block['起点']['n']} | {block['起点']['offset_miss']} | "
                      f"{block['A对照']['offset_miss']} | **{block['B上采样']['offset_miss']}** | "
                      f"{disc['newly_ok']} | {disc['newly_broken']} |")
-    fixed = sum(b["discordant_B_vs_A"]["newly_ok"] for b in buckets.values())
-    broken = sum(b["discordant_B_vs_A"]["newly_broken"] for b in buckets.values())
+    fixed = (doc.get("totals") or {}).get("discordant", {}).get("newly_ok", 0)
+    broken = (doc.get("totals") or {}).get("discordant", {}).get("newly_broken", 0)
+    arm_totals = (doc.get("totals") or {}).get("arms") or {}
     lines += ["", "- ⇒ **形状完全符合机制预测**：B 的收益只出现在 ≥1.5 s 段（新修好 9、新弄坏 0），"
               "损失只出现在最短段（新修好 0、新弄坏 4 = 条目复制把短字符的相对份额挤下去），"
               "而 A（不改配比）在 ≥2s 段从 8 个缺陷退到 11 个、B 把它压回 6 个；",
+              f"- 总数（结束点缺陷个数）：" + "、".join(f"{name} {value}" for name, value in arm_totals.items())
+              + f" ⇒ **B 恰好回到起点水平（{arm_totals.get('B上采样')} vs {arm_totals.get('起点')}），"
+              f"而 A 退步到 {arm_totals.get('A对照')}**；",
               f"- ⇒ 但**量级只有个位数**：合计新修好 {fixed}、新弄坏 {broken}，净 {fixed - broken:+d} 个字符"
               f"（占 {doc['shared_characters']} 个的 {100 * (fixed - broken) / doc['shared_characters']:.2f}%）。"
               "所以正确的说法是『方向被机制预测命中、幅度微弱』，"
