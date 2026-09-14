@@ -430,6 +430,35 @@ def sec_confidence_duration(root: Path) -> list[str]:
     return lines
 
 
+def sec_long_offset_drift(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_paired_A_vs_start/metrics.json")
+    if "sides" not in doc:
+        return ["- 状态：未跑"]
+    sides = doc["sides"]
+    lines = ["- 对照臂 A 是**未改配比的 600 步续训**，它给了今晚唯一一次**操作性检验**：",
+             "", "| 位置 | n | Δ（A − 起点，正=更差） | z | 超差率 |", "|---|---|---|---|---|"]
+    for key, label in (("onset_short", "起始点·短字符"), ("offset_short", "结束点·短字符"),
+                       ("onset_long", "起始点·长字符"), ("offset_long", "**结束点·长字符**"),
+                       ("combined_long", "长字符合计"), ("combined_all", "全体")):
+        block = sides.get(key)
+        if not block:
+            continue
+        lines.append(f"| {label} | {block['n']} | {block['mean_delta_ms']:+.2f} ms | {block['z']} | "
+                     f"{_pct(block['miss_rate_old'])} → {_pct(block['miss_rate_new'])} |")
+    drift = _load(root / "results/by_run/20260914_mech_control/duration_ratio.json")
+    long_block = ((drift or {}).get("buckets") or {}).get("2-+s", {})
+    lines += ["", "- ⇒ **退化精确落在长字符的结束点上**（z=+2.19），另外三个位置纹丝不动（Δ≈0，z 不显著）；"
+              f"同方向上 A 的 ≥2s 失败子集长度比 {long_block.get('miss_median_duration_ratio', '—')}"
+              "（起点 0.538）、中点位移 "
+              f"{long_block.get('miss_median_signed_centre_shift_ms', 0):+.0f} ms（起点 −490 ms）；",
+              "- 意义：这不再是『暴露少 ↔ 误差大』的横断面相关，而是**在同一配比上多训就更糟、且只糟在缺样本的"
+              "那个自由度上**的因果证据 ⇒ 支持『把长度拉向训练分布众数』这一机制解释；",
+              "- 代价（自我更正）：我 07:36 登记的噪声地板预测（600 步在 ≥2s 上移动 <0.1 pp）**被这条实测否证**，"
+              "已在预注册 §3g-4 就地更正，并据此把 B 的主读法改为**同时报 B vs 起点与 B vs A**"
+              "（因为 A 自身下漂会让 B vs A 高估收益）。"]
+    return lines
+
+
 def sec_gating_calibration(root: Path) -> list[str]:
     doc = _load(root / "results/by_run/20260914_gating_calibration/metrics.json")
     if doc.get("status") != "measured":
@@ -518,6 +547,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("真歌端到端解码探针（压力条件）", "results/by_run/20260914_real_song_decoder", sec_real_decoder),
     ("置信度 × 时长交叉（否证天真版机制 + 新发现）", "results/by_run/20260914_confidence_duration", sec_confidence_duration),
     ("按预测时长分档的门控阈值：假设被否证", "results/by_run/20260914_gating_calibration", sec_gating_calibration),
+    ("对照臂给出的因果证据：续训专伤长字符结束点", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
 ]
@@ -540,8 +570,9 @@ def main() -> None:
              "## 一句话总览", "",
              "1. **重训有效但边际小**（MAE −3.3 ms / −7%，逐字符配对 z=−5），而且**长流、窗口边缘、"
              "流长、重排、跨窗共识**这四个候选解释全部被测量否证或削弱；",
-             "2. 收敛到的机制是**时长回归到常见值**：模型不确定时把区间长度拉回语料最常见的 0.4–0.6 s，"
-             "而 ≥2 s 字符只占训练信号 0.9%；",
+             "2. 机制的准确表述（经两次自我修正）：**典型预测并不收缩**，收缩与偏早是失败子集的条件性偏差；"
+             "而对照臂 A 给出了因果证据——**在未改配比的续训中，只有长字符的结束点显著变差**"
+             "（Δ +9.57 ms，z=+2.19），其余三个位置不动；",
              "3. 两条**已经拿到手**的收益：DP 解码（域内 +0.85pp、塌陷清零）与置信度门控"
              "（复核 10% 消除 55% 缺陷），都不需要重训；",
              "4. 你指定的长样本实验结论是**中性**（不伤短条目精度，故可安全混训）；"
