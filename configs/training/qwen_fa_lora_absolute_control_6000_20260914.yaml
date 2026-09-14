@@ -1,0 +1,54 @@
+# 等算力对照组：与已停下的时长参数化臂逐字段相同，唯一差别是 timestamp_target: absolute。
+# 目的（结构预注册 §9）：两条臂都从 uniform-12000 热启动、都多训 6000 步、都用完整 LR，
+# 于是「再训 6000 步的影响」与「完整 LR 对起始点头的连带损伤」在两边同等出现，
+# 同步数比较就能把「问法本身」的差别隔离出来。
+model:
+  id: Qwen/Qwen3-ForcedAligner-0.6B-hf
+  revision: c07281df297b9905d24a508279258cccf987a064
+data:
+  labels: /home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/labels/m4singer_qwen_fa_labels.jsonl
+  split_manifest: /home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/split/m4singer_accepted_split_manifest.jsonl
+  characters: /home/hyan/Data/lyricalign/derived/20260722_m4singer_pinyin_validated_v4/prepare/m4singer_character_annotations.jsonl
+  audio_root: /home/hyan/Data/datasets/m4singer/raw/extracted/m4singer
+  language: Chinese
+training:
+  dtype: bfloat16
+  seed: 20260724
+  micro_batch_size: 4
+  evaluation_micro_batch_size: 8
+  gradient_accumulation: 8
+  projector_lr: 2.0e-05
+  lora_lr: 5.0e-05
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  max_grad_norm: 1.0
+  timestamp_segment_sec: 0.08
+  eval_steps: 100000
+  save_steps: 500
+  save_full_state: true
+  disk_floor_gb: 22.0
+  lr_schedule:
+    type: cyclic_cosine
+    cycle_len: 300
+    cycle_peak_decay: 0.8
+  eval_funnel:
+    enabled: false
+  init_from_checkpoint: /home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724/checkpoints/step-012000
+  timestamp_target: absolute
+  cycle_len: 3000
+stages:
+  overfit:
+    train_items: 32
+    validation_items: 16
+    max_steps: 100
+  r0:
+    train_items: 0
+  r1:
+    train_items: 0
+    max_steps: 600
+  r2:
+    train_items: 0
+    max_steps: 6000
+  r3:
+    train_items: 2000
+    max_steps: 500
