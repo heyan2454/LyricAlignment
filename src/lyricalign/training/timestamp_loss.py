@@ -19,12 +19,19 @@ import torch
 IGNORE_INDEX = -100
 
 
-def slot_weights(labels: Any, *, step_sec: float, long_sec: float, weight: float) -> Any:
-    """Weight 1.0 everywhere except the two slots of characters whose label duration ≥ long_sec.
+def slot_weights(labels: Any, *, step_sec: float, long_sec: float, weight: float,
+                 slot: str = "both") -> Any:
+    """Weight 1.0 everywhere except the slots of characters whose label duration ≥ long_sec.
 
     `labels` holds IGNORE_INDEX except at timestamp slots, which come in adjacent (start, end) pairs
     in character order, so the duration of a character is read straight off the label ids.
+
+    `slot` selects which of the pair to weight.  The measured weak spot is the **offset of long
+    characters** (short slots and long onsets are already accurate), so `offset` doubles the pressure
+    on exactly the failing degree of freedom instead of diluting it across both.
     """
+    if slot not in ("both", "offset", "onset"):
+        raise ValueError(f"slot must be both|offset|onset, got {slot!r}")
     weights = torch.ones_like(labels, dtype=torch.float32)
     valid_rows = (labels != IGNORE_INDEX).any(dim=1) if labels.dim() == 2 else None
     for row in range(labels.shape[0]):
@@ -35,15 +42,18 @@ def slot_weights(labels: Any, *, step_sec: float, long_sec: float, weight: float
             start = int(ids[2 * index])
             end = int(ids[2 * index + 1])
             duration = (end - start) * step_sec
-            if duration >= long_sec:
+            if duration < long_sec:
+                continue
+            if slot in ("both", "onset"):
                 weights[row, positions[2 * index]] = weight
+            if slot in ("both", "offset"):
                 weights[row, positions[2 * index + 1]] = weight
     del valid_rows
     return weights
 
 
 def weighted_timestamp_loss(logits: Any, labels: Any, *, step_sec: float, long_sec: float,
-                            weight: float) -> Any:
+                            weight: float, slot: str = "both") -> Any:
     """Weighted mean cross-entropy over supervised slots.
 
     `weight == 1.0` reduces to the unweighted mean over valid slots, which is asserted by tests
@@ -54,7 +64,8 @@ def weighted_timestamp_loss(logits: Any, labels: Any, *, step_sec: float, long_s
     per_token = torch.nn.functional.cross_entropy(
         logits.reshape(-1, logits.shape[-1]).float(), labels.reshape(-1),
         ignore_index=IGNORE_INDEX, reduction="none").reshape(labels.shape)
-    weights = slot_weights(labels, step_sec=step_sec, long_sec=long_sec, weight=weight).to(per_token.device)
+    weights = slot_weights(labels, step_sec=step_sec, long_sec=long_sec, weight=weight, slot=slot) \
+        .to(per_token.device)
     supervised = (labels != IGNORE_INDEX).float().to(per_token.device)
     denominator = (weights * supervised).sum()
     if float(denominator) <= 0:

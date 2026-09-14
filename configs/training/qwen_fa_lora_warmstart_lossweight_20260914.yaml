@@ -1,5 +1,9 @@
-# C 臂（备用，尚未跑）：字符级 loss 加权，不复制条目 ⇒ 不受条目级复制的 ×2.58 饱和限制。
-# 与 A 臂唯一差别 = training.loss_weighting；只在 B 臂结果指向'暴露不够'时启动。
+# C 臂（备用，尚未跑）：只给**长字符的结束点槽位**加权，不复制条目 ⇒ 不受条目级复制的 ×2.58 饱和限制。
+# 为什么 slot=offset 而不是 both：今晚实测长字符的**起始点**已经够准
+#   （留出数据上超差率 1.5% vs 结束点 5.5%；配对检查里长音起始点 z=0.68 无变化，
+#   而结束点是唯一有退化迹象的一侧），所以只加权失败的那个自由度，
+#   避免把容量浪费在已经正确的槽位上、也减少对短字符的挤占。
+# 与 A 臂唯一差别 = training.loss_weighting；weight=1 时逐位复现原始 CE（有单测）。
 model:
   id: Qwen/Qwen3-ForcedAligner-0.6B-hf
   revision: c07281df297b9905d24a508279258cccf987a064
@@ -50,6 +54,7 @@ training:
     enabled: true
     long_sec: 1.0
     weight: 3.0
+    slot: offset
 stages:
   overfit:
     train_items: 32

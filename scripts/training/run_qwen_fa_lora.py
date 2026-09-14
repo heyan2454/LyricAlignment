@@ -342,6 +342,7 @@ def main() -> None:
         from lyricalign.training.timestamp_loss import weighted_timestamp_loss  # noqa: F401
         loss_weighting = {"long_sec": float(loss_weighting.get("long_sec", 1.0)),
                           "weight": float(loss_weighting.get("weight", 1.0)),
+                          "slot": str(loss_weighting.get("slot", "both")),
                           "step_sec": float(cfg["training"].get("timestamp_segment_sec", 0.08))}
         atomic_json(run_dir / "loss_weighting.json", {**loss_weighting,
                     "semantics": "per-character slot weights on the training CE only; validation loss stays unweighted so arms remain comparable"})
