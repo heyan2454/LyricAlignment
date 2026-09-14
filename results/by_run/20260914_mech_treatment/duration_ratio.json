@@ -1,0 +1,71 @@
+{
+  "schema_version": "duration_ratio_v1",
+  "buckets": {
+    "0.25-0.5s": {
+      "characters": 3371,
+      "median_annotated_sec": 0.36,
+      "median_predicted_sec": 0.32,
+      "median_duration_ratio": 1.0,
+      "share_predicted_shorter": 0.4966,
+      "median_abs_centre_shift_ms": 15.0,
+      "median_signed_centre_shift_ms": 5.0,
+      "misses": 44,
+      "miss_share": 0.0131,
+      "miss_median_signed_centre_shift_ms": 130.0,
+      "miss_median_duration_ratio": 1.712
+    },
+    "0.5-1.0s": {
+      "characters": 1215,
+      "median_annotated_sec": 0.59,
+      "median_predicted_sec": 0.56,
+      "median_duration_ratio": 0.982,
+      "share_predicted_shorter": 0.5572,
+      "median_abs_centre_shift_ms": 20.0,
+      "median_signed_centre_shift_ms": 5.0,
+      "misses": 49,
+      "miss_share": 0.0403,
+      "miss_median_signed_centre_shift_ms": 110.0,
+      "miss_median_duration_ratio": 0.701
+    },
+    "1-2.0s": {
+      "characters": 813,
+      "median_annotated_sec": 1.27,
+      "median_predicted_sec": 1.28,
+      "median_duration_ratio": 0.989,
+      "share_predicted_shorter": 0.5732,
+      "median_abs_centre_shift_ms": 20.0,
+      "median_signed_centre_shift_ms": -5.0,
+      "misses": 46,
+      "miss_share": 0.0566,
+      "miss_median_signed_centre_shift_ms": -147.5,
+      "miss_median_duration_ratio": 0.778
+    },
+    "0-0.25s": {
+      "characters": 889,
+      "median_annotated_sec": 0.21,
+      "median_predicted_sec": 0.24,
+      "median_duration_ratio": 1.043,
+      "share_predicted_shorter": 0.2722,
+      "median_abs_centre_shift_ms": 15.0,
+      "median_signed_centre_shift_ms": 0.0,
+      "misses": 13,
+      "miss_share": 0.0146,
+      "miss_median_signed_centre_shift_ms": 145.0,
+      "miss_median_duration_ratio": 2.667
+    },
+    "2-+s": {
+      "characters": 127,
+      "median_annotated_sec": 2.3,
+      "median_predicted_sec": 2.24,
+      "median_duration_ratio": 0.986,
+      "share_predicted_shorter": 0.6457,
+      "median_abs_centre_shift_ms": 25.0,
+      "median_signed_centre_shift_ms": -10.0,
+      "misses": 11,
+      "miss_share": 0.0866,
+      "miss_median_signed_centre_shift_ms": -195.0,
+      "miss_median_duration_ratio": 0.477
+    }
+  },
+  "dump": "results/by_run/20260914_mech_treatment/per_character.jsonl"
+}
