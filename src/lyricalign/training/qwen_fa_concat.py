@@ -130,9 +130,11 @@ class QwenFAConcatCollator(QwenFABatchCollator):
     """Collator that reads `audio_parts` and concatenates them in memory (gap = real silence)."""
 
     def __init__(self, processor: Any, *, audio_root: Path, language: str, timestamp_token_id: int,
-                 gap_sec: float = 0.4, sample_rate: int = SAMPLE_RATE, step_sec: float = 0.08) -> None:
+                 gap_sec: float = 0.4, sample_rate: int = SAMPLE_RATE, step_sec: float = 0.08,
+                 timestamp_target: str = "absolute", timestamp_num_classes: int = 5000) -> None:
         super().__init__(processor, audio_root=audio_root, language=language,
-                         timestamp_token_id=timestamp_token_id)
+                         timestamp_token_id=timestamp_token_id, timestamp_target=timestamp_target,
+                         timestamp_num_classes=timestamp_num_classes)
         self.gap_sec = float(gap_sec)
         self.sample_rate = int(sample_rate)
         self.step_sec = float(step_sec)

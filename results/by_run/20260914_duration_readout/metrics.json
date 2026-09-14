@@ -1,0 +1,171 @@
+{
+  "schema_version": "duration_readout_v2",
+  "rows": "results/by_run/20260914_offset_dist/rows.jsonl",
+  "characters": 6532,
+  "tolerance_sec": 0.2,
+  "status": "measured",
+  "songs": 55,
+  "readouts": {
+    "direct_end": {
+      "all": {
+        "characters": 6532,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 33.3,
+        "miss_share": 0.0184,
+        "median_duration_err_ms": null
+      },
+      "long": {
+        "characters": 934,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 75.4,
+        "miss_share": 0.0471,
+        "median_duration_err_ms": null
+      },
+      "very_long": {
+        "characters": 132,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 153.3,
+        "miss_share": 0.0606,
+        "median_duration_err_ms": null
+      }
+    },
+    "start_argmax_plus_mean_gap": {
+      "all": {
+        "characters": 6532,
+        "median_end_err_ms": 29.2,
+        "mean_end_err_ms": 51.3,
+        "miss_share": 0.0312,
+        "median_duration_err_ms": null
+      },
+      "long": {
+        "characters": 934,
+        "median_end_err_ms": 57.4,
+        "mean_end_err_ms": 113.4,
+        "miss_share": 0.1231,
+        "median_duration_err_ms": null
+      },
+      "very_long": {
+        "characters": 132,
+        "median_end_err_ms": 98.9,
+        "mean_end_err_ms": 248.8,
+        "miss_share": 0.3333,
+        "median_duration_err_ms": null
+      }
+    },
+    "start_argmax_plus_median_gap": {
+      "all": {
+        "characters": 6532,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 35.7,
+        "miss_share": 0.0194,
+        "median_duration_err_ms": null
+      },
+      "long": {
+        "characters": 934,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 84.8,
+        "miss_share": 0.0567,
+        "median_duration_err_ms": null
+      },
+      "very_long": {
+        "characters": 132,
+        "median_end_err_ms": 80.0,
+        "mean_end_err_ms": 209.1,
+        "miss_share": 0.1061,
+        "median_duration_err_ms": null
+      }
+    },
+    "recal_argmax_duration": {
+      "all": {
+        "characters": 6532,
+        "median_end_err_ms": 44.8,
+        "mean_end_err_ms": 62.3,
+        "miss_share": 0.0185,
+        "median_duration_err_ms": 44.8
+      },
+      "long": {
+        "characters": 934,
+        "median_end_err_ms": 36.8,
+        "mean_end_err_ms": 89.1,
+        "miss_share": 0.0535,
+        "median_duration_err_ms": 65.6
+      },
+      "very_long": {
+        "characters": 132,
+        "median_end_err_ms": 104.0,
+        "mean_end_err_ms": 194.4,
+        "miss_share": 0.0985,
+        "median_duration_err_ms": 105.0
+      }
+    },
+    "recal_mean_duration": {
+      "all": {
+        "characters": 6532,
+        "median_end_err_ms": 51.4,
+        "mean_end_err_ms": 68.9,
+        "miss_share": 0.0285,
+        "median_duration_err_ms": 54.6
+      },
+      "long": {
+        "characters": 934,
+        "median_end_err_ms": 58.6,
+        "mean_end_err_ms": 112.1,
+        "miss_share": 0.1113,
+        "median_duration_err_ms": 62.1
+      },
+      "very_long": {
+        "characters": 132,
+        "median_end_err_ms": 116.5,
+        "mean_end_err_ms": 240.4,
+        "miss_share": 0.2879,
+        "median_duration_err_ms": 118.4
+      }
+    },
+    "recal_median_duration": {
+      "all": {
+        "characters": 6532,
+        "median_end_err_ms": 44.8,
+        "mean_end_err_ms": 64.1,
+        "miss_share": 0.0216,
+        "median_duration_err_ms": 44.8
+      },
+      "long": {
+        "characters": 934,
+        "median_end_err_ms": 36.8,
+        "mean_end_err_ms": 97.1,
+        "miss_share": 0.0632,
+        "median_duration_err_ms": 65.6
+      },
+      "very_long": {
+        "characters": 132,
+        "median_end_err_ms": 104.0,
+        "mean_end_err_ms": 243.4,
+        "miss_share": 0.1364,
+        "median_duration_err_ms": 105.0
+      }
+    },
+    "oracle_duration": {
+      "all": {
+        "characters": 6532,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 0.0,
+        "miss_share": 0.0,
+        "median_duration_err_ms": null
+      },
+      "long": {
+        "characters": 934,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 0.0,
+        "miss_share": 0.0,
+        "median_duration_err_ms": null
+      },
+      "very_long": {
+        "characters": 132,
+        "median_end_err_ms": 0.0,
+        "mean_end_err_ms": 0.0,
+        "miss_share": 0.0,
+        "median_duration_err_ms": null
+      }
+    }
+  }
+}

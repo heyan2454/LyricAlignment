@@ -31,6 +31,25 @@ import numpy as np
 NEG_INF = -1e30
 
 
+def slot_times_from_probabilities(probs: Any, *, segment_sec: float,
+                                  target: str = "absolute") -> tuple[np.ndarray, np.ndarray]:
+    """Turn a (n_characters, 2, classes) probability array into start/end times in seconds.
+
+    `target="absolute"` is today's behaviour (slot 1 = absolute end bin).  `target="duration"` is the
+    structural arm, where slot 1 encodes duration bins, so the end is start + duration.  Keeping both in
+    one function is what stops the two parameterisations from being silently mixed during evaluation.
+    """
+    array = np.asarray(probs, dtype=np.float64)
+    if array.ndim != 3 or array.shape[1] != 2:
+        raise ValueError(f"expected slot probabilities of shape (characters, 2, classes), got {array.shape}")
+    if target not in ("absolute", "duration"):
+        raise ValueError(f"unknown timestamp target {target!r}")
+    start_bins = array[:, 0, :].argmax(axis=1)
+    second_bins = array[:, 1, :].argmax(axis=1)
+    end_bins = start_bins + second_bins if target == "duration" else second_bins
+    return start_bins * float(segment_sec), end_bins * float(segment_sec)
+
+
 def slot_logprobs(logits: Any, input_ids: Any, *, timestamp_token_id: int,
                   num_classes: int = 5000) -> np.ndarray:
     """Per-character (start, end) log-probabilities over the timestamp classes.

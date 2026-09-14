@@ -353,9 +353,25 @@ def main() -> None:
     if concat_cfg.get("enabled"):
         from lyricalign.training.qwen_fa_concat import QwenFAConcatCollator
         collator_cls = QwenFAConcatCollator
+    timestamp_target = str(cfg["training"].get("timestamp_target", "absolute"))
+    collator_kwargs: dict[str, Any] = {"timestamp_target": timestamp_target,
+                                        "timestamp_num_classes": int(model.config.num_labels)}
+    if concat_cfg.get("enabled"):
+        collator_kwargs["gap_sec"] = float(concat_cfg.get("gap_sec", 0.4))
+    duration_mode = timestamp_target != "absolute"
+    if timestamp_target != "absolute":
+        atomic_json(run_dir / "timestamp_target.json", {
+            "timestamp_target": timestamp_target,
+            "semantics": "second slot = duration bins; any decode must do end = start + duration. "
+                         "In-training funnel/terminal metrics read bins as absolute positions, so they are "
+                         "DISABLED for this run; compare only at the fixed step budget via "
+                         "eval_long_context_view / measure_predicted_boundary_acoustics.",
+            "funnel_disabled": True, "terminal_validation_disabled": True,
+            "num_classes": int(model.config.num_labels)})
+        print(json.dumps({"timestamp_target": timestamp_target}), flush=True)
     collator = collator_cls(processor, audio_root=Path(cfg["data"]["audio_root"]),
                             language=cfg["data"]["language"], timestamp_token_id=model.config.timestamp_token_id,
-                            **({"gap_sec": float(concat_cfg.get("gap_sec", 0.4))} if concat_cfg.get("enabled") else {}))
+                            **collator_kwargs)
     evaluation_batch = int(cfg["training"].get("evaluation_micro_batch_size", cfg["training"]["micro_batch_size"]))
     if args.stage == "r0":
         result = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
@@ -385,7 +401,9 @@ def main() -> None:
         scheduler = get_cosine_schedule_with_warmup(optimizer, int(max_steps * float(cfg["training"]["warmup_ratio"])), max_steps)
     # funnelled validation: cheap screen for many candidates, full set for few, each level once
     funnel_cfg = dict((cfg.get("training") or {}).get("eval_funnel") or {})
-    funnel_enabled = bool(funnel_cfg.get("enabled"))
+    funnel_enabled = bool(funnel_cfg.get("enabled")) and not duration_mode
+    if duration_mode and bool(funnel_cfg.get("enabled")):
+        print(json.dumps({"funnel": "disabled for duration target (metrics would misread slot 2)"}), flush=True)
     planner = subsets = funnel_selection = None
     l3_rounds: list[dict[str, Any]] = []
 
@@ -447,7 +465,7 @@ def main() -> None:
                                         {"history": l3_rounds, "decision": decision})
                             if decision["stop"]:
                                 run_until_step = step
-            if step % int(cfg["training"]["eval_steps"]) == 0:
+            if (not duration_mode) and step % int(cfg["training"]["eval_steps"]) == 0:
                 validation = evaluate(model, processor, collator, valid, references, device=args.device, dtype=dtype, batch_size=evaluation_batch)
                 validation["evaluation_step"] = step
                 validation["evaluation_trigger"] = "periodic"
@@ -467,7 +485,16 @@ def main() -> None:
     if last_validation is None and terminal_validation_path.exists():
         last_validation = json.loads(terminal_validation_path.read_text(encoding="utf-8"))
         last_validation_step = int(last_validation.get("evaluation_step", step))
-    if last_validation_step != step:
+    if duration_mode:
+        # 绝对位置解码在 duration 目标下会把时长当位置读；这里显式记录"未做"，
+        # 而不是留下一个看起来正常但口径错误的 validation_step_*.json。
+        atomic_json(run_dir / "validation_status.json", {
+            "status": "not_supported_in_duration_mode",
+            "reason": "evaluate()/funnel read slot 2 as an absolute end bin; a duration-parameterised "
+                      "head must be scored by eval_long_context_view.py or "
+                      "measure_predicted_boundary_acoustics.py with timestamp_target=duration",
+            "step": step})
+    if (not duration_mode) and last_validation_step != step:
         # A terminal step that is not divisible by eval_steps must still enter
         # validation-only checkpoint selection. This prevents a completed run
         # from reporting a stale periodic evaluation.
@@ -494,6 +521,19 @@ def main() -> None:
         last_validation_step = step
     result = last_validation
     if result is None:
+        if duration_mode:
+            # duration 模式下终态验证被有意禁用（绝对位置解码会误读时长槽位）；
+            # 用显式的 status 文件满足这条不变量，而不是悄悄跳过检查。
+            atomic_json(run_dir / "runtime_summary.json", {
+                "stage": args.stage, "steps": step, "configured_max_steps": run_until_step,
+                "completed": True, "planned_stop": None, "epochs": epoch,
+                "wall_sec": time.time() - started,
+                "train_items": len(train), "validation_items": len(valid), "seed": seed,
+                "validation": "not_supported_in_duration_mode",
+                "timestamp_target": timestamp_target})
+            print(json.dumps({"completed": True, "steps": step,
+                               "validation": "not_supported_in_duration_mode"}), flush=True)
+            return
         raise RuntimeError("validation result was not produced")
     atomic_json(run_dir / "evaluation.json", result)
     if args.stage == "overfit":

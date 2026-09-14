@@ -30,11 +30,16 @@ def decode_audio(path: Path) -> np.ndarray:
 class QwenFABatchCollator:
     """Build official processor inputs and timestamp-only labels at batch time."""
 
-    def __init__(self, processor: Any, *, audio_root: Path, language: str, timestamp_token_id: int) -> None:
+    def __init__(self, processor: Any, *, audio_root: Path, language: str, timestamp_token_id: int,
+                 timestamp_target: str = "absolute", timestamp_num_classes: int = 5000) -> None:
         self.processor = processor
         self.audio_root = audio_root
         self.language = language
         self.timestamp_token_id = timestamp_token_id
+        # "absolute" keeps today's behaviour byte-for-byte; "duration" supervises the second slot with
+        # duration bins (the structural arm).  Anything reading the labels must know which it is.
+        self.timestamp_target = timestamp_target
+        self.timestamp_num_classes = timestamp_num_classes
 
     def load_audio(self, row: dict[str, Any]) -> Any:
         """Hook for subclasses: one record -> mono float32 waveform at the processor rate."""
@@ -50,6 +55,8 @@ class QwenFABatchCollator:
             labels.append(build_supervision_labels(
                 inputs["input_ids"][index], timestamp_token_id=self.timestamp_token_id,
                 class_ids=list(row["timestamp_class_ids"]),
+                target=self.timestamp_target,
+                num_classes=self.timestamp_num_classes,
             ))
         import torch
         inputs["labels"] = torch.stack(labels)

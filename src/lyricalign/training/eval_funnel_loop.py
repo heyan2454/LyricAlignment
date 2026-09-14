@@ -79,8 +79,16 @@ class CyclicCosineScheduler:
 
 def argmax_character_predictions(logits: Any, input_ids: Any, word_lists: list[list[str]],
                                  timestamp_token_id: int, records: list[dict[str, Any]], *,
-                                 segment_sec: float) -> list[dict[str, Any]]:
-    """Raw per-slot argmax timestamps (no monotonicity repair), in metric row shape."""
+                                 segment_sec: float,
+                                 timestamp_target: str = "absolute") -> list[dict[str, Any]]:
+    """Raw per-slot argmax timestamps (no monotonicity repair), in metric row shape.
+
+    `timestamp_target="duration"` means the second slot holds duration bins, so the end time is
+    `start + duration`; reading it as an absolute bin would silently evaluate the model against the
+    wrong quantity.
+    """
+    if timestamp_target not in ("absolute", "duration"):
+        raise ValueError(f"unknown timestamp target {timestamp_target!r}")
     pred_ids = np.asarray(logits.detach().float().argmax(dim=-1).cpu().numpy())
     ids = np.asarray(input_ids.detach().cpu().numpy() if hasattr(input_ids, "detach") else input_ids)
     rows: list[dict[str, Any]] = []
@@ -92,6 +100,8 @@ def argmax_character_predictions(logits: Any, input_ids: Any, word_lists: list[l
             times = np.concatenate([times, np.full(expected - times.size, np.nan)])
         for index, word in enumerate(words):
             start, end = times[2 * index], times[2 * index + 1]
+            if timestamp_target == "duration" and np.isfinite(start) and np.isfinite(end):
+                end = start + end          # slot 2 is a duration, not a position
             rows.append({"item_id": record["item_id"],
                          "song_id": record.get("song_id", record["item_id"]),
                          "character_index": index, "normalized_character": word,
@@ -127,7 +137,8 @@ def evaluate_variants(model: Any, processor: Any, collator: Any, records: list[d
                       references: dict[str, list[dict[str, Any]]], *, device: str, dtype: Any,
                       batch_size: int, segment_sec: float,
                       tolerances: tuple[float, ...] = DEFAULT_TOLERANCES_SEC,
-                      keep_per_unit: bool = False) -> dict[str, Any]:
+                      keep_per_unit: bool = False,
+                      timestamp_target: str = "absolute") -> dict[str, Any]:
     """One forward pass, several decodes, per-song test-scale metrics for each.
 
     `dp` is the monotone Viterbi decode of the same logits (no greedy per-slot argmax, no upstream
@@ -153,26 +164,37 @@ def evaluate_variants(model: Any, processor: Any, collator: Any, records: list[d
             batch = move_inputs(inputs, device, dtype)
             output = model(**batch)
             losses.append(float(output.loss))
-            decoded = processor.decode_forced_alignment(output.logits, batch["input_ids"], words,
-                                                        model.config.timestamp_token_id)
-            for record, items in zip(chunk, decoded, strict=True):
-                for index, item in enumerate(items):
-                    fixed_rows.append({"item_id": record["item_id"],
-                                       "song_id": record.get("song_id", record["item_id"]),
-                                       "character_index": index, "normalized_character": item["text"],
-                                       "start_sec": float(item["start_time"]),
-                                       "end_sec": float(item["end_time"])})
             raw_rows.extend(argmax_character_predictions(
                 output.logits, batch["input_ids"], words, model.config.timestamp_token_id, chunk,
-                segment_sec=segment_sec))
-            dp_rows.extend(constrained_rows(output.logits, batch["input_ids"], chunk, words,
-                                            timestamp_token_id=model.config.timestamp_token_id,
-                                            segment_sec=segment_sec))
-    variants = {"fixed": fixed_rows, "raw": raw_rows,
+                segment_sec=segment_sec, timestamp_target=timestamp_target))
+            if timestamp_target == "absolute":
+                # `fixed`/`dp` read slot 2 as an absolute position, which is meaningless for a
+                # duration-parameterised head; running them would print confident nonsense.
+                decoded = processor.decode_forced_alignment(output.logits, batch["input_ids"], words,
+                                                            model.config.timestamp_token_id)
+                for record, items in zip(chunk, decoded, strict=True):
+                    for index, item in enumerate(items):
+                        fixed_rows.append({"item_id": record["item_id"],
+                                           "song_id": record.get("song_id", record["item_id"]),
+                                           "character_index": index, "normalized_character": item["text"],
+                                           "start_sec": float(item["start_time"]),
+                                           "end_sec": float(item["end_time"])})
+                dp_rows.extend(constrained_rows(output.logits, batch["input_ids"], chunk, words,
+                                                timestamp_token_id=model.config.timestamp_token_id,
+                                                segment_sec=segment_sec))
+    skipped = ({"fixed": {"status": "not_supported_in_duration_mode", "reason": "slot 2 是时长而非绝对位置"},
+                "dp": {"status": "not_supported_in_duration_mode"},
+                "dp_targeted": {"status": "not_supported_in_duration_mode"}}
+               if timestamp_target == "duration" else {})
+    variants = ({"raw": raw_rows, "raw_targeted": raw_plus_targeted_rows(raw_rows, grid_sec=segment_sec)}
+                if timestamp_target == "duration" else
+                {"fixed": fixed_rows, "raw": raw_rows,
                 "raw_targeted": raw_plus_targeted_rows(raw_rows, grid_sec=segment_sec),
-                "dp": dp_rows, "dp_targeted": raw_plus_targeted_rows(dp_rows, grid_sec=segment_sec)}
+                "dp": dp_rows, "dp_targeted": raw_plus_targeted_rows(dp_rows, grid_sec=segment_sec)})
     out: dict[str, Any] = {"val_loss": round(float(np.mean(losses)), 6) if losses else None,
-                           "items": len(records), "characters": len(reference), "variants": {}}
+                           "items": len(records), "characters": len(reference), "variants": {},
+                           "timestamp_target": timestamp_target}
+    out["variants"].update(skipped)
     for name, rows in variants.items():
         metric = test_scale_metrics(reference, rows, tolerances=tolerances)
         if not keep_per_unit:

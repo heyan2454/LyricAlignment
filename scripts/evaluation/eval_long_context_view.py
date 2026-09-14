@@ -136,6 +136,7 @@ def main() -> None:
                                           dtype=getattr(torch, cfg["training"].get("dtype", "bfloat16")),
                                           batch_size=args.batch_size,
                                           segment_sec=float(cfg["training"].get("timestamp_segment_sec", STEP_SEC)),
+                                          timestamp_target=str(cfg["training"].get("timestamp_target", "absolute")),
                                           keep_per_unit=True)
         drift = drift_profile(outcome["variants"], references)
         # keep_per_unit only exists so the drift profile can be computed; the per-unit rows are

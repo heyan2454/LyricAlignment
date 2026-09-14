@@ -76,10 +76,46 @@ def build_label_record(
     }
 
 
-def build_supervision_labels(input_ids: Any, *, timestamp_token_id: int, class_ids: list[int]) -> Any:
-    """Fill exactly the timestamp slots; preserve tensor backend/device of input IDs."""
+def duration_target_class_ids(class_ids: list[int], *, num_classes: int) -> list[int]:
+    """Rewrite (start_bin, end_bin) pairs into (start_bin, duration_bins) — the structural variant.
+
+    The second slot stops being an absolute position and becomes "how long this character is", which is
+    the degree of freedom the night's measurements say the model gets wrong.  Anything that cannot be
+    represented (non-positive duration, overflow) is clamped into range rather than dropped, so the
+    supervision keeps one label per slot and the loss never silently ignores a character.
+    """
+    if len(class_ids) % 2:
+        raise ValueError(f"timestamp class ids must come in (start, end) pairs, got {len(class_ids)}")
+    out: list[int] = []
+    for index in range(0, len(class_ids), 2):
+        start, end = int(class_ids[index]), int(class_ids[index + 1])
+        duration = end - start
+        if duration < 1:
+            duration = 1
+        if duration > num_classes - 1:
+            duration = num_classes - 1
+        out.extend([start, duration])
+    return out
+
+
+def absolute_ends_from_duration_slots(class_ids: list[int], *, segment_sec: float) -> list[float]:
+    """Inverse of `duration_target_class_ids`: (start_bin, duration_bin) -> end time in seconds."""
+    return [((int(class_ids[index]) + int(class_ids[index + 1])) * segment_sec)
+            for index in range(0, len(class_ids), 2)]
+
+
+def build_supervision_labels(input_ids: Any, *, timestamp_token_id: int, class_ids: list[int],
+                             target: str = "absolute", num_classes: int = 5000) -> Any:
+    """Fill exactly the timestamp slots; preserve tensor backend/device of input IDs.
+
+    `target="duration"` supervises the second slot with duration bins instead of absolute end bins.
+    """
     import torch
 
+    if target not in ("absolute", "duration"):
+        raise ValueError(f"unknown supervision target {target!r}")
+    if target == "duration":
+        class_ids = duration_target_class_ids(class_ids, num_classes=num_classes)
     positions = (input_ids == timestamp_token_id).nonzero(as_tuple=False).flatten()
     if len(positions) != len(class_ids):
         raise ValueError(
