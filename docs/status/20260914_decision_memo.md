@@ -62,7 +62,7 @@
 - 限制（写在报告里，别只看好处）：偏离最大的歌正是现在把 96%~99% 字糊在同一时刻的那些，**铺开合法但无真值可判 ⇒ 两条必须一起上**。
 - **已核实：影子跑不需要写任何新代码**（18:16 查过脚本默认值与目录结构）——
   `real_song_decoder_probe.py` 的 `--batch` 默认就指向产品批
-  `runs/20260814_ktv_current_silence`（37 首歌，含 `work/audio/vocals.wav` 与已交付时间轴），
+  `runs/20260814_ktv_current_silence`（目录里 37 首歌，其中 **33 首有可用成品时间轴**，含 `work/audio/vocals.wav`），
   `--checkpoint` 默认就是线上 `step-000750`，`--span-sec` 默认 90 s。所以 D2 的全部技术工作是：
   `PYTHONPATH=src python scripts/evaluation/real_song_decoder_probe.py --out results/by_run/20260914_shadow_run/metrics.json`
   （≈20 分钟 GPU，臂结束后即可跑）+ 门控 `export_review_gating.py --batch <同一目录> --budget 0.10
