@@ -65,3 +65,6 @@ results/**/per_character.jsonl
 results/**/baseline_drift.json
 results/**/baseline_aligned.json
 results/**/long60_baseline.json
+
+# 大型逐字符分布导出（7 MB 级）：留在磁盘、不入 git；只入 summary/metrics JSON
+results/**/rows.jsonl
