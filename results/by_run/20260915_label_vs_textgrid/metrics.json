@@ -1,0 +1,224 @@
+{
+  "schema_version": "label_vs_textgrid_audit_v1",
+  "labels_audited": 4000,
+  "grid_step_sec": 0.08,
+  "counts": {
+    "items": 4000,
+    "source_chars": 37955,
+    "paired_items": 4000,
+    "paired_chars": 37955,
+    "quantised_exactly": 292
+  },
+  "onset_delta_sec": {
+    "n": 37955,
+    "p10": 0.005,
+    "p50": 0.02,
+    "p90": 0.035,
+    "max": 0.04
+  },
+  "offset_delta_sec": {
+    "n": 37955,
+    "p10": 0.005,
+    "p50": 0.02,
+    "p90": 0.035,
+    "max": 0.135
+  },
+  "onset_delta_within_one_grid_step": 1.0,
+  "source_character_duration_sec": {
+    "n": 37955,
+    "p10": 0.21,
+    "p50": 0.38,
+    "p90": 0.79,
+    "max": 7.06
+  },
+  "long_characters": {
+    "threshold_sec": 1.0,
+    "count": 2151,
+    "duration_sec": {
+      "n": 2151,
+      "p10": 1.04,
+      "p50": 1.33,
+      "p90": 2.21,
+      "max": 7.06
+    },
+    "onset_delta_sec": {
+      "n": 2151,
+      "p10": 0.005,
+      "p50": 0.02,
+      "p90": 0.035,
+      "max": 0.04
+    }
+  },
+  "post_rest_onset_delta_sec": {},
+  "long_character_examples": [
+    {
+      "item_id": "Tenor-3#K歌之王#0007",
+      "index": 9,
+      "text": "骨",
+      "source": [
+        4.345,
+        6.035
+      ],
+      "derived": [
+        4.32,
+        6.0
+      ],
+      "duration": 1.69
+    },
+    {
+      "item_id": "Tenor-3#K歌之王#0012",
+      "index": 5,
+      "text": "苦",
+      "source": [
+        1.805,
+        3.215
+      ],
+      "derived": [
+        1.84,
+        3.2
+      ],
+      "duration": 1.41
+    },
+    {
+      "item_id": "Tenor-3#K歌之王#0014",
+      "index": 1,
+      "text": "哭",
+      "source": [
+        0.56,
+        2.48
+      ],
+      "derived": [
+        0.56,
+        2.48
+      ],
+      "duration": 1.92
+    },
+    {
+      "item_id": "Tenor-3#K歌之王#0016",
+      "index": 3,
+      "text": "福",
+      "source": [
+        1.57,
+        2.6
+      ],
+      "derived": [
+        1.6,
+        2.64
+      ],
+      "duration": 1.03
+    },
+    {
+      "item_id": "Tenor-3#K歌之王#0025",
+      "index": 1,
+      "text": "苦",
+      "source": [
+        0.635,
+        2.495
+      ],
+      "derived": [
+        0.64,
+        2.48
+      ],
+      "duration": 1.86
+    },
+    {
+      "item_id": "Tenor-3#K歌之王#0026",
+      "index": 2,
+      "text": "来",
+      "source": [
+        1.025,
+        2.165
+      ],
+      "derived": [
+        1.04,
+        2.16
+      ],
+      "duration": 1.14
+    },
+    {
+      "item_id": "Tenor-3#K歌之王#0027",
+      "index": 3,
+      "text": "束",
+      "source": [
+        1.68,
+        2.69
+      ],
+      "derived": [
+        1.68,
+        2.72
+      ],
+      "duration": 1.01
+    },
+    {
+      "item_id": "Tenor-3#K歌之王#0028",
+      "index": 4,
+      "text": "悟",
+      "source": [
+        1.415,
+        3.505
+      ],
+      "derived": [
+        1.44,
+        3.52
+      ],
+      "duration": 2.09
+    },
+    {
+      "item_id": "Tenor-1#always_online#0000",
+      "index": 6,
+      "text": "耶",
+      "source": [
+        1.92,
+        3.37
+      ],
+      "derived": [
+        1.92,
+        3.36
+      ],
+      "duration": 1.45
+    },
+    {
+      "item_id": "Tenor-1#always_online#0000",
+      "index": 7,
+      "text": "嘿",
+      "source": [
+        3.64,
+        5.77
+      ],
+      "derived": [
+        3.68,
+        5.76
+      ],
+      "duration": 2.13
+    },
+    {
+      "item_id": "Tenor-1#always_online#0002",
+      "index": 6,
+      "text": "头",
+      "source": [
+        1.815,
+        3.055
+      ],
+      "derived": [
+        1.84,
+        3.04
+      ],
+      "duration": 1.24
+    },
+    {
+      "item_id": "Tenor-1#always_online#0003",
+      "index": 16,
+      "text": "么",
+      "source": [
+        6.29,
+        7.36
+      ],
+      "derived": [
+        6.32,
+        7.36
+      ],
+      "duration": 1.07
+    }
+  ],
+  "text_mismatch_examples": []
+}
