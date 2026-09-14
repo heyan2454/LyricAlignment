@@ -225,11 +225,19 @@ def main() -> None:
                     else None
                 in_tol = mass_within_tolerance(probabilities, label_bins, tolerance_sec=0.2,
                                                segment_sec=step) if diag is not None else None
-                argmax_starts = probabilities[:, 0, :].argmax(axis=1) * step
-                argmax_ends = probabilities[:, 1, :].argmax(axis=1) * step
-                decoded = viterbi_monotone(probabilities[:, 0, :], probabilities[:, 1, :], min_duration=1)
-                dp_starts = np.asarray(decoded["starts"], dtype=float) * step if decoded["feasible"] else argmax_starts
-                dp_ends = np.asarray(decoded["ends"], dtype=float) * step if decoded["feasible"] else argmax_ends
+                timestamp_target = str(cfg["training"].get("timestamp_target", "absolute"))
+                start_bins = probabilities[:, 0, :].argmax(axis=1)
+                second_bins = probabilities[:, 1, :].argmax(axis=1)
+                # duration 模式下第二个槽位是时长，结束点 = 起始 + 时长；两种口径绝不能混读。
+                end_bins = start_bins + second_bins if timestamp_target == "duration" else second_bins
+                argmax_starts = start_bins * step
+                argmax_ends = end_bins * step
+                if timestamp_target == "duration":
+                    dp_starts, dp_ends = argmax_starts, argmax_ends   # DP 需联合解码，此模式不提供
+                else:
+                    decoded = viterbi_monotone(probabilities[:, 0, :], probabilities[:, 1, :], min_duration=1)
+                    dp_starts = np.asarray(decoded["starts"], dtype=float) * step if decoded["feasible"] else argmax_starts
+                    dp_ends = np.asarray(decoded["ends"], dtype=float) * step if decoded["feasible"] else argmax_ends
                 if len(dp_starts) < len(characters):
                     continue
                 for index, interval in enumerate(characters):
