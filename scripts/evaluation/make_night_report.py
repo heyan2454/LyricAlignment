@@ -703,10 +703,35 @@ def sec_structural_arm(root: Path) -> list[str]:
     if verdict:
         lines.append("  判决已产出，见 `results/by_run/20260914_structural_verdict/REPORT.md`。")
     else:
-        lines.append("  判决尚未产出（臂完成后跑 `paired_robustness_check` + `arms_by_bucket_counts`，"
-                     "预期 01:15 左右）。")
-    lines.append("- 预先登记的如实混杂：**没有 6000 步绝对目标对照臂**（GPU 预算只够一条），"
-                 "所以读数若变好可能部分来自多训；若显著变好必须先补该对照再谈配方。")
+        killed = Path("/home/hyan/Data/lyricalign/runs/_launch_logs/START_KILL_TRIGGERED").exists()
+        last_step = steps
+        if killed and last_step < 6000:
+            lines.append(f"  **状态：已按预注册判据于 19:10 停止**（step {last_step}）："
+                         "起始点错误 >0.2 s 的字符占比 7.22% > 阈值 5% ⇒ 属 §6e 情形 3（本臂无效），"
+                         "且时长秩相关到 2000 步仍只有 +0.02 ⇒ **不能据此说参数化被否证**。")
+        control = Path("/home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_absolute_control_seed20260724/metrics.jsonl")
+        if control.exists():
+            control_step = 0
+            for line in control.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    row = json.loads(line)
+                    if "training_loss" in row:
+                        control_step = max(control_step, int(row.get("step", 0)))
+            lines.append(f"  **后续：等算力绝对语义对照臂在跑（§9，唯一差别是问法），当前 step {control_step}/6000**；"
+                         "同步数对比链会在它到 500/1000/2000 步时自动出配对结果。")
+        else:
+            lines.append("  判决尚未产出（等臂完成或按判据停止后，由自动链产出）。")
+    control_running = Path("/home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_absolute_control_seed20260724/metrics.jsonl").exists()
+    if control_running:
+        lines.append("- 混杂处理进展：**已启动等算力绝对语义对照臂（§9）**，两边同起点、同步数、同 LR、"
+                     "同 seed，唯一差别是问法 ⇒ 之前登记的「多训 6000 步」与「完整 LR 的连带损伤」"
+                     "两类混杂在同步数配对下同等出现，可被隔离。")
+    else:
+        lines.append("- 预先登记的如实混杂：**没有 6000 步绝对目标对照臂**（GPU 预算只够一条），"
+                     "所以读数若变好可能部分来自多训；若显著变好必须先补该对照再谈配方。")
+    lines.append("- 我自己记下的一条判定责任：停臂阈值（step 2000、坏点 >5%）是在看到"
+                 "『坏点占比 13.8% → 7.2%、但 p90 已回到 85 ms』这条好转趋势之前定的；"
+                 "规则照执行是对的，但**阈值可能偏严**这一点必须写在结果里，不能只说『它失败了』。")
     return lines
 
 
@@ -789,7 +814,8 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("B 的效应按时长拆开数个数（形状对、量级小）", "results/by_run/20260914_arms_by_bucket", sec_arms_by_bucket),
     ("A/B 决策表（§3l 2×2，两种多重比较口径）", "results/by_run/20260914_ab_decision", sec_ab_decision),
     ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
-    ("结构改动：时长参数化臂（进行中）", "docs/status/20260914_structural_prereg.md", sec_structural_arm),
+    ("结构改动：换问法的实验（已按预注册判据停止，转入等算力对照臂）",
+     "docs/status/20260914_structural_prereg.md", sec_structural_arm),
     ("结构臂轨迹（趋势探针，含起点参照行）", "docs/status/20260914_duration_trend.md", sec_duration_trend),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
