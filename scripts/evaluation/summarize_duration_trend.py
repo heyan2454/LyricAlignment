@@ -103,6 +103,8 @@ def main() -> None:
     parser.add_argument("--glob", default="results/by_run/20260914_duration_trend/step*/per_character.jsonl")
     parser.add_argument("--extra", action="append", default=[],
                         help="额外的一份 dump，格式 path:step_label")
+    parser.add_argument("--reference", action="append", default=[],
+                        help="参照行（如起点基线的 dump），格式 path:标签；排在表末且不参与步数排序")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
 
@@ -117,14 +119,26 @@ def main() -> None:
         label = directory.replace("step", "")
         entries.append((label, Path(path)))
 
-    payload = {"schema_version": "duration_trend_v1", "tolerance_sec": TOL, "points": []}
+    references: list[dict[str, Any]] = []
+    for spec in args.reference:
+        if ":" not in spec:
+            continue
+        raw_path, label = spec.rsplit(":", 1)
+        path = Path(raw_path)
+        point = summarise(label, load_pairs(path)) if path.exists() else {"step_label": label, "status": "missing"}
+        point["is_reference"] = True
+        references.append(point)
+
+    payload = {"schema_version": "duration_trend_v2", "tolerance_sec": TOL, "points": []}
     for label, path in entries:
         if not path.exists():
             payload["points"].append({"step_label": label, "status": "missing", "path": str(path)})
             continue
         payload["points"].append(summarise(label, load_pairs(path)))
     ordered = sorted(payload["points"], key=lambda item: int(item["step_label"]) if str(item.get("step_label", "")).isdigit() else 10 ** 9)
-    payload["points"] = ordered
+    payload["points"] = ordered + references
+    for point in references:
+        ordered.append(point)
     header = ["# 结构臂趋势（生成，勿手改）", "",
               "起始点误差是 duration 参数化下结束点误差的**硬下界**（end = start + duration）；",
               "`spearman_duration` ≈ 0 且结束点误差仍大 ⇒ 语义没换过来，本轮**无法**判参数化无效。", "",

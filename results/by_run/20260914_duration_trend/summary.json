@@ -1,5 +1,5 @@
 {
-  "schema_version": "duration_trend_v1",
+  "schema_version": "duration_trend_v2",
   "tolerance_sec": 0.2,
   "points": [
     {
@@ -31,7 +31,23 @@
       "median_implied_duration_sec": 0.56,
       "median_true_duration_sec": 0.39,
       "spearman_duration": -0.0184
+    },
+    {
+      "step_label": "起点 uniform-12000",
+      "status": "measured",
+      "characters": 6415,
+      "median_start_entropy_nats": 0.61,
+      "median_start_p_top1": 0.791,
+      "median_start_err_ms": 25.0,
+      "p90_start_err_ms": 60.0,
+      "median_end_err_ms": 25.0,
+      "median_end_err_ms_long": 35.0,
+      "end_miss_share": 0.0192,
+      "median_implied_duration_sec": 0.4,
+      "median_true_duration_sec": 0.4,
+      "spearman_duration": 0.9236,
+      "is_reference": true
     }
   ],
-  "markdown": "# 结构臂趋势（生成，勿手改）\n\n起始点误差是 duration 参数化下结束点误差的**硬下界**（end = start + duration）；\n`spearman_duration` ≈ 0 且结束点误差仍大 ⇒ 语义没换过来，本轮**无法**判参数化无效。\n\n| 步 | n | 起始中位(ms) | 起始 p90 | **起始熵(nats)** | **起始 p_top1** | 结束中位(ms) | ≥1s 结束中位 | 结束超差率 | 估时长中位(s) | 真时长中位(s) | 时长秩相关 |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n| 500 | 1248 | 30.0 | 1190.0 | **1.98** | **0.46** | 1165.0 | 1517.5 | 81.65% | 1.12 | 0.4 | -0.0319 |\n| 1000 | 485 | 25.0 | 1290.0 | **1.93** | **0.461** | 860.0 | 1297.5 | 73.40% | 0.56 | 0.39 | -0.0184 |\n"
+  "markdown": "# 结构臂趋势（生成，勿手改）\n\n起始点误差是 duration 参数化下结束点误差的**硬下界**（end = start + duration）；\n`spearman_duration` ≈ 0 且结束点误差仍大 ⇒ 语义没换过来，本轮**无法**判参数化无效。\n\n| 步 | n | 起始中位(ms) | 起始 p90 | **起始熵(nats)** | **起始 p_top1** | 结束中位(ms) | ≥1s 结束中位 | 结束超差率 | 估时长中位(s) | 真时长中位(s) | 时长秩相关 |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n| 500 | 1248 | 30.0 | 1190.0 | **1.98** | **0.46** | 1165.0 | 1517.5 | 81.65% | 1.12 | 0.4 | -0.0319 |\n| 1000 | 485 | 25.0 | 1290.0 | **1.93** | **0.461** | 860.0 | 1297.5 | 73.40% | 0.56 | 0.39 | -0.0184 |\n| 起点 uniform-12000 | 6415 | 25.0 | 60.0 | **0.61** | **0.791** | 25.0 | 35.0 | 1.92% | 0.4 | 0.4 | 0.9236 |\n"
 }
