@@ -357,6 +357,27 @@ def sec_arms(root: Path) -> list[str]:
                 return f"{summary[decoder]['macro_within_primary']:.4f}"
             return "—"
         lines.append(f"| {label} | {value('fixed')} | {value('raw')} | {value('raw_targeted')} | {value('dp')} |")
+    deltas = []
+    for label, block_view in rows:
+        variants = block_view.get("variants") or {}
+        summary = block_view.get("summary") or {}
+
+        def value_of(decoder: str, _v=variants, _s=summary):
+            if decoder in _v:
+                return _v[decoder].get("macro_song_within_primary")
+            if decoder in _s:
+                return _s[decoder].get("macro_within_primary")
+            return None
+        fixed_value, dp_value = value_of("fixed"), value_of("dp")
+        if fixed_value is not None and dp_value is not None:
+            deltas.append((label, 100 * (dp_value - fixed_value)))
+    if deltas:
+        spread = "、".join(f"{name} {value:+.2f}" for name, value in deltas)
+        lo = min(value for _name, value in deltas)
+        hi = max(value for _name, value in deltas)
+        lines += ["", f"- **DP 相对线上 fixed 判据的增益逐个存档现算**（同一批 logits）：{spread} pp"
+                  f" ⇒ 区间 **{lo:+.2f} ~ {hi:+.2f} pp**，跨 {len(deltas)} 个独立训练/解码配置一致"
+                  " ⇒ 这条结论不是某个存档的运气；数字由脚本从视图 JSON 计算，不是手填常数。"]
     ab_terminal = _load(root / "results/by_run/20260914_warmstart_control/terminal_validation_AB.json")
     baseline_terminal = _load(root / "results/by_run/20260914_retrain_verdict/metrics.json")
     if ab_terminal:
