@@ -391,6 +391,45 @@ def sec_real_decoder(root: Path) -> list[str]:
     return lines
 
 
+def sec_confidence_duration(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_confidence_duration/metrics.json")
+    if not doc:
+        return ["- 状态：未跑"]
+    cells = doc["cells"]
+    totals = (cells.get("_bucket_totals") or {})
+    corr = doc["distance_to_mode_vs_entropy"]
+    lines = ["- **这条分析否证了我先前机制说法的天真版本**：按（真值时长桶 × 熵四分位）交叉后，"
+             "**每个格子里的中位时长比都是 0.97–1.03** ⇒ 模型的**典型**预测并没有被压短；"
+             "压缩只发生在失败子集内（那是条件性偏差，不是全局收缩）；",
+             f"- 混池相关是**混杂**：全体 r={corr['all']['pearson_r']}（t={corr['all']['t_approx']}）"
+             f"看着很强，但**分桶之后全部消失**（0-0.5s {corr['0-0.5s']['pearson_r']}、"
+             f"0.5-1s {corr['0.5-1s']['pearson_r']}、1-2s {corr['1-2s']['pearson_r']}、"
+             f"2s+ {corr['2s+']['pearson_r']}）⇒ 那个正相关只是『长字符既有高熵也有远离众数的时长』；",
+             "- **真正的发现在这里：不确定性几乎完全集中在长字符上**（留出口径 6,415 字符）："]
+    for name in ("0-0.5s", "0.5-1s", "1-2s", "2s+"):
+        block = cells.get(name) or {}
+        if not block:
+            continue
+        # 分母必须用该时长桶的**全部**字符数：小格子被过滤掉时，只按保留格子算会虚高占比
+        total = (totals.get(name) or {}).get("characters") or sum(
+            value["characters"] for key, value in block.items() if not key.startswith("_"))
+        q4 = (block.get("Q4(最不确信)") or {}).get("characters", 0)
+        shown = sum(value["characters"] for key, value in block.items() if not key.startswith("_"))
+        named = {key: value for key, value in block.items() if not key.startswith("_")}
+        if not named:
+            continue
+        first = named[min(named)]
+        last = named[max(named)]
+        note = "" if shown == total else f"（另有 {total - shown} 个字符落在 <25 行的小格子里，未列示）"
+        lines.append(f"  - {name}：桶内共 {total} 个字符，落在最低置信四分位的比例 "
+                     f"**{_pct(q4 / total, 0)}**{note}；超差率随熵从 {_pct(first['miss_rate'])} "
+                     f"升到 {_pct(last['miss_rate'])}")
+    lines += ["- ⇒ **产品后果（可执行）**：用一个**全局熵阈值**做门控，会系统性地误判长字符"
+              "（长字符本来就在高熵区，短字符的高熵才是异常）。正确的做法是把阈值**按模型自己预测的时长分档校准**"
+              "（预测时长在推理期可得，不需要真值）；这是今晚新识别出的、可以在现有数据上立即验证的改进。"]
+    return lines
+
+
 def sec_pending(root: Path) -> list[str]:
     return ["- **决策树已写死**（不临场判断）：B 落在 §3g 预测带内 ⇒ 暴露假设成立；"
             "B 为 null 或弱于预测带 ⇒ 启动 C 臂（字符级 loss 加权，"
@@ -456,6 +495,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
         "- ⇒ **在现有数据条件下，'用新数据增加长音暴露'这条路是关闭的**；若条目级上采样（B）拿不到效应，"
         "唯一还能加强暴露机制的是 C 臂（字符级 loss 加权，代码与测试已备好），再往上是结构改动。"]),
     ("真歌端到端解码探针（压力条件）", "results/by_run/20260914_real_song_decoder", sec_real_decoder),
+    ("置信度 × 时长交叉（否证天真版机制 + 新发现）", "results/by_run/20260914_confidence_duration", sec_confidence_duration),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
 ]

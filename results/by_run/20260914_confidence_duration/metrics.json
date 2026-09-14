@@ -1,0 +1,169 @@
+{
+  "schema_version": "confidence_duration_v1",
+  "dump": "results/by_run/20260914_mech_validation_uniform/per_character.jsonl",
+  "characters": 6415,
+  "mode_sec": 0.48,
+  "tolerance_sec": 0.2,
+  "entropy_quartile_cuts": [
+    0.4615,
+    0.6195,
+    0.8035
+  ],
+  "cells": {
+    "_bucket_totals": {
+      "0-0.5s": {
+        "characters": 4260
+      },
+      "0.5-1s": {
+        "characters": 1215
+      },
+      "1-2s": {
+        "characters": 813
+      },
+      "2s+": {
+        "characters": 127
+      }
+    },
+    "0-0.5s": {
+      "Q1(最确信)": {
+        "characters": 1367,
+        "median_gt_dur": 0.3,
+        "median_pred_dur": 0.32,
+        "median_ratio": 1.0,
+        "median_distance_to_mode": 0.16,
+        "miss_rate": 0.0015
+      },
+      "Q2": {
+        "characters": 1227,
+        "median_gt_dur": 0.32,
+        "median_pred_dur": 0.32,
+        "median_ratio": 1.021,
+        "median_distance_to_mode": 0.16,
+        "miss_rate": 0.0016
+      },
+      "Q3": {
+        "characters": 1078,
+        "median_gt_dur": 0.34,
+        "median_pred_dur": 0.32,
+        "median_ratio": 1.0,
+        "median_distance_to_mode": 0.16,
+        "miss_rate": 0.0074
+      },
+      "Q4(最不确信)": {
+        "characters": 588,
+        "median_gt_dur": 0.355,
+        "median_pred_dur": 0.4,
+        "median_ratio": 1.026,
+        "median_distance_to_mode": 0.16,
+        "miss_rate": 0.0731
+      }
+    },
+    "0.5-1s": {
+      "Q1(最确信)": {
+        "characters": 218,
+        "median_gt_dur": 0.57,
+        "median_pred_dur": 0.56,
+        "median_ratio": 0.982,
+        "median_distance_to_mode": 0.08,
+        "miss_rate": 0.0
+      },
+      "Q2": {
+        "characters": 286,
+        "median_gt_dur": 0.575,
+        "median_pred_dur": 0.56,
+        "median_ratio": 0.981,
+        "median_distance_to_mode": 0.08,
+        "miss_rate": 0.021
+      },
+      "Q3": {
+        "characters": 346,
+        "median_gt_dur": 0.58,
+        "median_pred_dur": 0.56,
+        "median_ratio": 0.988,
+        "median_distance_to_mode": 0.08,
+        "miss_rate": 0.026
+      },
+      "Q4(最不确信)": {
+        "characters": 365,
+        "median_gt_dur": 0.63,
+        "median_pred_dur": 0.64,
+        "median_ratio": 0.97,
+        "median_distance_to_mode": 0.16,
+        "miss_rate": 0.0932
+      }
+    },
+    "1-2s": {
+      "Q2": {
+        "characters": 88,
+        "median_gt_dur": 1.185,
+        "median_pred_dur": 1.16,
+        "median_ratio": 0.982,
+        "median_distance_to_mode": 0.68,
+        "miss_rate": 0.0227
+      },
+      "Q3": {
+        "characters": 160,
+        "median_gt_dur": 1.215,
+        "median_pred_dur": 1.2,
+        "median_ratio": 0.991,
+        "median_distance_to_mode": 0.72,
+        "miss_rate": 0.0187
+      },
+      "Q4(最不确信)": {
+        "characters": 546,
+        "median_gt_dur": 1.33,
+        "median_pred_dur": 1.28,
+        "median_ratio": 0.984,
+        "median_distance_to_mode": 0.8,
+        "miss_rate": 0.0714
+      }
+    },
+    "2s+": {
+      "Q4(最不确信)": {
+        "characters": 102,
+        "median_gt_dur": 2.32,
+        "median_pred_dur": 2.24,
+        "median_ratio": 0.985,
+        "median_distance_to_mode": 1.76,
+        "miss_rate": 0.1275
+      }
+    }
+  },
+  "distance_to_mode_vs_entropy": {
+    "all": {
+      "status": "measured",
+      "n": 6415,
+      "pearson_r": 0.4092,
+      "t_approx": 35.91,
+      "spearman_like_note": "距离对模式的绝对偏差 vs 熵；正相关支持『越不确定越靠近众数』"
+    },
+    "0-0.5s": {
+      "status": "measured",
+      "n": 4260,
+      "pearson_r": -0.0118,
+      "t_approx": -0.77,
+      "spearman_like_note": "距离对模式的绝对偏差 vs 熵；正相关支持『越不确定越靠近众数』"
+    },
+    "0.5-1s": {
+      "status": "measured",
+      "n": 1215,
+      "pearson_r": 0.1786,
+      "t_approx": 6.32,
+      "spearman_like_note": "距离对模式的绝对偏差 vs 熵；正相关支持『越不确定越靠近众数』"
+    },
+    "1-2s": {
+      "status": "measured",
+      "n": 813,
+      "pearson_r": 0.1334,
+      "t_approx": 3.83,
+      "spearman_like_note": "距离对模式的绝对偏差 vs 熵；正相关支持『越不确定越靠近众数』"
+    },
+    "2s+": {
+      "status": "measured",
+      "n": 127,
+      "pearson_r": 0.0002,
+      "t_approx": 0.0,
+      "spearman_like_note": "距离对模式的绝对偏差 vs 熵；正相关支持『越不确定越靠近众数』"
+    }
+  }
+}
