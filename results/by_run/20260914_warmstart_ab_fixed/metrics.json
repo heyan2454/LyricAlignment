@@ -1,0 +1,63 @@
+{
+  "schema_version": "warmstart_ab_verdict_v2",
+  "missing_view_files": [
+    {
+      "requested": "results/by_run/20260914_long_context_view/ab_arms.json",
+      "status": "not_run",
+      "reason": "文件不存在"
+    }
+  ],
+  "available_checkpoints": [
+    "old-r2-750",
+    "uniform-12000"
+  ],
+  "missing": [
+    "warmstart-control",
+    "warmstart-oversample"
+  ],
+  "primary_decoder": "fixed",
+  "tolerance": "within_200ms",
+  "comparisons": {
+    "treatment_vs_baseline": {
+      "status": "insufficient_data",
+      "songs": 0
+    },
+    "control_vs_baseline": {
+      "status": "insufficient_data",
+      "songs": 0
+    },
+    "treatment_vs_control": {
+      "status": "insufficient_data",
+      "songs": 0
+    },
+    "treatment_vs_reference": {
+      "status": "insufficient_data",
+      "songs": 0
+    },
+    "control_vs_reference": {
+      "status": "insufficient_data",
+      "songs": 0
+    }
+  },
+  "mechanism": {
+    "control": {
+      "bucket": "2-+s",
+      "miss_median_duration_ratio": 0.452,
+      "miss_share": 0.126,
+      "characters": 127
+    },
+    "treatment": {
+      "status": "not_run"
+    }
+  },
+  "verdict": {
+    "main_vs_online_baseline": "insufficient_data",
+    "net_effect_vs_control": "insufficient_data",
+    "control_drift": "insufficient_data",
+    "treatment_vs_control_paired": {
+      "status": "insufficient_data",
+      "songs": 0
+    },
+    "note": "净效应以**逐歌配对 B vs A** 为准（treatment_vs_control_paired），两臂各自对基线的差仅作参考。机制项不参与判决。"
+  }
+}
