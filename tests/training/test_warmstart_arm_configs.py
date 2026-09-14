@@ -59,3 +59,31 @@ def test_concat_arm_refuses_to_mix_both_interventions():
     concat = yaml.safe_load((ROOT / "configs/training/qwen_fa_lora_concat20_20260914.yaml").read_text())
     assert concat["training"]["concat_samples"]["enabled"] is True
     assert "duration_oversample" not in concat["training"], "拼接臂必须只改样本长度这一个变量"
+
+
+def _flat(path: Path) -> dict:
+    return _flatten(yaml.safe_load(path.read_text(encoding="utf-8")))
+
+
+def test_c_arm_differs_from_control_only_in_loss_weighting():
+    """C 是 B 失败时的判定实验，必须只带一个变量，且不得同时带条目复制。"""
+    control = ROOT / "configs/training/qwen_fa_lora_warmstart_control_20260914.yaml"
+    treatment = ROOT / "configs/training/qwen_fa_lora_warmstart_lossweight_20260914.yaml"
+    first, second = _flat(control), _flat(treatment)
+    differing = {key for key in set(first) | set(second) if first.get(key) != second.get(key)}
+    assert differing, "C 与 A 必须有一处差别"
+    assert all(key.startswith("training.loss_weighting") for key in differing), differing
+    weighting = yaml.safe_load(treatment.read_text(encoding="utf-8"))["training"]["loss_weighting"]
+    assert weighting["enabled"] is True
+    assert weighting["slot"] == "offset", "按今晚证据只加权长字符结束点"
+    assert weighting["long_sec"] == 1.0 and weighting["weight"] >= 2.0
+    # 不得夹带条目复制：C 的意义正在于没有覆盖代价
+    oversample = yaml.safe_load(treatment.read_text(encoding="utf-8"))["training"].get("duration_oversample")
+    assert not oversample, f"C 臂不能带条目复制：{oversample}"
+
+
+def test_c_arm_keeps_the_same_optimisation_budget_as_a():
+    control = yaml.safe_load((ROOT / "configs/training/qwen_fa_lora_warmstart_control_20260914.yaml").read_text(encoding="utf-8"))
+    treatment = yaml.safe_load((ROOT / "configs/training/qwen_fa_lora_warmstart_lossweight_20260914.yaml").read_text(encoding="utf-8"))
+    assert control["stages"]["r2"]["max_steps"] == treatment["stages"]["r2"]["max_steps"] == 600
+    assert control["training"]["save_steps"] == treatment["training"]["save_steps"]
