@@ -55,7 +55,12 @@ for DEC in fixed dp; do
     ${DUR_ARGS[@]+"${DUR_ARGS[@]}"} \
     --decoder "$DEC" --control warmstart-control --treatment warmstart-oversample \
     --baseline old-r2-750 --reference uniform-12000 \
-    --out "results/by_run/20260914_warmstart_ab_$DEC" 2>&1 | sed -n '/^| 比较/,/^$/p'
+    --out "results/by_run/20260914_warmstart_ab_$DEC" > "/tmp/verdict_$DEC.log" 2>&1
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "!! 判决（$DEC）失败 exit=$status，末尾日志："; tail -5 "/tmp/verdict_$DEC.log"; continue
+  fi
+  sed -n '/^| 比较/,/^$/p' "results/by_run/20260914_warmstart_ab_$DEC/REPORT.md"
 done
 
 # 逐字符配对：§3g-4 规定必须同时看 B vs A（配比净效应）与 B vs 起点（是否真的修好），

@@ -87,8 +87,16 @@ def main() -> None:
                         help="用哪个判据做配对；换 dp 属于**另一份预注册**，两者都报才诚实")
     args = parser.parse_args()
     views: list[dict[str, Any]] = []
+    unreadable: list[dict[str, str]] = []
     for spec in args.view:
-        path = Path(spec.split("=", 1)[-1]) if "=" in spec else Path(spec)
+        location = spec.split("=", 1)[-1] if "=" in spec else spec
+        path = Path(location)
+        if not path.exists():
+            # A missing input is a result in itself: report it as not_run instead of crashing,
+            # so the morning verdict still prints the comparisons that *can* be made.
+            unreadable.append({"requested": location, "status": "not_run", "reason": "文件不存在"})
+            print(f"[warn] 视图文件不存在，记为未跑：{location}", flush=True)
+            continue
         views.append(json.loads(path.read_text(encoding="utf-8")))
     durations: list[dict[str, Any]] = []
     for spec in args.duration:
@@ -102,7 +110,8 @@ def main() -> None:
     baseline = scores.get(args.baseline, {})
     control = scores.get(args.control, {})
     treatment = scores.get(args.treatment, {})
-    payload: dict[str, Any] = {"schema_version": "warmstart_ab_verdict_v1",
+    payload: dict[str, Any] = {"schema_version": "warmstart_ab_verdict_v2",
+                               "missing_view_files": unreadable,
                                "available_checkpoints": sorted(scores), "missing": missing,
                                "primary_decoder": args.decoder, "tolerance": "within_200ms",
                                "comparisons": {
