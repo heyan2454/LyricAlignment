@@ -1,0 +1,112 @@
+{
+  "schema_version": "arm_bucket_counts_v1",
+  "shared_characters": 6415,
+  "note": "逐字符不一致对子只统计结束点（B vs A），避免把 onset 与 offset 的计数相加",
+  "buckets": {
+    "0-0.5s": {
+      "起点": {
+        "n": 4260,
+        "offset_miss": 41,
+        "rate": 0.0096
+      },
+      "A对照": {
+        "n": 4260,
+        "offset_miss": 40,
+        "rate": 0.0094
+      },
+      "B上采样": {
+        "n": 4260,
+        "offset_miss": 44,
+        "rate": 0.0103
+      },
+      "discordant_B_vs_A": {
+        "newly_ok": 0,
+        "newly_broken": 4
+      }
+    },
+    "0.5-1s": {
+      "起点": {
+        "n": 1215,
+        "offset_miss": 35,
+        "rate": 0.0288
+      },
+      "A对照": {
+        "n": 1215,
+        "offset_miss": 37,
+        "rate": 0.0305
+      },
+      "B上采样": {
+        "n": 1215,
+        "offset_miss": 37,
+        "rate": 0.0305
+      },
+      "discordant_B_vs_A": {
+        "newly_ok": 4,
+        "newly_broken": 4
+      }
+    },
+    "1-1.5s": {
+      "起点": {
+        "n": 596,
+        "offset_miss": 29,
+        "rate": 0.0487
+      },
+      "A对照": {
+        "n": 596,
+        "offset_miss": 30,
+        "rate": 0.0503
+      },
+      "B上采样": {
+        "n": 596,
+        "offset_miss": 29,
+        "rate": 0.0487
+      },
+      "discordant_B_vs_A": {
+        "newly_ok": 4,
+        "newly_broken": 3
+      }
+    },
+    "1.5-2s": {
+      "起点": {
+        "n": 217,
+        "offset_miss": 10,
+        "rate": 0.0461
+      },
+      "A对照": {
+        "n": 217,
+        "offset_miss": 11,
+        "rate": 0.0507
+      },
+      "B上采样": {
+        "n": 217,
+        "offset_miss": 7,
+        "rate": 0.0323
+      },
+      "discordant_B_vs_A": {
+        "newly_ok": 4,
+        "newly_broken": 0
+      }
+    },
+    "2s+": {
+      "起点": {
+        "n": 127,
+        "offset_miss": 8,
+        "rate": 0.063
+      },
+      "A对照": {
+        "n": 127,
+        "offset_miss": 11,
+        "rate": 0.0866
+      },
+      "B上采样": {
+        "n": 127,
+        "offset_miss": 6,
+        "rate": 0.0472
+      },
+      "discordant_B_vs_A": {
+        "newly_ok": 5,
+        "newly_broken": 0
+      }
+    }
+  }
+}

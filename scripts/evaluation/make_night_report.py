@@ -583,6 +583,36 @@ def sec_ab_decision(root: Path) -> list[str]:
     return lines
 
 
+def sec_arms_by_bucket(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_arms_by_bucket/metrics.json")
+    if "buckets" not in doc:
+        return ["- 状态：未跑"]
+    buckets = doc["buckets"]
+    lines = [f"- 把 B 的效应按**标注时长**拆开数个数（同一批 {doc['shared_characters']} 个留出字符，"
+             "只统计**结束点**侧，避免把 onset/offset 的计数相加）：", "",
+             "| 时长桶 | n | 起点缺陷 | A 对照 | B 上采样 | B 比 A 新修好 | B 比 A 新弄坏 |", "|---|---|---|---|---|---|---|"]
+    for name in ("0-0.5s", "0.5-1s", "1-1.5s", "1.5-2s", "2s+"):
+        block = buckets.get(name)
+        if not block:
+            continue
+        disc = block["discordant_B_vs_A"]
+        lines.append(f"| {name} | {block['起点']['n']} | {block['起点']['offset_miss']} | "
+                     f"{block['A对照']['offset_miss']} | **{block['B上采样']['offset_miss']}** | "
+                     f"{disc['newly_ok']} | {disc['newly_broken']} |")
+    fixed = sum(b["discordant_B_vs_A"]["newly_ok"] for b in buckets.values())
+    broken = sum(b["discordant_B_vs_A"]["newly_broken"] for b in buckets.values())
+    lines += ["", "- ⇒ **形状完全符合机制预测**：B 的收益只出现在 ≥1.5 s 段（新修好 9、新弄坏 0），"
+              "损失只出现在最短段（新修好 0、新弄坏 4 = 条目复制把短字符的相对份额挤下去），"
+              "而 A（不改配比）在 ≥2s 段从 8 个缺陷退到 11 个、B 把它压回 6 个；",
+              f"- ⇒ 但**量级只有个位数**：合计新修好 {fixed}、新弄坏 {broken}，净 {fixed - broken:+d} 个字符"
+              f"（占 {doc['shared_characters']} 个的 {100 * (fixed - broken) / doc['shared_characters']:.2f}%）。"
+              "所以正确的说法是『方向被机制预测命中、幅度微弱』，"
+              "这也解释了为什么二项检验在未校正时 p=0.021、×4 校正后 p=0.085 —— 它本来就悬在边界上；",
+              "- 这条计数表同时给出 C 的**预期形状**：C 不复制条目 ⇒ 最短段那 4 个新弄坏应当消失，"
+              "而 ≥1.5 s 段的收益应保持。C 的判决就看这两件事是否同时成立。"]
+    return lines
+
+
 def sec_pending(root: Path) -> list[str]:
     return ["- **决策树已写死**（不临场判断）：B 落在 §3g 预测带内 ⇒ 暴露假设成立；"
             "B 为 null 或弱于预测带 ⇒ 启动 C 臂（字符级 loss 加权，"
@@ -659,6 +689,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("置信度 × 时长交叉（否证天真版机制 + 新发现）", "results/by_run/20260914_confidence_duration", sec_confidence_duration),
     ("按预测时长分档的门控阈值：假设被否证", "results/by_run/20260914_gating_calibration", sec_gating_calibration),
     ("位置效应（末字）：被时长混杂解释，不成立", "results/by_run/20260914_position_effect", sec_position_effect),
+    ("B 的效应按时长拆开数个数（形状对、量级小）", "results/by_run/20260914_arms_by_bucket", sec_arms_by_bucket),
     ("A/B 决策表（§3l 2×2，两种多重比较口径）", "results/by_run/20260914_ab_decision", sec_ab_decision),
     ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
