@@ -58,13 +58,35 @@ for DEC in fixed dp; do
     --out "results/by_run/20260914_warmstart_ab_$DEC" 2>&1 | sed -n '/^| 比较/,/^$/p'
 done
 
-# 逐字符配对（B vs A），若两臂 dump 都已就绪
-if [ -s results/by_run/20260914_mech_control/per_character.jsonl ] \
-   && [ -s results/by_run/20260914_mech_treatment/per_character.jsonl ]; then
+# 逐字符配对：§3g-4 规定必须同时看 B vs A（配比净效应）与 B vs 起点（是否真的修好），
+# 且每个比较都要过稳健性检查（中位数/截尾均值 + 二项 McNemar + ×4 校正），三者不同向只能写"迹象"。
+DUMP_A=results/by_run/20260914_mech_control/per_character.jsonl
+DUMP_B=results/by_run/20260914_mech_treatment/per_character.jsonl
+DUMP_START=results/by_run/20260914_mech_validation_uniform/per_character.jsonl
+if [ -s "$DUMP_A" ] && [ -s "$DUMP_B" ]; then
+  echo "=== 配对 B vs A（配比净效应）==="
   python scripts/evaluation/paired_checkpoint_comparison.py \
-    --old results/by_run/20260914_mech_control/per_character.jsonl \
-    --new results/by_run/20260914_mech_treatment/per_character.jsonl \
-    --out results/by_run/20260914_mech_ab_paired/metrics.json 2>&1 | tail -12
+    --old "$DUMP_A" --new "$DUMP_B" --out results/by_run/20260914_mech_ab_paired/metrics.json 2>&1 | tail -6
+  python scripts/evaluation/paired_robustness_check.py \
+    --old "$DUMP_A" --new "$DUMP_B" \
+    --out results/by_run/20260914_mech_ab_paired/robustness.json \
+    --report docs/status/20260914_robustness_B_vs_A.md >/dev/null
+fi
+if [ -s "$DUMP_START" ] && [ -s "$DUMP_B" ]; then
+  echo "=== 配对 B vs 起点（是否真的修好长音）==="
+  python scripts/evaluation/paired_checkpoint_comparison.py \
+    --old "$DUMP_START" --new "$DUMP_B" --out results/by_run/20260914_mech_B_vs_start/paired.json 2>&1 | tail -6
+  python scripts/evaluation/paired_robustness_check.py \
+    --old "$DUMP_START" --new "$DUMP_B" \
+    --out results/by_run/20260914_mech_B_vs_start/robustness.json \
+    --report docs/status/20260914_robustness_B_vs_start.md >/dev/null
+fi
+if [ -s "$DUMP_START" ] && [ -s "$DUMP_A" ]; then
+  echo "=== 配对 A vs 起点（对照臂漂移，用于解释上面的差值）==="
+  python scripts/evaluation/paired_robustness_check.py \
+    --old "$DUMP_START" --new "$DUMP_A" \
+    --out results/by_run/20260914_paired_A_vs_start/robustness.json \
+    --report docs/status/20260914_robustness_A_vs_start.md >/dev/null
 fi
 
 python scripts/evaluation/make_night_report.py --repo . --out docs/status/20260914_night_report.md
