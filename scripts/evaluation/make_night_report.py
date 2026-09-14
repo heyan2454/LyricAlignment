@@ -722,6 +722,31 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
 ]
 
 
+def dp_gain_range(root: Path) -> str:
+    """One source of truth for the DP-vs-fixed claim (used by both the summary and the arms table)."""
+    directory = root / "results/by_run/20260914_long_context_view"
+    values: list[float] = []
+    if directory.exists():
+        for path in sorted(directory.glob("*.json")):
+            document = _load(path) or {}
+            for block in (document.get("checkpoints") or {}).values():
+                variants = block.get("variants") or {}
+                summary = block.get("summary") or {}
+
+                def value(decoder: str, _v=variants, _s=summary):
+                    if decoder in _v:
+                        return _v[decoder].get("macro_song_within_primary")
+                    if decoder in _s:
+                        return _s[decoder].get("macro_within_primary")
+                    return None
+                fixed_value, dp_value = value("fixed"), value("dp")
+                if fixed_value is not None and dp_value is not None:
+                    values.append(100 * (dp_value - fixed_value))
+    if not values:
+        return "域内 DP 增益（未跑）"
+    return f"域内 DP 增益 {min(values):+.2f} ~ {max(values):+.2f} pp（{len(values)} 个存档逐个现算）"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=Path, default=Path("."))
@@ -742,7 +767,7 @@ def main() -> None:
              "2. 机制的准确表述（经两次自我修正）：**典型预测并不收缩**，收缩与偏早是失败子集的条件性偏差；"
              "对照臂 A 在长字符结束点上只给出**迹象**（均值 +9.6 ms，但中位数与截尾均值为 0，"
              "×4 校正后不显著）——**今晚的因果证据仍不充分，这是方法的边界，不是已证的事实**；",
-             "3. 两条**已经拿到手**的收益：DP 解码（域内 +0.85pp、塌陷清零）与置信度门控"
+             f"3. 两条**已经拿到手**的收益：DP 解码（{dp_gain_range(root)}、塌陷清零）与置信度门控"
              "（复核 10% 消除 55% 缺陷），都不需要重训；",
              "4. 你指定的长样本实验结论是**中性**（不伤短条目精度，故可安全混训）；"
              "针对暴露的 A/B 双臂正在跑，数值预期已提前登记。", "", "## 分项证据", ""]
