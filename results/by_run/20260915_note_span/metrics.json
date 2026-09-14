@@ -1,0 +1,27 @@
+{
+  "schema_version": "note_span_vs_label_end_v1",
+  "items_used": 5829,
+  "items_skipped": 171,
+  "long_sec": 1.5,
+  "gap_note_end_minus_label_end": {
+    "all": {
+      "n": 55423,
+      "median_ms": 0.0,
+      "p90_ms": 379.5,
+      "share_gap_gt_50ms": 0.198
+    },
+    "short": {
+      "n": 13706,
+      "median_ms": 0.0,
+      "p90_ms": 330.0,
+      "share_gap_gt_50ms": 0.1479
+    },
+    "long": {
+      "n": 690,
+      "median_ms": 0.0,
+      "p90_ms": 0.0,
+      "share_gap_gt_50ms": 0.0203
+    }
+  },
+  "reading": "gap>0 表示该字所属音符在标注判定的结束时刻之后仍未结束（标注提前收）。若长字这一列的中位数/gap>50ms 比例明显高于短字，说明'提前收'里有标注构造的贡献。"
+}
