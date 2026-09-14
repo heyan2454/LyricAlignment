@@ -130,6 +130,15 @@ def summarise(values: list[float]) -> dict[str, Any]:
     return ACOUSTICS.summarise(values)
 
 
+# 字段坐标系（2026-09-14 18:35 查清，写在这里是为了不让人再踩）：
+#   时间类：`abs_err_argmax`、`abs_err_constrained`、`signed_err`、`pred_sec`、`duration`
+#   响度类：`gt`、`pred_argmax`、`pred_constrained`、`peak_gt`、`peak_pred`
+#           （这些存的是边界处的声学显著度，不是时间！变量名 `gt` 在函数里指时间，
+#            但写进 JSON 的 "gt" 键是 prominence_pair() 返回的第一个值。）
+#   因此 `gt + signed_err == pred_sec` 这类跨坐标系检查必然失败，别再做。
+# 我没有改字段名：改名会让今晚之前所有已入库 dump 与新 dump 不可比（而且不能重写历史产物）。
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", type=Path, required=True)
