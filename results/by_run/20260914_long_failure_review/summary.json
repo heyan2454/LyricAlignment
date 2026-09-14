@@ -1,0 +1,13 @@
+{
+  "schema_version": "long_failure_review_v1",
+  "dump": "results/by_run/20260914_mech_validation_uniform/per_character.jsonl",
+  "min_duration_sec": 1.5,
+  "tolerance_sec": 0.2,
+  "total_long_failures": 18,
+  "listed": 18,
+  "hint_counts": {
+    "其他：真值附近既无权重也不犹豫": 10,
+    "模型自己就很犹豫（高熵）⇒ 门控应当已标记它": 8
+  },
+  "how_to_use": "按 abs_error_ms 从大到小听；每条都给了该听哪一秒（true_end_sec）与模型以为的秒数（predicted_end_sec），听完把 hint 改对即可统计成因分布。"
+}
