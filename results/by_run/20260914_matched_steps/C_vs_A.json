@@ -1,0 +1,63 @@
+{
+  "schema_version": "matched_steps_v1",
+  "label_a": "A_对照",
+  "label_b": "C_加权",
+  "shared_points": 6,
+  "step_range": [
+    100,
+    600
+  ],
+  "variants": {
+    "fixed": {
+      "points": 6,
+      "mean_delta_pp": -0.293,
+      "median_delta_pp": -0.395,
+      "se_pp": 0.092,
+      "b_better_points": 0,
+      "b_worse_points": 6,
+      "last_shared": {
+        "step": 600,
+        "a": 0.9574,
+        "b": 0.953
+      }
+    },
+    "raw": {
+      "points": 6,
+      "mean_delta_pp": -0.148,
+      "median_delta_pp": -0.175,
+      "se_pp": 0.079,
+      "b_better_points": 2,
+      "b_worse_points": 4,
+      "last_shared": {
+        "step": 600,
+        "a": 0.9649,
+        "b": 0.9634
+      }
+    },
+    "raw_targeted": {
+      "points": 6,
+      "mean_delta_pp": -0.205,
+      "median_delta_pp": -0.23,
+      "se_pp": 0.111,
+      "b_better_points": 1,
+      "b_worse_points": 5,
+      "last_shared": {
+        "step": 600,
+        "a": 0.9653,
+        "b": 0.9627
+      }
+    }
+  },
+  "own_progress": {
+    "A_对照": {
+      "from_step": 100,
+      "to_step": 600,
+      "fixed_delta_pp": 0.28
+    },
+    "C_加权": {
+      "from_step": 100,
+      "to_step": 600,
+      "fixed_delta_pp": -0.15
+    }
+  }
+}
