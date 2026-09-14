@@ -107,7 +107,9 @@
 | mir1k | 1,220 | 无字符/音素级 | 维持"不可测时间"的结论 |
 | **pjs** | 203 | 音素级 `.lab` | **已关闭项，不重开**：`20260912_session_findings_index.md` 的 E5 记「⛔ 已按指示降级（优先普通话）」；`20260913_retrain_data_inventory.md` 评分 0.6、备注"单男声短句、只做边界单测、域不匹配"。我 00:18 曾把它当作"还没用的域外数据"提出，属重开已关闭项，已撤回 |
 | tonas / ismir2014_singing / mir_mlpop | 78 / 38 / 23 | 无对齐 | 不能测时间 |
-| ikala / mirst500 / jamendolyrics_en / amll_ttml_db | **0** | — | **音频从未下载**，要评测得先取数据 |
+| **mirst500** | **381（mp3）** | 本地无时间标注 | **00:20 我误记为「音频从未下载」**（只因按 `.wav` 数）。真实情况：目录里的 txt 是 `failed_downloads` 清单 ⇒ **残缺下载**，且本地没有任何时间标注；当初 `20260913_retrain_data_inventory.md` 判不可依赖的理由是「只有 raw/、无 acquisition.json/checksums ⇒ 来源与许可未登记」，不是没数据 |
+| jamendolyrics_en | 20（mp3） | 仅歌词文本 | 有少量音频但无时间标注，规模也不足以评测 |
+| ikala / amll_ttml_db | **0** | — | 目录里确实没有音频，要用得先取数据 |
 
 - `audio_works_202604`（762 个 wav）是我们自己的交付/工作音频，无标注 ⇒ 只能做结构检查与试听，出不了精度。
 
