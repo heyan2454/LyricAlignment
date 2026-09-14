@@ -23,7 +23,11 @@
   `runs/20260814_ktv_current_silence`（37 首歌，含 `work/audio/vocals.wav` 与已交付时间轴），
   `--checkpoint` 默认就是线上 `step-000750`，`--span-sec` 默认 90 s。所以 D2 的全部技术工作是：
   `PYTHONPATH=src python scripts/evaluation/real_song_decoder_probe.py --out results/by_run/20260914_shadow_run/metrics.json`
-  （≈20 分钟 GPU，臂结束后即可跑）+ 门控 `export_review_gating.py --batch <同一目录> --budget 0.10`（CPU）；
+  （≈20 分钟 GPU，臂结束后即可跑）+ 门控 `export_review_gating.py --batch <同一目录> --budget 0.10
+   --out <一个**目录**>`（CPU；该脚本把 `--out` 当目录用，会往里写 `REVIEW_GATING.json` 与
+   `review_list.jsonl` —— 18:18 核查我排的链时差点传成文件路径，已改正）；
+  前置输入也已核实：产品批 37 首歌里 `alignments/r2/vocal/windowed/alignment.raw.json` **确实存在**
+  （门控脚本靠它取 `raw_global_start/end_sec`），所以今晚这条链不会再因缺输入而失败。
   它对比的是同一批字上的 official（含上游修补）与 DP 两条时间轴 + 结构指标 + 一致度差。
 - 必须与门控**同时**上线：DP 会让"零长度/重叠"这两个唯一自动探针全部变绿。
 - 不做的后果：今晚两条**唯一不依赖结构臂的收益**停留在"可复现的研究报告"层面。
