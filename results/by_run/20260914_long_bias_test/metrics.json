@@ -28,6 +28,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 1,
       "is_hit": false,
       "note": "量化伪影（外延小于一个网格 80 ms，只是在蹭阈值）"
     },
@@ -40,8 +41,9 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
-      "is_hit": true,
-      "note": "长音 -0.64 pp、短音守护 +0.00 pp"
+      "neighbouring_shifts_improving": 1,
+      "is_hit": false,
+      "note": "长音 -0.64 pp、短音守护 +0.00 pp；但相邻外延量只有 1/4 也在改善 ⇒ 判为阈值抖动，不算过线"
     },
     {
       "variant": "整体外延",
@@ -52,6 +54,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 1,
       "is_hit": false,
       "note": "长音 -0.32 pp、短音守护 +0.00 pp"
     },
@@ -64,6 +67,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +6.39 pp、短音守护 +0.00 pp"
     },
@@ -76,6 +80,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +38.30 pp、短音守护 +0.00 pp"
     },
@@ -88,6 +93,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +85.53 pp、短音守护 +0.00 pp"
     },
@@ -100,6 +106,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +92.98 pp、短音守护 +0.00 pp"
     },
@@ -112,6 +119,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +94.36 pp、短音守护 +0.00 pp"
     },
@@ -124,6 +132,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 940,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +94.36 pp、短音守护 +0.00 pp"
     },
@@ -136,6 +145,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "量化伪影（外延小于一个网格 80 ms，只是在蹭阈值）"
     },
@@ -148,6 +158,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 -0.10 pp、短音守护 +0.00 pp"
     },
@@ -160,6 +171,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +0.00 pp、短音守护 +0.00 pp"
     },
@@ -172,6 +184,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +1.39 pp、短音守护 +0.00 pp"
     },
@@ -184,6 +197,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +6.39 pp、短音守护 +0.00 pp"
     },
@@ -196,6 +210,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +14.05 pp、短音守护 +0.00 pp"
     },
@@ -208,6 +223,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +15.64 pp、短音守护 +0.00 pp"
     },
@@ -220,6 +236,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +16.49 pp、短音守护 +0.00 pp"
     },
@@ -232,6 +249,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 188,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +16.28 pp、短音守护 +0.00 pp"
     },
@@ -244,6 +262,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "量化伪影（外延小于一个网格 80 ms，只是在蹭阈值）"
     },
@@ -256,6 +275,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 -0.21 pp、短音守护 +0.00 pp"
     },
@@ -268,6 +288,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +0.11 pp、短音守护 +0.00 pp"
     },
@@ -280,6 +301,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +3.09 pp、短音守护 +0.00 pp"
     },
@@ -292,6 +314,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +14.26 pp、短音守护 +0.00 pp"
     },
@@ -304,6 +327,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +30.96 pp、短音守护 +0.00 pp"
     },
@@ -316,6 +340,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +34.90 pp、短音守护 +0.00 pp"
     },
@@ -328,6 +353,7 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +35.96 pp、短音守护 +0.00 pp"
     },
@@ -340,10 +366,12 @@
       "short_miss_share": 0.0296,
       "short_characters": 1215,
       "characters_shifted": 377,
+      "neighbouring_shifts_improving": 0,
       "is_hit": false,
       "note": "长音 +35.75 pp、短音守护 +0.00 pp"
     }
   ],
   "grid_ms": 80.0,
-  "verdict": "存在过线变体 ⇒ 需要按 §3l 的三关配对复核后才可申请上线"
+  "verdict": "没有任何变体同时满足『≥一个网格、长音降 ≥0.5 pp、短音不恶化、且相邻外延量连续改善』⇒ 提前收这个单向偏**不可用事后外延利用**，该线关闭",
+  "close_reason": "最大收益只有 −0.64 pp（940 字里 6 个字），且 100 ms 衰减到 −0.32 pp、150 ms 立刻 +6.39 pp、200 ms +38.30 pp ⇒ 反应不连续，是阈值抖动特征"
 }

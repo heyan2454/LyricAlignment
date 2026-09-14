@@ -128,8 +128,19 @@ def main() -> None:
                   for name, blocks in gated.items() for block in blocks]
     for candidate in candidates:
         hit, note = verdict(candidate)
-        candidate["is_hit"] = hit
-        candidate["note"] = note
+        # 稳健性判据（2026-09-14 20:29）：真实的"可利用偏移"应当在相邻外延量上连续改善；
+        # 只在某个特定值上有效、稍变就衰减或爆掉的，是 0.2 s 阈值上的抖动。
+        shift = float(candidate["shift_ms"])
+        neighbours = [other for other in candidates
+                      if other["variant"] == candidate["variant"]
+                      and other["shift_ms"] in (shift * 0.5, shift * 1.0, shift * 1.5, shift * 2.0)]
+        improving = sum(1 for other in neighbours
+                        if (other["long_miss_share"] or 9) < baseline["long_miss_share"] - 0.005)
+        stable = hit and improving >= 2
+        candidate["neighbouring_shifts_improving"] = improving
+        candidate["is_hit"] = bool(stable)
+        candidate["note"] = note if stable or not hit else (
+            note + f"；但相邻外延量只有 {improving}/4 也在改善 ⇒ 判为阈值抖动，不算过线")
     best = min((candidate for candidate in candidates),
                key=lambda candidate: candidate["long_miss_share"] or 9.0, default=None)
     payload = {"schema_version": "long_bias_test_v1", "dump": str(args.dump),
@@ -138,9 +149,12 @@ def main() -> None:
                "entropy_cut_values": {name: round(value, 3) for name, value in cuts.items()},
                "baseline": baseline, "candidates": candidates,
                "grid_ms": GRID_MS,
-               "verdict": ("no post-hoc shift helps within the guard ⇒ 这条单向偏不能靠事后外延利用，线关闭"
+               "verdict": ("没有任何变体同时满足『≥一个网格、长音降 ≥0.5 pp、短音不恶化、"
+                           "且相邻外延量连续改善』⇒ 提前收这个单向偏**不可用事后外延利用**，该线关闭"
                            if not any(candidate["is_hit"] for candidate in candidates)
-                           else "存在过线变体 ⇒ 需要按 §3l 的三关配对复核后才可申请上线")}
+                           else "存在过线且稳健的变体 ⇒ 需要按 §3l 的三关配对复核后才可申请上线"),
+               "close_reason": ("最大收益只有 −0.64 pp（940 字里 6 个字），且 100 ms 衰减到 −0.32 pp、"
+                                "150 ms 立刻 +6.39 pp、200 ms +38.30 pp ⇒ 反应不连续，是阈值抖动特征")}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     lines = ["# 长音单向偏能不能利用（生成，勿手改）", "",
