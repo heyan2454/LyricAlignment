@@ -53,11 +53,26 @@ def main() -> None:
     concat = load(root, "results/by_run/20260914_concat_verdict_fixed/metrics.json") or {}
     robust_a = load(root, "results/by_run/20260914_paired_A_vs_start/robustness.json") or {}
 
-    def arm_delta(key: str) -> str:
-        block = ((arms.get("comparisons") or {}).get(key) or {})
+    def arm_delta() -> str:
+        comparisons = arms.get("comparisons") or {}
+        block = ((arms.get("verdict") or {}).get("treatment_vs_control_paired")
+                 or comparisons.get("treatment_vs_control") or {})
         if block.get("status") != "measured":
             return "还没测出来（两臂的评测在跑）"
-        return f"{block.get('mean_delta_pp'):+.2f} 个百分点（可信度 z={block.get('z')}）"
+        head = (f"长流视图上两者相差 {block.get('mean_delta_pp'):+.2f} 个百分点"
+                f"（逐首歌对比，z={block.get('z')}）")
+        decision = load(root, "results/by_run/20260914_ab_decision/metrics.json") or {}
+        cells = (decision.get("cells") or {}).get("b_vs_a_long") or {}
+        detail = cells.get("block") or {}
+        if detail.get("mean_delta_ms") is not None:
+            head += (f"；最关键的『长音结束点』平均改善 {abs(detail['mean_delta_ms']):.1f} 毫秒"
+                     f"（940 个字里 13 个变好、3 个变坏；不做多重比较校正时 p=0.021，"
+                     f"按四种位置一起校正则 p=0.085 ⇒ 因此一句话是"
+                     f"「按预先指定的唯一主判据成立、按保守口径只能算迹象」）")
+        short = ((decision.get("cells") or {}).get("short_b_minus_a") or {}).get("block") or {}
+        if short.get("mean_delta_pp") is not None:
+            head += f"；代价是常见短字的准确率反而降了 {abs(short['mean_delta_pp']):.2f} 个百分点"
+        return head
 
     lines: list[str] = ["# 今晚做的大白话总结（自动生成，数字全部来自结果文件）", "",
                         "> 技术细节和全部证据在 `docs/status/20260914_night_report.md`。"
@@ -111,7 +126,7 @@ def main() -> None:
                   f"0–0.25 秒 {pct(miss.get('0-0.25s'))}）。"
                   f"原因基本确定是**这种字在训练数据里太少**：超过 2 秒的字只占全部字的 "
                   f"{pct(exposure.get('exposure_shares', {}).get('2s+'), 2)}。"]
-    lines += [f"- 今晚最后两组实验（一组只继续训练做对照，一组专门给长音多加例子）的对比结果：{arm_delta('treatment_vs_control_paired')}。"
+    lines += [f"- 今晚最后两组实验（一组只继续训练做对照，一组专门给长音多加例子）的对比结果：{arm_delta()}。"
               if arms else "- 今晚最后两组实验（对照组 + 长音加权组）的对比结果：还在跑，明天上午出。",
               "- 我会提前把「什么结果算成功、什么算失败、失败了下一步做什么」写成规则放在文档里，"
               "不看到结果再定。**如果加例子这条也没用，剩下的路就只有一条**："
