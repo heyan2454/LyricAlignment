@@ -90,6 +90,9 @@ L1 短条目屏幕（同一 25% 子集、同一协议、同步数对齐）：
 
 ⇒ 结论：§7 里 C 的短条目屏幕退化**不能**用"我把 offset/onset 接反了"解释（至少排除这一类实现错误）；
    其余等价性由既有单测保证（weight=1 时逐位复现原始 CE）。
-⇒ 复现命令：
-   `PYTHONPATH=src python -c "…"`（见本节描述）或
-   `PYTHONPATH=src python scripts/training/validate_qwen_fa_label_roundtrip.py`（既有标签往返校验）。
+⇒ 复现命令（已把这段验证做成正式脚本，不再是临时 heredoc）：
+   `PYTHONPATH=src python scripts/evaluation/verify_timestamp_slot_convention.py --limit 2000 \
+      --out results/by_run/20260914_slot_convention/metrics.json`
+   退出码非零即表示约定不符（脚本自带 pass/fail 判定）。
+   注：我第一次在这里写的复现命令指向 `validate_qwen_fa_label_roundtrip.py`，那个工具需要音频与模型参数、
+   并不能复现这件事 —— 已改正。

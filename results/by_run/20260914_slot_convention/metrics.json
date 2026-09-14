@@ -1,0 +1,14 @@
+{
+  "schema_version": "slot_convention_v1",
+  "labels": "/home/hyan/Data/lyricalign/derived/20260723_qwen_fa_lora_v1/labels/m4singer_qwen_fa_labels.jsonl",
+  "characters": 18505,
+  "pairs_forward": 18505,
+  "pairs_reversed": 0,
+  "pairs_equal": 0,
+  "forward_share": 1.0,
+  "items_checked": 2000,
+  "items_offset_slots_valid": 2000,
+  "weighted_slot_count": 963,
+  "weighted_slot_share": 0.026,
+  "verdict": "pass"
+}
