@@ -1,0 +1,82 @@
+{
+  "schema_version": "ab_decision_table_v2",
+  "per_adjustment": {
+    "k4": {
+      "row": "第 3 行的弱版本：长音只有迹象（未过三关），短条目有代价",
+      "next_action": "按第 3 行处理：跑 C，预算 ≤1 小时；不得写'暴露假设成立'"
+    },
+    "none": {
+      "row": "第 1 行：暴露假设成立，但条目复制是错误的实现",
+      "next_action": "直接跑 C 臂（字符级 loss 加权，无覆盖代价），按 C 预注册执行"
+    }
+  },
+  "prereg": "docs/status/20260914_concat_arm_prereg.md §3l",
+  "rules": {
+    "improve_requires": "offset_long mean Δ ≤ -10.0 ms 且 p_t×K<0.05 且 p_mcnemar×K<0.05",
+    "short_states": "≤-0.1pp=变差, |Δ|<0.1pp=不变, ≥+0.1pp=变好"
+  },
+  "cells": {
+    "b_vs_a_long": {
+      "state": "hint",
+      "block": {
+        "status": "measured",
+        "n": 940,
+        "mean_delta_ms": -20.69,
+        "se_ms": 7.5,
+        "z": -2.76,
+        "p_t": 0.0058,
+        "p_t_times_sides": 0.0233,
+        "median_delta_ms": 0.0,
+        "trimmed_mean_delta_ms": -0.81,
+        "moved_worse_gt_100ms": 2,
+        "moved_better_gt_100ms": 15,
+        "mcnemar_better": 13,
+        "mcnemar_worse": 3,
+        "p_mcnemar_exact": 0.0213,
+        "p_mcnemar_times_sides": 0.0851,
+        "verdict": "迹象（未过校正）"
+      }
+    },
+    "b_vs_start_long": {
+      "state": "nothing",
+      "block": {
+        "status": "measured",
+        "n": 940,
+        "mean_delta_ms": -11.14,
+        "se_ms": 6.16,
+        "z": -1.81,
+        "p_t": 0.0706,
+        "p_t_times_sides": 0.2823,
+        "median_delta_ms": 0.0,
+        "trimmed_mean_delta_ms": -0.63,
+        "moved_worse_gt_100ms": 3,
+        "moved_better_gt_100ms": 9,
+        "mcnemar_better": 8,
+        "mcnemar_worse": 3,
+        "p_mcnemar_exact": 0.2266,
+        "p_mcnemar_times_sides": 0.9062,
+        "verdict": "无证据"
+      }
+    },
+    "short_b_minus_a": {
+      "state": "worse",
+      "block": {
+        "points": 5,
+        "mean_delta_pp": -0.318,
+        "median_delta_pp": -0.34,
+        "se_pp": 0.124,
+        "b_better_points": 0,
+        "b_worse_points": 4,
+        "last_shared": {
+          "step": 500,
+          "a": 0.9568,
+          "b": 0.9501
+        }
+      }
+    }
+  },
+  "primary_long_state": "hint",
+  "row": "第 3 行的弱版本：长音只有迹象（未过三关），短条目有代价",
+  "next_action": "按第 3 行处理：跑 C，预算 ≤1 小时；不得写'暴露假设成立'",
+  "inputs_missing": []
+}

@@ -1,0 +1,86 @@
+{
+  "schema_version": "paired_checkpoint_comparison_v1",
+  "old": "results/by_run/20260914_mech_control/per_character.jsonl",
+  "new": "results/by_run/20260914_mech_treatment/per_character.jsonl",
+  "shared_measurements": 12836,
+  "items": 808,
+  "tolerance_sec": 0.2,
+  "sides": {
+    "onset_all": {
+      "n": 6419,
+      "mean_delta_ms": 0.23,
+      "se_ms": 0.28,
+      "z": 0.83,
+      "better": 67,
+      "worse": 67,
+      "miss_rate_old": 0.0069,
+      "miss_rate_new": 0.0069
+    },
+    "onset_long": {
+      "n": 938,
+      "mean_delta_ms": 1.88,
+      "se_ms": 1.31,
+      "z": 1.43,
+      "better": 13,
+      "worse": 12,
+      "miss_rate_old": 0.016,
+      "miss_rate_new": 0.0181
+    },
+    "onset_short": {
+      "n": 5481,
+      "mean_delta_ms": -0.05,
+      "se_ms": 0.24,
+      "z": -0.22,
+      "better": 54,
+      "worse": 55,
+      "miss_rate_old": 0.0053,
+      "miss_rate_new": 0.0049
+    },
+    "offset_all": {
+      "n": 6417,
+      "mean_delta_ms": -2.23,
+      "se_ms": 1.18,
+      "z": -1.88,
+      "better": 73,
+      "worse": 71,
+      "miss_rate_old": 0.0201,
+      "miss_rate_new": 0.0192
+    },
+    "offset_long": {
+      "n": 938,
+      "mean_delta_ms": -20.74,
+      "se_ms": 7.52,
+      "z": -2.76,
+      "better": 30,
+      "worse": 15,
+      "miss_rate_old": 0.0554,
+      "miss_rate_new": 0.0448
+    },
+    "offset_short": {
+      "n": 5479,
+      "mean_delta_ms": 0.94,
+      "se_ms": 0.51,
+      "z": 1.85,
+      "better": 43,
+      "worse": 56,
+      "miss_rate_old": 0.0141,
+      "miss_rate_new": 0.0148
+    },
+    "combined_all": {
+      "n": 6415,
+      "mean_delta_ms": -1.98,
+      "se_ms": 1.21,
+      "z": -1.64,
+      "miss_rate_old": 0.0262,
+      "miss_rate_new": 0.0254
+    },
+    "combined_long": {
+      "n": 938,
+      "mean_delta_ms": -18.71,
+      "se_ms": 7.6,
+      "z": -2.46,
+      "miss_rate_old": 0.0682,
+      "miss_rate_new": 0.0608
+    }
+  }
+}

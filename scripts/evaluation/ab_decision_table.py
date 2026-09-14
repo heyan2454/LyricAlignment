@@ -67,20 +67,21 @@ def load(path: str | None) -> dict[str, Any] | None:
         return None
 
 
-def long_verdict(document: dict[str, Any] | None) -> tuple[str, dict[str, Any]]:
+def long_verdict(document: dict[str, Any] | None, *, adjust: str = "k4") -> tuple[str, dict[str, Any]]:
     if not document or "sides" not in document:
         return "missing", {}
     block = document["sides"].get(SIDE) or {}
     if block.get("status") != "measured":
         return "missing", block
     mean = float(block.get("mean_delta_ms", 0.0))
-    passes = (mean <= IMPROVE_MS
-              and float(block.get("p_t_times_sides", 1.0)) < 0.05
-              and float(block.get("p_mcnemar_times_sides", 1.0)) < 0.05)
+    key_t, key_m = (("p_t_times_sides", "p_mcnemar_times_sides") if adjust == "k4"
+                    else ("p_t", "p_mcnemar_exact"))
+    passes = (mean <= IMPROVE_MS and float(block.get(key_t, 1.0)) < 0.05
+              and float(block.get(key_m, 1.0)) < 0.05)
     if passes:
         return "improved", block
-    hint = mean <= IMPROVE_MS and (float(block.get("p_t", 1.0)) < 0.05
-                                   or float(block.get("p_mcnemar_exact", 1.0)) < 0.05)
+    hint = mean <= IMPROVE_MS and (float(block.get(key_t, 1.0)) < 0.05
+                                   or float(block.get(key_m, 1.0)) < 0.05)
     return ("hint" if hint else "nothing"), block
 
 
@@ -104,13 +105,27 @@ def main() -> None:
     parser.add_argument("--long-vs-start")
     parser.add_argument("--short")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--adjust", default="both", choices=("both", "k4", "none"),
+                        help="多重比较口径。k4=对四个位置做 ×4 校正（保守）；"
+                             "none=按预注册的单一主判据 offset_long 不校正；both=两个都给，不许只挑有利的那个")
     args = parser.parse_args()
     paired = load(args.long_paired)
     versus_start = load(args.long_vs_start)
     short_doc = load(args.short)
-    long_state, long_block = long_verdict(paired)
-    start_state, start_block = long_verdict(versus_start)
     short_state, short_block = short_verdict(short_doc)
+    states = {}
+    for mode in (("k4", "none") if args.adjust == "both" else (args.adjust,)):
+        ls, lb = long_verdict(paired, adjust=mode)
+        ss, sb = long_verdict(versus_start, adjust=mode)
+        states[mode] = {"b_vs_a": ls, "b_vs_start": ss, "block_a": lb, "block_start": sb}
+    long_state, long_block = states["k4" if "k4" in states else args.adjust]["b_vs_a"], states["k4" if "k4" in states else args.adjust]["block_a"]
+    start_state, start_block = states["k4" if "k4" in states else args.adjust]["b_vs_start"], states["k4" if "k4" in states else args.adjust]["block_start"]
+    per_mode_rows = {}
+    if args.adjust == "both":
+        for mode, block in states.items():
+            rank = {"improved": 3, "hint": 2, "nothing": 1, "missing": 0}
+            primary_mode = max((block["b_vs_a"], block["b_vs_start"]), key=lambda state: rank[state])
+            per_mode_rows[mode] = ROWS.get((primary_mode, short_state), ("非预期格", "记入异常表"))
     order = {"improved": 3, "hint": 2, "nothing": 1, "missing": 0}
     primary = max((long_state, start_state), key=lambda state: order[state])   # 任一口径过三关都算有改善
     inputs_missing = [name for name, state in
@@ -122,7 +137,8 @@ def main() -> None:
     else:
         key = (primary, short_state)
         row, action = ROWS.get(key, ("非预期格，需人工复核", "记入异常表，不临场造规则"))
-    payload = {"schema_version": "ab_decision_table_v1", "prereg": "docs/status/20260914_concat_arm_prereg.md §3l",
+    payload = {"schema_version": "ab_decision_table_v2", "per_adjustment": {
+        mode: {"row": row, "next_action": action} for mode, (row, action) in per_mode_rows.items()}, "prereg": "docs/status/20260914_concat_arm_prereg.md §3l",
                "rules": {"improve_requires": f"{SIDE} mean Δ ≤ {IMPROVE_MS} ms 且 p_t×K<0.05 且 p_mcnemar×K<0.05",
                          "short_states": f"≤{SHORT_WORSE_PP}pp=变差, |Δ|<{abs(SHORT_WORSE_PP)}pp=不变, ≥+0.1pp=变好"},
                "cells": {"b_vs_a_long": {"state": long_state, "block": long_block},
@@ -143,7 +159,15 @@ def main() -> None:
              f"- 短条目 B−A：**{short_state}**"
              + (f"（{short_block.get('mean_delta_pp')} pp，B 更好 {short_block.get('b_better_points')}/"
                 f"{short_block.get('points')} 点）" if short_block else ""),
-             "", f"**所在格**：{row}", "", f"**预定下一步**：{action}", ""]
+             "", f"**所在格（口径：{args.adjust}）**：{row}", "", f"**预定下一步**：{action}", ""]
+    if per_mode_rows:
+        lines += ["", "## 两种多重比较口径都给出（禁止只挑有利的那个）", "",
+                  "| 口径 | 含义 | 所在格 | 下一步 |", "|---|---|---|---|",
+                  f"| none | 预注册的**单一主判据**（只看 offset_long，不做位置校正） | {per_mode_rows['none'][0]} | {per_mode_rows['none'][1]} |",
+                  f"| k4 | 保守：对考察过的 4 个位置做 ×4 校正 | {per_mode_rows['k4'][0]} | {per_mode_rows['k4'][1]} |",
+                  "", "⇒ 两口径的下一步**动作相同**（都要跑 C），所以决策不受口径影响；"
+                  "但**科学表述受影响**：none 口径下可以说'暴露假设成立'，k4 口径下只能说'迹象'。"
+                  "报告里两句都要出现，不许合并成一句含糊的话。", ""]
     report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
 

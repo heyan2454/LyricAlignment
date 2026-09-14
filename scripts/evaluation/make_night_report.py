@@ -540,6 +540,37 @@ def sec_gating_calibration(root: Path) -> list[str]:
     return lines
 
 
+def sec_ab_decision(root: Path) -> list[str]:
+    doc = _load(root / "results/by_run/20260914_ab_decision/metrics.json")
+    if "cells" not in doc:
+        return ["- 状态：未跑（跑 `ab_decision_table.py`）"]
+    cells = doc["cells"]
+    long_a = cells["b_vs_a_long"]["block"] or {}
+    per_mode = doc.get("per_adjustment") or {}
+    lines = [f"- 判定量 = **长字符结束点 offset_long 的逐字符配对**（n={long_a.get('n')}）："
+             f"Δ = **{long_a.get('mean_delta_ms')} ms**（负=B 更好），"
+             f"中位 {long_a.get('median_delta_ms')}、截尾均值 {long_a.get('trimmed_mean_delta_ms')}；"
+             f"不一致对子 McNemar 好/差 = **{long_a.get('mcnemar_better')}/{long_a.get('mcnemar_worse')}**；",
+             f"- 未校正 p：均值 {long_a.get('p_t')}、二项 {long_a.get('p_mcnemar_exact')}；"
+             f"×4 校正后：均值 {long_a.get('p_t_times_sides')}、二项 {long_a.get('p_mcnemar_times_sides')}；",
+             f"- 短条目那一轴：B−A {(cells['short_b_minus_a']['block'] or {}).get('mean_delta_pp')} pp"
+             f"（B 更好 {(cells['short_b_minus_a']['block'] or {}).get('b_better_points')}/"
+             f"{(cells['short_b_minus_a']['block'] or {}).get('points')} 点）= **变差**；",
+             "", "| 多重比较口径 | 所在格 | 预定下一步 |", "|---|---|---|"]
+    for mode, label in (("none", "预注册单一主判据（不校正）"), ("k4", "保守：对 4 个位置 ×4 校正")):
+        block = per_mode.get(mode) or {}
+        lines.append(f"| {label} | {block.get('row', '—')} | {block.get('next_action', '—')} |")
+    lines += ["", "- ⇒ **两口径的下一步动作相同（跑 C）**，所以决策不受口径影响；"
+              "但**科学表述受口径影响**，两句都必须出现，不许合并成一句含糊的话：",
+              "  - 按预注册的单一主判据：长字符结束点改善 20.7 ms（均值 p=0.006、二项 p=0.021 双双 <0.05）"
+              "**支持暴露假设**，条目复制是有效的杠杆但实现代价太大；",
+              "  - 按保守 ×4 校正：二项检验 0.085 未过 ⇒ 只能称**迹象**，"
+              "且均值与中位/截尾均值不一致说明它由**少部分长音符的大幅修正**贡献；",
+              "- 这也是今晚**第一个正向的机制证据**，所以措辞要格外谨慎："
+              "C 臂（无覆盖混杂的字符级加权）正是为区分这两种读法而准备的判定实验，已在跑。"]
+    return lines
+
+
 def sec_pending(root: Path) -> list[str]:
     return ["- **决策树已写死**（不临场判断）：B 落在 §3g 预测带内 ⇒ 暴露假设成立；"
             "B 为 null 或弱于预测带 ⇒ 启动 C 臂（字符级 loss 加权，"
@@ -616,6 +647,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("置信度 × 时长交叉（否证天真版机制 + 新发现）", "results/by_run/20260914_confidence_duration", sec_confidence_duration),
     ("按预测时长分档的门控阈值：假设被否证", "results/by_run/20260914_gating_calibration", sec_gating_calibration),
     ("位置效应（末字）：被时长混杂解释，不成立", "results/by_run/20260914_position_effect", sec_position_effect),
+    ("A/B 决策表（§3l 2×2，两种多重比较口径）", "results/by_run/20260914_ab_decision", sec_ab_decision),
     ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
