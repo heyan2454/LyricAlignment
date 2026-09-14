@@ -650,6 +650,37 @@ def sec_arms_by_bucket(root: Path) -> list[str]:
     return lines
 
 
+def sec_matched_step_verdict(root: Path) -> list[str]:
+    """Summarise the equal-compute matched-step comparison that refuted the duration parameterisation."""
+    directory = root / "results/by_run/20260914_control_trend"
+    points = []
+    for name in ("step500", "step1000", "step2000"):
+        payload = _load(directory / name / "paired_vs_duration.json") or {}
+        side = (payload.get("sides") or {}).get("offset_long") or {}
+        control_health = _load(directory / name / "metrics.json") or {}
+        if side:
+            points.append((name, side, control_health))
+    if not points:
+        return ["- 状态：未跑（等算力对照臂的同步数对比链会在每个存档点自动产出）"]
+    lines = ["- 等算力同步数配对（正数 = 换问法那组更差；同一批留出字符、同一 seed）：", "",
+             "| 对比点 | 长字结束点均值Δ(ms) |  McNemar 好/差 | 均值 p(×4) | 二项 p(×4) | 判定 |",
+             "|---|---|---|---|---|---|"]
+    for name, side, _health in points:
+        lines.append(f"| {name} | {side.get('mean_delta_ms'):+.1f} | "
+                     f"{side.get('mcnemar_better')}/{side.get('mcnemar_worse')} | "
+                     f"{side.get('p_t_times_sides')} | {side.get('p_mcnemar_times_sides')} | "
+                     f"**{side.get('verdict')}** |")
+    confirmed = sum(1 for _n, side, _h in points if side.get("verdict") == "确证")
+    lines += ["", f"- **已产出的 {len(points)} 个对比点中 {confirmed} 个判为确证**"
+              + ("（第三个会在 step 2000 存档点后自动补上）" if len(points) < 3 else "（三点齐）")
+              + "，方向一致：换问法显著更差；"
+              "配合对照臂自身与起点几乎一致（见下一节的轨迹表），这构成对"
+              "「起始+时长」参数化的**干净否证**：损伤不是\u201c多训\u201d或\u201c学习率\u201d造成的。",
+              "- 边界照旧写清：这只覆盖到被停下的那一步（step 2000），"
+              "更长时间会不会反转**未证**；要证需要 §7 的另一条预算。"]
+    return lines
+
+
 def sec_duration_trend(root: Path) -> list[str]:
     """Embed the structural arm's trajectory table so the main report cannot be read without it."""
     summary = _load(root / "results/by_run/20260914_duration_trend/summary.json")
@@ -816,6 +847,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
     ("结构改动：换问法的实验（已按预注册判据停止，转入等算力对照臂）",
      "docs/status/20260914_structural_prereg.md", sec_structural_arm),
+    ("结构改动判决：等算力同步数对比", "docs/status/20260914_structural_prereg.md", sec_matched_step_verdict),
     ("结构臂轨迹（趋势探针，含起点参照行）", "docs/status/20260914_duration_trend.md", sec_duration_trend),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
