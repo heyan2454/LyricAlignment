@@ -150,3 +150,15 @@
 
 另外预先声明：**不因为中途读数不利而提前停止训练**（只有 §3 的崩塌保护才停）；
 也**不因为中途读数有利而改判决线**。趋势点只用于：识别情形 2/3、以及让最终表述诚实。
+
+### 6f. 判决链口径审计（17:54）
+逐个检查今晚判决链调用的工具是否认识 duration 语义：
+- `measure_predicted_boundary_acoustics.py`：**认识**（还原 end = start + duration、并换算标签，见 §6c），
+  且链上调用它时传了臂自己的 `--config`；
+- `paired_robustness_check.py` / `arms_by_bucket_counts.py` / `ab_decision_table.py`：
+  只消费 dump 里**已换算**的 `abs_err_argmax / signed_err / duration` 字段 ⇒ **与参数化无关**。
+
+⇒ 结论：**语义换算只发生在一处（导出工具）**，这是有意的设计；
+   因此不会出现"上游修了、下游还在按绝对位置数数"的第二处错位。
+   反过来也说明：如果哪天忘了传臂自己的 `--config`，整条链会**静默按绝对语义算**——
+   所以判决链里的 `--config "$CFG"` 是单点关键，改动这条链时必须复查它。
