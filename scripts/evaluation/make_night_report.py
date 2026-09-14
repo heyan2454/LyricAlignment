@@ -271,6 +271,10 @@ def sec_gating(root: Path) -> list[str]:
                      f"缺陷，剩余缺陷率 {_pct(review['residual_defect_rate_after_review'])}"
                      f"（原 {_pct(review['defect_rate'])}）；")
     lines.append("- 结论：**模型能自己说出哪里不可信，且跨歌泛化**；这是产品一直缺的自动质检门。")
+    lines.append("- **口径提醒（防止把一次计算当成两条证据）**：上面「按歌留一交叉验证」与"
+                 "「`export_review_gating.py` 实测 13,735 字 / 标记 10.75% / 抓到 55.09%」"
+                 "**是同一次留一计算的两种呈现，不是两条独立证据**；"
+                 "真正独立的外部印证是 2026-09-12 那次在 GTSinger 上测到的熵 AUC 0.913（不同语料、不同会话）。")
     return lines or ["- 状态：未跑"]
 
 
