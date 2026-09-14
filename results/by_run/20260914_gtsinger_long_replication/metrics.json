@@ -1,0 +1,108 @@
+{
+  "schema_version": "gtsinger_long_replication_v1",
+  "evidence": "/home/hyan/Data/lyricalign/runs/20260912_gtsinger_gt_deep/unit_evidence.jsonl.gz",
+  "model": "r2",
+  "total_rows": 63828,
+  "distinct_units_seen": 2415,
+  "decoder_kinds": {
+    "official": 10200,
+    "raw": 11076
+  },
+  "unique_units_by_bucket": {
+    "0-0.5s": 0,
+    "0.5-1s": 0,
+    "1-1.5s": 62,
+    "1.5-2s": 41,
+    "2s+": 11
+  },
+  "per_decoder": {
+    "official": {
+      "0-0.5s": {
+        "characters": 7448,
+        "miss_share": 0.0113,
+        "median_err_ms": 20.0,
+        "mean_err_ms": 33.4
+      },
+      "0.5-1s": {
+        "characters": 2272,
+        "miss_share": 0.0528,
+        "median_err_ms": 30.0,
+        "mean_err_ms": 51.1
+      },
+      "1-1.5s": {
+        "characters": 248,
+        "miss_share": 0.0323,
+        "median_err_ms": 30.0,
+        "mean_err_ms": 58.3
+      },
+      "1.5-2s": {
+        "characters": 176,
+        "miss_share": 0.0227,
+        "median_err_ms": 30.0,
+        "mean_err_ms": 56.5
+      },
+      "2s+": {
+        "characters": 56,
+        "miss_share": 0.2143,
+        "median_err_ms": 102.0,
+        "mean_err_ms": 159.4
+      }
+    },
+    "raw": {
+      "0-0.5s": {
+        "characters": 8288,
+        "miss_share": 0.0176,
+        "median_err_ms": 20.0,
+        "mean_err_ms": 36.4
+      },
+      "0.5-1s": {
+        "characters": 2304,
+        "miss_share": 0.072,
+        "median_err_ms": 30.0,
+        "mean_err_ms": 59.0
+      },
+      "1-1.5s": {
+        "characters": 256,
+        "miss_share": 0.0547,
+        "median_err_ms": 30.0,
+        "mean_err_ms": 68.7
+      },
+      "1.5-2s": {
+        "characters": 172,
+        "miss_share": 0.0233,
+        "median_err_ms": 30.0,
+        "mean_err_ms": 56.4
+      },
+      "2s+": {
+        "characters": 56,
+        "miss_share": 0.2143,
+        "median_err_ms": 76.0,
+        "mean_err_ms": 155.7
+      }
+    }
+  },
+  "melisma": {
+    "official": {
+      "characters": 1268,
+      "miss_share": 0.0347,
+      "median_err_ms": 21.5
+    },
+    "raw": {
+      "characters": 1260,
+      "miss_share": 0.0333,
+      "median_err_ms": 21.0
+    }
+  },
+  "non_melisma": {
+    "official": {
+      "characters": 8932,
+      "miss_share": 0.0206,
+      "median_err_ms": 24.5
+    },
+    "raw": {
+      "characters": 9816,
+      "miss_share": 0.0306,
+      "median_err_ms": 28.0
+    }
+  }
+}
