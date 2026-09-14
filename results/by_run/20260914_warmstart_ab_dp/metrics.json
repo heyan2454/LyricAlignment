@@ -1,61 +1,82 @@
 {
   "schema_version": "warmstart_ab_verdict_v2",
-  "missing_view_files": [
-    {
-      "requested": "results/by_run/20260914_long_context_view/ab_arms.json",
-      "status": "not_run",
-      "reason": "文件不存在"
-    }
-  ],
-  "available_checkpoints": [],
-  "missing": [
+  "missing_view_files": [],
+  "available_checkpoints": [
     "old-r2-750",
+    "uniform-12000",
     "warmstart-control",
-    "warmstart-oversample",
-    "uniform-12000"
+    "warmstart-oversample"
   ],
+  "missing": [],
   "primary_decoder": "dp",
   "tolerance": "within_200ms",
   "comparisons": {
     "treatment_vs_baseline": {
-      "status": "insufficient_data",
-      "songs": 0
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.361,
+      "se_pp": 0.22,
+      "z": 1.64,
+      "better": 9,
+      "worse": 7
     },
     "control_vs_baseline": {
-      "status": "insufficient_data",
-      "songs": 0
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.337,
+      "se_pp": 0.197,
+      "z": 1.71,
+      "better": 12,
+      "worse": 9
     },
     "treatment_vs_control": {
-      "status": "insufficient_data",
-      "songs": 0
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.023,
+      "se_pp": 0.07,
+      "z": 0.34,
+      "better": 7,
+      "worse": 6
     },
     "treatment_vs_reference": {
-      "status": "insufficient_data",
-      "songs": 0
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.008,
+      "se_pp": 0.066,
+      "z": 0.13,
+      "better": 7,
+      "worse": 7
     },
     "control_vs_reference": {
-      "status": "insufficient_data",
-      "songs": 0
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": -0.015,
+      "se_pp": 0.049,
+      "z": -0.31,
+      "better": 4,
+      "worse": 3
     }
   },
   "mechanism": {
     "control": {
-      "bucket": "2-+s",
-      "miss_median_duration_ratio": 0.452,
-      "miss_share": 0.126,
-      "characters": 127
+      "status": "not_run"
     },
     "treatment": {
       "status": "not_run"
     }
   },
   "verdict": {
-    "main_vs_online_baseline": "insufficient_data",
-    "net_effect_vs_control": "insufficient_data",
-    "control_drift": "insufficient_data",
+    "main_vs_online_baseline": "measured",
+    "net_effect_vs_control": "measured",
+    "control_drift": "measured",
     "treatment_vs_control_paired": {
-      "status": "insufficient_data",
-      "songs": 0
+      "status": "measured",
+      "songs": 29,
+      "mean_delta_pp": 0.023,
+      "se_pp": 0.07,
+      "z": 0.34,
+      "better": 7,
+      "worse": 6
     },
     "note": "净效应以**逐歌配对 B vs A** 为准（treatment_vs_control_paired），两臂各自对基线的差仅作参考。机制项不参与判决。"
   }
