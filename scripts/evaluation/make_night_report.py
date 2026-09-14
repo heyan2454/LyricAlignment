@@ -650,6 +650,31 @@ def sec_arms_by_bucket(root: Path) -> list[str]:
     return lines
 
 
+def sec_duration_trend(root: Path) -> list[str]:
+    """Embed the structural arm's trajectory table so the main report cannot be read without it."""
+    summary = _load(root / "results/by_run/20260914_duration_trend/summary.json")
+    if not summary or not (summary.get("points") or []):
+        return ["- 状态：未跑（等 `step-2000` 探针产出后自动出现）"]
+    markdown = summary.get("markdown") or ""
+    lines = [markdown.split("\n", 2)[-1].rstrip()] if markdown else []
+    numeric = [point for point in summary["points"] if point.get("status") == "measured"
+               and str(point.get("step_label", "")).isdigit()]
+    reference = [point for point in summary["points"] if point.get("is_reference")]
+    if numeric and reference:
+        base = reference[0]
+        worst = max(numeric, key=lambda point: int(point["step_label"]))
+        lines += ["", f"- **起点基线参照**：起始点中位 {base.get('median_start_err_ms')} ms、"
+                      f"p90 {base.get('p90_start_err_ms')} ms、起始熵 {base.get('median_start_entropy_nats')}、"
+                      f"时长秩相关 {base.get('spearman_duration')}；",
+                  f"- **最新点（step {worst.get('step_label')}）**：起始点中位 {worst.get('median_start_err_ms')} ms、"
+                  f"p90 {worst.get('p90_start_err_ms')} ms、起始熵 {worst.get('median_start_entropy_nats')}、"
+                  f"时长秩相关 {worst.get('spearman_duration')}；",
+                  "- 读法：**时长秩相关接近 0 说明第二槽位还不含时长信息**（语义未切换完）⇒ "
+                  "此时臂的任何不利读数都只能写成『6000 步不够换语义』，不能写成『参数化无效』（§6e 情形 2）；"
+                  "起始点误差在 duration 参数化下是结束点误差的**硬下界**，所以它是判臂有效性的第一道关（§6g）。"]
+    return lines
+
+
 def sec_structural_arm(root: Path) -> list[str]:
     import statistics
     run_dir = Path("/home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_duration_target_seed20260724")
@@ -765,6 +790,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("A/B 决策表（§3l 2×2，两种多重比较口径）", "results/by_run/20260914_ab_decision", sec_ab_decision),
     ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
     ("结构改动：时长参数化臂（进行中）", "docs/status/20260914_structural_prereg.md", sec_structural_arm),
+    ("结构臂轨迹（趋势探针，含起点参照行）", "docs/status/20260914_duration_trend.md", sec_duration_trend),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
 ]
