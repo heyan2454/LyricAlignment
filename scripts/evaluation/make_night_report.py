@@ -186,9 +186,17 @@ def sec_decode(root: Path) -> list[str]:
         usable = _value(block, "usable_rate")
         lines.append(f"| {name}{'' if name != best else ' **（最好）**'} | {hit(block):.4f} | "
                      f"{'' if mae is None else f'{mae:.1f}'} | {'' if usable is None else f'{usable:.4f}'} |")
-    lines += ["- **DP（单调 Viterbi）是最好的解码**，比逐字 argmax 高约 +0.4pp、比线上 fixed 判据高约 +0.85pp；",
+    argmax_value = hit(policies.get("argmax", {})) if "argmax" in policies else None
+    viterbi_value = hit(policies.get("viterbi", {})) if "viterbi" in policies else None
+    same_forward = (f"，比逐字 argmax 高 **{viterbi_value - argmax_value:+.4f}**"
+                    "（同一份全量验证集、同一次前向，机器计算）"
+                    if argmax_value and viterbi_value else "")
+    lines += ["- **DP（单调 Viterbi）是最好的解码**" + same_forward + "；",
               "- 我原先提的「吸附到下一字起点」规则**被证伪为不叠加**：`snap1 ≡ DP`（单调链约束已包含它），"
-              "放宽阈值反而显著变差 ⇒ 该方向关闭。"]
+              "放宽阈值反而显著变差 ⇒ 该方向关闭。",
+              "- 与线上 `fixed` 判据的差值请按口径分别读：**短条目全量视图**与**长流视图**"
+              "是两条不同的机器计算行（见「三条臂的终值与判决」与「A/B 决策表」两节）；"
+              "此前这里写的「+0.85pp」属跨工具比较、口径不同，已移除。"]
     return lines
 
 
