@@ -89,7 +89,11 @@
   于是偏离就是「从糊成一点 → 铺开」本身。
   ⇒ **这正说明"变合法"不等于"铺得对"**：这两首歌恰恰没有任何人工真值可判，
   所以 DP 必须与门控同时上线（把这些歌整段挑出来给人看），**不能只上 DP**。
-  产物：`results/by_run/20260914_shadow_run/metrics.json` 与 `REPORT.md`。
+  产物：`results/by_run/20260914_shadow_run/metrics.json`；人读报告由
+  `scripts/evaluation/make_shadow_report.py` 生成 → `docs/reviews/20260914_shadow_run_report.md`
+  （**19:10 补做**：我第一次写"产物含 REPORT.md"时探针脚本其实只出 JSON —— 那是今晚第 4 次
+  声称存在并不存在的产物，所以把报告真的生成出来，而不是把话删掉了事。）
+- **19:09 扩展到全部 33 首**：5,521 个片段中，产品做法 **1,495 个零时长（27.1%）**，整句一起挑 **0 个**。
 
 ## D4. 是否允许用 GTSinger 做"伪标签"长音数据
 - 背景：长音暴露不足是机制主线，但本域无供给（GTSinger 全库仅 300 个 ≥1s / 70 个 ≥2s；

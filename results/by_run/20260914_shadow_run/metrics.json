@@ -291,14 +291,518 @@
       "agreement_median_end_delta_ms": 0.0,
       "agreement_p90_end_delta_ms": 720.0,
       "dp_shifts_official_zero_to_nonzero": 36
+    },
+    {
+      "song": "难念的经",
+      "units_in_span": 137,
+      "shipped_collapse_rate": 0.075,
+      "official": {
+        "intervals": 137,
+        "zero_length": 14,
+        "zero_share": 0.1022,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 6,
+        "span_sec": 80.32
+      },
+      "dp": {
+        "intervals": 137,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 82.08
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 1120.0,
+      "dp_shifts_official_zero_to_nonzero": 14
+    },
+    {
+      "song": "Immortals",
+      "units_in_span": 114,
+      "shipped_collapse_rate": 0.07,
+      "official": {
+        "intervals": 114,
+        "zero_length": 34,
+        "zero_share": 0.2982,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 4,
+        "span_sec": 79.76
+      },
+      "dp": {
+        "intervals": 114,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 80.08
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 1200.0,
+      "dp_shifts_official_zero_to_nonzero": 34
+    },
+    {
+      "song": "浮夸",
+      "units_in_span": 138,
+      "shipped_collapse_rate": 0.0637,
+      "official": {
+        "intervals": 138,
+        "zero_length": 5,
+        "zero_share": 0.0362,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 2,
+        "span_sec": 58.56
+      },
+      "dp": {
+        "intervals": 138,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 58.56
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 5
+    },
+    {
+      "song": "Take Me To Church",
+      "units_in_span": 155,
+      "shipped_collapse_rate": 0.0535,
+      "official": {
+        "intervals": 155,
+        "zero_length": 20,
+        "zero_share": 0.129,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 10,
+        "span_sec": 78.32
+      },
+      "dp": {
+        "intervals": 155,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 79.28
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 1182.0,
+      "dp_shifts_official_zero_to_nonzero": 20
+    },
+    {
+      "song": "梦良衣",
+      "units_in_span": 64,
+      "shipped_collapse_rate": 0.0446,
+      "official": {
+        "intervals": 64,
+        "zero_length": 29,
+        "zero_share": 0.4531,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 14,
+        "span_sec": 85.52
+      },
+      "dp": {
+        "intervals": 64,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 65.84
+      },
+      "agreement_median_end_delta_ms": 80.0,
+      "agreement_p90_end_delta_ms": 25120.0,
+      "dp_shifts_official_zero_to_nonzero": 29
+    },
+    {
+      "song": "Renegade",
+      "units_in_span": 215,
+      "shipped_collapse_rate": 0.0417,
+      "official": {
+        "intervals": 215,
+        "zero_length": 20,
+        "zero_share": 0.093,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 2,
+        "span_sec": 75.28
+      },
+      "dp": {
+        "intervals": 215,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 75.28
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 80.0,
+      "dp_shifts_official_zero_to_nonzero": 20
+    },
+    {
+      "song": "TH讠NK",
+      "units_in_span": 192,
+      "shipped_collapse_rate": 0.0311,
+      "official": {
+        "intervals": 192,
+        "zero_length": 27,
+        "zero_share": 0.1406,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 4,
+        "span_sec": 81.12
+      },
+      "dp": {
+        "intervals": 192,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 81.12
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 80.0,
+      "dp_shifts_official_zero_to_nonzero": 27
+    },
+    {
+      "song": "为何入眠",
+      "units_in_span": 133,
+      "shipped_collapse_rate": 0.0281,
+      "official": {
+        "intervals": 133,
+        "zero_length": 11,
+        "zero_share": 0.0827,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 2,
+        "span_sec": 75.52
+      },
+      "dp": {
+        "intervals": 133,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 75.52
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 11
+    },
+    {
+      "song": "六重不忠",
+      "units_in_span": 156,
+      "shipped_collapse_rate": 0.0242,
+      "official": {
+        "intervals": 156,
+        "zero_length": 37,
+        "zero_share": 0.2372,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 7,
+        "span_sec": 40.32
+      },
+      "dp": {
+        "intervals": 156,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 40.4
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 280.0,
+      "dp_shifts_official_zero_to_nonzero": 37
+    },
+    {
+      "song": "四季折之羽",
+      "units_in_span": 154,
+      "shipped_collapse_rate": 0.022,
+      "official": {
+        "intervals": 154,
+        "zero_length": 12,
+        "zero_share": 0.0779,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 2,
+        "span_sec": 76.4
+      },
+      "dp": {
+        "intervals": 154,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 76.4
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 12
+    },
+    {
+      "song": "画下灯塔水母 - 副本",
+      "units_in_span": 185,
+      "shipped_collapse_rate": 0.021,
+      "official": {
+        "intervals": 185,
+        "zero_length": 36,
+        "zero_share": 0.1946,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 5,
+        "span_sec": 84.08
+      },
+      "dp": {
+        "intervals": 185,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 84.08
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 160.0,
+      "dp_shifts_official_zero_to_nonzero": 36
+    },
+    {
+      "song": "Past Lives",
+      "units_in_span": 146,
+      "shipped_collapse_rate": 0.0185,
+      "official": {
+        "intervals": 146,
+        "zero_length": 14,
+        "zero_share": 0.0959,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 3,
+        "span_sec": 89.36
+      },
+      "dp": {
+        "intervals": 146,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 89.36
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 80.0,
+      "dp_shifts_official_zero_to_nonzero": 14
+    },
+    {
+      "song": "伊卡洛斯奔向月亮",
+      "units_in_span": 146,
+      "shipped_collapse_rate": 0.013,
+      "official": {
+        "intervals": 146,
+        "zero_length": 3,
+        "zero_share": 0.0205,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 2,
+        "span_sec": 52.0
+      },
+      "dp": {
+        "intervals": 146,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 52.0
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 3
+    },
+    {
+      "song": "何时何地",
+      "units_in_span": 154,
+      "shipped_collapse_rate": 0.0109,
+      "official": {
+        "intervals": 154,
+        "zero_length": 29,
+        "zero_share": 0.1883,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 4,
+        "span_sec": 67.04
+      },
+      "dp": {
+        "intervals": 154,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 67.12
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 80.0,
+      "dp_shifts_official_zero_to_nonzero": 29
+    },
+    {
+      "song": "若梦境来袭",
+      "units_in_span": 129,
+      "shipped_collapse_rate": 0.0094,
+      "official": {
+        "intervals": 129,
+        "zero_length": 15,
+        "zero_share": 0.1163,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 3,
+        "span_sec": 89.92
+      },
+      "dp": {
+        "intervals": 129,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 89.92
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 528.0,
+      "dp_shifts_official_zero_to_nonzero": 15
+    },
+    {
+      "song": "本草纲目",
+      "units_in_span": 196,
+      "shipped_collapse_rate": 0.008,
+      "official": {
+        "intervals": 196,
+        "zero_length": 6,
+        "zero_share": 0.0306,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 5,
+        "span_sec": 61.6
+      },
+      "dp": {
+        "intervals": 196,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 61.6
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 6
+    },
+    {
+      "song": "安全词",
+      "units_in_span": 147,
+      "shipped_collapse_rate": 0.0073,
+      "official": {
+        "intervals": 147,
+        "zero_length": 24,
+        "zero_share": 0.1633,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 3,
+        "span_sec": 83.6
+      },
+      "dp": {
+        "intervals": 147,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 83.6
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 80.0,
+      "dp_shifts_official_zero_to_nonzero": 24
+    },
+    {
+      "song": "权御天下",
+      "units_in_span": 239,
+      "shipped_collapse_rate": 0.0066,
+      "official": {
+        "intervals": 239,
+        "zero_length": 9,
+        "zero_share": 0.0377,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 3,
+        "span_sec": 67.84
+      },
+      "dp": {
+        "intervals": 239,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 67.84
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 9
+    },
+    {
+      "song": "此处通往天空",
+      "units_in_span": 170,
+      "shipped_collapse_rate": 0.0035,
+      "official": {
+        "intervals": 170,
+        "zero_length": 9,
+        "zero_share": 0.0529,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 4,
+        "span_sec": 86.24
+      },
+      "dp": {
+        "intervals": 170,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 86.24
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 9
+    },
+    {
+      "song": "人造卫星",
+      "units_in_span": 252,
+      "shipped_collapse_rate": 0.0021,
+      "official": {
+        "intervals": 252,
+        "zero_length": 23,
+        "zero_share": 0.0913,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 4,
+        "span_sec": 72.72
+      },
+      "dp": {
+        "intervals": 252,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 72.8
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 23
+    },
+    {
+      "song": "祈愿花开",
+      "units_in_span": 140,
+      "shipped_collapse_rate": 0.0,
+      "official": {
+        "intervals": 140,
+        "zero_length": 5,
+        "zero_share": 0.0357,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 75.2
+      },
+      "dp": {
+        "intervals": 140,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 75.84
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 0.0,
+      "dp_shifts_official_zero_to_nonzero": 5
     }
   ],
   "totals": {
-    "songs": 12,
-    "official_zero": 1113,
+    "songs": 33,
+    "official_zero": 1495,
     "dp_zero": 0,
-    "intervals": 2159,
-    "official_zero_share": 0.5155,
+    "intervals": 5521,
+    "official_zero_share": 0.2708,
     "dp_zero_share": 0.0
   }
 }
