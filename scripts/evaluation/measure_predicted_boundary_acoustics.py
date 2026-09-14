@@ -219,13 +219,22 @@ def main() -> None:
                                               timestamp_token_id=model.config.timestamp_token_id)
                 step = float(record["timestamp_segment_sec"])
                 class_ids = record["timestamp_class_ids"]
+                # 该 run 的时间戳参数化（absolute|duration）：决定槽位如何还原、标签如何换算
+                timestamp_target = str(cfg["training"].get("timestamp_target", "absolute"))
                 label_bins = np.clip(np.asarray(class_ids[:2 * len(words[sample])], dtype=np.int64)
                                      .reshape(-1, 2), 0, probabilities.shape[2] - 1)
+                if timestamp_target == "duration":
+                    # 标签文件存的是绝对结束 bin，而 duration 模型的第二槽位输出时长；
+                    # 不换算就会用错 bin 去算 label_rank / mass_in_tol / top5_mass（argmax 误差本身不受影响）。
+                    # 复用训练端同一个变换，避免两处实现漂移。
+                    from lyricalign.training.qwen_fa_labels import duration_target_class_ids
+                    converted = duration_target_class_ids([int(value) for pair in label_bins for value in pair],
+                                                          num_classes=probabilities.shape[2])
+                    label_bins = np.asarray(converted, dtype=np.int64).reshape(-1, 2)
                 diag = slot_diagnostics(probabilities, label_bins) if len(label_bins) == probabilities.shape[0] \
                     else None
                 in_tol = mass_within_tolerance(probabilities, label_bins, tolerance_sec=0.2,
                                                segment_sec=step) if diag is not None else None
-                timestamp_target = str(cfg["training"].get("timestamp_target", "absolute"))
                 start_bins = probabilities[:, 0, :].argmax(axis=1)
                 second_bins = probabilities[:, 1, :].argmax(axis=1)
                 # duration 模式下第二个槽位是时长，结束点 = 起始 + 时长；两种口径绝不能混读。
