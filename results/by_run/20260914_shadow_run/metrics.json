@@ -1,0 +1,304 @@
+{
+  "schema_version": "real_song_decoder_probe_v1",
+  "checkpoint": "/home/hyan/Data/lyricalign/runs/20260724_qwen_fa_r2_full_seed20260724/checkpoints/step-000750",
+  "span_sec": 90.0,
+  "model_revision": "c07281df297b9905d24a508279258cccf987a064",
+  "songs": [
+    {
+      "song": "I See Fire",
+      "units_in_span": 61,
+      "shipped_collapse_rate": 0.5145,
+      "official": {
+        "intervals": 61,
+        "zero_length": 39,
+        "zero_share": 0.6393,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 24,
+        "span_sec": 21.44
+      },
+      "dp": {
+        "intervals": 61,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 32.88
+      },
+      "agreement_median_end_delta_ms": 320.0,
+      "agreement_p90_end_delta_ms": 5280.0,
+      "dp_shifts_official_zero_to_nonzero": 39
+    },
+    {
+      "song": "初音未来的消失",
+      "units_in_span": 153,
+      "shipped_collapse_rate": 0.4742,
+      "official": {
+        "intervals": 202,
+        "zero_length": 194,
+        "zero_share": 0.9604,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 192,
+        "span_sec": 89.28
+      },
+      "dp": {
+        "intervals": 202,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 103.36
+      },
+      "agreement_median_end_delta_ms": 41720.0,
+      "agreement_p90_end_delta_ms": 95600.0,
+      "dp_shifts_official_zero_to_nonzero": 194
+    },
+    {
+      "song": "p.h",
+      "units_in_span": 202,
+      "shipped_collapse_rate": 0.4502,
+      "official": {
+        "intervals": 281,
+        "zero_length": 279,
+        "zero_share": 0.9929,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 276,
+        "span_sec": 70.32
+      },
+      "dp": {
+        "intervals": 281,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 70.4
+      },
+      "agreement_median_end_delta_ms": 39520.0,
+      "agreement_p90_end_delta_ms": 65680.0,
+      "dp_shifts_official_zero_to_nonzero": 279
+    },
+    {
+      "song": "冬之花",
+      "units_in_span": 168,
+      "shipped_collapse_rate": 0.4414,
+      "official": {
+        "intervals": 212,
+        "zero_length": 67,
+        "zero_share": 0.316,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 14,
+        "span_sec": 81.84
+      },
+      "dp": {
+        "intervals": 212,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 92.56
+      },
+      "agreement_median_end_delta_ms": 462.5,
+      "agreement_p90_end_delta_ms": 3395.0,
+      "dp_shifts_official_zero_to_nonzero": 67
+    },
+    {
+      "song": "皱鳃鲨",
+      "units_in_span": 194,
+      "shipped_collapse_rate": 0.3295,
+      "official": {
+        "intervals": 251,
+        "zero_length": 156,
+        "zero_share": 0.6215,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 77,
+        "span_sec": 103.28
+      },
+      "dp": {
+        "intervals": 251,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 103.76
+      },
+      "agreement_median_end_delta_ms": 400.0,
+      "agreement_p90_end_delta_ms": 9040.0,
+      "dp_shifts_official_zero_to_nonzero": 156
+    },
+    {
+      "song": "炉心融解",
+      "units_in_span": 122,
+      "shipped_collapse_rate": 0.2423,
+      "official": {
+        "intervals": 161,
+        "zero_length": 74,
+        "zero_share": 0.4596,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 32,
+        "span_sec": 51.36
+      },
+      "dp": {
+        "intervals": 161,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 51.36
+      },
+      "agreement_median_end_delta_ms": 320.0,
+      "agreement_p90_end_delta_ms": 2800.0,
+      "dp_shifts_official_zero_to_nonzero": 74
+    },
+    {
+      "song": "电灯胆",
+      "units_in_span": 167,
+      "shipped_collapse_rate": 0.2143,
+      "official": {
+        "intervals": 167,
+        "zero_length": 123,
+        "zero_share": 0.7365,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 78,
+        "span_sec": 90.0
+      },
+      "dp": {
+        "intervals": 167,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 72.08
+      },
+      "agreement_median_end_delta_ms": 3200.0,
+      "agreement_p90_end_delta_ms": 44080.0,
+      "dp_shifts_official_zero_to_nonzero": 123
+    },
+    {
+      "song": "画下灯塔水母",
+      "units_in_span": 209,
+      "shipped_collapse_rate": 0.2105,
+      "official": {
+        "intervals": 209,
+        "zero_length": 53,
+        "zero_share": 0.2536,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 7,
+        "span_sec": 87.04
+      },
+      "dp": {
+        "intervals": 209,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 87.04
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 240.0,
+      "dp_shifts_official_zero_to_nonzero": 53
+    },
+    {
+      "song": "Camelia",
+      "units_in_span": 104,
+      "shipped_collapse_rate": 0.1707,
+      "official": {
+        "intervals": 104,
+        "zero_length": 35,
+        "zero_share": 0.3365,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 7,
+        "span_sec": 71.92
+      },
+      "dp": {
+        "intervals": 104,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 73.76
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 1520.0,
+      "dp_shifts_official_zero_to_nonzero": 35
+    },
+    {
+      "song": "月半小夜曲",
+      "units_in_span": 124,
+      "shipped_collapse_rate": 0.1701,
+      "official": {
+        "intervals": 124,
+        "zero_length": 21,
+        "zero_share": 0.1694,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 6,
+        "span_sec": 66.4
+      },
+      "dp": {
+        "intervals": 124,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 66.4
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 240.0,
+      "dp_shifts_official_zero_to_nonzero": 21
+    },
+    {
+      "song": "乙女解剖",
+      "units_in_span": 160,
+      "shipped_collapse_rate": 0.1584,
+      "official": {
+        "intervals": 200,
+        "zero_length": 36,
+        "zero_share": 0.18,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 4,
+        "span_sec": 88.16
+      },
+      "dp": {
+        "intervals": 200,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 88.24
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 480.0,
+      "dp_shifts_official_zero_to_nonzero": 36
+    },
+    {
+      "song": "红日",
+      "units_in_span": 187,
+      "shipped_collapse_rate": 0.1236,
+      "official": {
+        "intervals": 187,
+        "zero_length": 36,
+        "zero_share": 0.1925,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 6,
+        "span_sec": 65.92
+      },
+      "dp": {
+        "intervals": 187,
+        "zero_length": 0,
+        "zero_share": 0.0,
+        "overlap_pairs": 0,
+        "longest_same_end_block": 1,
+        "span_sec": 65.92
+      },
+      "agreement_median_end_delta_ms": 0.0,
+      "agreement_p90_end_delta_ms": 720.0,
+      "dp_shifts_official_zero_to_nonzero": 36
+    }
+  ],
+  "totals": {
+    "songs": 12,
+    "official_zero": 1113,
+    "dp_zero": 0,
+    "intervals": 2159,
+    "official_zero_share": 0.5155,
+    "dp_zero_share": 0.0
+  }
+}

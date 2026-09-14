@@ -150,6 +150,19 @@ def main() -> None:
                          f"{totals[f'{stage}_negative_duration']} | {totals[f'{stage}_overlap_with_previous']} | "
                          f"{totals[f'{stage}_start_regresses']} | {totals[f'{stage}_outside_audio']} | "
                          f"{totals[f'{stage}_longest_collapse_run']} | {totals[f'{stage}_long_ge_2s']} |")
+        worst = sorted(block["songs"], key=lambda song: -song["stages"].get("shipped", {}).get("zero_duration", 0))[:6]
+        if worst:
+            lines += ["", "最严重的几首歌（按成品里的零时长字数排序）：", "",
+                      "| 歌 | 字数 | 成品零时长 | 成品最长连续坍缩 | ≥2s 长音：模型原始→成品 | 自检状态 |",
+                      "|---|---|---|---|---|---|"]
+            for song in worst:
+                shipped = song["stages"].get("shipped", {})
+                raw_stage = song["stages"].get("raw", {})
+                lines.append(f"| {song['song']} | {shipped.get('characters', 0)} | "
+                             f"{shipped.get('zero_duration', 0)} | {shipped.get('longest_collapse_run', 0)} | "
+                             f"{raw_stage.get('long_ge_2s', 0)} → {shipped.get('long_ge_2s', 0)} | "
+                             f"`{song['product_status']}`（结构错误 {len(song['product_structural_errors'])} 项、"
+                             f"警告 {len(song['product_warnings'])} 项） |")
         lines += ["",
                   f"- 成品里被流水线挪动 ≥0.2 秒的字：**{totals['shipped_moved_ge_0.2s_vs_raw']}** 个"
                   f"（其中 {totals['moved_and_low_confidence']} 个模型自己就是低把握 ⇒ 挪动多发生在该复核的地方）；",
