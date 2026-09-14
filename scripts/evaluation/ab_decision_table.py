@@ -153,7 +153,7 @@ def main() -> None:
     report_path = args.out.with_name("REPORT.md")     # --out 指向 metrics.json，报告写在同目录
     lines = [f"# {args.challenger} vs {args.reference_arm} 决策表填表结果（机械判定，勿手改）", "",
              f"> 规则登记于 08:39（早于任何主判据），来源 `§3l`；本文件由 `ab_decision_table.py` 生成。", "",
-             f"- 长字符结束点 {args.challenger} vs {args.reference_arm}：**{long_state}**"
+             f"- 长字符结束点 {args.challenger} vs 对照臂（{args.reference_arm}）：**{long_state}**"
              + (f"（Δ={long_block.get('mean_delta_ms')} ms，p_t×K={long_block.get('p_t_times_sides')}，"
                 f"McNemar×K={long_block.get('p_mcnemar_times_sides')}）" if long_block else ""),
              f"- 长字符结束点 {args.challenger} vs 起点：**{start_state}**"
