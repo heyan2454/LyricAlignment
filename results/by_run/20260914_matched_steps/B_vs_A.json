@@ -1,0 +1,63 @@
+{
+  "schema_version": "matched_steps_v1",
+  "label_a": "A_对照",
+  "label_b": "B_上采样",
+  "shared_points": 5,
+  "step_range": [
+    100,
+    500
+  ],
+  "variants": {
+    "fixed": {
+      "points": 5,
+      "mean_delta_pp": -0.318,
+      "median_delta_pp": -0.34,
+      "se_pp": 0.124,
+      "b_better_points": 0,
+      "b_worse_points": 4,
+      "last_shared": {
+        "step": 500,
+        "a": 0.9568,
+        "b": 0.9501
+      }
+    },
+    "raw": {
+      "points": 5,
+      "mean_delta_pp": -0.13,
+      "median_delta_pp": -0.14,
+      "se_pp": 0.059,
+      "b_better_points": 1,
+      "b_worse_points": 4,
+      "last_shared": {
+        "step": 500,
+        "a": 0.9642,
+        "b": 0.9617
+      }
+    },
+    "raw_targeted": {
+      "points": 5,
+      "mean_delta_pp": -0.138,
+      "median_delta_pp": -0.07,
+      "se_pp": 0.064,
+      "b_better_points": 1,
+      "b_worse_points": 4,
+      "last_shared": {
+        "step": 500,
+        "a": 0.9647,
+        "b": 0.9618
+      }
+    }
+  },
+  "own_progress": {
+    "A_对照": {
+      "from_step": 100,
+      "to_step": 500,
+      "fixed_delta_pp": 0.22
+    },
+    "B_上采样": {
+      "from_step": 100,
+      "to_step": 500,
+      "fixed_delta_pp": -0.45
+    }
+  }
+}
