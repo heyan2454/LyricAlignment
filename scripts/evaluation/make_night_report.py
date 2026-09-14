@@ -330,10 +330,22 @@ def sec_arms(root: Path) -> list[str]:
     lines = ["", "| 长上下文视图（418 条 / 15,204 字符 / 29 首歌，五个判据同一批 logits） | fixed | raw | raw+定向修复 | dp |",
              "|---|---|---|---|---|"]
     rows: list[tuple[str, dict[str, Any]]] = []
-    for name in ("baselines_with_dp", "concat_final"):
+    seen: set[str] = set()
+    # 自动纳入后续任何视图文件（C 臂、复评等），避免"跑完还得记得改报告代码"这种断点
+    view_dir = root / "results/by_run/20260914_long_context_view"
+    candidates = ["baselines_with_dp", "concat_final", "ab_arms", "c_arm"]
+    if view_dir.exists():
+        for extra in sorted(view_dir.glob("*.json")):
+            if extra.stem not in candidates:
+                candidates.append(extra.stem)
+    for name in candidates:
         doc = _load(root / f"results/by_run/20260914_long_context_view/{name}.json")
-        if doc:
-            rows.extend((label, block) for label, block in doc.get("checkpoints", {}).items())
+        if not doc:
+            continue
+        for label, block in doc.get("checkpoints", {}).items():
+            if label not in seen:
+                seen.add(label)
+                rows.append((label, block))
     for label, block in rows:
         variants = block.get("variants") or {}
         summary = block.get("summary") or {}
