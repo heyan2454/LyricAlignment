@@ -650,6 +650,41 @@ def sec_arms_by_bucket(root: Path) -> list[str]:
     return lines
 
 
+def sec_structural_arm(root: Path) -> list[str]:
+    import statistics
+    run_dir = Path("/home/hyan/Data/lyricalign/runs/20260914_qwen_fa_r2_duration_target_seed20260724")
+    target = run_dir / "timestamp_target.json"
+    if not target.exists():
+        return ["- 状态：未启动"]
+    metrics = run_dir / "metrics.jsonl"
+    steps = 0
+    losses: list[float] = []
+    if metrics.exists():
+        for line in metrics.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if "training_loss" in row:
+                steps = max(steps, int(row.get("step", 0)))
+                losses.append(float(row["training_loss"]))
+    status = _load(run_dir / "validation_status.json") or {}
+    verdict = _load(root / "results/by_run/20260914_structural_verdict/metrics.json")
+    lines = ["- 时长参数化臂（`timestamp_target=duration`，6000 步、完整 LR、从 uniform-12000 热启动）：",
+             f"  已跑 **{steps}/6000 步**；训练 loss 近 200 步均值 "
+             + (f"{statistics.mean(losses[-200:]):.3f}" if losses else "—") + "；",
+             "  按预注册 §5，**主指标 = 与它自己的起点在 ≥1s 长字符结束点上的逐字符配对**（三关判定），"
+             "比较必须用 duration 原生解码（`raw`）；`fixed`/`dp` 在该模式被显式禁用；",
+             f"  训练器终态验证状态：`{status.get('status', '—')}`（有意禁用，不是遗漏）；"]
+    if verdict:
+        lines.append("  判决已产出，见 `results/by_run/20260914_structural_verdict/REPORT.md`。")
+    else:
+        lines.append("  判决尚未产出（臂完成后跑 `paired_robustness_check` + `arms_by_bucket_counts`，"
+                     "预期 01:15 左右）。")
+    lines.append("- 预先登记的如实混杂：**没有 6000 步绝对目标对照臂**（GPU 预算只够一条），"
+                 "所以读数若变好可能部分来自多训；若显著变好必须先补该对照再谈配方。")
+    return lines
+
+
 def sec_pending(root: Path) -> list[str]:
     return ["- **决策树已写死**（不临场判断）：B 落在 §3g 预测带内 ⇒ 暴露假设成立；"
             "B 为 null 或弱于预测带 ⇒ 启动 C 臂（字符级 loss 加权，"
@@ -729,6 +764,7 @@ SECTIONS: list[tuple[str, str, Callable[[Path], list[str]]]] = [
     ("B 的效应按时长拆开数个数（形状对、量级小）", "results/by_run/20260914_arms_by_bucket", sec_arms_by_bucket),
     ("A/B 决策表（§3l 2×2，两种多重比较口径）", "results/by_run/20260914_ab_decision", sec_ab_decision),
     ("对照臂 A 的退化：只是迹象（并据此复查了整条训练史）", "results/by_run/20260914_paired_A_vs_start", sec_long_offset_drift),
+    ("结构改动：时长参数化臂（进行中）", "docs/status/20260914_structural_prereg.md", sec_structural_arm),
     ("局限与适用边界（读结论前先看）", "", sec_limitations),
     ("待办", "", sec_pending),
 ]
