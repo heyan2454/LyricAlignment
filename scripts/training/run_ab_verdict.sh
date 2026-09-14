@@ -94,5 +94,14 @@ if [ -s "$DUMP_START" ] && [ -s "$DUMP_A" ]; then
     --report docs/status/20260914_robustness_A_vs_start.md >/dev/null
 fi
 
+# §3l 的 2×2 决策表：由代码给出所在格与预定下一步，避免明早临场判读
+python scripts/evaluation/ab_decision_table.py \
+  --long-paired results/by_run/20260914_mech_ab_paired/robustness.json \
+  --long-vs-start results/by_run/20260914_mech_B_vs_start/robustness.json \
+  --short results/by_run/20260914_matched_steps/B_vs_A.json \
+  --out results/by_run/20260914_ab_decision/metrics.json > /tmp/decision_table.log 2>&1 \
+  || { echo "!! 决策表生成失败"; tail -5 /tmp/decision_table.log; }
+sed -n '/所在格/,$p' results/by_run/20260914_ab_decision/REPORT.md 2>/dev/null || true
 python scripts/evaluation/make_night_report.py --repo . --out docs/status/20260914_night_report.md
+python scripts/evaluation/make_plain_summary.py --repo . --out docs/status/20260914_plain_summary.md
 echo "完成：判决在 results/by_run/20260914_warmstart_ab_{fixed,dp}/REPORT.md，总报告 docs/status/20260914_night_report.md"
