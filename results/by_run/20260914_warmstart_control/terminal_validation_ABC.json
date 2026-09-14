@@ -1,0 +1,65 @@
+{
+  "schema_version": "warmstart_terminal_validation_v2",
+  "note": "同一验证集(1,711 项)、同一训练器终态评测代码路径；三臂均从均匀终点借权重训 600 步、LR 减半，唯一差别是数据/目标",
+  "checkpoints": {
+    "线上旧 750": {
+      "song_macro_boundary_mae_sec": 0.04715958845875161,
+      "joint_within_80ms": 0.8873980531439095,
+      "joint_within_160ms": 0.9634964483030781,
+      "offset_mae_sec": 0.045665285451197066,
+      "onset_mae_sec": 0.038455998421468046,
+      "zero_duration_rate": 0.007761115495922126,
+      "mean_iou": 0.8420313804427682
+    },
+    "均匀终点 12000": {
+      "song_macro_boundary_mae_sec": 0.04387452314095182,
+      "joint_within_80ms": 0.8950276243093923,
+      "joint_within_160ms": 0.9673770060510392,
+      "offset_mae_sec": 0.043313601683767446,
+      "onset_mae_sec": 0.03699355432780848,
+      "zero_duration_rate": 0.007169166008945014,
+      "mean_iou": 0.8463760273573815
+    },
+    "A 对照（600 步）": {
+      "song_macro_boundary_mae_sec": 0.04381022936193829,
+      "joint_within_80ms": 0.895093396474612,
+      "joint_within_160ms": 0.9673112338858195,
+      "offset_mae_sec": 0.04360069718495134,
+      "onset_mae_sec": 0.03693337279663247,
+      "zero_duration_rate": 0.007103393843725336,
+      "mean_iou": 0.8461879479213489
+    },
+    "B 上采样（600 步）": {
+      "song_macro_boundary_mae_sec": 0.045102951482318625,
+      "joint_within_80ms": 0.8941068139963168,
+      "joint_within_160ms": 0.9665219679031833,
+      "offset_mae_sec": 0.04400585372270456,
+      "onset_mae_sec": 0.03738917390160485,
+      "zero_duration_rate": 0.007629571165482768,
+      "mean_iou": 0.8456554211394389
+    },
+    "C 加权（600 步）": {
+      "song_macro_boundary_mae_sec": 0.046317009976395485,
+      "joint_within_80ms": 0.8947645356485135,
+      "joint_within_160ms": 0.966390423572744,
+      "offset_mae_sec": 0.04419922388845041,
+      "onset_mae_sec": 0.03760753749013418,
+      "zero_duration_rate": 0.007695343330702447,
+      "mean_iou": 0.8456357205772291
+    }
+  },
+  "delta_vs_A": {
+    "B": {
+      "mae_ms": 1.293,
+      "joint80_pp": -0.099,
+      "offset_mae_ms": 0.405,
+      "onset_mae_ms": 0.456
+    },
+    "C": {
+      "mae_ms": 2.507,
+      "joint80_pp": -0.033,
+      "offset_mae_ms": 0.599,
+      "onset_mae_ms": 0.674
+    }
+  }
+}
