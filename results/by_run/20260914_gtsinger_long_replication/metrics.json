@@ -104,5 +104,64 @@
       "miss_share": 0.0306,
       "median_err_ms": 28.0
     }
+  },
+  "entropy_duration": {
+    "status": "measured",
+    "rows": 11076,
+    "buckets": {
+      "短 <1s": {
+        "characters": 10592,
+        "defects": 312,
+        "per_quartile": {
+          "Q1": {
+            "characters": 2760,
+            "miss_share": 0.0014
+          },
+          "Q2": {
+            "characters": 2740,
+            "miss_share": 0.0073
+          },
+          "Q3": {
+            "characters": 2724,
+            "miss_share": 0.0147
+          },
+          "Q4": {
+            "characters": 2368,
+            "miss_share": 0.1047
+          }
+        },
+        "q4_defect_share": 0.7949,
+        "q4_population_share": 0.2236
+      },
+      "长 ≥1s": {
+        "characters": 484,
+        "defects": 30,
+        "per_quartile": {
+          "Q1": {
+            "characters": 8,
+            "miss_share": 0.0
+          },
+          "Q2": {
+            "characters": 28,
+            "miss_share": 0.0
+          },
+          "Q3": {
+            "characters": 44,
+            "miss_share": 0.0
+          },
+          "Q4": {
+            "characters": 404,
+            "miss_share": 0.0743
+          }
+        },
+        "q4_defect_share": 1.0,
+        "q4_population_share": 0.8347
+      }
+    },
+    "entropy_cuts": [
+      0.496,
+      0.731,
+      0.921
+    ]
   }
 }
