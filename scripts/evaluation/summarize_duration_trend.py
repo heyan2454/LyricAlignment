@@ -42,6 +42,9 @@ def load_pairs(path: Path) -> list[dict[str, float]]:
         onset, offset = slots["onset"], slots["offset"]
         gt_duration = float(offset["duration"])
         out.append({"start_err": abs(float(onset.get("abs_err_argmax") or 0.0)),
+                    # §6i: 监控"没被改动的那个槽位"（起始点）的判别性，比终态指标灵敏得多。
+                    "start_entropy": float(onset["entropy_nats"]) if onset.get("entropy_nats") is not None else None,
+                    "start_p_top1": float(onset["p_top1"]) if onset.get("p_top1") is not None else None,
                     "end_err": abs(float(offset.get("abs_err_argmax") or 0.0)),
                     "implied_duration": float(offset.get("pred_sec") or 0.0) - float(onset.get("pred_sec") or 0.0),
                     "gt_duration": gt_duration,
@@ -80,7 +83,11 @@ def summarise(label: str, rows: list[dict[str, float]]) -> dict[str, Any]:
     if not rows:
         return {"step_label": label, "status": "empty"}
     long_rows = [row for row in rows if row["gt_duration"] >= 1.0]
+    ent = [row["start_entropy"] for row in rows if row.get("start_entropy") is not None]
+    top1 = [row["start_p_top1"] for row in rows if row.get("start_p_top1") is not None]
     return {"step_label": label, "status": "measured", "characters": len(rows),
+            "median_start_entropy_nats": round(st.median(ent), 2) if ent else None,
+            "median_start_p_top1": round(st.median(top1), 3) if top1 else None,
             "median_start_err_ms": round(1000 * st.median(row["start_err"] for row in rows), 1),
             "p90_start_err_ms": round(1000 * sorted(row["start_err"] for row in rows)[int(0.9 * (len(rows) - 1))], 1),
             "median_end_err_ms": round(1000 * st.median(row["end_err"] for row in rows), 1),
@@ -121,14 +128,15 @@ def main() -> None:
     header = ["# 结构臂趋势（生成，勿手改）", "",
               "起始点误差是 duration 参数化下结束点误差的**硬下界**（end = start + duration）；",
               "`spearman_duration` ≈ 0 且结束点误差仍大 ⇒ 语义没换过来，本轮**无法**判参数化无效。", "",
-              "| 步 | n | 起始点中位(ms) | 起始 p90 | 结束点中位(ms) | ≥1s 结束中位 | 结束超差率 | 估时长中位(s) | 真时长中位(s) | 时长秩相关 |",
-              "|---|---|---|---|---|---|---|---|---|---|"]
+              "| 步 | n | 起始中位(ms) | 起始 p90 | **起始熵(nats)** | **起始 p_top1** | 结束中位(ms) | ≥1s 结束中位 | 结束超差率 | 估时长中位(s) | 真时长中位(s) | 时长秩相关 |",
+              "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for point in ordered:
         if point.get("status") != "measured":
             header.append(f"| {point.get('step_label')} | — | 未产出（{point.get('status')}） | | | | | | | |")
             continue
         header.append(f"| {point['step_label']} | {point['characters']} | {point['median_start_err_ms']} | "
-                      f"{point['p90_start_err_ms']} | {point['median_end_err_ms']} | "
+                      f"{point['p90_start_err_ms']} | **{point['median_start_entropy_nats']}** | "
+                      f"**{point['median_start_p_top1']}** | {point['median_end_err_ms']} | "
                       f"{point['median_end_err_ms_long']} | {100 * point['end_miss_share']:.2f}% | "
                       f"{point['median_implied_duration_sec']} | {point['median_true_duration_sec']} | "
                       f"{point['spearman_duration']} |")
