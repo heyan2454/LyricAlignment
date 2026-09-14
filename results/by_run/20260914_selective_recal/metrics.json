@@ -1,0 +1,169 @@
+{
+  "schema_version": "selective_recal_v1",
+  "rows": "results/by_run/20260914_offset_dist/rows.jsonl",
+  "characters": 6532,
+  "tolerance_sec": 0.2,
+  "runs": [
+    {
+      "quantile": 0.9,
+      "min_implied_sec": 0.8,
+      "flagged_characters": 381,
+      "flagged_share": 0.0583,
+      "buckets": {
+        "all": {
+          "raw": {
+            "characters": 6532,
+            "miss_share": 0.0184,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 33.3
+          },
+          "recalibrated": {
+            "characters": 6532,
+            "miss_share": 0.019,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 34.0
+          },
+          "miss_delta_pp": 0.06
+        },
+        "1-2s": {
+          "raw": {
+            "characters": 802,
+            "miss_share": 0.0449,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 62.5
+          },
+          "recalibrated": {
+            "characters": 802,
+            "miss_share": 0.0449,
+            "median_err_ms": 17.6,
+            "mean_err_ms": 65.4
+          },
+          "miss_delta_pp": 0.0
+        },
+        ">=2s": {
+          "raw": {
+            "characters": 132,
+            "miss_share": 0.0606,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 153.3
+          },
+          "recalibrated": {
+            "characters": 132,
+            "miss_share": 0.0909,
+            "median_err_ms": 73.6,
+            "mean_err_ms": 169.6
+          },
+          "miss_delta_pp": 3.03
+        }
+      }
+    },
+    {
+      "quantile": 0.8,
+      "min_implied_sec": 0.8,
+      "flagged_characters": 696,
+      "flagged_share": 0.1066,
+      "buckets": {
+        "all": {
+          "raw": {
+            "characters": 6532,
+            "miss_share": 0.0184,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 33.3
+          },
+          "recalibrated": {
+            "characters": 6532,
+            "miss_share": 0.019,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 34.6
+          },
+          "miss_delta_pp": 0.06
+        },
+        "1-2s": {
+          "raw": {
+            "characters": 802,
+            "miss_share": 0.0449,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 62.5
+          },
+          "recalibrated": {
+            "characters": 802,
+            "miss_share": 0.0449,
+            "median_err_ms": 27.2,
+            "mean_err_ms": 68.6
+          },
+          "miss_delta_pp": 0.0
+        },
+        ">=2s": {
+          "raw": {
+            "characters": 132,
+            "miss_share": 0.0606,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 153.3
+          },
+          "recalibrated": {
+            "characters": 132,
+            "miss_share": 0.0909,
+            "median_err_ms": 68.8,
+            "mean_err_ms": 177.9
+          },
+          "miss_delta_pp": 3.03
+        }
+      }
+    },
+    {
+      "quantile": 0.95,
+      "min_implied_sec": 0.8,
+      "flagged_characters": 190,
+      "flagged_share": 0.0291,
+      "buckets": {
+        "all": {
+          "raw": {
+            "characters": 6532,
+            "miss_share": 0.0184,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 33.3
+          },
+          "recalibrated": {
+            "characters": 6532,
+            "miss_share": 0.0188,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 33.5
+          },
+          "miss_delta_pp": 0.04
+        },
+        "1-2s": {
+          "raw": {
+            "characters": 802,
+            "miss_share": 0.0449,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 62.5
+          },
+          "recalibrated": {
+            "characters": 802,
+            "miss_share": 0.0449,
+            "median_err_ms": 4.8,
+            "mean_err_ms": 63.5
+          },
+          "miss_delta_pp": 0.0
+        },
+        ">=2s": {
+          "raw": {
+            "characters": 132,
+            "miss_share": 0.0606,
+            "median_err_ms": 0.0,
+            "mean_err_ms": 153.3
+          },
+          "recalibrated": {
+            "characters": 132,
+            "miss_share": 0.0833,
+            "median_err_ms": 68.8,
+            "mean_err_ms": 162.1
+          },
+          "miss_delta_pp": 2.27
+        }
+      }
+    }
+  ],
+  "verdict": "selective recalibration does NOT help (>=2s miss unchanged or worse)",
+  "mechanism": "原始隐含时长的**中位误差为 0**、秩相关 0.92 ⇒ 多数字符本来就对；失败是个体的、不是单调尺度偏差 ⇒ 任何只用分布的单调映射要么不动失败点、要么把已经正确的多数一起挪坏。事后时长校准（全局与选择性）到此关闭。"
+}
