@@ -18,7 +18,13 @@
 
 ## D2. DP 解码是否进入产品链（需要一次影子跑，≈20 分钟 GPU + 评审）
 - 事实：**证据充分但产品链未接线**（`product_wires_dp=False`，由代码扫描得出，不凭记忆）。
-- 影子跑内容：同一批交付音频，official / official+修补 / DP 三条时间轴 + 门控标记率对比。
+- **已核实：影子跑不需要写任何新代码**（18:16 查过脚本默认值与目录结构）——
+  `real_song_decoder_probe.py` 的 `--batch` 默认就指向产品批
+  `runs/20260814_ktv_current_silence`（37 首歌，含 `work/audio/vocals.wav` 与已交付时间轴），
+  `--checkpoint` 默认就是线上 `step-000750`，`--span-sec` 默认 90 s。所以 D2 的全部技术工作是：
+  `PYTHONPATH=src python scripts/evaluation/real_song_decoder_probe.py --out results/by_run/20260914_shadow_run/metrics.json`
+  （≈20 分钟 GPU，臂结束后即可跑）+ 门控 `export_review_gating.py --batch <同一目录> --budget 0.10`（CPU）；
+  它对比的是同一批字上的 official（含上游修补）与 DP 两条时间轴 + 结构指标 + 一致度差。
 - 必须与门控**同时**上线：DP 会让"零长度/重叠"这两个唯一自动探针全部变绿。
 - 不做的后果：今晚两条**唯一不依赖结构臂的收益**停留在"可复现的研究报告"层面。
 - 我的倾向：**优先做这件**（GPU 便宜、收益已确证、风险已被识别且有缓解）。
