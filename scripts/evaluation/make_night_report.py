@@ -345,6 +345,28 @@ def sec_arms(root: Path) -> list[str]:
                 return f"{summary[decoder]['macro_within_primary']:.4f}"
             return "—"
         lines.append(f"| {label} | {value('fixed')} | {value('raw')} | {value('raw_targeted')} | {value('dp')} |")
+    ab_terminal = _load(root / "results/by_run/20260914_warmstart_control/terminal_validation_AB.json")
+    baseline_terminal = _load(root / "results/by_run/20260914_retrain_verdict/metrics.json")
+    if ab_terminal:
+        rows = dict(ab_terminal)
+        # 线上旧 750 与均匀终点在 retrain_verdict 里也有，缺省时补齐
+        for name, block in ((baseline_terminal or {}).get("trainer_validation") or {}).items():
+            key = {"old_750": "线上旧 750", "new_12000": "均匀终点 12000"}.get(name)
+            if key and key not in rows and isinstance(block, dict):
+                rows[key] = block
+        lines += ["", "| 终态验证（全量 1,711 项、同一评测代码路径） | MAE(ms) | joint@80 | 零长度 |", "|---|---|---|---|"]
+        for label in ("线上旧 750", "均匀终点 12000", "A 对照（600 步）", "B 上采样（600 步）"):
+            block = rows.get(label)
+            if not block or block.get("song_macro_boundary_mae_sec") is None:
+                continue
+            lines.append(f"| {label} | {1000 * block['song_macro_boundary_mae_sec']:.2f} | "
+                         f"{100 * block['joint_within_80ms']:.2f}% | {100 * block['zero_duration_rate']:.2f}% |")
+        a_row, b_row = rows.get("A 对照（600 步）") or {}, rows.get("B 上采样（600 步）") or {}
+        if a_row and b_row:
+            lines.append(f"- ⇒ **短条目全量口径上 B 比 A 差 {1000 * (b_row['song_macro_boundary_mae_sec'] - a_row['song_macro_boundary_mae_sec']):+.2f} ms**"
+                         f"（joint@80 {100 * (b_row['joint_within_80ms'] - a_row['joint_within_80ms']):+.2f} pp）"
+                         "——与 §3n 的覆盖混杂一致（B 只看到约 27% 的唯一条目），"
+                         "**不能**据此说'长音挤占了容量'；主判据仍看 offset_long 配对与长流视图。")
     for decoder in ("fixed", "dp"):
         verdict = _load(root / f"results/by_run/20260914_concat_verdict_{decoder}/metrics.json")
         if verdict:
