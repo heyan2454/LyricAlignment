@@ -85,8 +85,13 @@ def main() -> None:
     parser.add_argument("--checkpoint", type=Path,
                         default=Path("/home/hyan/Data/lyricalign/runs/20260913_qwen_fa_r2_from_official_seed20260724/checkpoints/step-012000"))
     parser.add_argument("--stage", default="r2")
+    parser.add_argument("--base-model-only", action="store_true",
+                        help="跳过 checkpoint 权重加载，测**未微调的官方底座**（此时 --stage 用 r0；"
+                             "build_stage_model 在 r0 下只 freeze_all，不加 LoRA、不动 projector）")
     parser.add_argument("--limit-items", type=int, default=0)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--dataset-label", default="GTSinger",
+                        help="域外数据集名，只写进产物元数据，便于区分不同语料的复评")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
@@ -107,7 +112,12 @@ def main() -> None:
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     model, processor = TOPUP.build_stage_model(cfg, args.stage, args.device, True)
-    TOPUP.load_weights(args.checkpoint, model)
+    if args.base_model_only:
+        source_label = f"base-model-only:{cfg['model']['id']}@{cfg['model'].get('revision', '?')}"
+        print(f"[baseline] 不加载任何 checkpoint：{source_label}", flush=True)
+    else:
+        loaded = TOPUP.load_weights(args.checkpoint, model)
+        source_label = f"{args.checkpoint} (step {loaded})"
     model.eval()
     dtype = getattr(torch, cfg["training"].get("dtype", "bfloat16"))
     # 注意：这里用的仍是产品原来的 collator/解码；整句挑走独立函数 dp_timestamp_items，
@@ -192,8 +202,10 @@ def main() -> None:
     buckets = {name: {key: bucket(values) for key, values in groups.items()}
                for name, groups in errors.items()}
     payload = {"schema_version": "ood_dp_replay_v1", "evidence": str(args.evidence),
-               "checkpoint": str(args.checkpoint), "tolerance_sec": TOL, "long_sec": LONG_SEC,
-               "discipline": "GTSinger 只作域外报告，不参与选点/调参",
+               "checkpoint": source_label, "stage": args.stage,
+               "tolerance_sec": TOL, "long_sec": LONG_SEC,
+               "dataset": args.dataset_label,
+               "discipline": f"{args.dataset_label} 只作域外报告，不参与选点/调参",
                "items_compared": compared_items, "units_matched": matched_units,
                "items_skipped": skipped_items,
                "by_selection": buckets}

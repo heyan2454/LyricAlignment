@@ -22,6 +22,22 @@
   `research_transition_recovery_detector`、`research_fullslot_serial_detector` 与
   `research_v7_align_behavior` 只作实现和证据追溯。
 
+## 起点
+
+AI 会话从 `AI_SESSION_ENTRY.md` 顶部段进入（顶部段可能是 *addendum* 而非 override，以其标题自述为准）。
+权威状态链：`docs/status/20260912_session_handoff.md`（9 月线入口）→ `docs/status/20260914_next_steps_ranked.md`
+（带证据排序的下一步候选）→ `docs/status/project_current.md` → `docs/status/next_execution_plan.md` →
+`docs/sessions/SESSION_INDEX.md`。
+
+- **本文件不写死"当前最新 session 是哪一天"**——过期叙述比没有叙述更危险：本文件曾长期把 8/14 realign-recovery
+  写成 Current mainline、把入口日期钉在 8/16，而 9 月真实主线已换、且 8/14 的旗舰对照被 9/12 判为重复运行。
+  本段取代 `## Project` 末段与 `## Current mainline` 里的过期日期叙述（后两处待单独提交清理，以本段为准）。
+- 需要当前状态先跑门禁：`python scripts/docs/check_doc_freshness.py`（退出码非零=有发现）。它按快照日期与 git
+  提交日期报出哪些状态件已 stale、哪些 session/status 件未入索引、md 相对链接死链，以及 AGENTS.md 与
+  `AI_SESSION_ENTRY.md` 的入口指针是否互相矛盾。首次运行实测 7 条发现（4 份状态件 stale 57–65 天、
+  SESSION_INDEX 缺 19 项登记、AGENTS.md 入口指针停在 8-16）。
+- 状态件若已被判 stale，**改读最新 session 族**，不得据它决策或排预算。
+
 ## Commands
 ```bash
 source /root/miniconda3/etc/profile.d/conda.sh
@@ -44,6 +60,26 @@ bash scripts/demo/run_inline_realign_render_only.sh smoke <OUT_ROOT>
 RENDER_MODE=skip bash scripts/demo/run_inline_realign_formal.sh
 bash scripts/demo/run_inline_realign_render_only.sh formal <OUT_ROOT>
 ```
+
+## 资产定位与环境（关键坑）
+
+- conda 环境唯一：`lyricalign-qwen`（见上）。项目包未 `pip install -e .`，一律 `PYTHONPATH=src` 运行。
+- **底座权重在本地，但两条链用两套定位口径**，换链或换 shell 忘记 export 时会伪装成"网络故障"：
+  * demo 与渲染链：`scripts/demo/inline_realign_env.sh` 的 `MODEL_SOURCE` 直接指 snapshot 目录（内部枚举两个候选根）；
+  * 训练与评测链：`scripts/training/run_funnel_topup.py:build_stage_model` 传的是 repo id + revision，
+    **只认环境变量 `HF_HUB_CACHE`**；不设时 transformers 回落 `~/.cache/huggingface/hub`，而那里本项目的目录
+    只剩 4.0 K 空壳（`snapshots/`、`blobs/` 皆空）。
+  ⇒ 离线机器上跑任何 `from_pretrained` 入口前先
+  `export HF_HUB_CACHE=/home/hyan/Data/lyricalign/models/hf_cache HF_HUB_OFFLINE=1`。
+  （2026-09-24 实测：缺这两行报 `OSError: We couldn't connect to huggingface.co`，实为缺指针而非缺权重；
+  完整 snapshot 在 `…/hf_cache/models--Qwen--Qwen3-ForcedAligner-0.6B-hf/snapshots/c07281df…/`。）
+- 未微调底座的评测入口：`scripts/evaluation/ood_dp_replay.py --base-model-only --stage r0`（r0 下 `build_stage_model`
+  只 `freeze_all`，不加 LoRA、不动 projector ⇒ 就是官方原模型）；批量入口
+  `bash scripts/evaluation/run_opencpop_ood.sh`（spec 形如 `标签:config:none:r0:base`）。
+- 钉扎资产以 `docs/status/20260913_pinned_checkpoint_inventory.md` 为准。任何 checkpoint 改名/清理前，必须同时核对
+  该清单、`results/by_run/20260913_pinned_checkpoints/` 的 SHA 登记、以及 run 内 JSON 的路径字段
+  （2026-09-17 清理 `20260913_*` run 的 240→10 个 checkpoint 即按此流程确认零断链，清单落盘于该 run 根
+  `CLEANUP_20260917_checkpoints.md`）。
 
 ## Agent 运行约定（多子 agent 并发 / review / 步数限制）
 
@@ -169,6 +205,87 @@ PYTHONPATH=src python scripts/research_v7/report_long_slot_region.py --run-root 
 - research_v7 正式口径：长数据 = ≥90s、主体 ≥180s；主模型请求 fixed 60s；禁止人工静音凑长数据；
   missing 用 virtual gap 评价，replace 同时评价 wrong-output 与 omitted-original；
   formal 预算目标 ≤10h、硬上限 ≤12h；禁止全笛卡尔积。
+
+## 新数据集准入（先尺检，再定岗位）
+
+新语料进入评测或训练之前，先做完五件事，并把结论写进 `data/datasets_registry.md`（含日期与可复算命令）：
+
+1. **标注↔音频自洽（零模型尺检）**：段时长与标注区间逐段比对并记通过数。OpenCPOP 实测：句级 3,724/3,731 通过、
+   `dur_mismatch` 5、27 段因切段粒度粗于句轨而丢弃（丢弃必须显式计数，不许静默）。
+2. **对应关系不靠序号**：先验证 utt 编号规则再使用。OpenCPOP 句 utt 的后 6 位是**全库累计序号**（曲 2002 从 39 续），
+   按"每曲从 1 编号"推算会在 13 首歌上错位并污染 201 个读数。规则：用**唱词串 + 时长**双键匹配，匹配不上的显式丢弃。
+3. **边界可信性要用 voiced-aware 读法**：人工边界 vs 能量起音的残差不等于标注错位——声母塞音/闭口音天然无能量跳变，
+   其"落空"是检测器口径。OpenCPOP 音素级中位差 123 ms 即属此类，而音符级贴声度是全库最高 ⇒ 招牌在发声级为真，
+   音素级需换尺复算再定分。
+4. **供给普查决定它能不能回答你的问题**：字符数、时长分位、≥1.5 s / ≥2 s 的**绝对量**。OpenCPOP：34,114 字 /
+   ≥1.5 s 689 / ≥2 s 317；对照 GTSinger 全库仅 70 个 ≥2 s、MIR-1K 这份发行无字符级边界（时间维度不可测）。
+   任何按桶判决的实验，开跑前先算 n 与配对 SE（≥2 s 桶配对 SE ≈ 13.8 ms ⇒ 不可单独作决定性数字）。
+5. **岗位声明 + 防火墙**：写清它是"域"（跨歌手/跨录音多样性）还是只是"质"（单歌手录音室 ⇒ 域鲁棒性不成立，
+   只能当干净正例；OpenCPOP 的 1,438 处 melisma 续格是一词多音的唯一在库正例来源）。并显式声明：
+   **数据到手时间晚于所有 checkpoint 的训练时间 ⇒ 只作报告，绝不参与选点/调参**（产物 JSON 写 `discipline` 字段，
+   见 `scripts/evaluation/ood_dp_replay.py`）。
+
+## 已踩过的坑（度量与执行契约）
+
+每条格式：**判据 →（代价与出处）**。新坑按同格式追加，不写散文、不写"注意一下"。
+
+1. **桶内检验**：任何"模型偏向 X"的断言必须在**时长桶内**检验。混池相关 r=+0.41 看着支持"回归到常见时长"，
+   分桶后全为 0——那只是时长混杂。出处：`AI_SESSION_ENTRY.md:23-24`。
+2. **配对效应三关**：按位置/子集分开报的配对结果必须同时给 ①中位数 + 截尾均值 ②二项 McNemar ③对所考察位置数
+   ×K 校正；三条不同向时只能写"迹象"。工具 `scripts/evaluation/paired_robustness_check.py`。代价实例：均值
+   +9.55 ms 而**中位数 0.00 ms**，曾被写成"显著"后撤回（`AI_SESSION_ENTRY.md:25-29`）。
+3. **"我说代码已备好"不是证据，测试才是**：DP 的扩展身份字段曾写在 `model_identity()` 的 `return` 之后成为永不执行的
+   死代码 ⇒ DP 批的身份字典与官方路径逐键相同、校验链分辨不出解码器；现由 3 项契约测试固定。配套硬规则：
+   **`pytest … | tail` 会吞掉退出码**，任何门禁一律 `set -o pipefail` 或直接读 `$?`（为此两次在测试仍红时完成提交）。
+4. **陈旧完成标记会骗停新任务**：`*.done` / `*.done.failed` 跨运行残留，一夜内两次造成"把假故障当真失败"与
+   "整条对比链立刻全部跳过"。规则：等待型脚本只认**比自己启动时间更新**的标记（`stat -c %Y ≥ START_EPOCH`），
+   旧标记**改名保留**为 `.stale-from-<时间>-attempt` + 一行说明，不删除；新自动链启动后必须看一行它的日志，
+   确认它进入等待而不是立刻结束。出处：`AI_SESSION_ENTRY.md:73-78`。
+5. **`setsid nohup bash X.sh &` 会留下两条进程**（wrapper `bash -c '<启动命令>'` 与真身 `bash X.sh`，后者 ppid=1）：
+   只杀 wrapper ⇒ 真身仍在等 ⇒ 又起一次 ⇒ **两条 controller 并发写同一任务**。规则：杀之前
+   `ps -eo pid,ppid,etime,args | grep -F "X.sh"` 看清父子；杀 `bash <脚本路径>`（ppid=1）那条；杀完重数
+   `ps -eo args | grep '^bash /' | grep -c X.sh`，确认每条链恰好 1 个实例。禁用 `pkill -f` 匹配长命令行子串。
+6. **bash 的 `local a=$1 b=$2 c=$D/$b` 中所有词元在任何赋值发生前就展开** ⇒ `$b` 未定义，`set -u` 下后台分支以 127
+   **静默退出**（stderr 被 setsid 吞掉），机制 dump 空转 4 分钟无人知。规则：拆开 `local`；
+   **后台分支必须写自己的日志**，不进 /dev/null。出处：`docs/status/20260914_night_report.md:318-322`。
+7. **报告数字只能由脚本从 JSON 生成**：手抄四次错（把 −0.46 pp 写成 −1.38 pp；把 25 首 × 12 变体的研究矩阵说成
+   "300 首交付批 31.4 % 零时长"）。规则：人读报告统一走 `scripts/evaluation/make_night_report.py` 一类生成器，
+   缺数据显示"未跑"而不是沉默；生成件顶部注明"生成，勿手改"。
+8. **区分"候选里根本没有"与"排名不对"**：判解码天花板用"容差内质量分布"（mass-in-tolerance），不要用标注格点排名
+   ——后者被量化假象抬高过（label_rank 的乐观读数已被 mass 校正否证）。同类："多算几遍取多数"的期望要先看误差是否
+   系统性——跨窗共识实测**比单窗更差** +18.7 ms（z=+9.9）⇒ 误差依赖上下文，投票救不了。
+9. **同名不同目录的 checkpoint 是清理陷阱**：`step-000750` 同时存在于 `20260724_qwen_fa_r2_full_*`（线上钉的那份）与
+   `20260913_qwen_fa_r2_from_official_*`（可删的中间步）。批量处置只许按 run 根绝对路径逐个白名单执行，
+   **禁跨 run 通配**，并在动手前 `ps` 确认无进程持有该 run、`du -sb` 前后对账、保留清单五件套齐全。
+10. **域内结论不可跨尺外推**：同一次前向的读数分"短条目全量视图 / 长流视图 / 域外"三条，跨工具相减曾得出错误的
+    "+0.85 pp"并从文档移除。引用任何增益必须带域（`20260914_night_report.md:80`、`:141`）。
+
+## 连开多臂的开局预检（≥3 臂时强制）
+
+任何一次连开 ≥3 个臂/候选的新线，**第 0 号预算**内必须包含三件；三件未做时臂可以开（探索期允许），但判决一律标
+"单 seed / 未定强度假设"，头条数字不得进入 `docs/status/` 的结论层：
+
+1. **seed 方差样测**：至少一臂换一次 seed，或引用**同族模型**的实测带；禁止跨模型族外推方差。
+2. **选择协议敏感性**：至少一个臂同时评 best 与 last。LyA 的代价实例：1SE 选点 `step-004850` 与终局 `step-012000`
+   在 L3 上是 **0.9698 vs 0.9699（打平，1 SE=0.0039）**，而"重训≈旧模型"的整轮误判正是因为当时只能评到被训练内
+   漏斗名额饿死的 step 1100–1450 ⇒ 凡"选点"与"终点"并存，两个都要报，且不得互相冒充。
+3. **探针盲区声明**：本线依赖的零 GPU 预言器（mass-in-tolerance、熵门控、结构自检）在其**判死方向**上有没有
+   已实证的假阴性类；新类出现即更新本条与探针 docstring。已知两例：① DP 会让"零长度/重叠"这两个唯一自动探针
+   全绿 ⇒ 结构探针必须在 DP 之前跑，或与门控同时评；② 成品自检把严重问题写进 `warnings` 而 `structural_errors`
+   为空 ⇒ 33/33 首"看起来通过"。
+
+## 状态层新鲜度纪律
+
+- 阶段收尾**原子更新** `docs/status/project_current.md`（快照日期 + 每个数字的来源 JSON）；做不到就**在标题下加一行**
+  `> STALE（最后确认 YYYY-MM-DD）：当前事实请读 docs/status/<最新件>`。**宁标 stale，不留假新鲜。**
+  背景实测：该件快照停在 2026-07-28、最后提交 `e0cdd1c`(07-29)，此后 591 次提交无人更新，却仍写着
+  "下一步是 server GPU smoke/formal"——而那批 GPU 早已跑完并被否证。
+- 新 session 目录落地必须**同批**登记 `docs/sessions/SESSION_INDEX.md`（首次跑自检发现 19 项缺登记，含
+  `20260912_gtsinger_gt_deep_analysis/`、`20260812/20260813_*`）。
+- `docs/status/README.md` 必须覆盖 `docs/status/` 下实际存在的活跃件（首次自检发现 30 份 9 月状态件未登记）。
+- 被降级或否证的主线条目：索引温度改成 `cold`，并在摘要里写**"被谁否证"**，保留条目不删。
+- 门禁命令：`python scripts/docs/check_doc_freshness.py`（退出码非零=有发现；`--json` 机器读，`--skip-links` 跳过
+  全仓死链扫描）。阶段收尾时跑，别只靠人记。
 
 ## Notes
 - 模型路径由 `scripts/demo/inline_realign_env.sh` 定义：默认 `MODEL_REVISION=c07281df...`、R2 checkpoint
