@@ -70,7 +70,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dump", type=Path, required=True, help="ood_dp_replay --dump-units 的产物")
     parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--max-blocks", type=int, default=4, help="默认取报告里的 1–4 块（第 5 块是近无声段）")
+    parser.add_argument("--max-blocks", type=int, default=0,
+                        help="0 = 取该 dump 里的**全部**塌陷块（诊断要的是无条件逐块，不是挑几个）")
     parser.add_argument("--context-sec", type=float, default=2.0)
     args = parser.parse_args()
 
@@ -84,7 +85,7 @@ def main() -> None:
         if not source.is_file():
             continue
         for block_index, block in enumerate(collapse_blocks(rows), start=1):
-            if picked >= args.max_blocks:
+            if args.max_blocks and picked >= args.max_blocks:
                 break
             picked += 1
             duration = None
@@ -129,9 +130,9 @@ def main() -> None:
                                      "gt_start_sec": round(row["gt_start_sec"] - lo, 4),
                                      "gt_end_sec": round(row["gt_end_sec"] - lo, 4),
                                      "gt_dur_sec": round(row["gt_end_sec"] - row["gt_start_sec"], 4)})
-            if picked >= args.max_blocks:
+            if args.max_blocks and picked >= args.max_blocks:
                 break
-        if picked >= args.max_blocks:
+        if args.max_blocks and picked >= args.max_blocks:
             break
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
