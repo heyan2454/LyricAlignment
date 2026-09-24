@@ -77,6 +77,57 @@ def bucket(errors: list[float]) -> dict[str, Any]:
             "mean_err_ms": round(1000 * st.mean(errors), 1)}
 
 
+def compute_structure(rows_by_name: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """塌陷画像：零长度/负长度/重叠/起始倒退/共用同一结束点的连续块。
+
+    与产品成品审计同一把尺（`src/lyricalign/analysis/structural_compliance.py`），分组键是单个音频条目，
+    所以不会产生跨条目的假重叠。**注意 DP 会把零长度与重叠这两个探针全部抹平**——单独看 DP 的
+    illegal_share=0 不代表铺得对，必须与 official 的读数并排看（`AI_SESSION_ENTRY.md` 第 5 条）。
+    """
+    out: dict[str, Any] = {}
+    try:
+        import pandas as pd
+        from lyricalign.analysis import structural_compliance as SC
+    except Exception as error:  # noqa: BLE001 缺 pandas 时如实报告，不伪造结构读数
+        return {"unavailable": f"{type(error).__name__}: {error}"}
+    for name, rows in rows_by_name.items():
+        if not rows:
+            out[name] = {"units": 0}
+            continue
+        frame = pd.DataFrame(rows).dropna(subset=["start_sec", "end_sec"])
+        frame = frame.sort_values(["song", "unit_index"]).reset_index(drop=True)
+        flagged = SC.flag_violations(frame)
+        blocks = 0
+        longest = 0
+        worst = ""
+        for song, sub in flagged.groupby("song", sort=False):
+            ends = sub["end_sec"].to_numpy(dtype=float)
+            run = 1
+            for index in range(1, len(ends)):
+                if ends[index] == ends[index - 1]:
+                    run += 1
+                else:
+                    blocks += 1 if run >= 5 else 0
+                    if run > longest:
+                        longest, worst = run, str(song)
+                    run = 1
+            blocks += 1 if run >= 5 else 0
+            if run > longest:
+                longest, worst = run, str(song)
+        out[name] = {
+            "units": int(len(flagged)), "items": int(flagged["song"].nunique()),
+            "zero_or_negative_share": round(float(flagged["flag_zero_or_negative"].mean()), 4),
+            "overlap_next_share": round(float(flagged["flag_overlaps_next"].mean()), 4),
+            "start_regression_share": round(float(flagged["flag_start_regression"].mean()), 4),
+            "overshoot_share": round(float(flagged["flag_overshoot"].mean()), 4),
+            "illegal_share": round(float(flagged["is_illegal"].mean()), 4),
+            "collapse_blocks_ge5": int(blocks),
+            "longest_same_end_block": int(longest),
+            "worst_item": worst.rsplit("/", 1)[-1],
+        }
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--evidence", type=Path,
@@ -93,6 +144,9 @@ def main() -> None:
     parser.add_argument("--dataset-label", default="GTSinger",
                         help="域外数据集名，只写进产物元数据，便于区分不同语料的复评")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--dump-units", type=Path, default=None,
+                        help="把逐单元的 gt/official/dp 起止时间、top-1、熵、容差内质量落成 jsonl.gz，"
+                             "供零人工的塌陷画像脚本消费（纯新增产物，不影响任何既有读数）")
     args = parser.parse_args()
 
     import torch
@@ -161,6 +215,14 @@ def main() -> None:
 
     errors: dict[str, dict[str, list[float]]] = {
         name: {"all": [], "short": [], "long": []} for name in ("official", "dp")}
+    # 结构探针（塌陷/零长度/重叠/起始倒退）：与 GT 无关，只看解码出来的时间轴本身。
+    # 口径复用 src/lyricalign/analysis/structural_compliance.py，与产品成品审计同一把尺；
+    # 这里以"单个音频条目"为分组键，避免跨条目边界的假重叠。
+    structure_rows: dict[str, list[dict[str, Any]]] = {"official": [], "dp": []}
+    dump_handle = None
+    if args.dump_units is not None:
+        args.dump_units.parent.mkdir(parents=True, exist_ok=True)
+        dump_handle = gzip.open(args.dump_units, "wt", encoding="utf-8")
     matched_units = 0
     compared_items = 0
     skipped_items = 0
@@ -181,10 +243,24 @@ def main() -> None:
         dp_decode = dp_timestamp_items(output.logits, inputs["input_ids"], words,
                                        timestamp_token_id=model.config.timestamp_token_id,
                                        segment_sec=float(cfg["training"].get("timestamp_segment_sec", 0.08)))
+        slots = None
+        if dump_handle is not None:
+            import numpy as np
+            slots = slot_logprobs(output.logits, inputs["input_ids"],
+                                  timestamp_token_id=model.config.timestamp_token_id)
+            seg = float(cfg["training"].get("timestamp_segment_sec", 0.08))
         for (path, item), official_items, dp_items in zip(chunk, official_decode, dp_decode, strict=False):
+            unit_rows: list[dict[str, Any]] = []
             for name, decoded in (("official", official_items), ("dp", dp_items)):
                 pairs = [(float(unit["gt_start"]), float(unit["gt_end"]), str(unit["text"])) for unit in item["units"]]
                 got = [(float(unit["start_time"]), float(unit["end_time"]), str(unit.get("text", ""))) for unit in decoded]
+                for index, (ps, pe, _pt) in enumerate(got):   # 结构指标看全部单元，不按文本匹配筛
+                    structure_rows[name].append({"song": str(item["audio_path"]), "unit_index": index,
+                                                 "start_sec": ps, "end_sec": pe})
+                    while len(unit_rows) <= index:
+                        unit_rows.append({})
+                    unit_rows[index][f"{name}_start_sec"] = ps
+                    unit_rows[index][f"{name}_end_sec"] = pe
                 for index, (gt_start, gt_end, text) in enumerate(pairs):
                     if index >= len(got):
                         continue
@@ -196,11 +272,28 @@ def main() -> None:
                     duration = gt_end - gt_start
                     errors[name]["long" if duration >= LONG_SEC else "short"].append(error)
                     matched_units += 1
+            if dump_handle is not None:
+                for index, unit in enumerate(item["units"]):
+                    row = dict(unit_rows[index]) if index < len(unit_rows) else {}
+                    row.update({"view": args.dataset_label, "utt": str(item["audio_path"]),
+                                "unit_index": index, "text": str(unit["text"]),
+                                "gt_start_sec": float(unit["gt_start"]), "gt_end_sec": float(unit["gt_end"])})
+                    if slots is not None and index < len(slots):
+                        for which, axis, gt in (("start", 0, unit["gt_start"]), ("end", 1, unit["gt_end"])):
+                            logp = slots[index, axis]
+                            probs = np.exp(logp)
+                            row[f"{which}_top1"] = round(float(probs.max()), 4)
+                            row[f"{which}_entropy"] = round(float(-(probs * logp).sum()), 3)
+                            low = max(0, int((float(gt) - TOL) / seg))
+                            high = min(len(probs) - 1, int((float(gt) + TOL) / seg))
+                            row[f"{which}_mass_in_tol"] = round(float(probs[low:high + 1].sum()), 4)
+                    dump_handle.write(json.dumps(row, ensure_ascii=False) + "\n")
             compared_items += 1
         print(f"已比较 {offset + len(chunk)}/{len(usable)} 条", flush=True)
 
     buckets = {name: {key: bucket(values) for key, values in groups.items()}
                for name, groups in errors.items()}
+    structure = compute_structure(structure_rows)
     payload = {"schema_version": "ood_dp_replay_v1", "evidence": str(args.evidence),
                "checkpoint": source_label, "stage": args.stage,
                "tolerance_sec": TOL, "long_sec": LONG_SEC,
@@ -208,7 +301,7 @@ def main() -> None:
                "discipline": f"{args.dataset_label} 只作域外报告，不参与选点/调参",
                "items_compared": compared_items, "units_matched": matched_units,
                "items_skipped": skipped_items,
-               "by_selection": buckets}
+               "by_selection": buckets, "structure": structure}
     deltas: dict[str, Any] = {}
     for bucket_key in ("all", "short", "long"):
         official_bucket = buckets["official"][bucket_key]
@@ -218,6 +311,9 @@ def main() -> None:
                 "miss_share_delta_pp": round(100 * (dp_bucket["miss_share"] - official_bucket["miss_share"]), 3),
                 "median_err_delta_ms": round(dp_bucket["median_err_ms"] - official_bucket["median_err_ms"], 1)}
     payload["dp_minus_official"] = deltas
+    if dump_handle is not None:
+        dump_handle.close()
+        print(f"[dump] 逐单元产物：{args.dump_units}（{matched_units} 次比较之外的全部单元）", flush=True)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"units_matched": matched_units, "by_selection": payload["by_selection"],

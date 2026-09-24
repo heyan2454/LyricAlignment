@@ -56,6 +56,34 @@ def table(view: str, runs: dict[str, dict]) -> list[str]:
     return lines
 
 
+def structure_table(view: str, runs: dict[str, dict]) -> list[str]:
+    lines = [f"### {view} 视图 · 结构探针（与产品成品审计同一把尺）", "",
+             "| 模型点 | 解码器 | 单元 | 零/负长度 | 重叠 | 起始倒退 | 非法合计 | ≥5 字同结束点块 | 最长同结束点块 |",
+             "|---|---|---:|---:|---:|---:|---:|---:|---:|"]
+    for name in MODEL_ORDER:
+        payload = runs.get(name)
+        if not payload:
+            lines.append(f"| {LABELS.get(name, name)} | — | 未跑 | | | | | | |")
+            continue
+        structure = payload.get("structure") or {}
+        if "unavailable" in structure:
+            lines.append(f"| {LABELS.get(name, name)} | — | 探针不可用：{structure['unavailable']} | | | | | | |")
+            continue
+        for decoder in ("official", "dp"):
+            item = structure.get(decoder) or {}
+            if not item.get("units"):
+                lines.append(f"| {LABELS.get(name, name)} | {decoder} | 0 | | | | | | |")
+                continue
+            lines.append(
+                f"| {LABELS.get(name, name)} | {decoder} | {item['units']:,} | "
+                f"{pp(item.get('zero_or_negative_share', 0))} | {pp(item.get('overlap_next_share', 0))} | "
+                f"{pp(item.get('start_regression_share', 0))} | {pp(item.get('illegal_share', 0))} | "
+                f"{item.get('collapse_blocks_ge5', 0)} | {item.get('longest_same_end_block', 0)} |")
+    lines += ["", "> DP 会把「零长度/重叠」这两个自动探针抹平，所以 dp 行接近 0 不代表铺得对；"
+                  "读法是把 official 行当作「模型自己有多常塌陷」的答案，DP 行只说明合法性修复的量有多大。", ""]
+    return lines
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-root", type=Path,
@@ -96,6 +124,11 @@ def main() -> None:
         if view in runs:
             lines += table(view, runs[view]) + [""]
 
+    lines += ["## 塌陷与结构合法性", ""]
+    for view in ("sentence", "window"):
+        if view in runs:
+            lines += structure_table(view, runs[view])
+
     sentence = runs.get("sentence", {})
     if {"baseweight", "old750"} <= set(sentence):
         base = sentence["baseweight"]["by_selection"]["official"]["all"]["miss_share"]
@@ -105,7 +138,7 @@ def main() -> None:
                   f"自训权重在该域上的净增益 {100 * (base - prod):+.2f} pp。", ""]
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    args.out.write_text("\n".join(lines).rstrip("\n") + "\n", encoding="utf-8")
     print(f"[out] {args.out}")
 
 
